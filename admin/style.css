@@ -1,0 +1,52 @@
+body {
+
+    font-family: Arial;
+
+    background: #f4f6f9;
+
+    padding: 40px;
+}
+
+
+.container {
+
+    max-width: 1000px;
+
+    margin: auto;
+}
+
+
+.cards {
+
+    display: flex;
+
+    gap: 20px;
+
+    flex-wrap: wrap;
+}
+
+
+.card {
+
+    background: white;
+
+    padding: 25px;
+
+    border-radius: 12px;
+
+    flex: 1;
+
+    min-width: 200px;
+
+    box-shadow:
+        0 5px 15px
+        rgba(0,0,0,0.1);
+}
+
+
+.card h2 {
+
+    font-size: 35px;
+
+    color: #007bff;
+}

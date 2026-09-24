@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>My Hospital Token</title>
+
+    <link rel="stylesheet"
+        href="style.css">
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(
+                135deg,
+                #e3f2fd,
+                #ffffff
+            );
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            padding: 20px;
+        }
+
+        .token-container {
+
+            width: 100%;
+            max-width: 500px;
+
+            background: white;
+
+            padding: 35px;
+
+            border-radius: 20px;
+
+            box-shadow:
+                0 10px 30px
+                rgba(0, 0, 0, 0.12);
+
+            text-align: center;
+        }
+
+        .hospital-title {
+
+            color: #1976d2;
+
+            font-size: 28px;
+
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+
+            color: #666;
+
+            margin-bottom: 25px;
+        }
+
+        .token-label {
+
+            color: #555;
+
+            font-size: 18px;
+
+            margin-bottom: 10px;
+        }
+
+        .token-number {
+
+            width: 150px;
+            height: 150px;
+
+            margin: 0 auto 25px;
+
+            border-radius: 50%;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1976d2,
+                    #42a5f5
+                );
+
+            color: white;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            font-size: 55px;
+
+            font-weight: bold;
+
+            box-shadow:
+                0 8px 20px
+                rgba(25, 118, 210, 0.3);
+        }
+
+        .call-message {
+
+            padding: 15px;
+
+            border-radius: 10px;
+
+            background: #e3f2fd;
+
+            color: #1976d2;
+
+            font-size: 17px;
+
+            font-weight: bold;
+
+            margin-bottom: 25px;
+        }
+
+        .info-card {
+
+            text-align: left;
+
+            background: #f8fafc;
+
+            padding: 20px;
+
+            border-radius: 15px;
+        }
+
+        .info-row {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            gap: 15px;
+
+            padding: 12px 0;
+
+            border-bottom:
+                1px solid #e5e7eb;
+        }
+
+        .info-row:last-child {
+
+            border-bottom: none;
+        }
+
+        .info-label {
+
+            color: #666;
+
+            font-size: 14px;
+        }
+
+        .info-value {
+
+            color: #111827;
+
+            font-weight: bold;
+
+            text-align: right;
+        }
+
+        .status {
+
+            color: #1976d2;
+        }
+
+        .back-button {
+
+            width: 100%;
+
+            margin-top: 20px;
+
+            padding: 13px;
+
+            border: none;
+
+            border-radius: 10px;
+
+            background: #1976d2;
+
+            color: white;
+
+            font-size: 16px;
+
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+
+            background: #1565c0;
+        }
+
+        @media (max-width: 500px) {
+
+            .token-container {
+
+                padding: 25px 18px;
+            }
+
+            .token-number {
+
+                width: 125px;
+
+                height: 125px;
+
+                font-size: 45px;
+            }
+
+            .info-row {
+
+                flex-direction: column;
+
+                gap: 5px;
+            }
+
+            .info-value {
+
+                text-align: left;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <div class="token-container">
+
+
+        <h1 class="hospital-title">
+            🏥 HospitalCare
+        </h1>
+
+
+        <p class="subtitle">
+            Your Appointment Token
+        </p>
+
+
+        <p class="token-label">
+            Your Token Number
+        </p>
+
+
+        <div
+            class="token-number"
+            id="tokenNumber"
+        >
+            0
+        </div>
+
+
+        <div
+            class="call-message"
+            id="callMessage"
+        >
+            Please wait for your turn.
+        </div>
+
+
+        <div class="info-card">
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    Hospital
+                </span>
+
+                <span
+                    class="info-value"
+                    id="hospital"
+                >
+                    -
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    Department
+                </span>
+
+                <span
+                    class="info-value"
+                    id="department"
+                >
+                    -
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    Doctor
+                </span>
+
+                <span
+                    class="info-value"
+                    id="doctor"
+                >
+                    -
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    Current Token
+                </span>
+
+                <span
+                    class="info-value"
+                    id="currentToken"
+                >
+                    0
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    People Ahead
+                </span>
+
+                <span
+                    class="info-value"
+                    id="peopleAhead"
+                >
+                    0
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    Payment
+                </span>
+
+                <span
+                    class="info-value"
+                    id="paymentStatus"
+                >
+                    Paid
+                </span>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <span class="info-label">
+                    Status
+                </span>
+
+                <span
+                    class="info-value status"
+                    id="status"
+                >
+                    Waiting
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <button
+            class="back-button"
+            onclick="goDashboard()"
+        >
+            ← Back to Dashboard
+        </button>
+
+
+    </div>
+
+
+    <script>
+
+        const API =
+            "http://127.0.0.1:8000";
+
+
+        // =====================================
+        // LOAD TOKEN INFORMATION
+        // =====================================
+
+        function loadToken() {
+
+
+            const token =
+                localStorage.getItem(
+                    "token"
+                );
+
+
+            const hospital =
+                localStorage.getItem(
+                    "hospital"
+                );
+
+
+            const department =
+                localStorage.getItem(
+                    "department"
+                );
+
+
+            const doctor =
+                localStorage.getItem(
+                    "doctor"
+                );
+
+
+            const currentToken =
+                localStorage.getItem(
+                    "currentToken"
+                );
+
+
+            const peopleAhead =
+                localStorage.getItem(
+                    "peopleAhead"
+                );
+
+
+            const paymentStatus =
+                localStorage.getItem(
+                    "paymentStatus"
+                );
+
+
+            const tokenStatus =
+                localStorage.getItem(
+                    "tokenStatus"
+                );
+
+
+            document.getElementById(
+                "tokenNumber"
+            ).innerText =
+                token || "0";
+
+
+            document.getElementById(
+                "hospital"
+            ).innerText =
+                hospital || "-";
+
+
+            document.getElementById(
+                "department"
+            ).innerText =
+                department || "-";
+
+
+            document.getElementById(
+                "doctor"
+            ).innerText =
+                doctor || "-";
+
+
+            document.getElementById(
+                "currentToken"
+            ).innerText =
+                currentToken || "0";
+
+
+            document.getElementById(
+                "peopleAhead"
+            ).innerText =
+                peopleAhead || "0";
+
+
+            document.getElementById(
+                "paymentStatus"
+            ).innerText =
+                paymentStatus || "Paid";
+
+
+            document.getElementById(
+                "status"
+            ).innerText =
+                tokenStatus || "waiting";
+
+
+            updateMessage(
+                tokenStatus
+            );
+        }
+
+
+
+        // =====================================
+        // UPDATE MESSAGE
+        // =====================================
+
+        function updateMessage(
+            status
+        ) {
+
+            const message =
+                document.getElementById(
+                    "callMessage"
+                );
+
+
+            if (
+                status === "serving"
+            ) {
+
+                message.innerText =
+                    "🔔 Your token is called! Please go to the consultation room.";
+
+                message.style.background =
+                    "#dcfce7";
+
+                message.style.color =
+                    "#15803d";
+
+            }
+
+
+            else if (
+                status === "completed"
+            ) {
+
+                message.innerText =
+                    "✅ Your consultation is completed.";
+
+                message.style.background =
+                    "#f3f4f6";
+
+                message.style.color =
+                    "#374151";
+
+            }
+
+
+            else {
+
+                message.innerText =
+                    "⏳ Please wait for your turn.";
+
+                message.style.background =
+                    "#e3f2fd";
+
+                message.style.color =
+                    "#1976d2";
+            }
+        }
+
+
+
+        // =====================================
+        // CHECK PATIENT TOKEN FROM BACKEND
+        // =====================================
+
+        async function checkPatientToken() {
+
+
+            const tokenId =
+                localStorage.getItem(
+                    "tokenId"
+                );
+
+
+            if (!tokenId) {
+
+                console.log(
+                    "Token ID not found."
+                );
+
+                return;
+            }
+
+
+            try {
+
+
+                const response =
+                    await fetch(
+                        API +
+                        "/patient-token/" +
+                        tokenId
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                console.log(
+                    "Token update:",
+                    data
+                );
+
+
+                if (
+                    !data.success
+                ) {
+
+                    return;
+                }
+
+
+                // Save latest status
+
+                localStorage.setItem(
+                    "tokenStatus",
+                    data.status
+                );
+
+
+                // Update status
+
+                document.getElementById(
+                    "status"
+                ).innerText =
+                    data.status;
+
+
+                updateMessage(
+                    data.status
+                );
+
+
+                // =================================
+                // TOKEN CALLED
+                // =================================
+
+                if (
+                    data.status ===
+                    "serving"
+                ) {
+
+
+                    // Browser notification
+
+                    if (
+                        "Notification"
+                        in window
+                    ) {
+
+
+                        if (
+                            Notification.permission ===
+                            "default"
+                        ) {
+
+                            Notification.requestPermission();
+                        }
+
+
+                        if (
+                            Notification.permission ===
+                            "granted"
+                        ) {
+
+                            new Notification(
+                                "HospitalCare",
+                                {
+                                    body:
+                                        "Your Token " +
+                                        data.token +
+                                        " has been called. Please go to the consultation room."
+                                }
+                            );
+                        }
+
+                    }
+
+                }
+
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Token checking error:",
+                    error
+                );
+
+            }
+
+        }
+
+
+
+        // =====================================
+        // BACK TO PATIENT DASHBOARD
+        // =====================================
+
+        function goDashboard() {
+
+            window.location.href =
+                "dashboard.html";
+        }
+
+
+
+        // =====================================
+        // START
+        // =====================================
+
+        loadToken();
+
+
+        // Check backend every 3 seconds
+
+        setInterval(
+            checkPatientToken,
+            3000
+        );
+
+
+    </script>
+
+
+</body>
+
+</html>

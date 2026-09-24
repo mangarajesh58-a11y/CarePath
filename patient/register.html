@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Patient Registration</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+<body>
+
+<div class="auth-container">
+
+    <div class="logo">
+        🏥
+    </div>
+
+    <h1>HospitalCare</h1>
+
+    <p class="subtitle">
+        Create Patient Account
+    </p>
+
+
+    <div class="form-card">
+
+        <label>
+            Full Name
+        </label>
+
+        <input
+            type="text"
+            id="fullName"
+            placeholder="Enter your full name"
+        >
+
+
+        <label>
+            Email
+        </label>
+
+        <input
+            type="email"
+            id="email"
+            placeholder="Enter email"
+        >
+
+
+        <label>
+            Phone Number
+        </label>
+
+        <input
+            type="tel"
+            id="phone"
+            placeholder="Enter phone number"
+        >
+
+
+        <label>
+            Password
+        </label>
+
+        <input
+            type="password"
+            id="password"
+            placeholder="Create password"
+        >
+
+
+        <label>
+            Confirm Password
+        </label>
+
+        <input
+            type="password"
+            id="confirmPassword"
+            placeholder="Confirm password"
+        >
+
+
+        <button onclick="registerPatient()">
+            Register
+        </button>
+
+
+        <p class="register-text">
+
+            Already have an account?
+
+            <a href="index.html">
+                Login
+            </a>
+
+        </p>
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+
+</html>

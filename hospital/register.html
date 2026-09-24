@@ -1,0 +1,201 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Hospital Registration</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+<body>
+
+<div class="auth-container">
+
+    <div class="logo">
+        🏥
+    </div>
+
+    <h1>HospitalCare</h1>
+
+    <p class="subtitle">
+        Register Your Hospital
+    </p>
+
+
+    <div class="form-card">
+
+        <label>
+            Hospital Name
+        </label>
+
+        <input
+            type="text"
+            id="hospitalName"
+            placeholder="Enter hospital name"
+        >
+
+
+        <label>
+            Hospital Email
+        </label>
+
+        <input
+            type="email"
+            id="hospitalEmail"
+            placeholder="Enter hospital email"
+        >
+
+
+        <label>
+            Phone Number
+        </label>
+
+        <input
+            type="tel"
+            id="hospitalPhone"
+            placeholder="Enter phone number"
+        >
+
+
+        <label>
+            Hospital Address
+        </label>
+
+        <textarea
+            id="hospitalAddress"
+            placeholder="Search or enter hospital address"
+        ></textarea>
+
+
+        <!-- GOOGLE MAP SEARCH -->
+
+        <label>
+            Select Hospital Location
+        </label>
+
+        <input
+            type="text"
+            id="mapSearch"
+            placeholder="Search hospital location"
+        >
+
+        <div
+            id="map"
+            class="map-container"
+        ></div>
+
+
+        <!-- LOCATION DATA -->
+
+        <div class="location-box">
+
+            <div>
+
+                <span>
+                    Latitude
+                </span>
+
+                <strong id="latitude">
+                    Not selected
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>
+                    Longitude
+                </span>
+
+                <strong id="longitude">
+                    Not selected
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <label>
+            Registration / License Number
+        </label>
+
+        <input
+            type="text"
+            id="licenseNumber"
+            placeholder="Enter registration number"
+        >
+
+
+        <label>
+            Password
+        </label>
+
+        <input
+            type="password"
+            id="hospitalPassword"
+            placeholder="Create password"
+        >
+
+
+        <label>
+            Confirm Password
+        </label>
+
+        <input
+            type="password"
+            id="confirmPassword"
+            placeholder="Confirm password"
+        >
+
+
+        <button onclick="registerHospital()">
+            Register Hospital
+        </button>
+
+
+        <p class="register-text">
+
+            Already registered?
+
+            <a href="index.html">
+                Login
+            </a>
+
+        </p>
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+
+<!-- GOOGLE MAPS JAVASCRIPT API -->
+
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDbbDf9jwQ_GPVfkl5_xkia5jqFlWJCSM4&libraries=places&callback=initMap"
+    async
+    defer
+></script>
+
+
+</body>
+
+</html>
+```

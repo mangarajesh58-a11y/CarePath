@@ -1,0 +1,658 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+body {
+
+    font-family: Arial, sans-serif;
+
+    background:
+        linear-gradient(
+            135deg,
+            #e3f2fd,
+            #ffffff
+        );
+
+    min-height: 100vh;
+
+    color: #1f2937;
+}
+
+
+/* =========================
+   LOGIN / REGISTER
+========================= */
+
+.auth-container {
+
+    width: 100%;
+
+    max-width: 480px;
+
+    margin: 40px auto;
+
+    padding: 20px;
+
+    text-align: center;
+}
+
+
+.logo {
+
+    width: 75px;
+
+    height: 75px;
+
+    margin: auto;
+
+    border-radius: 50%;
+
+    background: #1976d2;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 38px;
+}
+
+
+.auth-container h1 {
+
+    margin-top: 15px;
+
+    color: #1565c0;
+}
+
+
+.subtitle {
+
+    margin-top: 8px;
+
+    color: #666;
+}
+
+
+.form-card {
+
+    background: white;
+
+    margin-top: 25px;
+
+    padding: 30px;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.1);
+
+    text-align: left;
+}
+
+
+label {
+
+    display: block;
+
+    margin-top: 15px;
+
+    margin-bottom: 7px;
+
+    font-weight: bold;
+}
+
+
+input,
+textarea {
+
+    width: 100%;
+
+    padding: 13px;
+
+    border: 1px solid #d1d5db;
+
+    border-radius: 8px;
+
+    font-size: 15px;
+
+    outline: none;
+
+    font-family: Arial, sans-serif;
+}
+
+
+textarea {
+
+    min-height: 80px;
+
+    resize: vertical;
+}
+
+
+input:focus,
+textarea:focus {
+
+    border-color: #1976d2;
+}
+
+
+button {
+
+    width: 100%;
+
+    padding: 14px;
+
+    margin-top: 20px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #1976d2;
+
+    color: white;
+
+    font-size: 16px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+button:hover {
+
+    background: #125aa0;
+}
+
+
+.register-text {
+
+    text-align: center;
+
+    margin-top: 20px;
+
+    color: #666;
+}
+
+
+.register-text a {
+
+    color: #1976d2;
+
+    font-weight: bold;
+
+    text-decoration: none;
+}
+
+
+/* =========================
+   DASHBOARD
+========================= */
+
+.dashboard {
+
+    max-width: 1100px;
+
+    margin: auto;
+
+    padding: 25px;
+}
+
+
+header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 25px;
+}
+
+
+header h1 {
+
+    color: #1565c0;
+}
+
+
+header p {
+
+    margin-top: 5px;
+
+    color: #666;
+}
+
+
+.logout {
+
+    width: auto;
+
+    padding: 10px 22px;
+
+    margin: 0;
+
+    background: #dc3545;
+}
+
+
+.logout:hover {
+
+    background: #b02a37;
+}
+
+
+.welcome {
+
+    background: #1976d2;
+
+    color: white;
+
+    padding: 25px;
+
+    border-radius: 15px;
+
+    margin-bottom: 25px;
+}
+
+
+.welcome p {
+
+    margin-top: 8px;
+}
+
+
+/* =========================
+   DASHBOARD CARDS
+========================= */
+
+.dashboard-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 20px;
+}
+
+
+.dashboard-card {
+
+    background: white;
+
+    padding: 25px;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.08);
+
+    text-align: center;
+}
+
+
+.card-icon {
+
+    font-size: 40px;
+
+    margin-bottom: 15px;
+}
+
+
+.dashboard-card h3 {
+
+    margin-bottom: 10px;
+}
+
+
+.dashboard-card p {
+
+    color: #666;
+
+    line-height: 1.5;
+
+    min-height: 48px;
+}
+
+
+.dashboard-card button {
+
+    font-size: 14px;
+
+    padding: 11px;
+}
+
+
+/* =========================
+   QUEUE
+========================= */
+
+.queue-card {
+
+    background: white;
+
+    margin-top: 25px;
+
+    padding: 30px;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.08);
+}
+
+
+.queue-card h2 {
+
+    margin-bottom: 20px;
+}
+
+
+.queue-stats {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 20px;
+}
+
+
+.queue-stats div {
+
+    background: #f5f9ff;
+
+    padding: 20px;
+
+    border-radius: 10px;
+
+    text-align: center;
+}
+
+
+.queue-stats span {
+
+    display: block;
+
+    color: #666;
+
+    margin-bottom: 8px;
+}
+
+
+.queue-stats strong {
+
+    font-size: 32px;
+
+    color: #1976d2;
+}
+
+
+.next-button {
+
+    background: #28a745;
+
+    max-width: 300px;
+
+    display: block;
+
+    margin: 25px auto 0;
+}
+
+
+.next-button:hover {
+
+    background: #218838;
+}
+
+
+.next-message {
+
+    text-align: center;
+
+    margin-top: 15px;
+
+    font-weight: bold;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 800px) {
+
+    .dashboard-grid {
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+    }
+
+}
+
+
+@media (max-width: 550px) {
+
+    .dashboard {
+
+        padding: 15px;
+
+    }
+
+
+    header {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 15px;
+
+    }
+
+
+    .logout {
+
+        align-self: stretch;
+
+        width: 100%;
+
+    }
+
+
+    .dashboard-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .queue-stats {
+
+        grid-template-columns: 1fr;
+
+    }
+
+}
+
+
+/* =========================
+   INNER PAGES
+========================= */
+
+.page-container {
+
+    max-width: 1000px;
+
+    margin: auto;
+
+    padding: 25px;
+}
+
+
+.page-container header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 25px;
+}
+
+
+.back-button {
+
+    width: auto;
+
+    margin: 0;
+
+    padding: 10px 20px;
+
+    background: #1976d2;
+}
+
+
+/* =========================
+   FORM CARD
+========================= */
+
+.form-card {
+
+    background: white;
+
+    padding: 30px;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.08);
+
+    margin-bottom: 25px;
+}
+
+
+.form-card h2 {
+
+    margin-bottom: 20px;
+}
+
+
+/* =========================
+   LIST CARD
+========================= */
+
+.list-card {
+
+    background: white;
+
+    padding: 30px;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.08);
+}
+
+
+/* =========================
+   DOCTOR ITEM
+========================= */
+
+.doctor-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 20px;
+
+    padding: 15px;
+
+    margin-top: 12px;
+
+    background: #f5f9ff;
+
+    border-radius: 10px;
+}
+
+
+.doctor-item strong {
+
+    flex: 1;
+
+    color: #1565c0;
+}
+
+
+.doctor-item span {
+
+    color: #666;
+}
+
+
+.doctor-item button {
+
+    width: auto;
+
+    margin: 0;
+
+    padding: 8px 15px;
+
+    background: #dc3545;
+}
+
+
+@media (max-width: 650px) {
+
+    .page-container {
+
+        padding: 15px;
+
+    }
+
+
+    .page-container header {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 15px;
+
+    }
+
+
+    .back-button {
+
+        width: 100%;
+
+    }
+
+
+    .doctor-item {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+    }
+
+}

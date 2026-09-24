@@ -1,0 +1,116 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Hospital Profile</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+<body>
+
+<div class="page-container">
+
+    <header>
+
+        <div>
+
+            <h1>🏥 Hospital Profile</h1>
+
+            <p>
+                Hospital Information
+            </p>
+
+        </div>
+
+        <button
+            class="back-button"
+            onclick="goDashboard()"
+        >
+            ← Dashboard
+        </button>
+
+    </header>
+
+
+    <div class="form-card">
+
+        <label>
+            Hospital Name
+        </label>
+
+        <input
+            type="text"
+            id="profileName"
+        >
+
+
+        <label>
+            Email
+        </label>
+
+        <input
+            type="email"
+            id="profileEmail"
+        >
+
+
+        <label>
+            Phone
+        </label>
+
+        <input
+            type="text"
+            id="profilePhone"
+        >
+
+
+        <label>
+            Address
+        </label>
+
+        <textarea
+            id="profileAddress"
+        ></textarea>
+
+
+        <label>
+            Registration Number
+        </label>
+
+        <input
+            type="text"
+            id="profileLicense"
+        >
+
+
+        <button
+            onclick="saveProfile()"
+        >
+            Save Changes
+        </button>
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+
+</html>
+```

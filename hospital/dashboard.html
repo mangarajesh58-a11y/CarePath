@@ -1,0 +1,258 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Hospital Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <header>
+
+        <div>
+            <h1>🏥 HospitalCare</h1>
+
+            <p>
+                Hospital Management Dashboard
+            </p>
+        </div>
+
+        <button
+            class="logout"
+            onclick="hospitalLogout()"
+        >
+            Logout
+        </button>
+
+    </header>
+
+
+    <div class="welcome">
+
+        <h2>
+            Welcome,
+            <span id="hospitalNameDisplay">
+                Hospital
+            </span>
+        </h2>
+
+        <p>
+            Manage your hospital, doctors and patient queue.
+        </p>
+
+    </div>
+
+
+    <!-- DASHBOARD CARDS -->
+
+    <div class="dashboard-grid">
+
+
+        <!-- DOCTORS -->
+
+        <div class="dashboard-card">
+
+            <div class="card-icon">
+                👨‍⚕️
+            </div>
+
+            <h3>
+                Doctors
+            </h3>
+
+            <p>
+                Add and manage hospital doctors.
+            </p>
+
+            <button
+                onclick="openDoctors()"
+            >
+                Manage Doctors
+            </button>
+
+        </div>
+
+
+        <!-- TOKEN QUEUE -->
+
+        <div class="dashboard-card">
+
+            <div class="card-icon">
+                🎫
+            </div>
+
+            <h3>
+                Token Queue
+            </h3>
+
+            <p>
+                Manage today's patient tokens.
+            </p>
+
+            <button
+                onclick="openPatients()"
+            >
+                View Queue
+            </button>
+
+        </div>
+
+
+        <!-- PATIENTS -->
+
+        <div class="dashboard-card">
+
+            <div class="card-icon">
+                👥
+            </div>
+
+            <h3>
+                Patients
+            </h3>
+
+            <p>
+                View patients waiting for consultation.
+            </p>
+
+            <button
+                onclick="openPatients()"
+            >
+                View Patients
+            </button>
+
+        </div>
+
+
+        <!-- PROFILE -->
+
+        <div class="dashboard-card">
+
+            <div class="card-icon">
+                🏥
+            </div>
+
+            <h3>
+                Hospital Profile
+            </h3>
+
+            <p>
+                View and update hospital information.
+            </p>
+
+            <button
+                onclick="openProfile()"
+            >
+                Manage Profile
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- TOKEN QUEUE -->
+
+    <div class="queue-card">
+
+        <h2>
+            Today's Queue
+        </h2>
+
+
+        <div class="queue-stats">
+
+            <div>
+
+                <span>
+                    Waiting
+                </span>
+
+                <strong id="waitingCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>
+                    Current Token
+                </span>
+
+                <strong id="currentToken">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div>
+
+                <span>
+                    Completed
+                </span>
+
+                <strong id="completedCount">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+       <button onclick="openDoctors()">
+    Manage Doctors
+</button>
+
+       <button onclick="openPatients()">
+        View Queue
+     </button>
+
+     <button onclick="openPatients()">
+     View Patients
+    </button>
+
+     <button onclick="openProfile()">
+    Manage Profile
+    </button>
+
+      <button onclick="callNextPatient()">
+    📢 Call Next Patient
+    </button>
+
+
+        <p
+            id="nextMessage"
+            class="next-message"
+        ></p>
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+
+</html>
+
