@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <!-- Google Identity Services -->
+    <script
+        src="https://accounts.google.com/gsi/client"
+        async
+        defer>
+    </script>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Admin Login - HospitalCare</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body class="auth-page">
+
+    <div class="auth-container">
+
+        <!-- LOGO -->
+        <div class="logo">
+            🏥
+        </div>
+
+
+        <!-- TITLE -->
+        <h1>
+            HospitalCare
+        </h1>
+
+
+        <p class="subtitle">
+            Admin Portal
+        </p>
+
+
+        <!-- LOGIN CARD -->
+        <div class="form-card">
+
+            <h2>
+                Admin Login
+            </h2>
+
+
+            <!-- EMAIL -->
+            <label for="adminEmail">
+                Email
+            </label>
+
+            <input
+                type="email"
+                id="adminEmail"
+                placeholder="Enter admin email"
+                autocomplete="email"
+            >
+
+
+            <!-- PASSWORD -->
+            <label for="adminPassword">
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="adminPassword"
+                placeholder="Enter password"
+                autocomplete="current-password"
+            >
+
+
+            <!-- NORMAL LOGIN -->
+            <button
+                type="button"
+                onclick="adminLogin()"
+            >
+                Login
+            </button>
+
+
+            <!-- DIVIDER -->
+            <div class="login-divider">
+                <span>OR</span>
+            </div>
+
+
+            <!-- GOOGLE LOGIN -->
+            <div class="google-login-container">
+
+                <div
+                    id="g_id_onload"
+                    data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+                    data-callback="handleGoogleLogin"
+                    data-auto_prompt="false">
+                </div>
+
+
+                <div
+                    class="g_id_signin"
+                    data-type="standard"
+                    data-size="large"
+                    data-theme="outline"
+                    data-text="continue_with"
+                    data-shape="rectangular">
+                </div>
+
+            </div>
+
+
+            <!-- LOGIN MESSAGE -->
+            <p
+                id="loginMessage"
+                class="message">
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- ADMIN JAVASCRIPT -->
+    <script src="script.js"></script>
+
+</body>
+
+</html>

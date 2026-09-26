@@ -1,3 +1,6 @@
+/* ======================================================
+   GLOBAL RESET
+====================================================== */
 
 * {
     margin: 0;
@@ -5,654 +8,961 @@
     box-sizing: border-box;
 }
 
+/* ======================================================
+   BODY
+====================================================== */
 
 body {
-
     font-family: Arial, sans-serif;
-
-    background:
-        linear-gradient(
-            135deg,
-            #e3f2fd,
-            #ffffff
-        );
-
+    background: linear-gradient(
+        135deg,
+        #e3f2fd,
+        #ffffff
+    );
     min-height: 100vh;
-
     color: #1f2937;
 }
 
-
-/* =========================
+/* ======================================================
    LOGIN / REGISTER
-========================= */
+====================================================== */
 
 .auth-container {
-
     width: 100%;
-
     max-width: 480px;
-
     margin: 40px auto;
-
     padding: 20px;
-
     text-align: center;
 }
 
-
 .logo {
-
     width: 75px;
-
     height: 75px;
-
     margin: auto;
-
     border-radius: 50%;
-
     background: #1976d2;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     font-size: 38px;
 }
 
-
 .auth-container h1 {
-
     margin-top: 15px;
-
     color: #1565c0;
 }
 
-
 .subtitle {
-
     margin-top: 8px;
-
     color: #666;
 }
 
+/* ======================================================
+   FORM CARD
+====================================================== */
 
 .form-card {
-
     background: white;
-
     margin-top: 25px;
-
     padding: 30px;
-
     border-radius: 15px;
-
-    box-shadow:
-        0 8px 25px
-        rgba(0, 0, 0, 0.1);
-
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
     text-align: left;
+    margin-bottom: 25px;
 }
 
+.form-card h2 {
+    margin-bottom: 20px;
+    color: #1565c0;
+}
+
+/* ======================================================
+   LABELS
+====================================================== */
 
 label {
-
     display: block;
-
     margin-top: 15px;
-
     margin-bottom: 7px;
-
     font-weight: bold;
+    color: #374151;
 }
 
+/* ======================================================
+   INPUT / TEXTAREA / SELECT
+====================================================== */
 
 input,
-textarea {
-
+textarea,
+select {
     width: 100%;
-
     padding: 13px;
-
     border: 1px solid #d1d5db;
-
     border-radius: 8px;
-
     font-size: 15px;
-
     outline: none;
-
     font-family: Arial, sans-serif;
+    background: white;
 }
 
-
 textarea {
-
     min-height: 80px;
-
     resize: vertical;
 }
 
+select {
+    cursor: pointer;
+    appearance: auto;
+}
 
 input:focus,
-textarea:focus {
-
+textarea:focus,
+select:focus {
     border-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
 }
 
+/* ======================================================
+   BUTTON
+====================================================== */
 
 button {
-
     width: 100%;
-
     padding: 14px;
-
     margin-top: 20px;
-
     border: none;
-
     border-radius: 8px;
-
     background: #1976d2;
-
     color: white;
-
     font-size: 16px;
-
     font-weight: bold;
-
     cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
 }
 
-
 button:hover {
-
     background: #125aa0;
 }
 
+button:active {
+    transform: scale(0.98);
+}
+
+/* ======================================================
+   GOOGLE LOGIN
+====================================================== */
+
+.google-login-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.login-divider {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: 20px 0;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+}
+
+.login-divider span {
+    padding: 0 12px;
+}
+
+/* ======================================================
+   REGISTER TEXT
+====================================================== */
 
 .register-text {
-
     text-align: center;
-
     margin-top: 20px;
-
     color: #666;
 }
 
-
 .register-text a {
-
     color: #1976d2;
-
     font-weight: bold;
-
     text-decoration: none;
 }
 
+.register-text a:hover {
+    text-decoration: underline;
+}
 
-/* =========================
+/* ======================================================
+   MESSAGE
+====================================================== */
+
+.message {
+    text-align: center;
+    margin-top: 15px;
+    font-weight: bold;
+    min-height: 20px;
+}
+
+/* ======================================================
    DASHBOARD
-========================= */
+====================================================== */
 
 .dashboard {
-
     max-width: 1100px;
-
     margin: auto;
-
     padding: 25px;
 }
 
-
 header {
-
     display: flex;
-
     justify-content: space-between;
-
     align-items: center;
-
     margin-bottom: 25px;
 }
 
-
 header h1 {
-
     color: #1565c0;
 }
 
-
 header p {
-
     margin-top: 5px;
-
     color: #666;
 }
 
+/* ======================================================
+   LOGOUT
+====================================================== */
 
 .logout {
-
     width: auto;
-
     padding: 10px 22px;
-
     margin: 0;
-
     background: #dc3545;
 }
 
-
 .logout:hover {
-
     background: #b02a37;
 }
 
+/* ======================================================
+   WELCOME
+====================================================== */
 
 .welcome {
-
     background: #1976d2;
-
     color: white;
-
     padding: 25px;
-
     border-radius: 15px;
-
     margin-bottom: 25px;
 }
 
+.welcome h2 {
+    margin-bottom: 5px;
+}
 
 .welcome p {
-
     margin-top: 8px;
 }
 
-
-/* =========================
+/* ======================================================
    DASHBOARD CARDS
-========================= */
+====================================================== */
 
 .dashboard-grid {
-
     display: grid;
-
-    grid-template-columns:
-        repeat(4, 1fr);
-
+    grid-template-columns: repeat(4, 1fr);
     gap: 20px;
 }
 
-
 .dashboard-card {
-
     background: white;
-
     padding: 25px;
-
     border-radius: 15px;
-
-    box-shadow:
-        0 8px 25px
-        rgba(0, 0, 0, 0.08);
-
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
     text-align: center;
 }
 
-
 .card-icon {
-
     font-size: 40px;
-
     margin-bottom: 15px;
 }
 
-
 .dashboard-card h3 {
-
     margin-bottom: 10px;
 }
 
-
 .dashboard-card p {
-
     color: #666;
-
     line-height: 1.5;
-
     min-height: 48px;
 }
 
-
 .dashboard-card button {
-
     font-size: 14px;
-
     padding: 11px;
 }
 
-
-/* =========================
+/* ======================================================
    QUEUE
-========================= */
+====================================================== */
 
 .queue-card {
-
     background: white;
-
     margin-top: 25px;
-
     padding: 30px;
-
     border-radius: 15px;
-
-    box-shadow:
-        0 8px 25px
-        rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
 }
 
-
 .queue-card h2 {
-
     margin-bottom: 20px;
 }
 
-
 .queue-stats {
-
     display: grid;
-
-    grid-template-columns:
-        repeat(3, 1fr);
-
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
 }
 
-
 .queue-stats div {
-
     background: #f5f9ff;
-
     padding: 20px;
-
     border-radius: 10px;
-
     text-align: center;
 }
 
-
 .queue-stats span {
-
     display: block;
-
     color: #666;
-
     margin-bottom: 8px;
 }
 
-
 .queue-stats strong {
-
     font-size: 32px;
-
     color: #1976d2;
 }
 
+/* ======================================================
+   CALL NEXT BUTTON
+====================================================== */
 
 .next-button {
-
     background: #28a745;
-
     max-width: 300px;
-
     display: block;
-
     margin: 25px auto 0;
 }
 
-
 .next-button:hover {
-
     background: #218838;
 }
 
-
 .next-message {
-
     text-align: center;
-
     margin-top: 15px;
-
     font-weight: bold;
 }
 
-
-/* =========================
-   MOBILE
-========================= */
-
-@media (max-width: 800px) {
-
-    .dashboard-grid {
-
-        grid-template-columns:
-            repeat(2, 1fr);
-
-    }
-
-}
-
-
-@media (max-width: 550px) {
-
-    .dashboard {
-
-        padding: 15px;
-
-    }
-
-
-    header {
-
-        flex-direction: column;
-
-        align-items: flex-start;
-
-        gap: 15px;
-
-    }
-
-
-    .logout {
-
-        align-self: stretch;
-
-        width: 100%;
-
-    }
-
-
-    .dashboard-grid {
-
-        grid-template-columns: 1fr;
-
-    }
-
-
-    .queue-stats {
-
-        grid-template-columns: 1fr;
-
-    }
-
-}
-
-
-/* =========================
+/* ======================================================
    INNER PAGES
-========================= */
+====================================================== */
 
 .page-container {
-
     max-width: 1000px;
-
     margin: auto;
-
     padding: 25px;
 }
 
-
 .page-container header {
-
     display: flex;
-
     justify-content: space-between;
-
     align-items: center;
-
     margin-bottom: 25px;
 }
 
+/* ======================================================
+   BACK BUTTON
+====================================================== */
 
 .back-button {
-
     width: auto;
-
-    margin: 0;
-
+    margin: 25px 0 0;
     padding: 10px 20px;
-
     background: #1976d2;
 }
 
+.back-button:hover {
+    background: #125aa0;
+}
 
-/* =========================
-   FORM CARD
-========================= */
+/* ======================================================
+   LIST CARD
+====================================================== */
 
-.form-card {
-
+.list-card {
     background: white;
-
     padding: 30px;
-
     border-radius: 15px;
-
-    box-shadow:
-        0 8px 25px
-        rgba(0, 0, 0, 0.08);
-
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
     margin-bottom: 25px;
 }
 
-
-.form-card h2 {
-
+.list-card h2 {
     margin-bottom: 20px;
-}
-
-
-/* =========================
-   LIST CARD
-========================= */
-
-.list-card {
-
-    background: white;
-
-    padding: 30px;
-
-    border-radius: 15px;
-
-    box-shadow:
-        0 8px 25px
-        rgba(0, 0, 0, 0.08);
-}
-
-
-/* =========================
-   DOCTOR ITEM
-========================= */
-
-.doctor-item {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 20px;
-
-    padding: 15px;
-
-    margin-top: 12px;
-
-    background: #f5f9ff;
-
-    border-radius: 10px;
-}
-
-
-.doctor-item strong {
-
-    flex: 1;
-
     color: #1565c0;
 }
 
+/* ======================================================
+   DOCTOR ITEM
+====================================================== */
+
+.doctor-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 18px;
+    margin-top: 12px;
+    margin-bottom: 15px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.doctor-info {
+    flex: 1;
+}
+
+.doctor-info h3 {
+    margin: 0 0 8px 0;
+    color: #1565c0;
+}
+
+.doctor-info p {
+    margin: 5px 0;
+    color: #555;
+}
+
+.doctor-item strong {
+    color: #1565c0;
+}
 
 .doctor-item span {
-
     color: #666;
 }
 
+.remove-doctor {
+    width: auto;
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    margin: 0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.remove-doctor:hover {
+    background: #b91c1c;
+}
 
 .doctor-item button {
-
     width: auto;
-
     margin: 0;
-
     padding: 8px 15px;
-
     background: #dc3545;
 }
 
+.doctor-item button:hover {
+    background: #b02a37;
+}
+
+/* ======================================================
+   PATIENT ITEM
+====================================================== */
+
+.patient-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 18px;
+    margin-top: 12px;
+    background: #f5f9ff;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.patient-item strong {
+    color: #1565c0;
+    font-size: 18px;
+}
+
+.patient-item span {
+    color: #666;
+}
+
+/* ======================================================
+   TABLE
+====================================================== */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+table th {
+    background: #f5f9ff;
+    color: #1565c0;
+    font-weight: bold;
+    padding: 14px;
+    text-align: left;
+    border-bottom: 2px solid #dbeafe;
+}
+
+table td {
+    padding: 14px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #374151;
+}
+
+table tr:hover {
+    background: #f9fbff;
+}
+
+/* ======================================================
+   TABLE BUTTON
+====================================================== */
+
+table button {
+    width: auto;
+    margin: 0;
+    padding: 8px 14px;
+    font-size: 14px;
+}
+
+/* ======================================================
+   QUEUE SELECT AREA
+====================================================== */
+
+.queue-selector {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    margin-bottom: 25px;
+}
+
+.queue-selector h2 {
+    margin-bottom: 15px;
+    color: #1565c0;
+}
+
+/* ======================================================
+   STATUS
+====================================================== */
+
+.status-waiting {
+    color: #d97706;
+    font-weight: bold;
+}
+
+.status-serving {
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.status-completed {
+    color: #2563eb;
+    font-weight: bold;
+}
+
+/* ======================================================
+   EMPTY MESSAGE
+====================================================== */
+
+.empty-message {
+    text-align: center;
+    padding: 25px;
+    color: #666;
+}
+
+/* ======================================================
+   MAP
+====================================================== */
+
+#map {
+    width: 100%;
+    min-height: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+/* ======================================================
+   PROFILE INFORMATION
+====================================================== */
+
+.profile-info {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.profile-info .full-width {
+    grid-column: 1 / -1;
+}
+
+/* ======================================================
+   PATIENT TOKEN QUEUE
+====================================================== */
+
+.token-queue-card {
+    width: 100%;
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 30px;
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 12px 35px rgba(37, 99, 235, 0.10);
+}
+
+.token-queue-card h2 {
+    margin: 0 0 25px 0;
+    color: #172554;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* ======================================================
+   FORM GROUP
+====================================================== */
+
+.token-queue-card .form-group {
+    margin-bottom: 20px;
+}
+
+.token-queue-card label {
+    display: block;
+    margin-bottom: 8px;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* ======================================================
+   DEPARTMENT INPUT
+====================================================== */
+
+.token-queue-card input[type="text"] {
+    width: 100%;
+    height: 52px;
+    padding: 0 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 11px;
+    background: #f8fafc;
+    color: #1e293b;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.25s ease;
+}
+
+.token-queue-card input[type="text"]:hover {
+    border-color: #93c5fd;
+}
+
+.token-queue-card input[type="text"]:focus {
+    border-color: #6366f1;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.10);
+}
+
+.token-queue-card input[type="text"]::placeholder {
+    color: #94a3b8;
+}
+
+/* ======================================================
+   VIEW QUEUE BUTTON
+====================================================== */
+
+.queue-button {
+    width: 100%;
+    height: 52px;
+    border: none;
+    border-radius: 11px;
+    background: linear-gradient(
+        135deg,
+        #2563eb,
+        #7c3aed
+    );
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.queue-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(79, 70, 229, 0.25);
+}
+
+.queue-button:active {
+    transform: translateY(0);
+}
+
+/* ======================================================
+   PATIENT QUEUE RESULTS
+====================================================== */
+
+.patient-queue {
+    margin-top: 25px;
+}
+
+.queue-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    transition: 0.2s;
+}
+
+.queue-item:hover {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+/* ======================================================
+   TOKEN NUMBER
+====================================================== */
+
+.queue-token {
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(
+        135deg,
+        #2563eb,
+        #7c3aed
+    );
+    color: white;
+    font-weight: bold;
+    font-size: 17px;
+}
+
+/* ======================================================
+   PATIENT INFORMATION
+====================================================== */
+
+.queue-patient-info {
+    flex: 1;
+    margin-left: 15px;
+}
+
+.queue-patient-info strong {
+    display: block;
+    color: #1e293b;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.queue-patient-info span {
+    color: #64748b;
+    font-size: 13px;
+}
+
+/* ======================================================
+   QUEUE STATUS
+====================================================== */
+
+.queue-status {
+    padding: 7px 12px;
+    border-radius: 20px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* ======================================================
+   MOBILE - DASHBOARD
+====================================================== */
+
+@media (max-width: 800px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ======================================================
+   MOBILE - GENERAL
+====================================================== */
 
 @media (max-width: 650px) {
-
     .page-container {
-
         padding: 15px;
-
     }
-
 
     .page-container header {
-
         flex-direction: column;
-
         align-items: flex-start;
-
         gap: 15px;
-
     }
-
-
-    .back-button {
-
-        width: 100%;
-
-    }
-
 
     .doctor-item {
-
         flex-direction: column;
-
         align-items: flex-start;
-
     }
 
+    .doctor-item strong {
+        width: 100%;
+    }
+
+    .doctor-item button,
+    .remove-doctor {
+        width: 100%;
+    }
+
+    .profile-info {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-info .full-width {
+        grid-column: auto;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+/* ======================================================
+   MOBILE - SMALL SCREEN
+====================================================== */
+
+@media (max-width: 550px) {
+    .dashboard {
+        padding: 15px;
+    }
+
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .logout {
+        align-self: stretch;
+        width: 100%;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .queue-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .queue-card {
+        padding: 20px;
+    }
+
+    .form-card {
+        padding: 20px;
+    }
+
+    .list-card {
+        padding: 20px;
+    }
+
+    .welcome {
+        padding: 20px;
+    }
+
+    .auth-container {
+        margin: 20px auto;
+        padding: 15px;
+    }
+
+    .google-login-container {
+        overflow-x: auto;
+    }
+
+    .token-queue-card {
+        padding: 22px;
+        margin: 20px auto;
+    }
+
+    .token-queue-card h2 {
+        font-size: 21px;
+    }
+
+    .queue-item {
+        padding: 12px;
+    }
+
+    .queue-patient-info {
+        margin-left: 10px;
+    }
+
+    .queue-status {
+        padding: 6px 9px;
+        font-size: 11px;
+    }
+}
+
+/* ======================================================
+   VERY SMALL MOBILE
+====================================================== */
+
+@media (max-width: 400px) {
+    .auth-container {
+        padding: 10px;
+    }
+
+    .form-card {
+        padding: 18px;
+    }
+
+    .dashboard {
+        padding: 10px;
+    }
+
+    .page-container {
+        padding: 10px;
+    }
+
+    button {
+        font-size: 14px;
+    }
+
+    .queue-item {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .queue-patient-info {
+        min-width: 150px;
+    }
 }

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Payments - HospitalCare</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+<body>
+
+    <div class="page-container">
+
+
+        <header>
+
+            <div>
+
+                <h1>
+                    💳 Payments
+                </h1>
+
+                <p>
+                    HospitalCare payment records
+                </p>
+
+            </div>
+
+
+            <button
+                class="logout"
+                onclick="adminLogout()"
+            >
+                Logout
+            </button>
+
+        </header>
+
+
+        <div class="table-card">
+
+            <div class="page-heading">
+
+                <h2>
+                    Payment Records
+                </h2>
+
+                <button
+                    onclick="loadPayments()"
+                >
+                    🔄 Refresh
+                </button>
+
+            </div>
+
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                ID
+                            </th>
+
+                            <th>
+                                Patient
+                            </th>
+
+                            <th>
+                                Hospital
+                            </th>
+
+                            <th>
+                                Department
+                            </th>
+
+                            <th>
+                                Doctor
+                            </th>
+
+                            <th>
+                                Token Fee
+                            </th>
+
+                            <th>
+                                Platform Fee
+                            </th>
+
+                            <th>
+                                Total
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="paymentTableBody">
+
+                        <tr>
+
+                            <td
+                                colspan="9"
+                                class="loading"
+                            >
+                                Loading payments...
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="back-button"
+            onclick="goDashboard()"
+        >
+            ← Back to Dashboard
+        </button>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

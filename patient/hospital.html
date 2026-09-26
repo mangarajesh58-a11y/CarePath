@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Hospital Details - QueueLess</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <!-- HEADER -->
+    <header>
+
+        <div>
+            <h1>🏥 QueueLess</h1>
+
+            <p>
+                Hospital Details
+            </p>
+        </div>
+
+        <button
+            class="logout"
+            onclick="logout()"
+        >
+            Logout
+        </button>
+
+    </header>
+
+
+    <!-- HOSPITAL DETAILS -->
+    <div class="booking-card">
+
+        <h2 id="hospitalName">
+            Loading hospital...
+        </h2>
+
+        <p>
+            📍 <strong>City:</strong>
+            <span id="hospitalCity">
+                Loading...
+            </span>
+        </p>
+
+        <p>
+            🏠 <strong>Address:</strong>
+            <span id="hospitalAddress">
+                Loading...
+            </span>
+        </p>
+
+        <p>
+            📝 <strong>Description:</strong>
+        </p>
+
+        <p id="hospitalDescription">
+            Loading...
+        </p>
+
+
+        <!-- DOCTORS -->
+        <h3>
+            Available Doctors
+        </h3>
+
+        <div id="doctorList">
+            Loading doctors...
+        </div>
+
+
+        <!-- TAKE TOKEN -->
+        <button
+            id="takeTokenBtn"
+            onclick="takeToken()"
+        >
+            🎫 Take Token
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const API = "http://127.0.0.1:8000";
+
+
+// ==========================================
+// LOAD HOSPITAL
+// ==========================================
+
+async function loadHospital() {
+
+    const hospitalId =
+        localStorage.getItem(
+            "selectedHospitalId"
+        );
+
+    if (!hospitalId) {
+
+        alert(
+            "Hospital not selected."
+        );
+
+        window.location.href =
+            "dashboard.html";
+
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}`
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Hospital not found"
+            );
+
+        }
+
+
+        const hospital =
+            await response.json();
+
+
+        document.getElementById(
+            "hospitalName"
+        ).textContent =
+            hospital.name;
+
+
+        document.getElementById(
+            "hospitalCity"
+        ).textContent =
+            hospital.city || "Not available";
+
+
+        document.getElementById(
+            "hospitalAddress"
+        ).textContent =
+            hospital.address || "Not available";
+
+
+        document.getElementById(
+            "hospitalDescription"
+        ).textContent =
+            hospital.description ||
+            "No description available.";
+
+
+        localStorage.setItem(
+            "selectedHospital",
+            hospital.name
+        );
+
+
+        localStorage.setItem(
+            "selectedHospitalCity",
+            hospital.city || ""
+        );
+
+
+        localStorage.setItem(
+            "selectedHospitalAddress",
+            hospital.address || ""
+        );
+
+
+        await loadDoctors(hospitalId);
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Hospital loading error:",
+            error
+        );
+
+
+        document.getElementById(
+            "hospitalName"
+        ).textContent =
+            "Unable to load hospital";
+
+    }
+
+}
+
+
+// ==========================================
+// LOAD DOCTORS
+// ==========================================
+
+async function loadDoctors(
+    hospitalId
+) {
+
+    const doctorList =
+        document.getElementById(
+            "doctorList"
+        );
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}/doctors`
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Doctors not found"
+            );
+
+        }
+
+
+        const doctors =
+            await response.json();
+
+
+        doctorList.innerHTML = "";
+
+
+        if (
+            !doctors ||
+            doctors.length === 0
+        ) {
+
+            doctorList.innerHTML =
+                "<p>No doctors available.</p>";
+
+            return;
+        }
+
+
+        doctors.forEach(
+            function (doctor) {
+
+                const doctorCard =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                doctorCard.style.padding =
+                    "15px";
+
+
+                doctorCard.style.marginBottom =
+                    "10px";
+
+
+                doctorCard.style.border =
+                    "1px solid #ddd";
+
+
+                doctorCard.style.borderRadius =
+                    "10px";
+
+
+                doctorCard.innerHTML = `
+
+                    <strong>
+                        👨‍⚕️ ${escapeHTML(
+                            doctor.name
+                        )}
+                    </strong>
+
+                    <p>
+                        Department:
+                        ${escapeHTML(
+                            doctor.department
+                        )}
+                    </p>
+
+                    <p>
+                        Experience:
+                        ${escapeHTML(
+                            doctor.experience
+                        )}
+                        years
+                    </p>
+
+                `;
+
+
+                doctorCard.onclick =
+                    function () {
+
+                        selectDoctor(
+                            doctor
+                        );
+
+                    };
+
+
+                doctorList.appendChild(
+                    doctorCard
+                );
+
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Doctor loading error:",
+            error
+        );
+
+
+        doctorList.innerHTML =
+            "<p>Unable to load doctors.</p>";
+
+    }
+
+}
+
+
+// ==========================================
+// SELECT DOCTOR
+// ==========================================
+
+function selectDoctor(
+    doctor
+) {
+
+    localStorage.setItem(
+        "selectedDoctorId",
+        doctor.id
+    );
+
+
+    localStorage.setItem(
+        "selectedDoctor",
+        doctor.name
+    );
+
+
+    localStorage.setItem(
+        "selectedDepartment",
+        doctor.department
+    );
+
+
+    alert(
+        `Selected ${doctor.name}`
+    );
+
+}
+
+
+// ==========================================
+// TAKE TOKEN
+// ==========================================
+
+function takeToken() {
+
+    const hospital =
+        localStorage.getItem(
+            "selectedHospital"
+        );
+
+
+    const doctor =
+        localStorage.getItem(
+            "selectedDoctor"
+        );
+
+
+    const department =
+        localStorage.getItem(
+            "selectedDepartment"
+        );
+
+
+    if (!hospital) {
+
+        alert(
+            "Please select a hospital."
+        );
+
+        return;
+    }
+
+
+    if (!department) {
+
+        alert(
+            "Please select a department."
+        );
+
+        return;
+    }
+
+
+    if (!doctor) {
+
+        alert(
+            "Please select a doctor."
+        );
+
+        return;
+    }
+
+
+    window.location.href =
+        "dashboard.html";
+
+}
+
+
+// ==========================================
+// LOGOUT
+// ==========================================
+
+function logout() {
+
+    localStorage.clear();
+
+    window.location.href =
+        "index.html";
+
+}
+
+
+// ==========================================
+// SECURITY
+// ==========================================
+
+function escapeHTML(
+    value
+) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return "";
+
+    }
+
+
+    return String(value)
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+// ==========================================
+// START
+// ==========================================
+
+loadHospital();
+
+</script>
+
+</body>
+
+</html>

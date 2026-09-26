@@ -10,178 +10,253 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Patient Dashboard</title>
+    <title>HospitalCare - Patient Dashboard</title>
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+    <link rel="stylesheet" href="./style.css">
 
 </head>
 
+
 <body>
 
-<div class="dashboard">
 
-    <header>
+    <div class="dashboard-container">
 
-        <div>
 
-            <h1>🏥 HospitalCare</h1>
+        <!-- =========================================
+             HEADER
+        ========================================== -->
+
+        <header class="dashboard-header">
+
+            <div>
+
+                <h1>
+                    🏥 HospitalCare
+                </h1>
+
+                <p>
+
+                    Welcome,
+
+                    <span id="patientName">
+                        Patient
+                    </span>
+
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="logoutButton"
+                class="logout-button"
+            >
+
+                Logout
+
+            </button>
+
+        </header>
+
+
+
+        <!-- =========================================
+             MAIN CONTENT
+        ========================================== -->
+
+        <main class="dashboard-content">
+
+
+            <h2>
+                Book Hospital Token
+            </h2>
+
 
             <p>
-                Book your hospital token
+                Select a hospital, department and doctor.
             </p>
 
-        </div>
 
 
-        <button
-            class="logout"
-            onclick="logout()"
-        >
-            Logout
-        </button>
+            <!-- =====================================
+                 HOSPITAL
+            ====================================== -->
 
-    </header>
+            <label for="hospital">
 
-
-    <div class="welcome">
-
-        <h2>
-            Welcome, <span id="patientName">
-                Patient
-            </span>
-        </h2>
-
-        <p>
-            Select a hospital and doctor
-            to get your token.
-        </p>
-
-    </div>
-
-
-    <div class="booking-card">
-
-        <h2>
-            Book Hospital Token
-        </h2>
-
-
-        <label>
-            Select Hospital
-        </label>
-
-        <select id="hospital">
-
-            <option value="">
                 Select Hospital
-            </option>
 
-            <option>
-                City Care Hospital
-            </option>
-
-            <option>
-                Life Hospital
-            </option>
-
-            <option>
-                ABC Medical Center
-            </option>
-
-        </select>
+            </label>
 
 
-        <label>
-            Select Department
-        </label>
+            <select
+                id="hospital"
+            >
 
-        <select id="department">
+                <option value="">
 
-            <option value="">
+                    Select Hospital
+
+                </option>
+
+            </select>
+
+
+
+            <!-- =====================================
+                 DEPARTMENT
+            ====================================== -->
+
+            <label for="department">
+
                 Select Department
-            </option>
 
-            <option>
-                General Medicine
-            </option>
-
-            <option>
-                Cardiology
-            </option>
-
-            <option>
-                Orthopedics
-            </option>
-
-            <option>
-                Pediatrics
-            </option>
-
-            <option>
-                Dermatology
-            </option>
-
-        </select>
+            </label>
 
 
-        <label>
-            Select Doctor
-        </label>
+            <select
+                id="department"
+                disabled
+            >
 
-        <select id="doctor">
+                <option value="">
 
-            <option value="">
+                    Select Department
+
+                </option>
+
+            </select>
+
+
+
+            <!-- =====================================
+                 DOCTOR
+            ====================================== -->
+
+            <label for="doctor">
+
                 Select Doctor
-            </option>
 
-            <option>
-                Dr. Kumar
-            </option>
-
-            <option>
-                Dr. Priya
-            </option>
-
-            <option>
-                Dr. Ravi
-            </option>
-
-            <option>
-                Dr. Anitha
-            </option>
-
-        </select>
+            </label>
 
 
-        <div class="fee-box">
+            <select
+                id="doctor"
+                disabled
+            >
 
-            <span>
-                QueueLess Platform Fee
-            </span>
+                <option value="">
 
-            <strong>
-                ₹10
-            </strong>
+                    Select Doctor
 
-        </div>
+                </option>
+
+            </select>
 
 
-        <button
-            class="book-button"
-            onclick="bookToken()"
-        >
-            Continue & Get Token
-        </button>
+
+            <!-- =====================================
+                 FEE
+            ====================================== -->
+
+            <div class="fee-box">
+
+
+                <p>
+
+                    Token Fee:
+
+                    <span id="tokenFee">
+                        ₹0
+                    </span>
+
+                </p>
+
+
+                <p>
+
+                    Platform Fee:
+
+                    <span id="platformFee">
+                        ₹10
+                    </span>
+
+                </p>
+
+
+                <hr>
+
+
+                <p>
+
+                    <strong>
+
+                        Total:
+
+                        <span id="totalAmount">
+                            ₹10
+                        </span>
+
+                    </strong>
+
+                </p>
+
+
+            </div>
+
+
+
+            <!-- =====================================
+                 MESSAGE
+            ====================================== -->
+
+            <div
+                id="message"
+                class="message"
+            >
+            </div>
+
+
+
+            <!-- =====================================
+                 PAYMENT BUTTON
+            ====================================== -->
+
+            <button
+                type="button"
+                id="continueBtn"
+                disabled
+            >
+
+                💳 Continue & Pay ₹10
+
+            </button>
+
+
+        </main>
+
 
     </div>
 
-</div>
 
 
-<script src="script.js"></script>
+    <!-- =========================================
+         RAZORPAY
+    ========================================== -->
+
+    <script
+        src="https://checkout.razorpay.com/v1/checkout.js">
+    </script>
+
+
+    <!-- =========================================
+         PATIENT JAVASCRIPT
+    ========================================== -->
+
+    <script src="./script.js"></script>
+
 
 </body>
 

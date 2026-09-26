@@ -1,103 +1,72 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <title>Manage Doctors - HospitalCare</title>
 
-    <title>Doctors</title>
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
-
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <div class="page-container">
 
+    <!-- HEADER -->
     <header>
-
         <div>
-
-            <h1>👨‍⚕️ Doctors</h1>
-
-            <p>
-                Manage Hospital Doctors
-            </p>
-
+            <h1>🏥 HospitalCare</h1>
+            <p>Doctor Management</p>
         </div>
 
-        <button
-            class="back-button"
-            onclick="goDashboard()"
-        >
-            ← Dashboard
+        <button class="logout" onclick="hospitalLogout()">
+            Logout
         </button>
-
     </header>
 
 
+    <!-- PAGE TITLE -->
+    <div class="welcome">
+
+        <h2>Manage Doctors</h2>
+
+        <p>
+            Add and manage doctors belonging to your hospital.
+        </p>
+
+    </div>
+
+
+    <!-- ADD DOCTOR -->
     <div class="form-card">
 
-        <h2>
-            Add Doctor
-        </h2>
+        <h2>➕ Add Doctor</h2>
 
-
-        <label>
+        <label for="doctorName">
             Doctor Name
         </label>
 
         <input
             type="text"
             id="doctorName"
-            placeholder="Enter doctor name"
+            placeholder="Example: Dr. Kumar"
         >
 
 
-        <label>
+        <label for="doctorDepartment">
             Department
         </label>
 
-        <select id="doctorDepartment">
-
-            <option value="">
-                Select Department
-            </option>
-
-            <option>
-                General Medicine
-            </option>
-
-            <option>
-                Cardiology
-            </option>
-
-            <option>
-                Orthopedics
-            </option>
-
-            <option>
-                Pediatrics
-            </option>
-
-            <option>
-                Dermatology
-            </option>
-
-        </select>
+        <input
+            type="text"
+            id="doctorDepartment"
+            placeholder="Example: Cardiology"
+        >
 
 
-        <label>
+        <label for="doctorExperience">
             Experience
         </label>
 
@@ -108,30 +77,36 @@
         >
 
 
-        <button
-            onclick="addDoctor()"
-        >
+        <button onclick="addDoctor()">
             Add Doctor
         </button>
 
     </div>
 
 
+    <!-- SEPARATE DOCTOR LIST -->
     <div class="list-card">
 
-        <h2>
-            Doctors List
-        </h2>
+        <h2>👨‍⚕️ Your Hospital Doctors</h2>
 
         <div id="doctorList">
 
             <p>
-                No doctors added yet.
+                Loading doctors...
             </p>
 
         </div>
 
     </div>
+
+
+    <!-- BACK -->
+    <button
+        class="back-button"
+        onclick="goDashboard()"
+    >
+        ← Back to Dashboard
+    </button>
 
 </div>
 
@@ -141,4 +116,3 @@
 </body>
 
 </html>
-```

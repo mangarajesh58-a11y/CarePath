@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Hospitals - HospitalCare</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+<body>
+
+<div class="page-container">
+
+    <!-- HEADER -->
+
+    <header>
+
+        <div>
+
+            <h1>
+                🏥 Hospitals
+            </h1>
+
+            <p>
+                Verify and manage registered hospitals
+            </p>
+
+        </div>
+
+        <button
+            class="logout"
+            onclick="adminLogout()"
+        >
+            Logout
+        </button>
+
+    </header>
+
+
+    <!-- HOSPITAL TABLE -->
+
+    <div class="table-card">
+
+        <div class="page-heading">
+
+            <div>
+
+                <h2>
+                    Hospital Management
+                </h2>
+
+                <p>
+                    Check license, verify and publish hospitals
+                </p>
+
+            </div>
+
+            <button
+                onclick="loadHospitals()"
+            >
+                🔄 Refresh
+            </button>
+
+        </div>
+
+
+        <div
+            id="message"
+            class="message"
+        ></div>
+
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            ID
+                        </th>
+
+                        <th>
+                            Hospital
+                        </th>
+
+                        <th>
+                            City
+                        </th>
+
+                        <th>
+                            License ID
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Published
+                        </th>
+
+                        <th>
+                            Doctors
+                        </th>
+
+                        <th>
+                            Actions
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="hospitalTableBody">
+
+                    <tr>
+
+                        <td
+                            colspan="8"
+                            class="loading"
+                        >
+                            Loading hospitals...
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- BACK BUTTON -->
+
+    <button
+        class="back-button"
+        onclick="goDashboard()"
+    >
+        ← Back to Dashboard
+    </button>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+
+</html>

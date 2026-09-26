@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Doctors - QueueLess</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-button {
+            background: white;
+            color: #2563eb;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 35px auto;
+            padding: 20px;
+        }
+
+        .title {
+            margin-bottom: 25px;
+        }
+
+        .title h2 {
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .title p {
+            color: #6b7280;
+        }
+
+        #doctorList {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(280px, 1fr));
+
+            gap: 20px;
+        }
+
+        .doctor-card {
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow:
+                0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .doctor-icon {
+            font-size: 45px;
+            margin-bottom: 15px;
+        }
+
+        .doctor-card h3 {
+            color: #1d4ed8;
+            margin-bottom: 15px;
+        }
+
+        .detail {
+            margin: 10px 0;
+            color: #4b5563;
+        }
+
+        .token-button {
+            width: 100%;
+            margin-top: 18px;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .token-button:hover {
+            background: #1d4ed8;
+        }
+
+        .empty {
+            background: white;
+            padding: 35px;
+            text-align: center;
+            border-radius: 12px;
+            color: #6b7280;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #6b7280;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+    <div>
+
+        <h1>👨‍⚕️ QueueLess</h1>
+
+        <p>Doctors</p>
+
+    </div>
+
+
+    <button
+        class="back-button"
+        onclick="goBack()">
+
+        ← Hospital
+
+    </button>
+
+</div>
+
+
+
+<div class="container">
+
+    <div class="title">
+
+        <h2>
+            Available Doctors
+        </h2>
+
+        <p>
+            Select a doctor to take a token.
+        </p>
+
+    </div>
+
+
+    <div id="doctorList">
+
+        <p class="loading">
+            Loading doctors...
+        </p>
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+const API =
+    "http://127.0.0.1:8000";
+
+
+const hospitalId =
+    localStorage.getItem("hospitalId");
+
+
+async function loadDoctors() {
+
+    const list =
+        document.getElementById(
+            "doctorList"
+        );
+
+
+    if (!hospitalId) {
+
+        list.innerHTML = `
+
+            <div class="error">
+
+                Hospital not selected.
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}/doctors`
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Could not load doctors"
+            );
+
+        }
+
+
+        const doctors =
+            await response.json();
+
+
+        if (
+            !doctors ||
+            doctors.length === 0
+        ) {
+
+            list.innerHTML = `
+
+                <div class="empty">
+
+                    <h3>
+                        No Doctors Available
+                    </h3>
+
+                    <br>
+
+                    <p>
+                        Doctors will appear
+                        after the hospital
+                        adds them.
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        list.innerHTML = "";
+
+
+        doctors.forEach(
+            doctor => {
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "doctor-card";
+
+
+                card.innerHTML = `
+
+                    <div class="doctor-icon">
+                        👨‍⚕️
+                    </div>
+
+                    <h3>
+                        ${doctor.name}
+                    </h3>
+
+                    <div class="detail">
+
+                        <strong>
+                            Department:
+                        </strong>
+
+                        ${doctor.department}
+
+                    </div>
+
+                    <div class="detail">
+
+                        <strong>
+                            Experience:
+                        </strong>
+
+                        ${doctor.experience}
+                        years
+
+                    </div>
+
+                    <button
+                        class="token-button"
+                        onclick="
+                            takeToken(
+                                '${doctor.name}',
+                                '${doctor.department}'
+                            )
+                        ">
+
+                        🎟️ Take Token
+
+                    </button>
+
+                `;
+
+
+                list.appendChild(card);
+
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        list.innerHTML = `
+
+            <div class="error">
+
+                ❌ Cannot load doctors.
+
+                <br><br>
+
+                ${error.message}
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+
+function takeToken(
+    doctor,
+    department
+) {
+
+    localStorage.setItem(
+        "selectedDoctor",
+        doctor
+    );
+
+    localStorage.setItem(
+        "selectedDepartment",
+        department
+    );
+
+
+    window.location.href =
+        "token.html";
+
+}
+
+
+
+function goBack() {
+
+    window.location.href =
+        "hospital.html";
+
+}
+
+
+
+loadDoctors();
+
+</script>
+
+
+</body>
+
+</html>

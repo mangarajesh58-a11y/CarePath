@@ -1,9 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-    <title>Admin Dashboard</title>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Admin Dashboard - HospitalCare</title>
 
     <link
         rel="stylesheet"
@@ -14,50 +21,283 @@
 
 <body>
 
-<div class="container">
+    <div class="dashboard">
 
-    <h1>Admin Dashboard</h1>
+        <!-- HEADER -->
 
-    <div class="cards">
+        <header>
 
-        <div class="card">
+            <div>
 
-            <h3>Total Tokens</h3>
+                <h1>
+                    🏥 HospitalCare
+                </h1>
 
-            <h2 id="tokens">
-                0
-            </h2>
+                <p>
+                    Admin Dashboard
+                </p>
 
-        </div>
+            </div>
 
 
-        <div class="card">
+            <button
+                class="logout"
+                onclick="adminLogout()"
+            >
+                Logout
+            </button>
 
-            <h3>Fee Per Token</h3>
+        </header>
+
+
+        <!-- WELCOME -->
+
+        <div class="welcome">
 
             <h2>
-                ₹10
+                Welcome, Admin
             </h2>
+
+            <p>
+                Monitor hospitals, payments,
+                tokens and platform revenue.
+            </p>
 
         </div>
 
 
-        <div class="card">
+        <!-- STATISTICS -->
 
-            <h3>Platform Revenue</h3>
+        <div class="stats-grid">
 
-            <h2 id="revenue">
-                ₹0
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    🏥
+                </div>
+
+                <div>
+
+                    <span>
+                        Hospitals
+                    </span>
+
+                    <strong id="hospitalCount">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    💳
+                </div>
+
+                <div>
+
+                    <span>
+                        Payments
+                    </span>
+
+                    <strong id="paymentCount">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    🎫
+                </div>
+
+                <div>
+
+                    <span>
+                        Tokens
+                    </span>
+
+                    <strong id="tokenCount">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    💰
+                </div>
+
+                <div>
+
+                    <span>
+                        Platform Revenue
+                    </span>
+
+                    <strong id="platformRevenue">
+                        ₹0
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- REVENUE -->
+
+        <div class="revenue-card">
+
+            <h2>
+                💰 Revenue Overview
             </h2>
+
+
+            <div class="revenue-grid">
+
+                <div>
+
+                    <span>
+                        Token Fee Revenue
+                    </span>
+
+                    <strong id="tokenRevenue">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Platform Revenue
+                    </span>
+
+                    <strong id="platformRevenue2">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Total Collected
+                    </span>
+
+                    <strong id="totalCollected">
+                        ₹0
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- MANAGEMENT -->
+
+        <div class="dashboard-grid">
+
+
+            <!-- HOSPITALS -->
+
+            <div class="dashboard-card">
+
+                <div class="card-icon">
+                    🏥
+                </div>
+
+                <h3>
+                    Hospitals
+                </h3>
+
+                <p>
+                    View registered hospitals
+                    and their token fees.
+                </p>
+
+                <button
+                    onclick="openHospitals()"
+                >
+                    View Hospitals
+                </button>
+
+            </div>
+
+
+            <!-- PAYMENTS -->
+
+            <div class="dashboard-card">
+
+                <div class="card-icon">
+                    💳
+                </div>
+
+                <h3>
+                    Payments
+                </h3>
+
+                <p>
+                    View all successful
+                    and pending payments.
+                </p>
+
+                <button
+                    onclick="openPayments()"
+                >
+                    View Payments
+                </button>
+
+            </div>
+
+
+            <!-- TOKENS -->
+
+            <div class="dashboard-card">
+
+                <div class="card-icon">
+                    🎫
+                </div>
+
+                <h3>
+                    Patient Tokens
+                </h3>
+
+                <p>
+                    Monitor all hospital
+                    tokens.
+                </p>
+
+                <button
+                    onclick="openTokens()"
+                >
+                    View Tokens
+                </button>
+
+            </div>
 
         </div>
 
     </div>
 
-</div>
 
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
 
 </body>
 
