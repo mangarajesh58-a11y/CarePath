@@ -7,3 +7,4 @@ python-multipart
 passlib[bcrypt]
 razorpay
 google-auth
+python-multipart

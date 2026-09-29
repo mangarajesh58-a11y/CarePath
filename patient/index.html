@@ -12,12 +12,17 @@
 
     <title>HospitalCare - Patient Login</title>
 
-    <!-- Google Identity Services -->
+
+    <!-- =====================================================
+         GOOGLE IDENTITY SERVICES
+    ====================================================== -->
+
     <script
         src="https://accounts.google.com/gsi/client"
         async
         defer>
     </script>
+
 
     <style>
 
@@ -65,7 +70,7 @@
 
 
         /* =====================================================
-           MAIN CONTAINER
+           MAIN LOGIN CONTAINER
         ===================================================== */
 
         .login-container {
@@ -76,7 +81,7 @@
 
             min-height: 650px;
 
-            background: white;
+            background: #ffffff;
 
             border-radius: 25px;
 
@@ -95,7 +100,7 @@
 
 
         /* =====================================================
-           LEFT SIDE
+           LEFT SECTION
         ===================================================== */
 
         .left-section {
@@ -125,6 +130,10 @@
         }
 
 
+        /* =====================================================
+           HOSPITAL ICON
+        ===================================================== */
+
         .hospital-icon {
 
             width: 110px;
@@ -134,7 +143,12 @@
             border-radius: 50%;
 
             background:
-                rgba(255, 255, 255, 0.15);
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.15
+                );
 
             display: flex;
 
@@ -148,10 +162,19 @@
 
             border:
                 2px solid
-                rgba(255,255,255,0.3);
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.3
+                );
 
         }
 
+
+        /* =====================================================
+           LEFT TITLE
+        ===================================================== */
 
         .left-section h1 {
 
@@ -190,6 +213,10 @@
         }
 
 
+        /* =====================================================
+           FEATURES
+        ===================================================== */
+
         .features {
 
             margin-top: 35px;
@@ -225,7 +252,12 @@
             height: 32px;
 
             background:
-                rgba(255,255,255,0.15);
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.15
+                );
 
             border-radius: 50%;
 
@@ -241,7 +273,7 @@
 
 
         /* =====================================================
-           RIGHT SIDE
+           RIGHT SECTION
         ===================================================== */
 
         .right-section {
@@ -256,6 +288,10 @@
 
         }
 
+
+        /* =====================================================
+           LOGIN HEADER
+        ===================================================== */
 
         .login-header {
 
@@ -280,214 +316,6 @@
             color: #6b7280;
 
             font-size: 15px;
-
-        }
-
-
-        /* =====================================================
-           FORM
-        ===================================================== */
-
-        .form-group {
-
-            margin-bottom: 20px;
-
-        }
-
-
-        .form-group label {
-
-            display: block;
-
-            margin-bottom: 8px;
-
-            color: #374151;
-
-            font-size: 14px;
-
-            font-weight: 600;
-
-        }
-
-
-        .form-group input {
-
-            width: 100%;
-
-            padding: 14px 16px;
-
-            border:
-                1px solid #d1d5db;
-
-            border-radius: 10px;
-
-            font-size: 15px;
-
-            outline: none;
-
-            transition: 0.2s;
-
-        }
-
-
-        .form-group input:focus {
-
-            border-color: #2563eb;
-
-            box-shadow:
-                0 0 0 3px
-                rgba(37, 99, 235, 0.12);
-
-        }
-
-
-        /* =====================================================
-           LOGIN BUTTON
-        ===================================================== */
-
-        .login-button {
-
-            width: 100%;
-
-            border: none;
-
-            padding: 15px;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #2563eb,
-                    #1d4ed8
-                );
-
-            color: white;
-
-            border-radius: 10px;
-
-            font-size: 16px;
-
-            font-weight: 600;
-
-            cursor: pointer;
-
-            transition: 0.2s;
-
-            margin-top: 5px;
-
-        }
-
-
-        .login-button:hover {
-
-            transform:
-                translateY(-1px);
-
-            box-shadow:
-                0 8px 20px
-                rgba(37, 99, 235, 0.25);
-
-        }
-
-
-        .login-button:disabled {
-
-            opacity: 0.6;
-
-            cursor: not-allowed;
-
-            transform: none;
-
-        }
-
-
-        /* =====================================================
-           DIVIDER
-        ===================================================== */
-
-        .divider {
-
-            display: flex;
-
-            align-items: center;
-
-            gap: 12px;
-
-            margin: 25px 0;
-
-            color: #9ca3af;
-
-            font-size: 13px;
-
-        }
-
-
-        .divider::before,
-        .divider::after {
-
-            content: "";
-
-            flex: 1;
-
-            height: 1px;
-
-            background: #e5e7eb;
-
-        }
-
-
-        /* =====================================================
-           GOOGLE LOGIN
-        ===================================================== */
-
-        .google-login {
-
-            display: flex;
-
-            justify-content: center;
-
-            width: 100%;
-
-        }
-
-
-        .google-login > div {
-
-            max-width: 100%;
-
-        }
-
-
-        /* =====================================================
-           REGISTER
-        ===================================================== */
-
-        .register-section {
-
-            text-align: center;
-
-            margin-top: 25px;
-
-            color: #6b7280;
-
-            font-size: 14px;
-
-        }
-
-
-        .register-section a {
-
-            color: #2563eb;
-
-            font-weight: 600;
-
-            text-decoration: none;
-
-        }
-
-
-        .register-section a:hover {
-
-            text-decoration: underline;
 
         }
 
@@ -541,6 +369,150 @@
         }
 
 
+        #message.info {
+
+            display: block;
+
+            background: #dbeafe;
+
+            color: #1e40af;
+
+            border:
+                1px solid #bfdbfe;
+
+        }
+
+
+        /* =====================================================
+           FORM
+        ===================================================== */
+
+        .form-group {
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .form-group label {
+
+            display: block;
+
+            margin-bottom: 8px;
+
+            color: #374151;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+        }
+
+
+        .form-group input {
+
+            width: 100%;
+
+            padding: 14px 16px;
+
+            border:
+                1px solid #d1d5db;
+
+            border-radius: 10px;
+
+            font-size: 15px;
+
+            outline: none;
+
+            transition:
+                border-color 0.2s,
+                box-shadow 0.2s;
+
+        }
+
+
+        .form-group input:focus {
+
+            border-color: #2563eb;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(
+                    37,
+                    99,
+                    235,
+                    0.12
+                );
+
+        }
+
+
+        /* =====================================================
+           LOGIN BUTTON
+        ===================================================== */
+
+        .login-button {
+
+            width: 100%;
+
+            border: none;
+
+            padding: 15px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #1d4ed8
+                );
+
+            color: white;
+
+            border-radius: 10px;
+
+            font-size: 16px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition:
+                transform 0.2s,
+                box-shadow 0.2s;
+
+            margin-top: 5px;
+
+        }
+
+
+        .login-button:hover {
+
+            transform:
+                translateY(-1px);
+
+            box-shadow:
+                0 8px 20px
+                rgba(
+                    37,
+                    99,
+                    235,
+                    0.25
+                );
+
+        }
+
+
+        .login-button:disabled {
+
+            opacity: 0.6;
+
+            cursor: not-allowed;
+
+            transform: none;
+
+        }
+
+
         /* =====================================================
            FORGOT PASSWORD
         ===================================================== */
@@ -572,6 +544,100 @@
 
 
         /* =====================================================
+           DIVIDER
+        ===================================================== */
+
+        .divider {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            margin: 25px 0;
+
+            color: #9ca3af;
+
+            font-size: 13px;
+
+        }
+
+
+        .divider::before,
+        .divider::after {
+
+            content: "";
+
+            flex: 1;
+
+            height: 1px;
+
+            background: #e5e7eb;
+
+        }
+
+
+        /* =====================================================
+           GOOGLE LOGIN
+        ===================================================== */
+
+        .google-login {
+
+            display: flex;
+
+            justify-content: center;
+
+            width: 100%;
+
+            min-height: 44px;
+
+        }
+
+
+        .google-login > div {
+
+            max-width: 100%;
+
+        }
+
+
+        /* =====================================================
+           REGISTER
+        ===================================================== */
+
+        .register-section {
+
+            text-align: center;
+
+            margin-top: 25px;
+
+            color: #6b7280;
+
+            font-size: 14px;
+
+        }
+
+
+        .register-section a {
+
+            color: #2563eb;
+
+            font-weight: 600;
+
+            text-decoration: none;
+
+        }
+
+
+        .register-section a:hover {
+
+            text-decoration: underline;
+
+        }
+
+
+        /* =====================================================
            MOBILE
         ===================================================== */
 
@@ -589,6 +655,8 @@
                 grid-template-columns: 1fr;
 
                 max-width: 500px;
+
+                min-height: auto;
 
             }
 
@@ -632,7 +700,18 @@
         }
 
 
+        /* =====================================================
+           SMALL MOBILE
+        ===================================================== */
+
         @media (max-width: 450px) {
+
+            body {
+
+                padding: 5px;
+
+            }
+
 
             .left-section {
 
@@ -655,6 +734,13 @@
             .left-section h1 {
 
                 font-size: 30px;
+
+            }
+
+
+            .left-section h2 {
+
+                font-size: 18px;
 
             }
 
@@ -695,17 +781,21 @@
 
         <section class="left-section">
 
+
             <div class="hospital-icon">
                 🏥
             </div>
+
 
             <h1>
                 HospitalCare
             </h1>
 
+
             <h2>
                 Your Health, Our Priority
             </h2>
+
 
             <p>
                 Book hospital tokens easily,
@@ -714,7 +804,10 @@
             </p>
 
 
+            <!-- FEATURES -->
+
             <div class="features">
+
 
                 <div class="feature">
 
@@ -767,7 +860,9 @@
 
                 </div>
 
+
             </div>
+
 
         </section>
 
@@ -778,6 +873,8 @@
 
         <section class="right-section">
 
+
+            <!-- LOGIN HEADER -->
 
             <div class="login-header">
 
@@ -797,50 +894,59 @@
             <div id="message"></div>
 
 
-            <!-- LOGIN FORM -->
+            <!-- =================================================
+                 LOGIN FORM
+            ================================================== -->
 
             <form
                 id="loginForm"
+                autocomplete="on"
             >
 
+
+                <!-- EMAIL / PHONE -->
 
                 <div class="form-group">
 
                     <label for="login">
-
                         Email or Phone Number
-
                     </label>
+
 
                     <input
                         type="text"
                         id="login"
                         name="login"
                         placeholder="Enter email or phone number"
+                        autocomplete="username"
                         required
                     >
 
                 </div>
 
 
+                <!-- PASSWORD -->
+
                 <div class="form-group">
 
                     <label for="password">
-
                         Password
-
                     </label>
+
 
                     <input
                         type="password"
                         id="password"
                         name="password"
                         placeholder="Enter your password"
+                        autocomplete="current-password"
                         required
                     >
 
                 </div>
 
+
+                <!-- FORGOT PASSWORD -->
 
                 <a
                     href="#"
@@ -851,37 +957,46 @@
                 </a>
 
 
+                <!-- LOGIN BUTTON -->
+
                 <button
                     type="submit"
                     class="login-button"
                     id="loginButton"
                 >
-
                     Login
-
                 </button>
 
 
             </form>
 
 
-            <!-- DIVIDER -->
+            <!-- =================================================
+                 DIVIDER
+            ================================================== -->
 
             <div class="divider">
-
                 OR
-
             </div>
 
 
-            <!-- GOOGLE LOGIN -->
+            <!-- =================================================
+                 GOOGLE LOGIN
+            ================================================== -->
 
             <div class="google-login">
+
+
+                <!--
+                    IMPORTANT:
+                    Replace YOUR_GOOGLE_CLIENT_ID with
+                    your Google Web Client ID.
+                -->
 
                 <div
                     id="g_id_onload"
 
-                    data-client_id="124194505435-5rpj0kjdj3fgkle4vhp18gg89qs4he3l.apps.googleusercontent.com"
+                    data-client_id="124194505435-nirpgumce4ek0f368mjnkm8daq5dof9p.apps.googleusercontent.com"
 
                     data-callback="handleGoogleLogin"
 
@@ -907,19 +1022,20 @@
                 >
                 </div>
 
+
             </div>
 
 
-            <!-- REGISTER -->
+            <!-- =================================================
+                 REGISTER
+            ================================================== -->
 
             <div class="register-section">
 
                 Don't have an account?
 
                 <a href="register.html">
-
                     Register Now
-
                 </a>
 
             </div>
@@ -937,13 +1053,160 @@
 
     <script>
 
+
+        // =====================================================
+        // API
+        // =====================================================
+
         const API =
             "http://127.0.0.1:8000";
 
 
-        // =================================================
-        // NORMAL LOGIN
-        // =================================================
+        // =====================================================
+        // MESSAGE FUNCTION
+        // =====================================================
+
+        function showMessage(
+            message,
+            type
+        ) {
+
+            const messageElement =
+                document.getElementById(
+                    "message"
+                );
+
+
+            messageElement.textContent =
+                message;
+
+
+            messageElement.className =
+                type;
+
+
+            messageElement.style.display =
+                "block";
+
+        }
+
+
+        // =====================================================
+        // SAVE PATIENT DATA
+        // =====================================================
+
+        function savePatientData(patient) {
+
+
+            if (!patient) {
+
+                throw new Error(
+                    "Patient information was not returned."
+                );
+
+            }
+
+
+            // -----------------------------------------------
+            // PATIENT ID
+            // -----------------------------------------------
+
+            if (
+                patient.id !== undefined &&
+                patient.id !== null
+            ) {
+
+                localStorage.setItem(
+                    "patientId",
+                    patient.id
+                );
+
+            }
+
+
+            // -----------------------------------------------
+            // PATIENT NAME
+            // -----------------------------------------------
+
+            if (patient.full_name) {
+
+                localStorage.setItem(
+                    "patientName",
+                    patient.full_name
+                );
+
+            }
+            else if (patient.name) {
+
+                localStorage.setItem(
+                    "patientName",
+                    patient.name
+                );
+
+            }
+
+
+            // -----------------------------------------------
+            // EMAIL
+            // -----------------------------------------------
+
+            if (patient.email) {
+
+                localStorage.setItem(
+                    "patientEmail",
+                    patient.email
+                );
+
+            }
+
+
+            // -----------------------------------------------
+            // PHONE
+            // -----------------------------------------------
+
+            if (patient.phone) {
+
+                localStorage.setItem(
+                    "patientPhone",
+                    patient.phone
+                );
+
+            }
+
+
+            // -----------------------------------------------
+            // GOOGLE ID
+            // -----------------------------------------------
+
+            if (patient.google_id) {
+
+                localStorage.setItem(
+                    "googleId",
+                    patient.google_id
+                );
+
+            }
+
+
+            // -----------------------------------------------
+            // GOOGLE PICTURE
+            // -----------------------------------------------
+
+            if (patient.picture) {
+
+                localStorage.setItem(
+                    "patientPicture",
+                    patient.picture
+                );
+
+            }
+
+        }
+
+
+        // =====================================================
+        // NORMAL PATIENT LOGIN
+        // =====================================================
 
         document
             .getElementById("loginForm")
@@ -951,8 +1214,13 @@
                 "submit",
                 async function(event) {
 
+
                     event.preventDefault();
 
+
+                    // -----------------------------------------
+                    // GET INPUT VALUES
+                    // -----------------------------------------
 
                     const login =
                         document
@@ -969,8 +1237,14 @@
 
                     const loginButton =
                         document
-                            .getElementById("loginButton");
+                            .getElementById(
+                                "loginButton"
+                            );
 
+
+                    // -----------------------------------------
+                    // VALIDATION
+                    // -----------------------------------------
 
                     if (!login || !password) {
 
@@ -984,13 +1258,23 @@
                     }
 
 
-                    loginButton.disabled = true;
+                    // -----------------------------------------
+                    // BUTTON LOADING
+                    // -----------------------------------------
+
+                    loginButton.disabled =
+                        true;
 
                     loginButton.textContent =
                         "Logging in...";
 
 
                     try {
+
+
+                        // -------------------------------------
+                        // API REQUEST
+                        // -------------------------------------
 
                         const response =
                             await fetch(
@@ -1009,7 +1293,7 @@
                                     body:
                                         JSON.stringify({
 
-                                            login:
+                                            email:
                                                 login,
 
                                             password:
@@ -1021,55 +1305,86 @@
                             );
 
 
+                        // -------------------------------------
+                        // RESPONSE
+                        // -------------------------------------
+
                         const data =
                             await response.json();
 
 
+                        console.log(
+                            "Patient login response:",
+                            data
+                        );
+
+
+                        // -------------------------------------
+                        // ERROR
+                        // -------------------------------------
+
                         if (!response.ok) {
+
+                         let errorMessage = "Login failed.";
+
+                         if (typeof data.detail === "string") {
+
+                                     errorMessage = data.detail;
+
+                              } 
+                               else if (data.detail) {
+
+                               errorMessage =
+                                  data.detail.message ||
+                              data.detail.error ||
+                                 JSON.stringify(data.detail);
+
+                                 }
+
+                                     throw new Error(errorMessage);
+
+                                    }
+
+                        // -------------------------------------
+                        // CHECK PATIENT
+                        // -------------------------------------
+
+                        if (!data.patient) {
 
                             throw new Error(
 
-                                data.detail ||
-                                "Login failed"
+                                "Patient information was not returned by the server."
 
                             );
 
                         }
 
 
-                        // ---------------------------------
-                        // SAVE PATIENT INFORMATION
-                        // ---------------------------------
+                        // -------------------------------------
+                        // SAVE PATIENT
+                        // -------------------------------------
 
-                        localStorage.setItem(
-                            "patientId",
-                            data.patient.id
+                        savePatientData(
+                            data.patient
                         );
 
 
-                        localStorage.setItem(
-                            "patientName",
-                            data.patient.full_name
-                        );
-
-
-                        localStorage.setItem(
-                            "patientEmail",
-                            data.patient.email
-                        );
-
-
-                        localStorage.setItem(
-                            "patientPhone",
-                            data.patient.phone
-                        );
-
+                        // -------------------------------------
+                        // SUCCESS
+                        // -------------------------------------
 
                         showMessage(
+
                             "Login successful. Opening dashboard...",
+
                             "success"
+
                         );
 
+
+                        // -------------------------------------
+                        // REDIRECT
+                        // -------------------------------------
 
                         setTimeout(
                             function() {
@@ -1086,24 +1401,31 @@
 
                     catch(error) {
 
+
                         console.error(
-                            "Login error:",
+                            "Patient login error:",
                             error
                         );
 
 
                         showMessage(
+
                             error.message ||
                             "Unable to login.",
+
                             "error"
+
                         );
 
                     }
 
+
                     finally {
+
 
                         loginButton.disabled =
                             false;
+
 
                         loginButton.textContent =
                             "Login";
@@ -1114,18 +1436,23 @@
             );
 
 
-        // =================================================
+        // =====================================================
         // GOOGLE LOGIN
-        // =================================================
+        // =====================================================
 
         async function handleGoogleLogin(
             response
         ) {
 
+
             console.log(
-                "Google credential received"
+                "Google credential received."
             );
 
+
+            // -----------------------------------------------
+            // CHECK GOOGLE RESPONSE
+            // -----------------------------------------------
 
             if (
                 !response ||
@@ -1133,8 +1460,11 @@
             ) {
 
                 showMessage(
+
                     "Google login did not return a credential.",
+
                     "error"
+
                 );
 
                 return;
@@ -1144,11 +1474,19 @@
 
             try {
 
+
                 showMessage(
+
                     "Signing in with Google...",
-                    "success"
+
+                    "info"
+
                 );
 
+
+                // -------------------------------------------
+                // SEND GOOGLE TOKEN TO FASTAPI
+                // -------------------------------------------
 
                 const result =
                     await fetch(
@@ -1179,6 +1517,10 @@
                     );
 
 
+                // -------------------------------------------
+                // READ RESPONSE
+                // -------------------------------------------
+
                 const data =
                     await result.json();
 
@@ -1189,55 +1531,115 @@
                 );
 
 
+                // -------------------------------------------
+                // ERROR
+                // -------------------------------------------
+
                 if (!result.ok) {
 
                     throw new Error(
 
                         data.detail ||
-                        "Google login failed"
+                        "Google login failed."
 
                     );
 
                 }
 
 
-                // ---------------------------------
-                // SAVE GOOGLE USER
-                // ---------------------------------
+                // -------------------------------------------
+                // FIND PATIENT DATA
+                // -------------------------------------------
 
-                localStorage.setItem(
-                    "patientName",
-                    data.user.name
-                );
+                let patient = null;
 
 
-                localStorage.setItem(
-                    "patientEmail",
-                    data.user.email
-                );
+                // Backend response:
+                // {
+                //     "patient": {...}
+                // }
+
+                if (data.patient) {
+
+                    patient =
+                        data.patient;
+
+                }
 
 
-                localStorage.setItem(
-                    "googleId",
-                    data.user.google_id
-                );
+                // Backend response:
+                // {
+                //     "user": {...}
+                // }
+
+                else if (data.user) {
+
+                    patient = {
+
+                        id:
+                            data.user.id,
+
+                        full_name:
+                            data.user.name ||
+                            data.user.full_name,
+
+                        email:
+                            data.user.email,
+
+                        phone:
+                            data.user.phone,
+
+                        google_id:
+                            data.user.google_id,
+
+                        picture:
+                            data.user.picture
+
+                    };
+
+                }
 
 
-                if (data.user.picture) {
+                // -------------------------------------------
+                // CHECK PATIENT DATA
+                // -------------------------------------------
 
-                    localStorage.setItem(
-                        "patientPicture",
-                        data.user.picture
+                if (!patient) {
+
+                    throw new Error(
+
+                        "Google login succeeded, but patient information was not returned."
+
                     );
 
                 }
 
+
+                // -------------------------------------------
+                // SAVE PATIENT
+                // -------------------------------------------
+
+                savePatientData(
+                    patient
+                );
+
+
+                // -------------------------------------------
+                // SUCCESS MESSAGE
+                // -------------------------------------------
 
                 showMessage(
+
                     "Google login successful. Opening dashboard...",
+
                     "success"
+
                 );
 
+
+                // -------------------------------------------
+                // REDIRECT
+                // -------------------------------------------
 
                 setTimeout(
                     function() {
@@ -1253,6 +1655,7 @@
             }
 
             catch(error) {
+
 
                 console.error(
                     "Google login error:",
@@ -1274,11 +1677,13 @@
         }
 
 
-        // =================================================
+        // =====================================================
         // FORGOT PASSWORD
-        // =================================================
+        // =====================================================
 
-        function forgotPassword(event) {
+        function forgotPassword(
+            event
+        ) {
 
             event.preventDefault();
 
@@ -1294,33 +1699,66 @@
         }
 
 
-        // =================================================
-        // MESSAGE FUNCTION
-        // =================================================
+        // =====================================================
+        // CHECK BACKEND
+        // =====================================================
 
-        function showMessage(
-            message,
-            type
-        ) {
+        async function checkBackend() {
 
-            const messageElement =
-                document.getElementById(
-                    "message"
+            try {
+
+                const response =
+                    await fetch(
+                        `${API}/health`
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Backend unavailable."
+                    );
+
+                }
+
+
+                console.log(
+                    "HospitalCare backend connected."
                 );
 
 
-            messageElement.textContent =
-                message;
+            }
 
+            catch(error) {
 
-            messageElement.className =
-                type;
+                console.warn(
+                    "Backend connection check failed:",
+                    error
+                );
 
-
-            messageElement.style.display =
-                "block";
+            }
 
         }
+
+
+        // =====================================================
+        // PAGE LOAD
+        // =====================================================
+
+        window.addEventListener(
+            "DOMContentLoaded",
+            function() {
+
+                console.log(
+                    "HospitalCare Patient Login loaded."
+                );
+
+
+                checkBackend();
+
+            }
+        );
+
 
     </script>
 

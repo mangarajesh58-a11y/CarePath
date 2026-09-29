@@ -22,30 +22,26 @@
 
 <body>
 
-
 <div class="page-container">
 
 
-    <!-- ==================================================
+    <!-- ==============================
          HEADER
-    =================================================== -->
+    =============================== -->
 
     <header>
 
         <div>
 
-            <h1>
-                🏥 Hospital Profile
-            </h1>
+            <h1>🏥 Hospital Profile</h1>
 
-            <p>
-                Manage Hospital Information
-            </p>
+            <p>Manage Hospital Information</p>
 
         </div>
 
 
         <button
+            type="button"
             class="logout"
             onclick="hospitalLogout()"
         >
@@ -56,18 +52,23 @@
 
 
 
-    <!-- ==================================================
+    <!-- ==============================
          HOSPITAL INFORMATION
-    =================================================== -->
+    =============================== -->
 
     <div class="form-card">
 
-        <h2>
-            Hospital Information
-        </h2>
+        <h2>Hospital Information</h2>
 
+        <div class="hospital-photo-upload-card" style="margin:18px 0 24px;padding:16px;border:1px solid #dbe4f0;border-radius:12px;background:#f8fbff;">
+            <h3 style="margin:0 0 10px;">Hospital Cover Photo</h3>
+            <p style="margin:0 0 12px;color:#64748b;font-size:14px;">Upload a clear photo of your hospital building. JPG, PNG, or WEBP; maximum 5 MB.</p>
+            <img id="hospitalPhotoPreview" alt="Hospital cover preview" style="display:none;width:100%;max-width:420px;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:12px;">
+            <input type="file" id="hospitalPhotoFile" accept="image/jpeg,image/png,image/webp" style="display:block;margin-bottom:12px;">
+            <button type="button" onclick="uploadHospitalPhoto()" style="margin-top:4px;">📷 Upload Hospital Photo</button>
+            <p id="hospitalPhotoMessage" role="status" style="margin-top:10px;font-size:14px;"></p>
+        </div>
 
-        <!-- HOSPITAL NAME -->
 
         <label for="profileName">
             Hospital Name
@@ -76,11 +77,9 @@
         <input
             type="text"
             id="profileName"
-            placeholder="Enter hospital name"
+            readonly
         >
 
-
-        <!-- EMAIL -->
 
         <label for="profileEmail">
             Hospital Email
@@ -89,11 +88,9 @@
         <input
             type="email"
             id="profileEmail"
-            placeholder="Enter hospital email"
+            readonly
         >
 
-
-        <!-- PHONE -->
 
         <label for="profilePhone">
             Phone Number
@@ -106,8 +103,6 @@
         >
 
 
-        <!-- CITY -->
-
         <label for="profileCity">
             City
         </label>
@@ -119,20 +114,16 @@
         >
 
 
-        <!-- ADDRESS -->
-
         <label for="profileAddress">
             Hospital Address
         </label>
 
         <textarea
             id="profileAddress"
-            placeholder="Enter complete hospital address"
             rows="4"
+            placeholder="Enter complete hospital address"
         ></textarea>
 
-
-        <!-- DESCRIPTION -->
 
         <label for="profileDescription">
             Hospital Description
@@ -140,12 +131,10 @@
 
         <textarea
             id="profileDescription"
-            placeholder="Describe your hospital"
             rows="4"
+            placeholder="Describe your hospital"
         ></textarea>
 
-
-        <!-- LICENSE -->
 
         <label for="profileLicense">
             Registration / License Number
@@ -154,13 +143,13 @@
         <input
             type="text"
             id="profileLicense"
-            placeholder="Enter registration number"
+            readonly
         >
 
 
-        <!-- ==================================================
+        <!-- ==============================
              TOKEN FEE
-        =================================================== -->
+        =============================== -->
 
         <label for="profileTokenFee">
             Token Fee
@@ -169,10 +158,11 @@
         <input
             type="number"
             id="profileTokenFee"
-            placeholder="Enter token fee"
             min="0"
             step="1"
+            placeholder="Example: 100"
         >
+
 
         <p
             style="
@@ -182,36 +172,147 @@
                 line-height:1.5;
             "
         >
-            Set the amount patients must pay for
-            a hospital token.
-            The QueueLess platform fee is added
-            separately.
+            This is the amount charged by the hospital
+            for one token. HospitalCare adds a fixed
+            ₹10 platform fee separately.
         </p>
 
 
-        <!-- SAVE -->
+        <div
+            style="
+                margin-top:10px;
+                padding:12px;
+                background:#eef6ff;
+                border-radius:8px;
+                color:#164e8a;
+            "
+        >
+            Example:
+            Hospital token fee ₹100 +
+            HospitalCare platform fee ₹10 =
+            <strong>Patient pays ₹110</strong>
+        </div>
+
+
+
+        <!-- ==============================
+             PAYMENT ACCOUNT
+        =============================== -->
+
+        <h2 style="margin-top:35px;">
+            💳 Hospital Payment Account
+        </h2>
+
+
+        <p
+            style="
+                color:#666;
+                font-size:14px;
+                line-height:1.5;
+                margin-bottom:20px;
+            "
+        >
+            Add the bank or UPI account used for
+            hospital settlement.
+        </p>
+
+
+        <label for="paymentAccountName">
+            Account Holder Name
+        </label>
+
+        <input
+            type="text"
+            id="paymentAccountName"
+            placeholder="Enter account holder name"
+        >
+
+
+        <label for="paymentAccountNumber">
+            Bank Account Number
+        </label>
+
+        <input
+            type="password"
+            id="paymentAccountNumber"
+            placeholder="Enter bank account number"
+            inputmode="numeric"
+            autocomplete="off"
+        >
+
+
+        <label for="paymentConfirmAccountNumber">
+            Confirm Bank Account Number
+        </label>
+
+        <input
+            type="password"
+            id="paymentConfirmAccountNumber"
+            placeholder="Re-enter bank account number"
+            inputmode="numeric"
+            autocomplete="off"
+        >
+
+
+        <label for="paymentIfsc">
+            IFSC Code
+        </label>
+
+        <input
+            type="text"
+            id="paymentIfsc"
+            placeholder="Example: SBIN0001234"
+            maxlength="11"
+            style="text-transform:uppercase;"
+        >
+
+
+        <label for="paymentUpi">
+            UPI ID
+        </label>
+
+        <input
+            type="text"
+            id="paymentUpi"
+            placeholder="Example: hospital@upi"
+            autocomplete="off"
+        >
+
+
+        <div
+            id="paymentAccountStatus"
+            style="
+                margin-top:15px;
+                padding:12px;
+                border-radius:8px;
+                background:#f5f5f5;
+                color:#555;
+                font-size:14px;
+            "
+        >
+            Payment account status:
+            <strong>NOT_ADDED</strong>
+        </div>
+
 
         <button
             type="button"
-            onclick="saveProfile()"
+            onclick="savePaymentAccount()"
+            style="
+                margin-top:15px;
+                width:100%;
+            "
         >
-
-            💾 Save Changes
-
+            💳 Save Payment Account
         </button>
 
 
-    </div>
 
+        <!-- ==============================
+             LOCATION
+        =============================== -->
 
-
-    <!-- ==================================================
-         HOSPITAL LOCATION
-    =================================================== -->
-
-    <div class="form-card">
-
-        <h2>
+        <h2 style="margin-top:35px;">
             📍 Hospital Location
         </h2>
 
@@ -219,135 +320,1194 @@
         <p
             style="
                 color:#666;
-                margin-bottom:15px;
+                font-size:14px;
+                line-height:1.5;
             "
         >
-            Select your hospital location.
+            Search your hospital location or click
+            directly on the map.
         </p>
 
 
-        <!-- MAP -->
+        <label for="hospitalLocation">
+            Search Hospital Location
+        </label>
+
+        <input
+            type="text"
+            id="hospitalLocation"
+            placeholder="Enter hospital address or location"
+        >
+
+
+        <button
+            type="button"
+            onclick="searchHospitalLocation()"
+            style="margin-top:10px;"
+        >
+            🔍 Search Location
+        </button>
+
 
         <div
             id="map"
             style="
                 width:100%;
-                height:350px;
+                height:400px;
+                margin-top:20px;
                 border-radius:12px;
-                background:#e5e7eb;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                color:#666;
+                overflow:hidden;
             "
+        ></div>
+
+
+        <label
+            for="hospitalLatitude"
+            style="margin-top:20px;"
+        >
+            Latitude
+        </label>
+
+        <input
+            type="text"
+            id="hospitalLatitude"
+            readonly
         >
 
-            Google Maps will appear here.
 
-        </div>
+        <label for="hospitalLongitude">
+            Longitude
+        </label>
+
+        <input
+            type="text"
+            id="hospitalLongitude"
+            readonly
+        >
 
 
-        <!-- LATITUDE / LONGITUDE -->
+        <button
+            type="button"
+            onclick="saveHospitalLocation()"
+            style="margin-top:15px;"
+        >
+            📍 Save Hospital Location
+        </button>
+
+
+
+        <!-- ==============================
+             MESSAGE
+        =============================== -->
 
         <div
+            id="message"
             style="
-                display:grid;
-                grid-template-columns:1fr 1fr;
-                gap:15px;
-                margin-top:20px;
+                display:none;
+                margin-top:15px;
+                padding:12px;
+                border-radius:8px;
             "
+        ></div>
+
+
+
+        <!-- ==============================
+             SAVE PROFILE
+        =============================== -->
+
+        <button
+            type="button"
+            onclick="saveProfile()"
+            style="margin-top:15px;"
         >
-
-
-            <!-- LATITUDE -->
-
-            <div>
-
-                <label>
-                    Latitude
-                </label>
-
-                <p
-                    id="latitude"
-                    style="
-                        padding:12px;
-                        background:#f5f9ff;
-                        border-radius:8px;
-                    "
-                >
-                    Not selected
-                </p>
-
-            </div>
-
-
-            <!-- LONGITUDE -->
-
-            <div>
-
-                <label>
-                    Longitude
-                </label>
-
-                <p
-                    id="longitude"
-                    style="
-                        padding:12px;
-                        background:#f5f9ff;
-                        border-radius:8px;
-                    "
-                >
-                    Not selected
-                </p>
-
-            </div>
-
-
-        </div>
-
+            💾 Save Changes
+        </button>
 
     </div>
 
 
 
-    <!-- ==================================================
-         BACK TO DASHBOARD
-    =================================================== -->
+    <!-- ==============================
+         BACK
+    =============================== -->
 
     <button
+        type="button"
         class="back-button"
         onclick="goDashboard()"
     >
-
         ← Back to Dashboard
-
     </button>
-
 
 </div>
 
 
 
-<!-- ==================================================
-     HOSPITAL JAVASCRIPT
-================================================== -->
+<script>
 
-<script src="script.js"></script>
-
+const API_URL =
+    "http://127.0.0.1:8000";
 
 
-<!-- ==================================================
-     GOOGLE MAPS
-     
-     Replace YOUR_GOOGLE_MAPS_API_KEY with your own
-     Google Maps API key.
-================================================== -->
+const hospitalId =
+    localStorage.getItem("hospital_id");
+
+
+
+/* ==================================
+   CHECK LOGIN
+================================== */
+
+if (!hospitalId) {
+
+    window.location.href =
+        "hospital-login.html";
+
+}
+
+
+
+/* ==================================
+   LOAD PROFILE
+================================== */
+
+async function loadProfile() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}`
+            );
+
+
+        const hospital =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                hospital.detail ||
+                "Failed to load hospital profile."
+            );
+
+        }
+
+
+
+        document.getElementById(
+            "profileName"
+        ).value =
+            hospital.name || "";
+
+
+
+        document.getElementById(
+            "profileEmail"
+        ).value =
+            hospital.email || "";
+
+
+
+        document.getElementById(
+            "profilePhone"
+        ).value =
+            hospital.phone || "";
+
+
+
+        document.getElementById(
+            "profileCity"
+        ).value =
+            hospital.city || "";
+
+
+
+        document.getElementById(
+            "profileAddress"
+        ).value =
+            hospital.address || "";
+
+
+
+        document.getElementById(
+            "profileDescription"
+        ).value =
+            hospital.description || "";
+
+
+
+        document.getElementById(
+            "profileLicense"
+        ).value =
+            hospital.license_id || "";
+
+
+
+        document.getElementById(
+            "profileTokenFee"
+        ).value =
+            hospital.token_fee ?? 0;
+
+        const photoPreview = document.getElementById("hospitalPhotoPreview");
+        if (photoPreview) {
+            if (hospital.image_url) {
+                photoPreview.src = hospital.image_url.startsWith("http")
+                    ? hospital.image_url
+                    : `${API_URL}${hospital.image_url}`;
+                photoPreview.style.display = "block";
+            } else {
+                photoPreview.removeAttribute("src");
+                photoPreview.style.display = "none";
+            }
+        }
+
+
+
+        document.getElementById(
+            "paymentAccountStatus"
+        ).innerHTML =
+            `
+            Payment account status:
+            <strong>
+                ${
+                    hospital.payment_account_status ||
+                    "NOT_ADDED"
+                }
+            </strong>
+            `;
+
+
+
+        /*
+         * Load saved latitude/longitude
+         */
+
+        if (
+            hospital.latitude !== null &&
+            hospital.latitude !== undefined
+        ) {
+
+            document.getElementById(
+                "hospitalLatitude"
+            ).value =
+                hospital.latitude;
+
+        }
+
+
+        if (
+            hospital.longitude !== null &&
+            hospital.longitude !== undefined
+        ) {
+
+            document.getElementById(
+                "hospitalLongitude"
+            ).value =
+                hospital.longitude;
+
+        }
+
+
+
+        /*
+         * If coordinates exist,
+         * place marker on map.
+         */
+
+        if (
+            hospital.latitude !== null &&
+            hospital.longitude !== null &&
+            map
+        ) {
+
+            setMapLocation(
+                hospital.latitude,
+                hospital.longitude
+            );
+
+        }
+
+
+    } catch (error) {
+
+        showMessage(
+            error.message,
+            false
+        );
+
+    }
+
+}
+
+
+
+/* ==================================
+   SAVE PROFILE
+================================== */
+
+async function saveProfile() {
+
+    const tokenFee =
+        Number(
+            document.getElementById(
+                "profileTokenFee"
+            ).value || 0
+        );
+
+
+    if (tokenFee < 0) {
+
+        showMessage(
+            "Token fee cannot be negative.",
+            false
+        );
+
+        return;
+
+    }
+
+
+    const data = {
+
+        phone:
+            document.getElementById(
+                "profilePhone"
+            ).value.trim(),
+
+
+        city:
+            document.getElementById(
+                "profileCity"
+            ).value.trim(),
+
+
+        address:
+            document.getElementById(
+                "profileAddress"
+            ).value.trim(),
+
+
+        description:
+            document.getElementById(
+                "profileDescription"
+            ).value.trim(),
+
+
+        token_fee:
+            tokenFee
+
+    };
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}`,
+                {
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(data)
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.detail ||
+                "Failed to save profile."
+            );
+
+        }
+
+
+        localStorage.setItem(
+            "hospital_token_fee",
+            String(tokenFee)
+        );
+
+
+        showMessage(
+            "Hospital profile updated successfully.",
+            true
+        );
+
+
+    } catch (error) {
+
+        showMessage(
+            error.message,
+            false
+        );
+
+    }
+
+}
+
+
+
+/* ==================================
+   SAVE PAYMENT ACCOUNT
+================================== */
+
+async function savePaymentAccount() {
+
+    const accountName =
+        document.getElementById(
+            "paymentAccountName"
+        ).value.trim();
+
+
+    const accountNumber =
+        document.getElementById(
+            "paymentAccountNumber"
+        ).value.trim();
+
+
+    const confirmAccountNumber =
+        document.getElementById(
+            "paymentConfirmAccountNumber"
+        ).value.trim();
+
+
+    const ifsc =
+        document.getElementById(
+            "paymentIfsc"
+        ).value.trim()
+        .toUpperCase();
+
+
+    const upi =
+        document.getElementById(
+            "paymentUpi"
+        ).value.trim();
+
+
+
+    if (!accountName) {
+
+        showMessage(
+            "Enter account holder name.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    if (
+        accountNumber !==
+        confirmAccountNumber
+    ) {
+
+        showMessage(
+            "Bank account numbers do not match.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    if (
+        !accountNumber &&
+        !upi
+    ) {
+
+        showMessage(
+            "Enter bank account details or UPI ID.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    if (
+        accountNumber &&
+        !ifsc
+    ) {
+
+        showMessage(
+            "Enter IFSC code for the bank account.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    const data = {
+
+        account_name:
+            accountName,
+
+        account_number:
+            accountNumber,
+
+        ifsc:
+            ifsc,
+
+        upi:
+            upi
+
+    };
+
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}/payment-account`,
+                {
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(data)
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.detail ||
+                "Failed to save payment account."
+            );
+
+        }
+
+
+
+        document.getElementById(
+            "paymentAccountStatus"
+        ).innerHTML =
+            `
+            Payment account status:
+            <strong>
+                ${
+                    result.payment_account_status ||
+                    "PENDING_VERIFICATION"
+                }
+            </strong>
+            `;
+
+
+
+        showMessage(
+            "Payment account submitted for verification.",
+            true
+        );
+
+
+    } catch (error) {
+
+        showMessage(
+            error.message,
+            false
+        );
+
+    }
+
+}
+
+
+
+/* ==================================
+   MESSAGE
+================================== */
+
+function showMessage(
+    message,
+    success
+) {
+
+    const element =
+        document.getElementById(
+            "message"
+        );
+
+
+    element.textContent =
+        message;
+
+
+    element.style.display =
+        "block";
+
+
+    element.style.background =
+        success
+            ? "#dcfce7"
+            : "#fee2e2";
+
+
+    element.style.color =
+        success
+            ? "#166534"
+            : "#991b1b";
+
+}
+
+
+
+/* ==================================
+   GOOGLE MAP
+================================== */
+
+let map = null;
+
+let marker = null;
+
+
+
+function initMap() {
+
+    const defaultLocation = {
+
+        lat: 17.3850,
+
+        lng: 78.4867
+
+    };
+
+
+    map =
+        new google.maps.Map(
+            document.getElementById(
+                "map"
+            ),
+            {
+                center:
+                    defaultLocation,
+
+                zoom:
+                    13
+            }
+        );
+
+
+
+    map.addListener(
+        "click",
+        function(event) {
+
+            setMapLocation(
+                event.latLng.lat(),
+                event.latLng.lng()
+            );
+
+        }
+    );
+
+
+
+    /*
+     * Load existing hospital
+     * coordinates after map is ready.
+     */
+
+    loadHospitalLocation();
+
+}
+
+
+
+/* ==================================
+   LOAD HOSPITAL LOCATION
+================================== */
+
+async function loadHospitalLocation() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}`
+            );
+
+
+        const hospital =
+            await response.json();
+
+
+        if (
+            response.ok &&
+            hospital.latitude !== null &&
+            hospital.latitude !== undefined &&
+            hospital.longitude !== null &&
+            hospital.longitude !== undefined
+        ) {
+
+            setMapLocation(
+                hospital.latitude,
+                hospital.longitude
+            );
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Location load error:",
+            error
+        );
+
+    }
+
+}
+
+
+
+/* ==================================
+   SET MAP LOCATION
+================================== */
+
+function setMapLocation(
+    latitude,
+    longitude
+) {
+
+    const location = {
+
+        lat:
+            Number(latitude),
+
+        lng:
+            Number(longitude)
+
+    };
+
+
+    document.getElementById(
+        "hospitalLatitude"
+    ).value =
+        location.lat;
+
+
+    document.getElementById(
+        "hospitalLongitude"
+    ).value =
+        location.lng;
+
+
+
+    if (marker) {
+
+        marker.setMap(null);
+
+    }
+
+
+
+    marker =
+        new google.maps.Marker({
+
+            position:
+                location,
+
+            map:
+                map
+
+        });
+
+
+
+    map.setCenter(
+        location
+    );
+
+
+    map.setZoom(
+        16
+    );
+
+}
+
+
+
+/* ==================================
+   SEARCH LOCATION
+================================== */
+
+function searchHospitalLocation() {
+
+    const address =
+        document.getElementById(
+            "hospitalLocation"
+        ).value.trim();
+
+
+    if (!address) {
+
+        showMessage(
+            "Enter hospital location.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    if (
+        typeof google === "undefined" ||
+        !google.maps
+    ) {
+
+        showMessage(
+            "Google Maps has not loaded yet.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    const geocoder =
+        new google.maps.Geocoder();
+
+
+
+    geocoder.geocode(
+        {
+            address:
+                address
+        },
+
+        function(
+            results,
+            status
+        ) {
+
+            if (
+                status === "OK" &&
+                results.length > 0
+            ) {
+
+                const location =
+                    results[0]
+                        .geometry
+                        .location;
+
+
+                setMapLocation(
+                    location.lat(),
+                    location.lng()
+                );
+
+
+                showMessage(
+                    "Location found. Click Save Hospital Location.",
+                    true
+                );
+
+
+            } else {
+
+                showMessage(
+                    "Location not found.",
+                    false
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+
+/* ==================================
+   SAVE LOCATION
+================================== */
+
+async function saveHospitalLocation() {
+
+    const latitude =
+        document.getElementById(
+            "hospitalLatitude"
+        ).value;
+
+
+    const longitude =
+        document.getElementById(
+            "hospitalLongitude"
+        ).value;
+
+
+
+    if (
+        !latitude ||
+        !longitude
+    ) {
+
+        showMessage(
+            "Please select a hospital location first.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    const data = {
+
+        latitude:
+            Number(latitude),
+
+        longitude:
+            Number(longitude)
+
+    };
+
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}`,
+                {
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(data)
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.detail ||
+                "Failed to save hospital location."
+            );
+
+        }
+
+
+
+        localStorage.setItem(
+            "hospital_latitude",
+            latitude
+        );
+
+
+        localStorage.setItem(
+            "hospital_longitude",
+            longitude
+        );
+
+
+
+        showMessage(
+            "Hospital location saved to the database.",
+            true
+        );
+
+
+    } catch (error) {
+
+        showMessage(
+            error.message,
+            false
+        );
+
+    }
+
+}
+
+
+
+/* ==================================
+   UPLOAD HOSPITAL COVER PHOTO
+================================== */
+async function uploadHospitalPhoto() {
+    const input = document.getElementById("hospitalPhotoFile");
+    const message = document.getElementById("hospitalPhotoMessage");
+    const preview = document.getElementById("hospitalPhotoPreview");
+    const file = input && input.files ? input.files[0] : null;
+
+    if (!hospitalId) {
+        if (message) message.textContent = "Please log in again.";
+        return;
+    }
+    if (!file) {
+        if (message) message.textContent = "Please choose a hospital photo first.";
+        return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        if (message) message.textContent = "Choose a JPG, PNG, or WEBP image.";
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        if (message) message.textContent = "Photo must be 5 MB or smaller.";
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("photo", file);
+    if (message) message.textContent = "Uploading photo...";
+
+    try {
+        const response = await fetch(`${API_URL}/hospitals/${hospitalId}/photo`, {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "Unable to upload hospital photo.");
+        }
+        const hospital = data.hospital || data;
+        if (preview && hospital.image_url) {
+            preview.src = hospital.image_url.startsWith("http")
+                ? hospital.image_url
+                : `${API_URL}${hospital.image_url}`;
+            preview.style.display = "block";
+        }
+        localStorage.setItem("hospital", JSON.stringify(hospital));
+        if (message) message.textContent = "Hospital photo uploaded successfully.";
+        if (input) input.value = "";
+    } catch (error) {
+        console.error("HOSPITAL PHOTO UPLOAD ERROR:", error);
+        if (message) message.textContent = error.message || "Unable to upload hospital photo.";
+    }
+}
+
+
+/* ==================================
+   LOGOUT
+================================== */
+
+function hospitalLogout() {
+
+    localStorage.removeItem(
+        "hospital_id"
+    );
+
+    localStorage.removeItem(
+        "hospital_name"
+    );
+
+    localStorage.removeItem(
+        "hospital_email"
+    );
+
+    localStorage.removeItem(
+        "hospital_token_fee"
+    );
+
+    localStorage.removeItem(
+        "hospital_approval_status"
+    );
+
+    localStorage.removeItem(
+        "hospital_is_published"
+    );
+
+    localStorage.removeItem(
+        "hospital_latitude"
+    );
+
+    localStorage.removeItem(
+        "hospital_longitude"
+    );
+
+
+    window.location.href =
+        "hospital-login.html";
+
+}
+
+
+
+/* ==================================
+   DASHBOARD
+================================== */
+
+function goDashboard() {
+
+    window.location.href =
+        "dashboard.html";
+
+}
+
+
+
+/* ==================================
+   LOAD PROFILE
+================================== */
+
+loadProfile();
+
+</script>
+
+
+
+<!--
+    IMPORTANT:
+
+    Replace YOUR_GOOGLE_MAPS_API_KEY
+    with your restricted Google Maps
+    API key.
+
+    Do NOT use a key that has already
+    been exposed publicly.
+-->
 
 <script
-    src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDbbDf9jwQ_GPVfkl5_xkia5jqFlWJCSM4&loading=async&callback=initMap"
     async
-    defer
-></script>
+    defer>
+</script>
 
 
 </body>

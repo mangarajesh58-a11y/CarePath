@@ -10,22 +10,686 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Hospital Dashboard</title>
+    <title>HospitalCare - Hospital Dashboard</title>
 
     <link
         rel="stylesheet"
         href="style.css"
     >
 
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background:
+                #f4f7fb;
+
+            color:
+                #172554;
+        }
+
+
+        .dashboard {
+
+            width: 100%;
+
+            max-width: 1200px;
+
+            margin: auto;
+
+            padding: 25px;
+        }
+
+
+        /* =================================================
+           HEADER
+        ================================================= */
+
+        header {
+
+            background:
+                white;
+
+            border-radius:
+                16px;
+
+            padding:
+                20px 25px;
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                center;
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.08
+                );
+
+            margin-bottom:
+                25px;
+        }
+
+
+        header h1 {
+
+            margin:
+                0 0 5px;
+
+            font-size:
+                28px;
+
+            color:
+                #1976d2;
+        }
+
+
+        header p {
+
+            margin:
+                0;
+
+            color:
+                #64748b;
+        }
+
+
+        .logout {
+
+            border:
+                none;
+
+            background:
+                #dc2626;
+
+            color:
+                white;
+
+            padding:
+                11px 20px;
+
+            border-radius:
+                8px;
+
+            font-size:
+                14px;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .logout:hover {
+
+            background:
+                #b91c1c;
+        }
+
+
+        /* =================================================
+           WELCOME
+        ================================================= */
+
+        .welcome {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1976d2,
+                    #7c3aed
+                );
+
+            color:
+                white;
+
+            padding:
+                30px;
+
+            border-radius:
+                16px;
+
+            margin-bottom:
+                25px;
+
+            box-shadow:
+                0 10px 30px
+                rgba(
+                    37,
+                    99,
+                    235,
+                    0.2
+                );
+        }
+
+
+        .welcome h2 {
+
+            margin:
+                0 0 8px;
+
+            font-size:
+                26px;
+        }
+
+
+        .welcome p {
+
+            margin:
+                0;
+
+            opacity:
+                0.9;
+        }
+
+
+        /* =================================================
+           DASHBOARD GRID
+        ================================================= */
+
+        .dashboard-grid {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap:
+                20px;
+
+            margin-bottom:
+                25px;
+        }
+
+
+        .dashboard-card {
+
+            background:
+                white;
+
+            padding:
+                25px;
+
+            border-radius:
+                16px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.07
+                );
+
+            transition:
+                0.2s;
+        }
+
+
+        .dashboard-card:hover {
+
+            transform:
+                translateY(-3px);
+        }
+
+
+        .card-icon {
+
+            font-size:
+                35px;
+
+            margin-bottom:
+                12px;
+        }
+
+
+        .dashboard-card h3 {
+
+            margin:
+                0 0 8px;
+
+            color:
+                #172554;
+        }
+
+
+        .dashboard-card p {
+
+            color:
+                #64748b;
+
+            min-height:
+                45px;
+
+            line-height:
+                1.5;
+        }
+
+
+        .dashboard-card button {
+
+            width:
+                100%;
+
+            padding:
+                11px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                #1976d2;
+
+            color:
+                white;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .dashboard-card button:hover {
+
+            background:
+                #125ca3;
+        }
+
+
+        /* =================================================
+           HOSPITAL INFORMATION
+        ================================================= */
+
+        .hospital-info {
+
+            background:
+                white;
+
+            padding:
+                25px;
+
+            border-radius:
+                16px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.07
+                );
+
+            margin-bottom:
+                25px;
+        }
+
+
+        .hospital-info h2 {
+
+            margin-top:
+                0;
+        }
+
+
+        .info-grid {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap:
+                15px;
+        }
+
+
+        .info-box {
+
+            background:
+                #f8fafc;
+
+            border:
+                1px solid
+                #e2e8f0;
+
+            border-radius:
+                10px;
+
+            padding:
+                15px;
+        }
+
+
+        .info-box span {
+
+            display:
+                block;
+
+            color:
+                #64748b;
+
+            font-size:
+                13px;
+
+            margin-bottom:
+                5px;
+        }
+
+
+        .info-box strong {
+
+            color:
+                #172554;
+
+            font-size:
+                17px;
+        }
+
+
+        /* =================================================
+           QUEUE
+        ================================================= */
+
+        .queue-card {
+
+            background:
+                white;
+
+            padding:
+                30px;
+
+            border-radius:
+                16px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.07
+                );
+        }
+
+
+        .queue-card h2 {
+
+            margin-top:
+                0;
+
+            margin-bottom:
+                25px;
+        }
+
+
+        .queue-stats {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap:
+                20px;
+
+            margin-bottom:
+                25px;
+        }
+
+
+        .queue-stats div {
+
+            background:
+                #f8fafc;
+
+            padding:
+                20px;
+
+            border-radius:
+                12px;
+
+            text-align:
+                center;
+
+            border:
+                1px solid
+                #e2e8f0;
+        }
+
+
+        .queue-stats span {
+
+            display:
+                block;
+
+            color:
+                #64748b;
+
+            margin-bottom:
+                8px;
+        }
+
+
+        .queue-stats strong {
+
+            font-size:
+                30px;
+
+            color:
+                #1976d2;
+        }
+
+
+        .next-button {
+
+            width:
+                100%;
+
+            padding:
+                14px;
+
+            border:
+                none;
+
+            border-radius:
+                10px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1976d2,
+                    #7c3aed
+                );
+
+            color:
+                white;
+
+            font-size:
+                16px;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .next-button:hover {
+
+            opacity:
+                0.9;
+        }
+
+
+        .next-button:disabled {
+
+            opacity:
+                0.6;
+
+            cursor:
+                not-allowed;
+        }
+
+
+        .next-message {
+
+            text-align:
+                center;
+
+            font-weight:
+                bold;
+
+            margin-top:
+                15px;
+        }
+
+
+        /* =================================================
+           LOADING
+        ================================================= */
+
+        .loading {
+
+            opacity:
+                0.7;
+        }
+
+
+        /* =================================================
+           MOBILE
+        ================================================= */
+
+        @media (max-width: 900px) {
+
+            .dashboard-grid {
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+
+            .info-grid {
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+        }
+
+
+        @media (max-width: 600px) {
+
+            .dashboard {
+
+                padding:
+                    15px;
+            }
+
+
+            header {
+
+                flex-direction:
+                    column;
+
+                align-items:
+                    flex-start;
+
+                gap:
+                    15px;
+            }
+
+
+            .logout {
+
+                width:
+                    100%;
+            }
+
+
+            .dashboard-grid {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .info-grid {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .queue-stats {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .welcome {
+
+                padding:
+                    22px;
+            }
+
+
+            .welcome h2 {
+
+                font-size:
+                    22px;
+            }
+
+        }
+
+    </style>
+
 </head>
+
 
 <body>
 
+
 <div class="dashboard">
 
-    <!-- =========================
+
+    <!-- =================================================
          HEADER
-    ========================== -->
+    ================================================= -->
 
     <header>
 
@@ -41,19 +705,23 @@
 
         </div>
 
+
         <button
             class="logout"
-            onclick="hospitalLogout()"
+            id="logoutButton"
         >
+
             Logout
+
         </button>
 
     </header>
 
 
-    <!-- =========================
+
+    <!-- =================================================
          WELCOME
-    ========================== -->
+    ================================================= -->
 
     <div class="welcome">
 
@@ -67,6 +735,7 @@
 
         </h2>
 
+
         <p>
             Manage your hospital, doctors and patient queue.
         </p>
@@ -74,9 +743,10 @@
     </div>
 
 
-    <!-- =========================
+
+    <!-- =================================================
          DASHBOARD CARDS
-    ========================== -->
+    ================================================= -->
 
     <div class="dashboard-grid">
 
@@ -97,16 +767,15 @@
                 Add and manage hospital doctors.
             </p>
 
-            <button
-                onclick="openDoctors()"
-            >
+            <button id="doctorsButton">
                 Manage Doctors
             </button>
 
         </div>
 
 
-        <!-- TOKEN QUEUE -->
+
+        <!-- QUEUE -->
 
         <div class="dashboard-card">
 
@@ -122,13 +791,12 @@
                 Manage today's patient tokens.
             </p>
 
-            <button
-                onclick="openPatients()"
-            >
+            <button id="queueButton">
                 View Queue
             </button>
 
         </div>
+
 
 
         <!-- PATIENTS -->
@@ -147,13 +815,12 @@
                 View patients waiting for consultation.
             </p>
 
-            <button
-                onclick="openPatients()"
-            >
+            <button id="patientsButton">
                 View Patients
             </button>
 
         </div>
+
 
 
         <!-- PROFILE -->
@@ -172,20 +839,118 @@
                 View and update hospital information.
             </p>
 
-            <button
-                onclick="openProfile()"
-            >
+            <button id="profileButton">
                 Manage Profile
             </button>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =================================================
+         HOSPITAL INFORMATION
+    ================================================= -->
+
+    <div class="hospital-info">
+
+        <h2>
+            Hospital Information
+        </h2>
+
+
+        <div class="info-grid">
+
+
+            <div class="info-box">
+
+                <span>
+                    Hospital Name
+                </span>
+
+                <strong id="infoHospitalName">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    City
+                </span>
+
+                <strong id="infoCity">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    Token Fee
+                </span>
+
+                <strong id="infoTokenFee">
+                    ₹0
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    Approval
+                </span>
+
+                <strong id="infoApproval">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    Publication
+                </span>
+
+                <strong id="infoPublished">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <span>
+                    Payment Account
+                </span>
+
+                <strong id="infoPayment">
+                    -
+                </strong>
+
+            </div>
+
 
         </div>
 
     </div>
 
 
-    <!-- =========================
+
+    <!-- =================================================
          TODAY'S QUEUE
-    ========================== -->
+    ================================================= -->
 
     <div class="queue-card">
 
@@ -196,8 +961,6 @@
 
         <div class="queue-stats">
 
-
-            <!-- WAITING -->
 
             <div>
 
@@ -212,8 +975,6 @@
             </div>
 
 
-            <!-- CURRENT TOKEN -->
-
             <div>
 
                 <span>
@@ -227,8 +988,6 @@
             </div>
 
 
-            <!-- COMPLETED -->
-
             <div>
 
                 <span>
@@ -241,18 +1000,17 @@
 
             </div>
 
+
         </div>
 
 
-        <!-- =========================
-             CALL NEXT PATIENT
-        ========================== -->
-
         <button
             class="next-button"
-            onclick="callNextPatient()"
+            id="nextButton"
         >
+
             📢 Call Next Patient
+
         </button>
 
 
@@ -261,12 +1019,836 @@
             class="next-message"
         ></p>
 
+
     </div>
+
 
 </div>
 
 
-<script src="script.js"></script>
+
+<script>
+
+
+/* =====================================================
+   API
+===================================================== */
+
+const API_URL =
+    "http://127.0.0.1:8000";
+
+
+
+/* =====================================================
+   GET HOSPITAL INFORMATION FROM LOCAL STORAGE
+===================================================== */
+
+let hospitalId =
+    localStorage.getItem(
+        "hospital_id"
+    );
+
+
+let hospitalName =
+    localStorage.getItem(
+        "hospital_name"
+    );
+
+
+let storedHospital = null;
+
+
+try {
+
+    const stored =
+        localStorage.getItem(
+            "hospital"
+        );
+
+
+    if (stored) {
+
+        storedHospital =
+            JSON.parse(stored);
+
+    }
+
+}
+catch (error) {
+
+    console.error(
+        "Unable to read stored hospital:",
+        error
+    );
+
+}
+
+
+
+/* =====================================================
+   USE STORED HOSPITAL OBJECT
+===================================================== */
+
+if (
+    storedHospital &&
+    storedHospital.id
+) {
+
+    hospitalId =
+        storedHospital.id;
+
+    hospitalName =
+        storedHospital.name ||
+        hospitalName;
+
+    localStorage.setItem(
+        "hospital_id",
+        hospitalId
+    );
+
+    if (hospitalName) {
+
+        localStorage.setItem(
+            "hospital_name",
+            hospitalName
+        );
+
+    }
+
+}
+
+
+
+/* =====================================================
+   CHECK LOGIN
+===================================================== */
+
+if (!hospitalId) {
+
+    alert(
+        "Please login as a hospital first."
+    );
+
+
+    window.location.href =
+        "index.html";
+
+}
+
+
+
+/* =====================================================
+   DISPLAY LOCAL HOSPITAL NAME
+===================================================== */
+
+if (hospitalName) {
+
+    document.getElementById(
+        "hospitalNameDisplay"
+    ).textContent =
+        hospitalName;
+
+}
+
+
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+document
+    .getElementById(
+        "logoutButton"
+    )
+    .addEventListener(
+        "click",
+        hospitalLogout
+    );
+
+
+function hospitalLogout() {
+
+    localStorage.removeItem(
+        "hospital"
+    );
+
+    localStorage.removeItem(
+        "hospital_id"
+    );
+
+    localStorage.removeItem(
+        "hospital_name"
+    );
+
+    localStorage.removeItem(
+        "hospital_email"
+    );
+
+    localStorage.removeItem(
+        "hospital_token_fee"
+    );
+
+    localStorage.removeItem(
+        "hospital_approval_status"
+    );
+
+    localStorage.removeItem(
+        "hospital_is_published"
+    );
+
+
+    window.location.href =
+        "index.html";
+}
+
+
+
+/* =====================================================
+   LOAD HOSPITAL
+===================================================== */
+
+async function loadHospital() {
+
+    if (!hospitalId) {
+
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Unable to load hospital information."
+            );
+
+        }
+
+
+        console.log(
+            "Hospital information:",
+            data
+        );
+
+
+        /*
+         * Save latest hospital information.
+         */
+
+        localStorage.setItem(
+            "hospital",
+            JSON.stringify(data)
+        );
+
+
+        localStorage.setItem(
+            "hospital_id",
+            data.id
+        );
+
+
+        if (data.name) {
+
+            localStorage.setItem(
+                "hospital_name",
+                data.name
+            );
+
+        }
+
+
+        if (data.email) {
+
+            localStorage.setItem(
+                "hospital_email",
+                data.email
+            );
+
+        }
+
+
+        if (
+            data.token_fee !==
+            undefined
+        ) {
+
+            localStorage.setItem(
+                "hospital_token_fee",
+                data.token_fee
+            );
+
+        }
+
+
+        if (
+            data.approval_status !==
+            undefined
+        ) {
+
+            localStorage.setItem(
+                "hospital_approval_status",
+                data.approval_status
+            );
+
+        }
+
+
+        if (
+            data.is_published !==
+            undefined
+        ) {
+
+            localStorage.setItem(
+                "hospital_is_published",
+                data.is_published
+            );
+
+        }
+
+
+        /*
+         * Update welcome name.
+         */
+
+        document.getElementById(
+            "hospitalNameDisplay"
+        ).textContent =
+            data.name ||
+            "Hospital";
+
+
+        /*
+         * Update information cards.
+         */
+
+        document.getElementById(
+            "infoHospitalName"
+        ).textContent =
+            data.name ||
+            "-";
+
+
+        document.getElementById(
+            "infoCity"
+        ).textContent =
+            data.city ||
+            "-";
+
+
+        document.getElementById(
+            "infoTokenFee"
+        ).textContent =
+            `₹${Number(
+                data.token_fee || 0
+            )}`;
+
+
+        document.getElementById(
+            "infoApproval"
+        ).textContent =
+            data.approval_status ||
+            "-";
+
+
+        document.getElementById(
+            "infoPublished"
+        ).textContent =
+            data.is_published
+                ? "Published"
+                : "Not Published";
+
+
+        document.getElementById(
+            "infoPayment"
+        ).textContent =
+            data.payment_account_status ||
+            "NOT_ADDED";
+
+
+        /*
+         * Update hospital name used
+         * for token filtering.
+         */
+
+        hospitalName =
+            data.name ||
+            hospitalName;
+
+
+    }
+    catch (error) {
+
+        console.error(
+            "Hospital loading error:",
+            error
+        );
+
+    }
+
+}
+
+
+
+/* =====================================================
+   DOCTORS
+===================================================== */
+
+document
+    .getElementById(
+        "doctorsButton"
+    )
+    .addEventListener(
+        "click",
+        function() {
+
+            window.location.href =
+                "doctors.html";
+
+        }
+    );
+
+
+
+/* =====================================================
+   QUEUE
+===================================================== */
+
+document
+    .getElementById(
+        "queueButton"
+    )
+    .addEventListener(
+        "click",
+        openPatients
+    );
+
+
+
+/* =====================================================
+   PATIENTS
+===================================================== */
+
+document
+    .getElementById(
+        "patientsButton"
+    )
+    .addEventListener(
+        "click",
+        openPatients
+    );
+
+
+function openPatients() {
+
+    window.location.href =
+        "patients.html";
+}
+
+
+
+/* =====================================================
+   PROFILE
+===================================================== */
+
+document
+    .getElementById(
+        "profileButton"
+    )
+    .addEventListener(
+        "click",
+        function() {
+
+            window.location.href =
+                "profile.html";
+
+        }
+    );
+
+
+
+/* =====================================================
+   CALL NEXT PATIENT
+===================================================== */
+
+document
+    .getElementById(
+        "nextButton"
+    )
+    .addEventListener(
+        "click",
+        callNextPatient
+    );
+
+
+async function callNextPatient() {
+
+    const button =
+        document.getElementById(
+            "nextButton"
+        );
+
+
+    const message =
+        document.getElementById(
+            "nextMessage"
+        );
+
+
+    button.disabled =
+        true;
+
+
+    button.textContent =
+        "Calling...";
+
+
+    message.textContent =
+        "";
+
+
+    try {
+
+        /*
+         * Your backend currently uses:
+         *
+         * POST /next-patient
+         */
+
+        const response =
+            await fetch(
+                `${API_URL}/next-patient`,
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            hospital_id:
+                                Number(
+                                    hospitalId
+                                )
+
+                        })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Unable to call next patient."
+            );
+
+        }
+
+
+        message.style.color =
+            "#15803d";
+
+
+        message.textContent =
+            data.message ||
+            "Next patient called successfully.";
+
+
+        /*
+         * Update current token
+         */
+
+        if (
+            data.token_number !==
+            undefined
+        ) {
+
+            document.getElementById(
+                "currentToken"
+            ).textContent =
+                data.token_number;
+
+        }
+
+
+        await loadQueue();
+
+    }
+    catch (error) {
+
+        console.error(
+            "Next patient error:",
+            error
+        );
+
+
+        message.style.color =
+            "#dc2626";
+
+
+        message.textContent =
+            error.message ||
+            "Unable to call next patient.";
+
+    }
+    finally {
+
+        button.disabled =
+            false;
+
+
+        button.textContent =
+            "📢 Call Next Patient";
+
+    }
+
+}
+
+
+
+/* =====================================================
+   LOAD QUEUE
+===================================================== */
+
+async function loadQueue() {
+
+    if (!hospitalId) {
+
+        return;
+    }
+
+
+    try {
+
+        /*
+         * Existing backend endpoint:
+         *
+         * GET /tokens
+         */
+
+        const response =
+            await fetch(
+                `${API_URL}/tokens`
+            );
+
+
+        if (!response.ok) {
+
+            return;
+        }
+
+
+        const data =
+            await response.json();
+
+
+        /*
+         * Backend may return:
+         *
+         * []
+         *
+         * or
+         *
+         * { tokens: [] }
+         */
+
+        const tokens =
+            Array.isArray(data)
+                ? data
+                : (
+                    Array.isArray(
+                        data.tokens
+                    )
+                        ? data.tokens
+                        : []
+                );
+
+
+        /*
+         * Filter by hospital.
+         *
+         * Prefer hospital_id when the backend
+         * provides it.
+         */
+
+        const hospitalTokens =
+            tokens.filter(
+                token => {
+
+                    if (
+                        token.hospital_id !==
+                        undefined &&
+                        token.hospital_id !==
+                        null
+                    ) {
+
+                        return String(
+                            token.hospital_id
+                        ) === String(
+                            hospitalId
+                        );
+
+                    }
+
+
+                    return String(
+                        token.hospital
+                    ) === String(
+                        hospitalName
+                    );
+
+                }
+            );
+
+
+
+        /* ---------------------------------------------
+           WAITING
+        --------------------------------------------- */
+
+        const waiting =
+            hospitalTokens.filter(
+                token =>
+                    token.status ===
+                    "waiting"
+            );
+
+
+        document.getElementById(
+            "waitingCount"
+        ).textContent =
+            waiting.length;
+
+
+
+        /* ---------------------------------------------
+           COMPLETED
+        --------------------------------------------- */
+
+        const completed =
+            hospitalTokens.filter(
+                token =>
+                    token.status ===
+                    "completed"
+            );
+
+
+        document.getElementById(
+            "completedCount"
+        ).textContent =
+            completed.length;
+
+
+
+        /* ---------------------------------------------
+           CURRENT / SERVING
+        --------------------------------------------- */
+
+        const current =
+            hospitalTokens
+                .filter(
+                    token =>
+                        token.status ===
+                            "serving" ||
+
+                        token.status ===
+                            "current"
+                )
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        Number(
+                            b.token_number
+                        ) -
+                        Number(
+                            a.token_number
+                        )
+                )[0];
+
+
+        if (current) {
+
+            document.getElementById(
+                "currentToken"
+            ).textContent =
+                current.token_number;
+
+        }
+        else {
+
+            document.getElementById(
+                "currentToken"
+            ).textContent =
+                "0";
+
+        }
+
+    }
+    catch (error) {
+
+        console.error(
+            "Queue loading error:",
+            error
+        );
+
+    }
+
+}
+
+
+
+/* =====================================================
+   INITIAL LOAD
+===================================================== */
+
+loadHospital()
+    .then(
+        function() {
+
+            return loadQueue();
+
+        }
+    );
+
+
+
+/* =====================================================
+   AUTO REFRESH QUEUE
+===================================================== */
+
+setInterval(
+    loadQueue,
+    10000
+);
+
+</script>
+
 
 </body>
 

@@ -1,263 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>HospitalCare - Patient Dashboard</title>
-
-    <link rel="stylesheet" href="./style.css">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071329">
+  <title>HospitalCare - Select Hospital</title>
+  <link rel="stylesheet" href="./style.css">
 </head>
-
-
 <body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">✚</span>
+        <div>
+          <h1>Select Hospital</h1>
+          <p>Welcome, <span id="patientName">Patient</span></p>
+        </div>
+      </div>
+      <button type="button" id="logoutButton" class="icon-button" aria-label="Logout" title="Logout">⇥</button>
+    </header>
 
+    <main class="page-content">
+      <section class="search-panel" aria-label="Search hospitals">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="hospitalSearch" type="search" placeholder="Search by hospital name or city..." autocomplete="off" aria-label="Search by hospital name or city">
+        <button type="button" id="clearSearch" class="clear-search" aria-label="Clear search" title="Clear search">×</button>
+      </section>
 
-    <div class="dashboard-container">
+      <section class="filter-row" aria-label="Hospital filters">
+        <span class="filter-label">Sort / Filter:</span>
+        <button type="button" class="filter-chip active" data-filter="all">All Hospitals</button>
+        <button type="button" class="filter-chip" data-filter="verified">✓ Verified</button>
+        <button type="button" class="filter-chip" data-filter="lowfee">₹ Low Fee</button>
+      </section>
 
+      <section class="suggestions-section">
+        <span class="section-kicker">Quick search</span>
+        <div id="quickSearchChips" class="quick-chips">
+          <button type="button" class="quick-chip" data-query="Hyderabad">Hyderabad</button>
+          <button type="button" class="quick-chip" data-query="Cardiology">Cardiology</button>
+          <button type="button" class="quick-chip" data-query="General Medicine">General Medicine</button>
+          <button type="button" class="quick-chip" data-query="Pediatrics">Pediatrics</button>
+        </div>
+      </section>
 
-        <!-- =========================================
-             HEADER
-        ========================================== -->
+      <section id="recentSection" class="hospital-section" hidden>
+        <div class="section-heading">
+          <h2>Recently Viewed</h2>
+          <span class="section-note">Your recent hospitals</span>
+        </div>
+        <div id="recentHospitals" class="recent-grid"></div>
+      </section>
 
-        <header class="dashboard-header">
+      <section class="hospital-section">
+        <div class="section-heading">
+          <h2>Popular Hospitals</h2>
+          <span id="hospitalCount" class="section-note">Loading hospitals...</span>
+        </div>
+        <div id="hospitalCards" class="hospital-list" aria-live="polite">
+          <div class="loading-card"><span class="spinner"></span><span>Loading hospitals from HospitalCare...</span></div>
+        </div>
+        <p id="emptyHospitals" class="empty-state" hidden>No hospitals match your search. Try another name or city.</p>
+      </section>
 
-            <div>
+      <section id="bookingSection" class="booking-section">
+        <div class="section-heading booking-heading">
+          <div>
+            <span class="section-kicker">Next step</span>
+            <h2>Book a Hospital Token</h2>
+            <p class="booking-subtitle">Choose a hospital, department and doctor.</p>
+          </div>
+        </div>
 
-                <h1>
-                    🏥 HospitalCare
-                </h1>
-
-                <p>
-
-                    Welcome,
-
-                    <span id="patientName">
-                        Patient
-                    </span>
-
-                </p>
-
-            </div>
-
-
-            <button
-                type="button"
-                id="logoutButton"
-                class="logout-button"
-            >
-
-                Logout
-
-            </button>
-
-        </header>
-
-
-
-        <!-- =========================================
-             MAIN CONTENT
-        ========================================== -->
-
-        <main class="dashboard-content">
-
-
-            <h2>
-                Book Hospital Token
-            </h2>
-
-
-            <p>
-                Select a hospital, department and doctor.
-            </p>
-
-
-
-            <!-- =====================================
-                 HOSPITAL
-            ====================================== -->
-
-            <label for="hospital">
-
-                Select Hospital
-
-            </label>
-
-
-            <select
-                id="hospital"
-            >
-
-                <option value="">
-
-                    Select Hospital
-
-                </option>
-
+        <div class="booking-card">
+          <div class="form-group">
+            <label for="hospital">Select Hospital</label>
+            <select id="hospital">
+              <option value="">Loading hospitals...</option>
             </select>
-
-
-
-            <!-- =====================================
-                 DEPARTMENT
-            ====================================== -->
-
-            <label for="department">
-
-                Select Department
-
-            </label>
-
-
-            <select
-                id="department"
-                disabled
-            >
-
-                <option value="">
-
-                    Select Department
-
-                </option>
-
+          </div>
+          <div class="form-group">
+            <label for="department">Select Department</label>
+            <select id="department" disabled>
+              <option value="">Select Department</option>
             </select>
-
-
-
-            <!-- =====================================
-                 DOCTOR
-            ====================================== -->
-
-            <label for="doctor">
-
-                Select Doctor
-
-            </label>
-
-
-            <select
-                id="doctor"
-                disabled
-            >
-
-                <option value="">
-
-                    Select Doctor
-
-                </option>
-
+          </div>
+          <div class="form-group">
+            <label for="doctor">Select Doctor</label>
+            <select id="doctor" disabled>
+              <option value="">Select Doctor</option>
             </select>
+          </div>
 
+          <div class="fee-box">
+            <div class="fee-row"><span>Token Fee</span><span id="tokenFee">₹0</span></div>
+            <div class="fee-row"><span>Platform Fee</span><span id="platformFee">₹10</span></div>
+            <div class="fee-divider"></div>
+            <div class="fee-row total-row"><strong>Total</strong><strong id="totalAmount">₹10</strong></div>
+          </div>
+          <div id="message" class="message" role="status" aria-live="polite"></div>
+          <button type="button" id="continueBtn" class="pay-button" disabled>Continue &amp; Pay <span aria-hidden="true">→</span></button>
+          <p class="secure-note">🔒 Payment will continue through the configured payment gateway.</p>
+        </div>
+      </section>
+      <footer class="page-footer">HospitalCare · Find care and book your token</footer>
+    </main>
+  </div>
 
-
-            <!-- =====================================
-                 FEE
-            ====================================== -->
-
-            <div class="fee-box">
-
-
-                <p>
-
-                    Token Fee:
-
-                    <span id="tokenFee">
-                        ₹0
-                    </span>
-
-                </p>
-
-
-                <p>
-
-                    Platform Fee:
-
-                    <span id="platformFee">
-                        ₹10
-                    </span>
-
-                </p>
-
-
-                <hr>
-
-
-                <p>
-
-                    <strong>
-
-                        Total:
-
-                        <span id="totalAmount">
-                            ₹10
-                        </span>
-
-                    </strong>
-
-                </p>
-
-
-            </div>
-
-
-
-            <!-- =====================================
-                 MESSAGE
-            ====================================== -->
-
-            <div
-                id="message"
-                class="message"
-            >
-            </div>
-
-
-
-            <!-- =====================================
-                 PAYMENT BUTTON
-            ====================================== -->
-
-            <button
-                type="button"
-                id="continueBtn"
-                disabled
-            >
-
-                💳 Continue & Pay ₹10
-
-            </button>
-
-
-        </main>
-
-
-    </div>
-
-
-
-    <!-- =========================================
-         RAZORPAY
-    ========================================== -->
-
-    <script
-        src="https://checkout.razorpay.com/v1/checkout.js">
-    </script>
-
-
-    <!-- =========================================
-         PATIENT JAVASCRIPT
-    ========================================== -->
-
-    <script src="./script.js"></script>
-
-
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="./script.js"></script>
+  <script src="./dashboard-ui.js"></script>
 </body>
-
 </html>

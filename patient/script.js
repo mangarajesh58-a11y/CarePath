@@ -3,21 +3,104 @@
    ========================================================= */
 
 const API = "http://127.0.0.1:8000";
+const FRONTEND = "http://127.0.0.1:5500/patient";
+
+const PLATFORM_FEE = 10;
+
+
+// =========================================================
+// GLOBAL DATA
+// =========================================================
+
+let hospitals = [];
+
+let selectedHospital = null;
+
+let selectedDoctor = null;
+
+let paymentInProgress = false;
+
+
+// =========================================================
+// SAFE RESPONSE READER
+// =========================================================
+
+async function readResponse(response) {
+
+    const text = await response.text();
+
+    if (!text) {
+        return {};
+    }
+
+    try {
+
+        return JSON.parse(text);
+
+    } catch (error) {
+
+        return {
+            detail: text
+        };
+
+    }
+
+}
+// =========================================================
+// GET READABLE ERROR MESSAGE
+// =========================================================
+
+function getErrorMessage(data, fallback) {
+
+    if (!data) {
+        return fallback;
+    }
+
+    if (typeof data.detail === "string") {
+        return data.detail;
+    }
+
+    if (data.detail && typeof data.detail === "object") {
+
+        if (data.detail.message) {
+            return data.detail.message;
+        }
+
+        if (data.detail.error) {
+            return data.detail.error;
+        }
+
+        return JSON.stringify(data.detail);
+    }
+
+    if (typeof data.message === "string") {
+        return data.message;
+    }
+
+    return fallback;
+}
 
 
 // =========================================================
 // PAGE LOAD
 // =========================================================
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-    loadPatientName();
+        console.log(
+            "HospitalCare patient dashboard loaded."
+        );
 
-    loadHospitals();
+        loadPatientName();
 
-    setupEvents();
+        setupEvents();
 
-});
+        loadHospitals();
+
+    }
+);
 
 
 // =========================================================
@@ -42,8 +125,6 @@ function setupEvents() {
         document.getElementById("logoutButton");
 
 
-    // Hospital selection
-
     if (hospitalSelect) {
 
         hospitalSelect.addEventListener(
@@ -53,8 +134,6 @@ function setupEvents() {
 
     }
 
-
-    // Department selection
 
     if (departmentSelect) {
 
@@ -66,8 +145,6 @@ function setupEvents() {
     }
 
 
-    // Doctor selection
-
     if (doctorSelect) {
 
         doctorSelect.addEventListener(
@@ -77,8 +154,6 @@ function setupEvents() {
 
     }
 
-
-    // Payment button
 
     if (continueBtn) {
 
@@ -90,8 +165,6 @@ function setupEvents() {
     }
 
 
-    // Logout
-
     if (logoutButton) {
 
         logoutButton.addEventListener(
@@ -100,6 +173,11 @@ function setupEvents() {
         );
 
     }
+
+
+    updateFeeDisplay();
+
+    updatePaymentButton();
 
 }
 
@@ -113,13 +191,13 @@ function loadPatientName() {
     const patientName =
         localStorage.getItem("patientName");
 
-    const nameElement =
+    const element =
         document.getElementById("patientName");
 
 
-    if (nameElement) {
+    if (element) {
 
-        nameElement.textContent =
+        element.textContent =
             patientName || "Patient";
 
     }
@@ -151,12 +229,11 @@ async function loadHospitals() {
     hospitalSelect.disabled = true;
 
 
-    hospitalSelect.innerHTML =
-        `
+    hospitalSelect.innerHTML = `
         <option value="">
             Loading hospitals...
         </option>
-        `;
+    `;
 
 
     try {
@@ -167,39 +244,54 @@ async function loadHospitals() {
             );
 
 
-        const hospitals =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                hospitals.detail ||
-                "Unable to load hospitals."
+        const data =
+            await readResponse(
+                response
             );
 
-        }
+
+        console.log(
+            "Hospitals response:",
+            data
+        );
 
 
-        hospitalSelect.innerHTML =
-            `
+       if (!response.ok) {
+
+    throw new Error(
+        getErrorMessage(
+            data,
+            "Unable to load hospitals."
+        )
+    );
+
+}
+
+
+        hospitals =
+            Array.isArray(data)
+                ? data
+                : data.hospitals || [];
+
+
+        hospitalSelect.innerHTML = `
             <option value="">
                 Select Hospital
             </option>
-            `;
+        `;
 
 
-        if (
-            !Array.isArray(hospitals) ||
-            hospitals.length === 0
-        ) {
+        if (hospitals.length === 0) {
 
-            hospitalSelect.innerHTML =
-                `
+            hospitalSelect.innerHTML = `
                 <option value="">
                     No hospitals available
                 </option>
-                `;
+            `;
+
+            updateFeeDisplay();
+
+            updatePaymentButton();
 
             return;
 
@@ -233,12 +325,10 @@ async function loadHospitals() {
         );
 
 
-        hospitalSelect.disabled =
-            false;
+        hospitalSelect.disabled = false;
 
-    }
 
-    catch (error) {
+    } catch (error) {
 
         console.error(
             "Hospital loading error:",
@@ -246,12 +336,11 @@ async function loadHospitals() {
         );
 
 
-        hospitalSelect.innerHTML =
-            `
+        hospitalSelect.innerHTML = `
             <option value="">
                 Failed to load hospitals
             </option>
-            `;
+        `;
 
 
         showMessage(
@@ -272,35 +361,105 @@ async function loadHospitals() {
 async function hospitalSelected() {
 
     const hospitalSelect =
-        document.getElementById(
-            "hospital"
-        );
+        document.getElementById("hospital");
+
+
+    if (!hospitalSelect) {
+        return;
+    }
 
 
     const hospitalId =
         hospitalSelect.value;
 
 
-    // Reset department
+    selectedHospital = null;
+
+    selectedDoctor = null;
+
 
     resetDepartment();
-
-
-    // Reset doctor
 
     resetDoctor();
 
 
-    // Disable payment
-
-    disablePaymentButton();
-
-
     if (!hospitalId) {
+
+        localStorage.removeItem(
+            "selectedHospitalTokenFee"
+        );
+
+        updateFeeDisplay();
+
+        updatePaymentButton();
 
         return;
 
     }
+
+
+    const hospital =
+        hospitals.find(
+            function (item) {
+
+                return String(item.id) ===
+                    String(hospitalId);
+
+            }
+        );
+
+
+    if (!hospital) {
+
+        showMessage(
+            "Hospital information not found.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    selectedHospital =
+        hospital;
+
+
+    console.log(
+        "Selected hospital:",
+        selectedHospital
+    );
+
+
+    /*
+        Store only for display/reference.
+        Backend remains the source of truth
+        for payment amount.
+    */
+
+    localStorage.setItem(
+        "selectedHospitalId",
+        String(hospital.id)
+    );
+
+
+    localStorage.setItem(
+        "selectedHospitalName",
+        hospital.name || ""
+    );
+
+
+    localStorage.setItem(
+        "selectedHospitalTokenFee",
+        String(
+            Number(hospital.token_fee || 0)
+        )
+    );
+
+
+    updateFeeDisplay();
+
+    updatePaymentButton();
 
 
     await loadDepartments(
@@ -323,22 +482,18 @@ function resetDepartment() {
 
 
     if (!departmentSelect) {
-
         return;
-
     }
 
 
-    departmentSelect.innerHTML =
-        `
+    departmentSelect.innerHTML = `
         <option value="">
             Select Department
         </option>
-        `;
+    `;
 
 
-    departmentSelect.disabled =
-        true;
+    departmentSelect.disabled = true;
 
 }
 
@@ -358,26 +513,18 @@ async function loadDepartments(
 
 
     if (!departmentSelect) {
-
-        console.error(
-            "Department select not found."
-        );
-
         return;
-
     }
 
 
-    departmentSelect.disabled =
-        true;
+    departmentSelect.disabled = true;
 
 
-    departmentSelect.innerHTML =
-        `
+    departmentSelect.innerHTML = `
         <option value="">
             Loading departments...
         </option>
-        `;
+    `;
 
 
     try {
@@ -388,45 +535,44 @@ async function loadDepartments(
             );
 
 
-        const departments =
-            await response.json();
-
-
-        console.log(
-            "Departments received:",
-            departments
-        );
+        const data =
+            await readResponse(
+                response
+            );
 
 
         if (!response.ok) {
 
             throw new Error(
-                departments.detail ||
+                getErrorMessage(
+                data,
                 "Unable to load departments."
+                )
             );
 
         }
 
 
-        departmentSelect.innerHTML =
-            `
+        const departments =
+            Array.isArray(data)
+                ? data
+                : data.departments || [];
+
+
+        departmentSelect.innerHTML = `
             <option value="">
                 Select Department
             </option>
-            `;
+        `;
 
 
-        if (
-            !Array.isArray(departments) ||
-            departments.length === 0
-        ) {
+        if (departments.length === 0) {
 
-            departmentSelect.innerHTML =
-                `
+            departmentSelect.innerHTML = `
                 <option value="">
                     No departments available
                 </option>
-                `;
+            `;
 
             return;
 
@@ -436,30 +582,44 @@ async function loadDepartments(
         departments.forEach(
             function (department) {
 
+                let departmentName = "";
+
+
+                if (
+                    typeof department ===
+                    "string"
+                ) {
+
+                    departmentName =
+                        department;
+
+                } else {
+
+                    departmentName =
+                        department.name ||
+                        department.department ||
+                        "";
+
+                }
+
+
+                if (!departmentName) {
+                    return;
+                }
+
+
                 const option =
                     document.createElement(
                         "option"
                     );
 
 
-                /*
-                 * Backend returns:
-                 *
-                 * [
-                 *   "Cardiology",
-                 *   "Neurology",
-                 *   "Dermatology"
-                 * ]
-                 *
-                 */
-
-
                 option.value =
-                    department;
+                    departmentName;
 
 
                 option.textContent =
-                    department;
+                    departmentName;
 
 
                 departmentSelect.appendChild(
@@ -470,12 +630,17 @@ async function loadDepartments(
         );
 
 
-        departmentSelect.disabled =
-            false;
+        if (
+            departmentSelect.options.length > 1
+        ) {
 
-    }
+            departmentSelect.disabled =
+                false;
 
-    catch (error) {
+        }
+
+
+    } catch (error) {
 
         console.error(
             "Department loading error:",
@@ -483,12 +648,11 @@ async function loadDepartments(
         );
 
 
-        departmentSelect.innerHTML =
-            `
+        departmentSelect.innerHTML = `
             <option value="">
                 Failed to load departments
             </option>
-            `;
+        `;
 
 
         showMessage(
@@ -513,11 +677,18 @@ async function departmentSelected() {
             "hospital"
         );
 
-
     const departmentSelect =
         document.getElementById(
             "department"
         );
+
+
+    if (
+        !hospitalSelect ||
+        !departmentSelect
+    ) {
+        return;
+    }
 
 
     const hospitalId =
@@ -528,14 +699,12 @@ async function departmentSelected() {
         departmentSelect.value;
 
 
-    // Reset doctor
-
     resetDoctor();
 
 
-    // Disable payment
+    updateFeeDisplay();
 
-    disablePaymentButton();
+    updatePaymentButton();
 
 
     if (
@@ -569,28 +738,27 @@ function resetDoctor() {
 
 
     if (!doctorSelect) {
-
         return;
-
     }
 
 
-    doctorSelect.innerHTML =
-        `
+    doctorSelect.innerHTML = `
         <option value="">
             Select Doctor
         </option>
-        `;
+    `;
 
 
-    doctorSelect.disabled =
-        true;
+    doctorSelect.disabled = true;
+
+
+    selectedDoctor = null;
 
 }
 
 
 // =========================================================
-// LOAD DOCTORS BY DEPARTMENT
+// LOAD DOCTORS
 // =========================================================
 
 async function loadDoctors(
@@ -605,83 +773,91 @@ async function loadDoctors(
 
 
     if (!doctorSelect) {
-
-        console.error(
-            "Doctor select not found."
-        );
-
         return;
-
     }
 
 
-    doctorSelect.disabled =
-        true;
+    doctorSelect.disabled = true;
 
 
-    doctorSelect.innerHTML =
-        `
+    doctorSelect.innerHTML = `
         <option value="">
             Loading doctors...
         </option>
-        `;
+    `;
 
 
     try {
 
-        const url =
-            `${API}/hospitals/${hospitalId}/doctors?department=${encodeURIComponent(department)}`;
+        /*
+            We load doctors from the hospital.
 
+            The backend may return:
+            - only selected department doctors
+            - all hospital doctors
 
-        console.log(
-            "Loading doctors:",
-            url
-        );
-
+            Therefore we filter again here.
+        */
 
         const response =
-            await fetch(url);
+            await fetch(
+                `${API}/hospitals/${hospitalId}/doctors`
+            );
 
 
-        const doctors =
-            await response.json();
-
-
-        console.log(
-            "Doctors received:",
-            doctors
-        );
+        const data =
+            await readResponse(
+                response
+            );
 
 
         if (!response.ok) {
 
             throw new Error(
-                doctors.detail ||
+                getErrorMessage(
+                data,
                 "Unable to load doctors."
+                )
             );
 
         }
 
 
-        doctorSelect.innerHTML =
-            `
+        let doctors =
+            Array.isArray(data)
+                ? data
+                : data.doctors || [];
+
+
+        doctors =
+            doctors.filter(
+                function (doctor) {
+
+                    return String(
+                        doctor.department || ""
+                    ).trim().toLowerCase() ===
+                    String(
+                        department
+                    ).trim().toLowerCase();
+
+                }
+            );
+
+
+        doctorSelect.innerHTML = `
             <option value="">
                 Select Doctor
             </option>
-            `;
+        `;
 
 
-        if (
-            !Array.isArray(doctors) ||
-            doctors.length === 0
-        ) {
+        if (doctors.length === 0) {
 
-            doctorSelect.innerHTML =
-                `
+            doctorSelect.innerHTML = `
                 <option value="">
                     No doctors available
                 </option>
-                `;
+            `;
 
             return;
 
@@ -701,22 +877,14 @@ async function loadDoctors(
                     doctor.id;
 
 
-                let doctorText =
-                    doctor.name;
-
-
-                if (
-                    doctor.specialization
-                ) {
-
-                    doctorText +=
-                        ` - ${doctor.specialization}`;
-
-                }
+                option.dataset.name =
+                    doctor.name || "Doctor";
 
 
                 option.textContent =
-                    doctorText;
+                    doctor.specialization
+                        ? `${doctor.name} - ${doctor.specialization}`
+                        : doctor.name;
 
 
                 doctorSelect.appendChild(
@@ -730,9 +898,8 @@ async function loadDoctors(
         doctorSelect.disabled =
             false;
 
-    }
 
-    catch (error) {
+    } catch (error) {
 
         console.error(
             "Doctor loading error:",
@@ -740,12 +907,11 @@ async function loadDoctors(
         );
 
 
-        doctorSelect.innerHTML =
-            `
+        doctorSelect.innerHTML = `
             <option value="">
                 Failed to load doctors
             </option>
-            `;
+        `;
 
 
         showMessage(
@@ -771,27 +937,168 @@ function doctorSelected() {
         );
 
 
-    const continueBtn =
-        document.getElementById(
-            "continueBtn"
-        );
+    if (!doctorSelect) {
+        return;
+    }
 
 
-    if (
-        doctorSelect &&
-        continueBtn &&
-        doctorSelect.value
-    ) {
+    const doctorId =
+        doctorSelect.value;
 
-        continueBtn.disabled =
-            false;
+
+    selectedDoctor = null;
+
+
+    if (doctorId) {
+
+        const option =
+            doctorSelect.options[
+                doctorSelect.selectedIndex
+            ];
+
+
+        if (option) {
+
+            selectedDoctor = {
+
+                id:
+                    doctorId,
+
+                name:
+                    option.dataset.name ||
+                    option.textContent.trim()
+
+            };
+
+        }
 
     }
 
-    else if (continueBtn) {
 
-        continueBtn.disabled =
-            true;
+    updateFeeDisplay();
+
+    updatePaymentButton();
+
+}
+
+
+// =========================================================
+// TOKEN FEE
+// =========================================================
+
+function getTokenFee() {
+
+    if (
+        selectedHospital &&
+        selectedHospital.token_fee !==
+        undefined &&
+        selectedHospital.token_fee !==
+        null
+    ) {
+
+        const fee =
+            Number(
+                selectedHospital.token_fee
+            );
+
+
+        if (
+            Number.isFinite(fee) &&
+            fee >= 0
+        ) {
+
+            return fee;
+
+        }
+
+    }
+
+
+    return 0;
+
+}
+
+
+// =========================================================
+// PLATFORM FEE
+// =========================================================
+
+function getPlatformFee() {
+
+    return PLATFORM_FEE;
+
+}
+
+
+// =========================================================
+// TOTAL
+// =========================================================
+
+function getTotalAmount() {
+
+    return (
+        getTokenFee() +
+        getPlatformFee()
+    );
+
+}
+
+
+// =========================================================
+// UPDATE FEE DISPLAY
+// =========================================================
+
+function updateFeeDisplay() {
+
+    const tokenFeeElement =
+        document.getElementById(
+            "tokenFee"
+        );
+
+    const platformFeeElement =
+        document.getElementById(
+            "platformFee"
+        );
+
+    const totalAmountElement =
+        document.getElementById(
+            "totalAmount"
+        );
+
+
+    const tokenFee =
+        getTokenFee();
+
+
+    const platformFee =
+        getPlatformFee();
+
+
+    const total =
+        tokenFee +
+        platformFee;
+
+
+    if (tokenFeeElement) {
+
+        tokenFeeElement.textContent =
+            `₹${tokenFee}`;
+
+    }
+
+
+    if (platformFeeElement) {
+
+        platformFeeElement.textContent =
+            `₹${platformFee}`;
+
+    }
+
+
+    if (totalAmountElement) {
+
+        totalAmountElement.textContent =
+            `₹${total}`;
 
     }
 
@@ -799,30 +1106,114 @@ function doctorSelected() {
 
 
 // =========================================================
-// DISABLE PAYMENT BUTTON
+// PAYMENT BUTTON
 // =========================================================
 
-function disablePaymentButton() {
+function updatePaymentButton() {
 
-    const continueBtn =
+    const button =
         document.getElementById(
             "continueBtn"
         );
 
 
-    if (!continueBtn) {
+    if (!button) {
+        return;
+    }
+
+
+    updateFeeDisplay();
+
+
+    const hospitalSelect =
+        document.getElementById(
+            "hospital"
+        );
+
+    const departmentSelect =
+        document.getElementById(
+            "department"
+        );
+
+    const doctorSelect =
+        document.getElementById(
+            "doctor"
+        );
+
+
+    const hospitalValue =
+        hospitalSelect
+            ? hospitalSelect.value
+            : "";
+
+
+    const departmentValue =
+        departmentSelect
+            ? departmentSelect.value
+            : "";
+
+
+    const doctorValue =
+        doctorSelect
+            ? doctorSelect.value
+            : "";
+
+
+    if (
+        hospitalValue &&
+        departmentValue &&
+        doctorValue &&
+        !paymentInProgress
+    ) {
+
+        button.disabled = false;
+
+
+        button.textContent =
+            `💳 Continue & Pay ₹${getTotalAmount()}`;
 
         return;
 
     }
 
 
-    continueBtn.disabled =
-        true;
+    button.disabled = true;
 
 
-    continueBtn.textContent =
-        "💳 Continue & Pay ₹10";
+    if (paymentInProgress) {
+
+        button.textContent =
+            "Processing...";
+
+    }
+
+    else if (!hospitalValue) {
+
+        button.textContent =
+            "💳 Select Hospital";
+
+    }
+
+    else if (!departmentValue) {
+
+        button.textContent =
+            "💳 Select Department";
+
+    }
+
+    else if (!doctorValue) {
+
+        button.textContent =
+            "💳 Select Doctor";
+
+    }
+
+    else {
+
+        button.textContent =
+            "💳 Continue";
+
+    }
 
 }
 
@@ -833,22 +1224,41 @@ function disablePaymentButton() {
 
 async function continueAndGetToken() {
 
+    if (paymentInProgress) {
+        return;
+    }
+
+
     const hospitalSelect =
         document.getElementById(
             "hospital"
         );
-
 
     const departmentSelect =
         document.getElementById(
             "department"
         );
 
-
     const doctorSelect =
         document.getElementById(
             "doctor"
         );
+
+
+    if (
+        !hospitalSelect ||
+        !departmentSelect ||
+        !doctorSelect
+    ) {
+
+        showMessage(
+            "Booking form is not available.",
+            "error"
+        );
+
+        return;
+
+    }
 
 
     const hospitalId =
@@ -869,7 +1279,9 @@ async function continueAndGetToken() {
         );
 
 
-    // Check patient
+    // ---------------------------------------------------------
+    // VALIDATION
+    // ---------------------------------------------------------
 
     if (!patientName) {
 
@@ -883,8 +1295,6 @@ async function continueAndGetToken() {
     }
 
 
-    // Check hospital
-
     if (!hospitalId) {
 
         showMessage(
@@ -896,8 +1306,6 @@ async function continueAndGetToken() {
 
     }
 
-
-    // Check department
 
     if (!department) {
 
@@ -911,8 +1319,6 @@ async function continueAndGetToken() {
     }
 
 
-    // Check doctor
-
     if (!doctorId) {
 
         showMessage(
@@ -925,21 +1331,88 @@ async function continueAndGetToken() {
     }
 
 
-    const button =
-        document.getElementById(
-            "continueBtn"
+    if (!selectedHospital) {
+
+        showMessage(
+            "Hospital information is unavailable.",
+            "error"
         );
 
+        return;
 
-    button.disabled =
-        true;
+    }
 
 
-    button.textContent =
-        "Creating Payment...";
+    if (!selectedDoctor) {
+
+        showMessage(
+            "Doctor information is unavailable.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    const hospitalName =
+        selectedHospital.name;
+
+
+    const doctorName =
+        selectedDoctor.name;
+
+
+    if (!hospitalName) {
+
+        showMessage(
+            "Hospital name is missing.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (!doctorName) {
+
+        showMessage(
+            "Doctor name is missing.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    // ---------------------------------------------------------
+    // CLEAR OLD TOKEN
+    // ---------------------------------------------------------
+
+    clearOldBookingData();
+
+
+    // ---------------------------------------------------------
+    // LOCK BUTTON
+    // ---------------------------------------------------------
+
+    paymentInProgress = true;
+
+    updatePaymentButton();
 
 
     try {
+
+        /*
+            IMPORTANT:
+
+            Do NOT send token_fee from frontend.
+
+            FastAPI must get the hospital's
+            token_fee directly from MySQL.
+        */
 
         const response =
             await fetch(
@@ -955,21 +1428,20 @@ async function continueAndGetToken() {
 
                     },
 
-                    body:
+                   body :
                         JSON.stringify({
 
                             patient_name:
                                 patientName,
 
-                            hospital_id:
-                                Number(
-                                    hospitalId
-                                ),
+                            hospital:
+                                hospitalName,
 
-                            doctor_id:
-                                Number(
-                                    doctorId
-                                )
+                            department:
+                                department,
+
+                            doctor:
+                                doctorName
 
                         })
 
@@ -978,11 +1450,13 @@ async function continueAndGetToken() {
 
 
         const order =
-            await response.json();
+            await readResponse(
+                response
+            );
 
 
         console.log(
-            "Order:",
+            "Create order response:",
             order
         );
 
@@ -990,26 +1464,102 @@ async function continueAndGetToken() {
         if (!response.ok) {
 
             throw new Error(
-                order.detail ||
+                getErrorMessage(
+                order,
                 "Unable to create payment order."
+                )
             );
 
         }
 
 
+        if (
+            !order.order_id ||
+            !order.key_id ||
+            !order.amount
+        ) {
+
+            throw new Error(
+                "Invalid payment order received from FastAPI."
+            );
+
+        }
+
+
+        // -----------------------------------------------------
+        // SAVE BOOKING INFORMATION
+        // -----------------------------------------------------
+
+        localStorage.setItem(
+            "selectedHospitalId",
+            String(hospitalId)
+        );
+
+
+        localStorage.setItem(
+            "selectedHospitalName",
+            hospitalName
+        );
+
+
+        localStorage.setItem(
+            "selectedDoctorId",
+            String(doctorId)
+        );
+
+
+        localStorage.setItem(
+            "selectedDoctorName",
+            doctorName
+        );
+
+
+        localStorage.setItem(
+            "selectedDepartment",
+            department
+        );
+
+
+        localStorage.setItem(
+            "selectedTokenFee",
+            String(
+                order.token_fee ??
+                getTokenFee()
+            )
+        );
+
+
+        localStorage.setItem(
+            "selectedPlatformFee",
+            String(
+                order.platform_fee ??
+                getPlatformFee()
+            )
+        );
+
+
+        localStorage.setItem(
+            "selectedTotalAmount",
+            String(
+                order.total_amount ??
+                Number(order.amount) / 100
+            )
+        );
+
+
         openRazorpay(
             order,
-            hospitalId,
-            doctorId,
+            hospitalName,
+            department,
+            doctorName,
             patientName
         );
 
-    }
 
-    catch (error) {
+    } catch (error) {
 
         console.error(
-            "Payment error:",
+            "Payment creation error:",
             error
         );
 
@@ -1021,12 +1571,7 @@ async function continueAndGetToken() {
         );
 
 
-        button.disabled =
-            false;
-
-
-        button.textContent =
-            "💳 Continue & Pay ₹10";
+        resetPaymentButton();
 
     }
 
@@ -1039,8 +1584,9 @@ async function continueAndGetToken() {
 
 function openRazorpay(
     order,
-    hospitalId,
-    doctorId,
+    hospitalName,
+    department,
+    doctorName,
     patientName
 ) {
 
@@ -1054,21 +1600,55 @@ function openRazorpay(
             "error"
         );
 
-        const button =
-            document.getElementById(
-                "continueBtn"
-            );
 
-
-        button.disabled =
-            false;
-
-
-        button.textContent =
-            "💳 Continue & Pay ₹10";
-
+        resetPaymentButton();
 
         return;
+
+    }
+
+
+    const tokenFee =
+        Number(
+            order.token_fee ??
+            getTokenFee()
+        );
+
+
+    const platformFee =
+        Number(
+            order.platform_fee ??
+            getPlatformFee()
+        );
+
+
+    const totalAmount =
+        Number(
+            order.total_amount ??
+            Number(order.amount) / 100
+        );
+
+
+    /*
+        Optional frontend consistency check.
+
+        Backend remains the final authority.
+    */
+
+    if (
+        tokenFee +
+        platformFee !==
+        totalAmount
+    ) {
+
+        console.warn(
+            "Payment amount information is inconsistent.",
+            {
+                tokenFee,
+                platformFee,
+                totalAmount
+            }
+        );
 
     }
 
@@ -1082,13 +1662,14 @@ function openRazorpay(
             order.amount,
 
         currency:
-            order.currency,
+            order.currency ||
+            "INR",
 
         name:
             "HospitalCare",
 
         description:
-            "Hospital Token Fee",
+            `Hospital Token ₹${tokenFee} + Platform Fee ₹${platformFee}`,
 
         order_id:
             order.order_id,
@@ -1126,18 +1707,40 @@ function openRazorpay(
             ) {
 
                 console.log(
-                    "Payment successful:",
+                    "Razorpay payment response:",
                     paymentResponse
                 );
 
 
-                await verifyPaymentAndCreateToken(
+                if (
+                    !paymentResponse ||
+                    !paymentResponse.razorpay_order_id ||
+                    !paymentResponse.razorpay_payment_id ||
+                    !paymentResponse.razorpay_signature
+                ) {
+
+                    showMessage(
+                        "Invalid payment response received.",
+                        "error"
+                    );
+
+
+                    resetPaymentButton();
+
+                    return;
+
+                }
+
+
+                await createTokenAfterPayment(
 
                     paymentResponse,
 
-                    hospitalId,
+                    hospitalName,
 
-                    doctorId,
+                    department,
+
+                    doctorName,
 
                     patientName
 
@@ -1151,18 +1754,12 @@ function openRazorpay(
             ondismiss:
                 function () {
 
-                    const button =
-                        document.getElementById(
-                            "continueBtn"
-                        );
+                    console.log(
+                        "Razorpay window closed."
+                    );
 
 
-                    button.disabled =
-                        false;
-
-
-                    button.textContent =
-                        "💳 Continue & Pay ₹10";
+                    resetPaymentButton();
 
 
                     showMessage(
@@ -1177,65 +1774,81 @@ function openRazorpay(
     };
 
 
-    const razorpay =
-        new Razorpay(
-            options
-        );
+    try {
 
-
-    razorpay.on(
-        "payment.failed",
-        function (response) {
-
-            console.error(
-                "Payment failed:",
-                response.error
+        const razorpay =
+            new Razorpay(
+                options
             );
 
 
-            showMessage(
+        razorpay.on(
+            "payment.failed",
+            function (response) {
 
-                response.error.description ||
-                "Payment failed.",
-
-                "error"
-
-            );
-
-
-            const button =
-                document.getElementById(
-                    "continueBtn"
+                console.error(
+                    "Payment failed:",
+                    response
                 );
 
 
-            button.disabled =
-                false;
+                const message =
+                    response &&
+                    response.error &&
+                    response.error.description
+                        ? response.error.description
+                        : "Payment failed.";
 
 
-            button.textContent =
-                "💳 Continue & Pay ₹10";
+                showMessage(
+                    message,
+                    "error"
+                );
 
-        }
-    );
+
+                resetPaymentButton();
+
+            }
+        );
 
 
-    razorpay.open();
+        razorpay.open();
+
+
+    } catch (error) {
+
+        console.error(
+            "Razorpay error:",
+            error
+        );
+
+
+        showMessage(
+            "Unable to open Razorpay.",
+            "error"
+        );
+
+
+        resetPaymentButton();
+
+    }
 
 }
 
 
 // =========================================================
-// VERIFY PAYMENT + CREATE TOKEN
+// CREATE TOKEN AFTER PAYMENT
 // =========================================================
 
-async function verifyPaymentAndCreateToken(
+async function createTokenAfterPayment(
 
     paymentResponse,
 
-    hospitalId,
+    hospitalName,
 
-    doctorId,
+    department,
+
+    doctorName,
 
     patientName
 
@@ -1247,77 +1860,20 @@ async function verifyPaymentAndCreateToken(
         );
 
 
-    button.disabled =
-        true;
+    if (!button) {
+        return;
+    }
 
+
+    button.disabled = true;
 
     button.textContent =
-        "Verifying Payment...";
+        "Creating Token...";
 
 
     try {
 
-        // =========================================
-        // VERIFY PAYMENT
-        // =========================================
-
-        const verifyResponse =
-            await fetch(
-                `${API}/api/verify-payment`,
-                {
-
-                    method: "POST",
-
-                    headers: {
-
-                        "Content-Type":
-                            "application/json"
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            razorpay_order_id:
-                                paymentResponse.razorpay_order_id,
-
-                            razorpay_payment_id:
-                                paymentResponse.razorpay_payment_id,
-
-                            razorpay_signature:
-                                paymentResponse.razorpay_signature
-
-                        })
-
-                }
-            );
-
-
-        const verifyData =
-            await verifyResponse.json();
-
-
-        if (!verifyResponse.ok) {
-
-            throw new Error(
-
-                verifyData.detail ||
-                "Payment verification failed."
-
-            );
-
-        }
-
-
-        // =========================================
-        // CREATE TOKEN
-        // =========================================
-
-        button.textContent =
-            "Creating Token...";
-
-
-        const tokenResponse =
+        const response =
             await fetch(
                 `${API}/tokens`,
                 {
@@ -1337,15 +1893,14 @@ async function verifyPaymentAndCreateToken(
                             patient_name:
                                 patientName,
 
-                            hospital_id:
-                                Number(
-                                    hospitalId
-                                ),
+                            hospital:
+                                hospitalName,
 
-                            doctor_id:
-                                Number(
-                                    doctorId
-                                ),
+                            department:
+                                department,
+
+                            doctor:
+                                doctorName,
 
                             razorpay_order_id:
                                 paymentResponse
@@ -1353,7 +1908,11 @@ async function verifyPaymentAndCreateToken(
 
                             razorpay_payment_id:
                                 paymentResponse
-                                    .razorpay_payment_id
+                                    .razorpay_payment_id,
+
+                            razorpay_signature:
+                                paymentResponse
+                                    .razorpay_signature
 
                         })
 
@@ -1361,64 +1920,191 @@ async function verifyPaymentAndCreateToken(
             );
 
 
-        const tokenData =
-            await tokenResponse.json();
+        const data =
+            await readResponse(
+                response
+            );
 
 
-        if (!tokenResponse.ok) {
+        console.log(
+            "Token response:",
+            data
+        );
+
+
+        if (!response.ok) {
 
             throw new Error(
-
-                tokenData.detail ||
+                getErrorMessage(
+                data,
                 "Token creation failed."
-
+                )
             );
 
         }
 
 
-        console.log(
-            "Token created:",
-            tokenData
-        );
+        const token =
+            data.token ||
+            data;
 
 
-        // =========================================
-        // SAVE TOKEN
-        // =========================================
+        if (
+            !token ||
+            token.token_number ===
+            undefined
+        ) {
 
-        localStorage.setItem(
-            "tokenId",
-            tokenData.token.id
-        );
+            throw new Error(
+                "FastAPI did not return token information."
+            );
+
+        }
+
+
+        // =====================================================
+        // SAVE TOKEN INFORMATION
+        // =====================================================
+
+        if (token.id) {
+
+            localStorage.setItem(
+                "tokenId",
+                String(token.id)
+            );
+
+        }
 
 
         localStorage.setItem(
             "tokenNumber",
-            tokenData.token.token_number
+            String(
+                token.token_number
+            )
         );
 
 
-        // =========================================
+        localStorage.setItem(
+            "tokenHospital",
+            token.hospital ||
+            hospitalName
+        );
+
+
+        localStorage.setItem(
+            "tokenDepartment",
+            token.department ||
+            department
+        );
+
+
+        localStorage.setItem(
+            "tokenDoctor",
+            token.doctor ||
+            doctorName
+        );
+
+
+        localStorage.setItem(
+            "tokenStatus",
+            token.status ||
+            "waiting"
+        );
+
+
+        localStorage.setItem(
+            "tokenFee",
+            String(
+                token.token_fee ??
+                getTokenFee()
+            )
+        );
+
+
+        localStorage.setItem(
+            "platformFee",
+            String(
+                token.platform_fee ??
+                getPlatformFee()
+            )
+        );
+
+
+        localStorage.setItem(
+            "totalAmount",
+            String(
+                token.total_amount ??
+                (
+                    Number(
+                        token.token_fee ??
+                        getTokenFee()
+                    ) +
+                    Number(
+                        token.platform_fee ??
+                        getPlatformFee()
+                    )
+                )
+            )
+        );
+
+
+        // Compatibility with older token.html
+
+        localStorage.setItem(
+            "token",
+            String(
+                token.token_number
+            )
+        );
+
+
+        localStorage.setItem(
+            "hospital",
+            token.hospital ||
+            hospitalName
+        );
+
+
+        localStorage.setItem(
+            "department",
+            token.department ||
+            department
+        );
+
+
+        localStorage.setItem(
+            "doctor",
+            token.doctor ||
+            doctorName
+        );
+
+
+        localStorage.setItem(
+            "paymentStatus",
+            "Paid"
+        );
+
+
+        localStorage.setItem(
+            "tokenStatus",
+            token.status ||
+            "waiting"
+        );
+
+
+        // =====================================================
         // SUCCESS
-        // =========================================
+        // =====================================================
 
         showMessage(
-
-            `Payment successful! Your token number is ${tokenData.token.token_number}.`,
-
+            `Payment successful! Your token number is ${token.token_number}.`,
             "success"
-
         );
 
 
         button.textContent =
             "Token Created ✓";
 
-
-        // =========================================
-        // TOKEN PAGE
-        // =========================================
 
         setTimeout(
             function () {
@@ -1427,12 +2113,11 @@ async function verifyPaymentAndCreateToken(
                     "token.html";
 
             },
-            1200
+            1000
         );
 
-    }
 
-    catch (error) {
+    } catch (error) {
 
         console.error(
             "Token creation error:",
@@ -1441,23 +2126,86 @@ async function verifyPaymentAndCreateToken(
 
 
         showMessage(
-
             error.message ||
             "Unable to create token.",
-
             "error"
-
         );
 
 
-        button.disabled =
-            false;
-
-
-        button.textContent =
-            "💳 Continue & Pay ₹10";
+        resetPaymentButton();
 
     }
+
+}
+
+
+// =========================================================
+// CLEAR OLD BOOKING DATA
+// =========================================================
+
+function clearOldBookingData() {
+
+    const keys = [
+
+        "tokenId",
+
+        "tokenNumber",
+
+        "token",
+
+        "tokenHospital",
+
+        "tokenDepartment",
+
+        "tokenDoctor",
+
+        "tokenStatus",
+
+        "tokenFee",
+
+        "platformFee",
+
+        "totalAmount",
+
+        "hospital",
+
+        "department",
+
+        "doctor",
+
+        "paymentStatus",
+
+        "currentToken",
+
+        "peopleAhead"
+
+    ];
+
+
+    keys.forEach(
+        function (key) {
+
+            localStorage.removeItem(
+                key
+            );
+
+        }
+    );
+
+}
+
+
+// =========================================================
+// RESET PAYMENT BUTTON
+// =========================================================
+
+function resetPaymentButton() {
+
+    paymentInProgress =
+        false;
+
+
+    updatePaymentButton();
 
 }
 
@@ -1471,13 +2219,13 @@ function showMessage(
     type = "success"
 ) {
 
-    const messageElement =
+    const element =
         document.getElementById(
             "message"
         );
 
 
-    if (!messageElement) {
+    if (!element) {
 
         console.log(
             message
@@ -1488,11 +2236,11 @@ function showMessage(
     }
 
 
-    messageElement.textContent =
+    element.textContent =
         message;
 
 
-    messageElement.className =
+    element.className =
         `message ${type}`;
 
 }
@@ -1504,36 +2252,83 @@ function showMessage(
 
 function logout() {
 
-    localStorage.removeItem(
-        "patientId"
-    );
+    const keys = [
 
-    localStorage.removeItem(
-        "patientName"
-    );
+        "patientId",
 
-    localStorage.removeItem(
-        "patientEmail"
-    );
+        "patientName",
 
-    localStorage.removeItem(
-        "patientPhone"
-    );
+        "patientEmail",
 
-    localStorage.removeItem(
-        "patientPicture"
-    );
+        "patientPhone",
 
-    localStorage.removeItem(
-        "googleId"
-    );
+        "patientPicture",
 
-    localStorage.removeItem(
-        "tokenId"
-    );
+        "googleId",
 
-    localStorage.removeItem(
-        "tokenNumber"
+        "patientAccessToken",
+
+        "selectedHospitalId",
+
+        "selectedHospitalName",
+
+        "selectedDoctorId",
+
+        "selectedDoctorName",
+
+        "selectedDepartment",
+
+        "selectedTokenFee",
+
+        "selectedPlatformFee",
+
+        "selectedTotalAmount",
+
+        "selectedHospitalTokenFee",
+
+        "tokenId",
+
+        "tokenNumber",
+
+        "token",
+
+        "tokenHospital",
+
+        "tokenDepartment",
+
+        "tokenDoctor",
+
+        "tokenStatus",
+
+        "tokenFee",
+
+        "platformFee",
+
+        "totalAmount",
+
+        "hospital",
+
+        "department",
+
+        "doctor",
+
+        "paymentStatus",
+
+        "currentToken",
+
+        "peopleAhead"
+
+    ];
+
+
+    keys.forEach(
+        function (key) {
+
+            localStorage.removeItem(
+                key
+            );
+
+        }
     );
 
 

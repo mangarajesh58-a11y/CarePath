@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -11,19 +10,42 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Patient Registration - HospitalCare</title>
+    <title>HospitalCare - Patient Registration</title>
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
 
     <style>
 
-        body {
+        /* =====================================================
+           RESET
+        ===================================================== */
+
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+        /* =====================================================
+           BODY
+        ===================================================== */
+
+        body {
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
 
             min-height: 100vh;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #e0f2fe,
+                    #dbeafe,
+                    #eef2ff
+                );
 
             display: flex;
 
@@ -31,121 +53,647 @@
 
             align-items: center;
 
-            font-family: Arial, sans-serif;
+            padding: 20px;
+
+        }
+
+
+        /* =====================================================
+           MAIN CONTAINER
+        ===================================================== */
+
+        .register-container {
+
+            width: 100%;
+
+            max-width: 1050px;
+
+            min-height: 650px;
+
+            background: #ffffff;
+
+            border-radius: 25px;
+
+            overflow: hidden;
+
+            box-shadow:
+                0 20px 60px
+                rgba(0, 0, 0, 0.15);
+
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+        }
+
+
+        /* =====================================================
+           LEFT SECTION
+        ===================================================== */
+
+        .left-section {
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #2563eb,
+                    #1d4ed8,
+                    #1e40af
+                );
+
+            color: white;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+
+            text-align: center;
+
+            padding: 50px;
+
+        }
+
+
+        /* =====================================================
+           ICON
+        ===================================================== */
+
+        .hospital-icon {
+
+            width: 110px;
+
+            height: 110px;
+
+            border-radius: 50%;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.15
+                );
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-size: 55px;
+
+            margin-bottom: 25px;
+
+            border:
+                2px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.3
+                );
+
+        }
+
+
+        /* =====================================================
+           LEFT TEXT
+        ===================================================== */
+
+        .left-section h1 {
+
+            font-size: 42px;
+
+            margin-bottom: 15px;
+
+            font-weight: 700;
+
+        }
+
+
+        .left-section h2 {
+
+            font-size: 22px;
+
+            font-weight: 400;
+
+            margin-bottom: 20px;
+
+            opacity: 0.95;
+
+        }
+
+
+        .left-section p {
+
+            font-size: 16px;
+
+            line-height: 1.7;
+
+            max-width: 400px;
+
+            opacity: 0.9;
+
+        }
+
+
+        /* =====================================================
+           FEATURES
+        ===================================================== */
+
+        .features {
+
+            margin-top: 35px;
+
+            width: 100%;
+
+            max-width: 350px;
+
+        }
+
+
+        .feature {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            margin-bottom: 15px;
+
+            font-size: 15px;
+
+            text-align: left;
+
+        }
+
+
+        .feature-icon {
+
+            width: 32px;
+
+            height: 32px;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.15
+                );
+
+            border-radius: 50%;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            flex-shrink: 0;
+
+        }
+
+
+        /* =====================================================
+           RIGHT SECTION
+        ===================================================== */
+
+        .right-section {
+
+            padding: 45px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+        }
+
+
+        /* =====================================================
+           HEADER
+        ===================================================== */
+
+        .register-header {
+
+            margin-bottom: 25px;
+
+        }
+
+
+        .register-header h2 {
+
+            font-size: 32px;
+
+            color: #111827;
+
+            margin-bottom: 8px;
+
+        }
+
+
+        .register-header p {
+
+            color: #6b7280;
+
+            font-size: 15px;
+
+        }
+
+
+        /* =====================================================
+           MESSAGE
+        ===================================================== */
+
+        #message {
+
+            display: none;
+
+            padding: 12px;
+
+            border-radius: 8px;
+
+            margin-bottom: 18px;
+
+            font-size: 14px;
+
+            text-align: center;
+
+        }
+
+
+        #message.success {
+
+            display: block;
+
+            background: #dcfce7;
+
+            color: #166534;
+
+            border:
+                1px solid #bbf7d0;
+
+        }
+
+
+        #message.error {
+
+            display: block;
+
+            background: #fee2e2;
+
+            color: #991b1b;
+
+            border:
+                1px solid #fecaca;
+
+        }
+
+
+        #message.info {
+
+            display: block;
+
+            background: #dbeafe;
+
+            color: #1e40af;
+
+            border:
+                1px solid #bfdbfe;
+
+        }
+
+
+        /* =====================================================
+           FORM
+        ===================================================== */
+
+        .register-form {
+
+            width: 100%;
+
+        }
+
+
+        .form-row {
+
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 15px;
+
+        }
+
+
+        .form-group {
+
+            margin-bottom: 17px;
+
+        }
+
+
+        .form-group label {
+
+            display: block;
+
+            margin-bottom: 7px;
+
+            color: #374151;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+        }
+
+
+        .form-group input {
+
+            width: 100%;
+
+            padding: 13px 15px;
+
+            border:
+                1px solid #d1d5db;
+
+            border-radius: 10px;
+
+            font-size: 15px;
+
+            outline: none;
+
+            transition:
+                border-color 0.2s,
+                box-shadow 0.2s;
+
+        }
+
+
+        .form-group input:focus {
+
+            border-color: #2563eb;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(
+                    37,
+                    99,
+                    235,
+                    0.12
+                );
+
+        }
+
+
+        /* =====================================================
+           REGISTER BUTTON
+        ===================================================== */
+
+        .register-button {
+
+            width: 100%;
+
+            border: none;
+
+            padding: 14px;
 
             background:
                 linear-gradient(
                     135deg,
-                    #e3f2fd,
-                    #ffffff
+                    #2563eb,
+                    #1d4ed8
                 );
-        }
-
-        .auth-container {
-            width: 400px;
-        }
-
-        .logo {
-            text-align: center;
-
-            font-size: 48px;
-        }
-
-        .auth-container h1 {
-            text-align: center;
-
-            color: #1565c0;
-
-            margin: 8px 0;
-        }
-
-        .subtitle {
-            text-align: center;
-
-            color: #777;
-
-            margin-bottom: 20px;
-        }
-
-        .form-card {
-            background: white;
-
-            padding: 30px;
-
-            border-radius: 18px;
-
-            box-shadow:
-                0 10px 35px
-                rgba(0, 0, 0, 0.12);
-        }
-
-        .form-card label {
-            display: block;
-
-            margin-top: 15px;
-
-            margin-bottom: 7px;
-
-            font-weight: bold;
-
-            color: #444;
-        }
-
-        .form-card input {
-            width: 100%;
-
-            padding: 13px;
-
-            border:
-                1px solid #ccc;
-
-            border-radius: 8px;
-
-            font-size: 15px;
-
-            box-sizing: border-box;
-        }
-
-        .form-card button {
-            width: 100%;
-
-            margin-top: 25px;
-
-            padding: 13px;
-
-            border: none;
-
-            border-radius: 8px;
-
-            background: #1976d2;
 
             color: white;
 
+            border-radius: 10px;
+
             font-size: 16px;
 
-            font-weight: bold;
+            font-weight: 600;
 
             cursor: pointer;
+
+            transition:
+                transform 0.2s,
+                box-shadow 0.2s;
+
+            margin-top: 5px;
+
         }
 
-        .form-card button:hover {
-            background: #125ca8;
+
+        .register-button:hover {
+
+            transform:
+                translateY(-1px);
+
+            box-shadow:
+                0 8px 20px
+                rgba(
+                    37,
+                    99,
+                    235,
+                    0.25
+                );
+
         }
 
-        .register-text {
+
+        .register-button:disabled {
+
+            opacity: 0.6;
+
+            cursor: not-allowed;
+
+            transform: none;
+
+        }
+
+
+        /* =====================================================
+           LOGIN LINK
+        ===================================================== */
+
+        .login-section {
+
             text-align: center;
 
-            margin-top: 20px;
+            margin-top: 22px;
 
-            color: #555;
+            color: #6b7280;
+
+            font-size: 14px;
+
         }
 
-        .register-text a {
-            color: #1976d2;
 
-            font-weight: bold;
+        .login-section a {
+
+            color: #2563eb;
+
+            font-weight: 600;
 
             text-decoration: none;
+
+        }
+
+
+        .login-section a:hover {
+
+            text-decoration: underline;
+
+        }
+
+
+        /* =====================================================
+           PASSWORD REQUIREMENTS
+        ===================================================== */
+
+        .password-help {
+
+            font-size: 12px;
+
+            color: #6b7280;
+
+            margin-top: 5px;
+
+        }
+
+
+        /* =====================================================
+           MOBILE
+        ===================================================== */
+
+        @media (max-width: 800px) {
+
+            body {
+
+                padding: 10px;
+
+            }
+
+
+            .register-container {
+
+                grid-template-columns: 1fr;
+
+                max-width: 500px;
+
+                min-height: auto;
+
+            }
+
+
+            .left-section {
+
+                padding: 40px 25px;
+
+                min-height: 320px;
+
+            }
+
+
+            .left-section h1 {
+
+                font-size: 34px;
+
+            }
+
+
+            .left-section h2 {
+
+                font-size: 19px;
+
+            }
+
+
+            .features {
+
+                display: none;
+
+            }
+
+
+            .right-section {
+
+                padding: 35px 25px;
+
+            }
+
+        }
+
+
+        /* =====================================================
+           SMALL MOBILE
+        ===================================================== */
+
+        @media (max-width: 500px) {
+
+            .form-row {
+
+                grid-template-columns: 1fr;
+
+                gap: 0;
+
+            }
+
+
+            .left-section {
+
+                padding: 30px 20px;
+
+            }
+
+
+            .hospital-icon {
+
+                width: 80px;
+
+                height: 80px;
+
+                font-size: 40px;
+
+            }
+
+
+            .left-section h1 {
+
+                font-size: 30px;
+
+            }
+
+
+            .left-section h2 {
+
+                font-size: 18px;
+
+            }
+
+
+            .right-section {
+
+                padding: 30px 20px;
+
+            }
+
+
+            .register-header h2 {
+
+                font-size: 27px;
+
+            }
+
         }
 
     </style>
@@ -156,123 +704,642 @@
 <body>
 
 
-<div class="auth-container">
+    <!-- =====================================================
+         MAIN CONTAINER
+    ====================================================== -->
+
+    <div class="register-container">
 
 
-    <div class="logo">
-        🏥
+        <!-- =================================================
+             LEFT SECTION
+        ================================================== -->
+
+        <section class="left-section">
+
+
+            <div class="hospital-icon">
+                🏥
+            </div>
+
+
+            <h1>
+                HospitalCare
+            </h1>
+
+
+            <h2>
+                Join HospitalCare
+            </h2>
+
+
+            <p>
+                Create your patient account
+                and book hospital tokens
+                without waiting in long queues.
+            </p>
+
+
+            <div class="features">
+
+
+                <div class="feature">
+
+                    <div class="feature-icon">
+                        ✓
+                    </div>
+
+                    <span>
+                        Find hospitals near you
+                    </span>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-icon">
+                        ✓
+                    </div>
+
+                    <span>
+                        Choose your doctor
+                    </span>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-icon">
+                        ✓
+                    </div>
+
+                    <span>
+                        Book tokens online
+                    </span>
+
+                </div>
+
+
+                <div class="feature">
+
+                    <div class="feature-icon">
+                        ✓
+                    </div>
+
+                    <span>
+                        Make secure payments
+                    </span>
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             RIGHT SECTION
+        ================================================== -->
+
+        <section class="right-section">
+
+
+            <!-- HEADER -->
+
+            <div class="register-header">
+
+                <h2>
+                    Create Account
+                </h2>
+
+                <p>
+                    Register as a HospitalCare patient
+                </p>
+
+            </div>
+
+
+            <!-- MESSAGE -->
+
+            <div id="message"></div>
+
+
+            <!-- =================================================
+                 REGISTRATION FORM
+            ================================================== -->
+
+            <form
+                id="registerForm"
+                class="register-form"
+                autocomplete="on"
+            >
+
+
+                <!-- NAME -->
+
+                <div class="form-group">
+
+                    <label for="fullName">
+                        Full Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="fullName"
+                        name="fullName"
+                        placeholder="Enter your full name"
+                        autocomplete="name"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- EMAIL + PHONE -->
+
+                <div class="form-row">
+
+
+                    <div class="form-group">
+
+                        <label for="email">
+                            Email Address
+                        </label>
+
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="Enter your email"
+                            autocomplete="email"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="phone">
+                            Phone Number
+                        </label>
+
+                        <input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            placeholder="Enter phone number"
+                            autocomplete="tel"
+                            maxlength="15"
+                            required
+                        >
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- PASSWORD + CONFIRM PASSWORD -->
+
+                <div class="form-row">
+
+
+                    <div class="form-group">
+
+                        <label for="password">
+                            Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Create a password"
+                            autocomplete="new-password"
+                            minlength="6"
+                            required
+                        >
+
+                        <div class="password-help">
+                            Minimum 6 characters
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="confirmPassword">
+                            Confirm Password
+                        </label>
+
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            placeholder="Confirm your password"
+                            autocomplete="new-password"
+                            minlength="6"
+                            required
+                        >
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- REGISTER BUTTON -->
+
+                <button
+                    type="submit"
+                    class="register-button"
+                    id="registerButton"
+                >
+                    Create Account
+                </button>
+
+
+            </form>
+
+
+            <!-- =================================================
+                 LOGIN LINK
+            ================================================== -->
+
+            <div class="login-section">
+
+                Already have an account?
+
+                <a href="index.html">
+                    Login
+                </a>
+
+            </div>
+
+
+        </section>
+
+
     </div>
 
 
-    <h1>
-        HospitalCare
-    </h1>
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script>
 
 
-    <p class="subtitle">
-        Create Patient Account
-    </p>
+        // =====================================================
+        // API
+        // =====================================================
+
+        const API =
+            "http://127.0.0.1:8000";
 
 
-    <div class="form-card">
+        // =====================================================
+        // MESSAGE
+        // =====================================================
+
+        function showMessage(
+            message,
+            type
+        ) {
+
+            const messageElement =
+                document.getElementById(
+                    "message"
+                );
 
 
-        <!-- FULL NAME -->
-
-        <label>
-            Full Name
-        </label>
-
-        <input
-            type="text"
-            id="fullName"
-            placeholder="Enter your full name"
-        >
+            messageElement.textContent =
+                message;
 
 
-        <!-- EMAIL -->
-
-        <label>
-            Email
-        </label>
-
-        <input
-            type="email"
-            id="email"
-            placeholder="Enter email"
-        >
+            messageElement.className =
+                type;
 
 
-        <!-- PHONE -->
+            messageElement.style.display =
+                "block";
 
-        <label>
-            Phone Number
-        </label>
-
-        <input
-            type="tel"
-            id="phone"
-            placeholder="Enter phone number"
-        >
+        }
 
 
-        <!-- PASSWORD -->
+        // =====================================================
+        // REGISTER FORM
+        // =====================================================
 
-        <label>
-            Password
-        </label>
-
-        <input
-            type="password"
-            id="password"
-            placeholder="Create password"
-        >
+        document
+            .getElementById("registerForm")
+            .addEventListener(
+                "submit",
+                async function(event) {
 
 
-        <!-- CONFIRM PASSWORD -->
-
-        <label>
-            Confirm Password
-        </label>
-
-        <input
-            type="password"
-            id="confirmPassword"
-            placeholder="Confirm password"
-        >
+                    event.preventDefault();
 
 
-        <!-- REGISTER -->
+                    // -----------------------------------------
+                    // GET VALUES
+                    // -----------------------------------------
 
-        <button
-            type="button"
-            onclick="registerPatient()"
-        >
-            Register
-        </button>
-
-
-        <p class="register-text">
-
-            Already have an account?
-
-            <a href="index.html">
-                Login
-            </a>
-
-        </p>
+                    const fullName =
+                        document
+                            .getElementById(
+                                "fullName"
+                            )
+                            .value
+                            .trim();
 
 
-    </div>
+                    const email =
+                        document
+                            .getElementById(
+                                "email"
+                            )
+                            .value
+                            .trim();
 
 
-</div>
+                    const phone =
+                        document
+                            .getElementById(
+                                "phone"
+                            )
+                            .value
+                            .trim();
 
 
-<script src="script.js"></script>
+                    const password =
+                        document
+                            .getElementById(
+                                "password"
+                            )
+                            .value;
+
+
+                    const confirmPassword =
+                        document
+                            .getElementById(
+                                "confirmPassword"
+                            )
+                            .value;
+
+
+                    const registerButton =
+                        document
+                            .getElementById(
+                                "registerButton"
+                            );
+
+
+                    // -----------------------------------------
+                    // VALIDATION
+                    // -----------------------------------------
+
+                    if (
+                        !fullName ||
+                        !email ||
+                        !phone ||
+                        !password ||
+                        !confirmPassword
+                    ) {
+
+                        showMessage(
+                            "Please fill in all fields.",
+                            "error"
+                        );
+
+                        return;
+
+                    }
+
+
+                    if (password.length < 6) {
+
+                        showMessage(
+                            "Password must contain at least 6 characters.",
+                            "error"
+                        );
+
+                        return;
+
+                    }
+
+
+                    if (
+                        password !==
+                        confirmPassword
+                    ) {
+
+                        showMessage(
+                            "Passwords do not match.",
+                            "error"
+                        );
+
+                        return;
+
+                    }
+
+
+                    // -----------------------------------------
+                    // PHONE VALIDATION
+                    // -----------------------------------------
+
+                    const phonePattern =
+                        /^[0-9+\-\s()]{7,15}$/;
+
+
+                    if (
+                        !phonePattern.test(
+                            phone
+                        )
+                    ) {
+
+                        showMessage(
+                            "Please enter a valid phone number.",
+                            "error"
+                        );
+
+                        return;
+
+                    }
+
+
+                    // -----------------------------------------
+                    // BUTTON
+                    // -----------------------------------------
+
+                    registerButton.disabled =
+                        true;
+
+                    registerButton.textContent =
+                        "Creating Account...";
+
+
+                    try {
+
+
+                        // -------------------------------------
+                        // API REQUEST
+                        // -------------------------------------
+
+                        const response =
+                            await fetch(
+                                `${API}/patients/register`,
+                                {
+
+                                    method: "POST",
+
+                                    headers: {
+
+                                        "Content-Type":
+                                            "application/json"
+
+                                    },
+
+                                    body:
+                                        JSON.stringify({
+
+                                            full_name:
+                                                fullName,
+
+                                            email:
+                                                email,
+
+                                            phone:
+                                                phone,
+
+                                            password:
+                                                password
+
+                                        })
+
+                                }
+                            );
+
+
+                        // -------------------------------------
+                        // RESPONSE
+                        // -------------------------------------
+
+                        let data;
+
+
+                        try {
+
+                            data =
+                                await response.json();
+
+                        }
+
+                        catch {
+
+                            data = {};
+
+                        }
+
+
+                        console.log(
+                            "Registration response:",
+                            data
+                        );
+
+
+                        // -------------------------------------
+                        // ERROR
+                        // -------------------------------------
+
+                        if (!response.ok) {
+
+                            throw new Error(
+
+                                data.detail ||
+                                "Registration failed."
+
+                            );
+
+                        }
+
+
+                        // -------------------------------------
+                        // SUCCESS
+                        // -------------------------------------
+
+                        showMessage(
+
+                            "Registration successful. Redirecting to login...",
+
+                            "success"
+
+                        );
+
+
+                        // -------------------------------------
+                        // REDIRECT
+                        // -------------------------------------
+
+                        setTimeout(
+                            function() {
+
+                                window.location.href =
+                                    "index.html";
+
+                            },
+                            1200
+                        );
+
+
+                    }
+
+                    catch(error) {
+
+
+                        console.error(
+                            "Registration error:",
+                            error
+                        );
+
+
+                        showMessage(
+
+                            error.message ||
+                            "Unable to register.",
+
+                            "error"
+
+                        );
+
+                    }
+
+
+                    finally {
+
+
+                        registerButton.disabled =
+                            false;
+
+
+                        registerButton.textContent =
+                            "Create Account";
+
+                    }
+
+                }
+            );
+
+
+    </script>
 
 
 </body>
 
 </html>
-

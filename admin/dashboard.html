@@ -19,276 +19,152 @@
 
 </head>
 
+
 <body>
 
-    <div class="dashboard">
-
-        <!-- HEADER -->
-
-        <header>
-
-            <div>
-
-                <h1>
-                    🏥 HospitalCare
-                </h1>
-
-                <p>
-                    Admin Dashboard
-                </p>
-
-            </div>
+<div class="dashboard">
 
 
-            <button
-                class="logout"
-                onclick="adminLogout()"
-            >
-                Logout
-            </button>
+    <!-- HEADER -->
 
-        </header>
+    <header>
 
+        <div>
 
-        <!-- WELCOME -->
-
-        <div class="welcome">
-
-            <h2>
-                Welcome, Admin
-            </h2>
+            <h1>
+                🏥 HospitalCare
+            </h1>
 
             <p>
-                Monitor hospitals, payments,
-                tokens and platform revenue.
+                Admin Dashboard
             </p>
 
         </div>
 
 
-        <!-- STATISTICS -->
+        <button
+            type="button"
+            class="logout"
+            onclick="adminLogout()"
+        >
+            Logout
+        </button>
 
-        <div class="stats-grid">
+    </header>
 
-            <div class="stat-card">
 
-                <div class="stat-icon">
-                    🏥
-                </div>
 
-                <div>
+    <!-- WELCOME -->
 
-                    <span>
-                        Hospitals
-                    </span>
+    <div class="welcome">
 
-                    <strong id="hospitalCount">
-                        0
-                    </strong>
+        <h2>
+            Welcome, Admin
+        </h2>
 
-                </div>
+        <p>
+            Monitor hospitals, payments,
+            tokens and platform revenue.
+        </p>
 
+    </div>
+
+
+
+    <!-- STATISTICS -->
+
+    <div class="stats-grid">
+
+
+        <!-- HOSPITALS -->
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                🏥
             </div>
 
+            <div>
 
-            <div class="stat-card">
-
-                <div class="stat-icon">
-                    💳
-                </div>
-
-                <div>
-
-                    <span>
-                        Payments
-                    </span>
-
-                    <strong id="paymentCount">
-                        0
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="stat-card">
-
-                <div class="stat-icon">
-                    🎫
-                </div>
-
-                <div>
-
-                    <span>
-                        Tokens
-                    </span>
-
-                    <strong id="tokenCount">
-                        0
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="stat-card">
-
-                <div class="stat-icon">
-                    💰
-                </div>
-
-                <div>
-
-                    <span>
-                        Platform Revenue
-                    </span>
-
-                    <strong id="platformRevenue">
-                        ₹0
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- REVENUE -->
-
-        <div class="revenue-card">
-
-            <h2>
-                💰 Revenue Overview
-            </h2>
-
-
-            <div class="revenue-grid">
-
-                <div>
-
-                    <span>
-                        Token Fee Revenue
-                    </span>
-
-                    <strong id="tokenRevenue">
-                        ₹0
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <span>
-                        Platform Revenue
-                    </span>
-
-                    <strong id="platformRevenue2">
-                        ₹0
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <span>
-                        Total Collected
-                    </span>
-
-                    <strong id="totalCollected">
-                        ₹0
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- MANAGEMENT -->
-
-        <div class="dashboard-grid">
-
-
-            <!-- HOSPITALS -->
-
-            <div class="dashboard-card">
-
-                <div class="card-icon">
-                    🏥
-                </div>
-
-                <h3>
+                <span>
                     Hospitals
-                </h3>
+                </span>
 
-                <p>
-                    View registered hospitals
-                    and their token fees.
-                </p>
-
-                <button
-                    onclick="openHospitals()"
-                >
-                    View Hospitals
-                </button>
+                <strong id="hospitalCount">
+                    0
+                </strong>
 
             </div>
 
+        </div>
 
-            <!-- PAYMENTS -->
 
-            <div class="dashboard-card">
 
-                <div class="card-icon">
-                    💳
-                </div>
+        <!-- PAYMENTS -->
 
-                <h3>
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                💳
+            </div>
+
+            <div>
+
+                <span>
                     Payments
-                </h3>
+                </span>
 
-                <p>
-                    View all successful
-                    and pending payments.
-                </p>
-
-                <button
-                    onclick="openPayments()"
-                >
-                    View Payments
-                </button>
+                <strong id="paymentCount">
+                    0
+                </strong>
 
             </div>
 
+        </div>
 
-            <!-- TOKENS -->
 
-            <div class="dashboard-card">
 
-                <div class="card-icon">
-                    🎫
-                </div>
+        <!-- TOKENS -->
 
-                <h3>
-                    Patient Tokens
-                </h3>
+        <div class="stat-card">
 
-                <p>
-                    Monitor all hospital
-                    tokens.
-                </p>
+            <div class="stat-icon">
+                🎫
+            </div>
 
-                <button
-                    onclick="openTokens()"
-                >
-                    View Tokens
-                </button>
+            <div>
+
+                <span>
+                    Tokens
+                </span>
+
+                <strong id="tokenCount">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- PLATFORM REVENUE -->
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                💰
+            </div>
+
+            <div>
+
+                <span>
+                    Platform Revenue
+                </span>
+
+                <strong id="platformRevenue">
+                    ₹0
+                </strong>
 
             </div>
 
@@ -297,7 +173,167 @@
     </div>
 
 
-    <script src="script.js"></script>
+
+    <!-- REVENUE -->
+
+    <div class="revenue-card">
+
+        <h2>
+            💰 Revenue Overview
+        </h2>
+
+
+        <div class="revenue-grid">
+
+
+            <!-- TOKEN REVENUE -->
+
+            <div>
+
+                <span>
+                    Token Fee Revenue
+                </span>
+
+                <strong id="tokenRevenue">
+                    ₹0
+                </strong>
+
+            </div>
+
+
+
+            <!-- PLATFORM REVENUE -->
+
+            <div>
+
+                <span>
+                    Platform Revenue
+                </span>
+
+                <strong id="platformRevenue2">
+                    ₹0
+                </strong>
+
+            </div>
+
+
+
+            <!-- TOTAL -->
+
+            <div>
+
+                <span>
+                    Total Collected
+                </span>
+
+                <strong id="totalCollected">
+                    ₹0
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- MANAGEMENT -->
+
+    <div class="dashboard-grid">
+
+
+        <!-- HOSPITALS -->
+
+        <div class="dashboard-card">
+
+            <div class="card-icon">
+                🏥
+            </div>
+
+            <h3>
+                Hospitals
+            </h3>
+
+            <p>
+                View registered hospitals
+                and their token fees.
+            </p>
+
+            <button
+                type="button"
+                onclick="window.location.href='hospitals.html'"
+            >
+                View Hospitals
+            </button>
+
+        </div>
+
+
+
+        <!-- PAYMENTS -->
+
+        <div class="dashboard-card">
+
+            <div class="card-icon">
+                💳
+            </div>
+
+            <h3>
+                Payments
+            </h3>
+
+            <p>
+                View all successful
+                and pending payments.
+            </p>
+
+            <button
+                type="button"
+                onclick="window.location.href='payments.html'"
+            >
+                View Payments
+            </button>
+
+        </div>
+
+
+
+        <!-- TOKENS -->
+
+        <div class="dashboard-card">
+
+            <div class="card-icon">
+                🎫
+            </div>
+
+            <h3>
+                Patient Tokens
+            </h3>
+
+            <p>
+                Monitor all hospital
+                tokens.
+            </p>
+
+            <button
+                type="button"
+                onclick="window.location.href='tokens.html'"
+            >
+                View Tokens
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- ADMIN JAVASCRIPT -->
+
+<script src="script.js"></script>
 
 </body>
 

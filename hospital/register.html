@@ -1,220 +1,485 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hospital Registration - HospitalCare</title>
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
 
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e3f2fd, #ffffff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: white;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .logo {
+            text-align: center;
+            color: #1976d2;
+            font-size: 30px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #222;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #1976d2;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #125ca3;
+        }
+
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+
+        #message {
+            margin-top: 18px;
+            text-align: center;
+            font-weight: 600;
+            line-height: 1.5;
+            min-height: 24px;
+            overflow-wrap: anywhere;
+        }
+
+        .success {
+            color: #15803d;
+        }
+
+        .error {
+            color: #dc2626;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .login-link a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .hint {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+                align-items: flex-start;
+            }
+
+            .container {
+                margin-top: 20px;
+                padding: 25px 20px;
+            }
+
+            .logo {
+                font-size: 26px;
+            }
+
+            h2 {
+                font-size: 22px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="auth-container">
+<div class="container">
 
-    <!-- =========================
-         LOGO
-    ========================== -->
-
-    <div class="logo">
-        🏥
-    </div>
-
-
-    <h1>
-        HospitalCare
-    </h1>
-
+    <div class="logo">🏥 HospitalCare</div>
 
     <p class="subtitle">
-        Register Your Hospital
+        Register your hospital with HospitalCare
     </p>
 
+    <h2>Hospital Registration</h2>
 
-    <!-- =========================
-         REGISTRATION FORM
-    ========================== -->
+    <form id="hospitalRegisterForm" enctype="multipart/form-data">
 
-    <div class="form-card">
+        <div class="form-group">
+            <label for="name">Hospital Name</label>
+            <input
+                type="text"
+                id="name"
+                placeholder="Enter hospital name"
+                autocomplete="organization"
+                required
+            >
+        </div>
 
-        <h2>
-            Hospital Registration
-        </h2>
+        <div class="form-group">
+            <label for="email">Hospital Email</label>
+            <input
+                type="email"
+                id="email"
+                placeholder="hospital@example.com"
+                autocomplete="email"
+                required
+            >
+        </div>
 
+        <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input
+                type="tel"
+                id="phone"
+                placeholder="Enter phone number"
+                autocomplete="tel"
+                required
+            >
+        </div>
 
-        <!-- HOSPITAL NAME -->
+        <div class="form-group">
+            <label for="city">City</label>
+            <input
+                type="text"
+                id="city"
+                placeholder="Enter city"
+                required
+            >
+        </div>
 
-        <label for="hospitalName">
-            Hospital Name
-        </label>
+        <div class="form-group">
+            <label for="address">Hospital Address</label>
+            <textarea
+                id="address"
+                placeholder="Enter complete hospital address"
+                required
+            ></textarea>
+        </div>
 
-        <input
-            type="text"
-            id="hospitalName"
-            placeholder="Enter hospital name"
-            autocomplete="organization"
-        >
+        <div class="form-group">
+            <label for="description">Hospital Description</label>
+            <textarea
+                id="description"
+                placeholder="Enter hospital description"
+            ></textarea>
+        </div>
 
+        <div class="form-group">
+            <label for="registration_number">
+                Hospital Registration / License Number
+            </label>
+            <input
+                type="text"
+                id="registration_number"
+                placeholder="Enter registration / license number"
+                required
+            >
+        </div>
 
-        <!-- EMAIL -->
+        <div class="form-group">
+            <label for="issuing_authority">Issuing Authority</label>
+            <input
+                type="text"
+                id="issuing_authority"
+                placeholder="Example: DM&HO / Health Department"
+                required
+            >
+        </div>
 
-        <label for="hospitalEmail">
-            Hospital Email
-        </label>
+        <div class="form-group">
+            <label for="license_expiry_date">License Expiry Date</label>
+            <input
+                type="date"
+                id="license_expiry_date"
+            >
+        </div>
 
-        <input
-            type="email"
-            id="hospitalEmail"
-            placeholder="Enter hospital email"
-            autocomplete="email"
-        >
+        <div class="form-group">
+            <label for="license_certificate">
+                Hospital Registration Certificate
+            </label>
+            <input
+                type="file"
+                id="license_certificate"
+                accept=".pdf,.jpg,.jpeg,.png"
+                required
+            >
+            <span class="hint">
+                Accepted formats: PDF, JPG, JPEG, PNG
+            </span>
+        </div>
 
+        <div class="form-group">
+            <label for="token_fee">Token Fee (₹)</label>
+            <input
+                type="number"
+                id="token_fee"
+                min="0"
+                step="1"
+                value="0"
+                placeholder="Example: 100"
+                required
+            >
+        </div>
 
-        <!-- PHONE -->
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                placeholder="Create password"
+                minlength="6"
+                autocomplete="new-password"
+                required
+            >
+        </div>
 
-        <label for="hospitalPhone">
-            Phone Number
-        </label>
+        <div class="form-group">
+            <label for="confirm_password">Confirm Password</label>
+            <input
+                type="password"
+                id="confirm_password"
+                placeholder="Confirm password"
+                minlength="6"
+                autocomplete="new-password"
+                required
+            >
+        </div>
 
-        <input
-            type="tel"
-            id="hospitalPhone"
-            placeholder="Enter phone number"
-            autocomplete="tel"
-        >
-
-
-        <!-- CITY -->
-
-        <label for="hospitalCity">
-            City
-        </label>
-
-        <input
-            type="text"
-            id="hospitalCity"
-            placeholder="Enter city"
-        >
-
-
-        <!-- ADDRESS -->
-
-        <label for="hospitalAddress">
-            Hospital Address
-        </label>
-
-        <textarea
-            id="hospitalAddress"
-            placeholder="Enter complete hospital address"
-            rows="4"
-        ></textarea>
-
-
-        <!-- DESCRIPTION -->
-
-        <label for="hospitalDescription">
-            Hospital Description
-        </label>
-
-        <textarea
-            id="hospitalDescription"
-            placeholder="Enter hospital description"
-            rows="4"
-        ></textarea>
-
-
-        
-
-        <!-- LICENSE -->
-
-    <label for="licenseId">
-    Hospital License ID
-    </label>
-
-    <input
-        type="text"
-        id="licenseId"
-        placeholder="Enter hospital license ID"
-        required
-    >
-
-
-        <!-- PASSWORD -->
-
-        <label for="hospitalPassword">
-            Password
-        </label>
-
-        <input
-            type="password"
-            id="hospitalPassword"
-            placeholder="Create password"
-            autocomplete="new-password"
-        >
-
-
-        <!-- CONFIRM PASSWORD -->
-
-        <label for="confirmPassword">
-            Confirm Password
-        </label>
-
-        <input
-            type="password"
-            id="confirmPassword"
-            placeholder="Confirm password"
-            autocomplete="new-password"
-        >
-
-
-        <!-- REGISTER -->
-
-        <button
-            type="button"
-            onclick="registerHospital()"
-        >
+        <button type="submit" id="registerButton">
             Register Hospital
         </button>
 
+        <div id="message" aria-live="polite"></div>
 
-        <!-- MESSAGE -->
+    </form>
 
-        <p
-            id="registerMessage"
-            class="message"
-        ></p>
-
-
-        <!-- LOGIN -->
-
-        <p class="register-text">
-
-            Already registered?
-
-            <a href="index.html">
-                Login
-            </a>
-
-        </p>
-
+    <div class="login-link">
+        Already registered?
+        <a href="hospital-login.html">Hospital Login</a>
     </div>
 
 </div>
 
+<script>
+    const API_URL = "http://127.0.0.1:8000";
 
-<script src="script.js"></script>
+    const form = document.getElementById("hospitalRegisterForm");
+    const message = document.getElementById("message");
+    const registerButton = document.getElementById("registerButton");
+
+    function showMessage(text, type = "error") {
+        message.textContent = text;
+        message.className = type;
+    }
+
+    function getValue(id) {
+        return document.getElementById(id).value.trim();
+    }
+
+    form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const password = document.getElementById("password").value;
+        const confirmPassword =
+            document.getElementById("confirm_password").value;
+
+        const certificate =
+            document.getElementById("license_certificate").files[0];
+
+        const tokenFee = Number(
+            document.getElementById("token_fee").value
+        );
+
+        // Validate password
+        if (password.length < 6) {
+            showMessage("Password must contain at least 6 characters.");
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            showMessage("Passwords do not match.");
+            return;
+        }
+
+        // Validate token fee
+        if (!Number.isFinite(tokenFee) || tokenFee < 0) {
+            showMessage("Please enter a valid token fee.");
+            return;
+        }
+
+        // Validate certificate
+        if (!certificate) {
+            showMessage("Please upload the hospital registration certificate.");
+            return;
+        }
+
+        // Create multipart form data
+        const formData = new FormData();
+
+        formData.append("name", getValue("name"));
+        formData.append("email", getValue("email").toLowerCase());
+        formData.append("phone", getValue("phone"));
+        formData.append("city", getValue("city"));
+        formData.append("address", getValue("address"));
+        formData.append("description", getValue("description"));
+
+        formData.append(
+            "registration_number",
+            getValue("registration_number")
+        );
+
+        formData.append(
+            "issuing_authority",
+            getValue("issuing_authority")
+        );
+
+        formData.append("password", password);
+        formData.append("token_fee", String(tokenFee));
+        formData.append("license_certificate", certificate);
+
+        const expiryDate = document.getElementById(
+            "license_expiry_date"
+        ).value;
+
+        if (expiryDate) {
+            formData.append("license_expiry_date", expiryDate);
+        }
+
+        // Disable button while registering
+        registerButton.disabled = true;
+        registerButton.textContent = "Registering...";
+
+        showMessage("Registering hospital...", "success");
+
+        try {
+            const response = await fetch(`${API_URL}/hospitals`, {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            // Handle FastAPI errors
+            if (!response.ok) {
+                let errorMessage = "Hospital registration failed.";
+
+                if (Array.isArray(data.detail)) {
+                    errorMessage = data.detail.map(function (item) {
+                        const field = Array.isArray(item.loc)
+                            ? item.loc[item.loc.length - 1]
+                            : "";
+
+                        return field
+                            ? `${field}: ${item.msg}`
+                            : item.msg;
+                    }).join("; ");
+                } else if (typeof data.detail === "string") {
+                    errorMessage = data.detail;
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            showMessage(
+                data.message ||
+                "Hospital registered successfully. Waiting for admin approval.",
+                "success"
+            );
+
+            form.reset();
+
+        } catch (error) {
+            console.error("Hospital registration error:", error);
+
+            if (error instanceof TypeError) {
+                showMessage(
+                    "Cannot connect to FastAPI. Make sure the backend is running at " +
+                    API_URL
+                );
+            } else {
+                showMessage(
+                    error.message || "Hospital registration failed."
+                );
+            }
+        } finally {
+            registerButton.disabled = false;
+            registerButton.textContent = "Register Hospital";
+        }
+    });
+</script>
 
 </body>
-
 </html>

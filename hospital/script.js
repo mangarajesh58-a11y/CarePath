@@ -1,524 +1,158 @@
-// ============================================================
-// HOSPITALCARE - HOSPITAL SCRIPT
-// ============================================================
+// =========================================================
+// HOSPITALCARE - HOSPITAL APP SCRIPT
+// =========================================================
 
 const API = "http://127.0.0.1:8000";
+const FRONTEND = "http://127.0.0.1:5500/hospital";
 
 
-// ============================================================
-// HELPER FUNCTIONS
-// ============================================================
+// =========================================================
+// LOCAL STORAGE
+// =========================================================
 
-function escapeHTML(value) {
+function getHospitalId() {
 
-    if (value === null || value === undefined) {
-        return "";
-    }
-
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-
-// ============================================================
-// HOSPITAL REGISTRATION
-// ============================================================
-
-async function registerHospital() {
-
-    // --------------------------------------------------------
-    // Get values from register.html
-    // --------------------------------------------------------
-
-    const hospitalName =
-        document.getElementById("hospitalName")?.value.trim();
-
-    const email =
-        document.getElementById("hospitalEmail")?.value.trim();
-
-    const phone =
-        document.getElementById("hospitalPhone")?.value.trim();
-
-    const city =
-        document.getElementById("hospitalCity")?.value.trim();
-
-    const address =
-        document.getElementById("hospitalAddress")?.value.trim();
-
-    const description =
-        document.getElementById("hospitalDescription")?.value.trim();
-
-    // IMPORTANT:
-    // register.html uses id="licenseId"
-    const licenseId =
-        document.getElementById("licenseId")?.value.trim();
-
-    const password =
-        document.getElementById("hospitalPassword")?.value;
-
-    // IMPORTANT:
-    // register.html uses id="confirmPassword"
-    const confirmPassword =
-        document.getElementById("confirmPassword")?.value;
-
-
-    // --------------------------------------------------------
-    // Validate fields
-    // --------------------------------------------------------
-
-    if (
-        !hospitalName ||
-        !email ||
-        !phone ||
-        !city ||
-        !address ||
-        !licenseId ||
-        !password ||
-        !confirmPassword
-    ) {
-
-        alert("Please fill all required fields.");
-
-        return;
-    }
-
-
-    // --------------------------------------------------------
-    // Password validation
-    // --------------------------------------------------------
-
-    if (password !== confirmPassword) {
-
-        alert("Passwords do not match.");
-
-        return;
-    }
-
-
-    // --------------------------------------------------------
-    // Send registration to FastAPI
-    // --------------------------------------------------------
-
-    try {
-
-        console.log("Registering hospital...");
-
-
-        const response = await fetch(
-            `${API}/hospitals`,
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    name: hospitalName,
-
-                    email: email,
-
-                    phone: phone,
-
-                    city: city,
-
-                    address: address,
-
-                    description: description,
-
-                    license_id: licenseId,
-
-                    password: password
-
-                })
-            }
-        );
-
-
-        // ----------------------------------------------------
-        // Read backend response
-        // ----------------------------------------------------
-
-        const data = await response.json();
-
-
-        console.log(
-            "Registration response:",
-            data
-        );
-
-
-        // ----------------------------------------------------
-        // Handle backend error
-        // ----------------------------------------------------
-
-        if (!response.ok) {
-
-            alert(
-                data.detail ||
-                "Hospital registration failed."
-            );
-
-            return;
-        }
-
-
-        // ----------------------------------------------------
-        // Save hospital ID
-        // ----------------------------------------------------
-
-        if (
-            data.hospital &&
-            data.hospital.id
-        ) {
-
-            localStorage.setItem(
-                "hospitalId",
-                data.hospital.id
-            );
-
-            console.log(
-                "Hospital ID saved:",
-                data.hospital.id
-            );
-        }
-
-
-        // ----------------------------------------------------
-        // Save hospital information
-        // ----------------------------------------------------
-
-        localStorage.setItem(
-            "hospitalName",
-            hospitalName
-        );
-
-        localStorage.setItem(
-            "hospitalEmail",
-            email
-        );
-
-        localStorage.setItem(
-            "hospitalPhone",
-            phone
-        );
-
-        localStorage.setItem(
-            "hospitalCity",
-            city
-        );
-
-        localStorage.setItem(
-            "hospitalAddress",
-            address
-        );
-
-        localStorage.setItem(
-            "hospitalDescription",
-            description
-        );
-
-        localStorage.setItem(
-            "hospitalLicense",
-            licenseId
-        );
-
-
-        // ----------------------------------------------------
-        // Temporary local login support
-        // ----------------------------------------------------
-
-        localStorage.setItem(
-            "hospitalPassword",
-            password
-        );
-
-        localStorage.setItem(
-            "hospitalLoggedIn",
-            "true"
-        );
-
-
-        // ----------------------------------------------------
-        // Registration success
-        // ----------------------------------------------------
-
-        alert(
-            "Hospital registered successfully!\n\n" +
-            "Your hospital is waiting for admin approval."
-        );
-
-
-        window.location.href =
-            "index.html";
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Hospital registration error:",
-            error
-        );
-
-        alert(
-            "Cannot connect to FastAPI.\n\n" +
-            "Make sure the backend is running."
-        );
-    }
-}
-
-
-// ============================================================
-// HOSPITAL LOGIN
-// ============================================================
-
-function hospitalLogin() {
-
-    const email =
-        document.getElementById(
-            "hospitalLoginEmail"
-        )?.value.trim();
-
-    const password =
-        document.getElementById(
-            "hospitalLoginPassword"
-        )?.value;
-
-
-    if (!email || !password) {
-
-        alert(
-            "Please enter email and password."
-        );
-
-        return;
-    }
-
-
-    const savedEmail =
-        localStorage.getItem(
-            "hospitalEmail"
-        );
-
-    const savedPassword =
-        localStorage.getItem(
-            "hospitalPassword"
-        );
-
-
-    // --------------------------------------------------------
-    // Check saved login information
-    // --------------------------------------------------------
-
-    if (
-        email === savedEmail &&
-        password === savedPassword
-    ) {
-
-        localStorage.setItem(
-            "hospitalLoggedIn",
-            "true"
-        );
-
-        window.location.href =
-            "dashboard.html";
-
-        return;
-    }
-
-
-    alert(
-        "Invalid email or password."
+    return (
+        localStorage.getItem("hospital_id") ||
+        localStorage.getItem("hospitalId") ||
+        null
     );
 }
 
 
-// ============================================================
-// GOOGLE LOGIN
-// ============================================================
+function getHospitalData() {
 
-async function handleHospitalGoogleLogin(response) {
+    try {
 
-    if (
-        !response ||
-        !response.credential
-    ) {
+        const data =
+            localStorage.getItem("hospital");
 
-        alert(
-            "Google login failed."
+        if (!data) {
+            return null;
+        }
+
+        return JSON.parse(data);
+
+    } catch (error) {
+
+        console.error(
+            "Hospital data error:",
+            error
+        );
+
+        return null;
+    }
+}
+
+
+function saveHospitalData(hospital) {
+
+    if (!hospital || !hospital.id) {
+
+        console.error(
+            "Invalid hospital data:",
+            hospital
         );
 
         return;
     }
 
-
-    try {
-
-        const result = await fetch(
-            `${API}/auth/google`,
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    credential:
-                        response.credential,
-
-                    role:
-                        "hospital"
-
-                })
-            }
-        );
+    const id =
+        String(hospital.id);
 
 
-        const data =
-            await result.json();
+    // Main hospital object
+    localStorage.setItem(
+        "hospital",
+        JSON.stringify(hospital)
+    );
 
 
-        if (!result.ok) {
+    // Hospital ID
+    localStorage.setItem(
+        "hospital_id",
+        id
+    );
 
-            alert(
-                data.detail ||
-                "Google login failed."
-            );
-
-            return;
-        }
-
-
-        // ----------------------------------------------------
-        // Save Google access token
-        // ----------------------------------------------------
-
-        if (data.access_token) {
-
-            localStorage.setItem(
-                "hospitalAccessToken",
-                data.access_token
-            );
-        }
+    localStorage.setItem(
+        "hospitalId",
+        id
+    );
 
 
-        localStorage.setItem(
-            "hospitalLoggedIn",
-            "true"
-        );
+    // Basic information
+    localStorage.setItem(
+        "hospital_name",
+        hospital.name || ""
+    );
 
-        localStorage.setItem(
-            "hospitalRole",
-            "hospital"
-        );
+    localStorage.setItem(
+        "hospital_email",
+        hospital.email || ""
+    );
 
+    localStorage.setItem(
+        "hospital_phone",
+        hospital.phone || ""
+    );
 
-        // ----------------------------------------------------
-        // Save returned hospital information
-        // ----------------------------------------------------
-
-        if (data.user) {
-
-            if (data.user.id) {
-
-                localStorage.setItem(
-                    "hospitalId",
-                    data.user.id
-                );
-            }
+    localStorage.setItem(
+        "hospital_city",
+        hospital.city || ""
+    );
 
 
-            if (data.user.name) {
-
-                localStorage.setItem(
-                    "hospitalName",
-                    data.user.name
-                );
-            }
-
-
-            if (data.user.email) {
-
-                localStorage.setItem(
-                    "hospitalEmail",
-                    data.user.email
-                );
-            }
+    // Token fee
+    localStorage.setItem(
+        "hospital_token_fee",
+        String(
+            hospital.token_fee ?? 0
+        )
+    );
 
 
-            if (data.user.phone) {
-
-                localStorage.setItem(
-                    "hospitalPhone",
-                    data.user.phone
-                );
-            }
-        }
+    // Approval
+    localStorage.setItem(
+        "hospital_approval_status",
+        hospital.approval_status || ""
+    );
 
 
-        window.location.href =
-            "dashboard.html";
+    // Published
+    localStorage.setItem(
+        "hospital_is_published",
+        String(
+            hospital.is_published ?? false
+        )
+    );
 
-    }
 
-    catch (error) {
-
-        console.error(
-            "Google login error:",
-            error
-        );
-
-        alert(
-            "Cannot connect to FastAPI."
-        );
-    }
+    console.log(
+        "Hospital data saved:",
+        hospital
+    );
 }
 
 
-// ============================================================
-// HOSPITAL LOGOUT
-// ============================================================
-
-function hospitalLogout() {
+function clearHospitalData() {
 
     const keys = [
 
-        "hospitalLoggedIn",
-
-        "hospitalAccessToken",
-
-        "hospitalRole",
-
+        "hospital",
+        "hospital_id",
         "hospitalId",
 
-        "hospitalName",
+        "hospital_name",
+        "hospital_email",
+        "hospital_phone",
+        "hospital_city",
 
-        "hospitalEmail",
+        "hospital_token_fee",
 
-        "hospitalPhone",
+        "hospital_approval_status",
+        "hospital_is_published",
 
-        "hospitalCity",
-
-        "hospitalAddress",
-
-        "hospitalDescription",
-
-        "hospitalLicense",
-
-        "hospitalPassword",
-
-        "hospitalLatitude",
-
-        "hospitalLongitude"
-
+        "hospitalLocation"
     ];
 
 
@@ -527,59 +161,418 @@ function hospitalLogout() {
         localStorage.removeItem(key);
 
     });
-
-
-    window.location.href =
-        "index.html";
 }
 
 
-// ============================================================
-// GET CURRENT HOSPITAL ID
-// ============================================================
+// =========================================================
+// RESPONSE HELPERS
+// =========================================================
 
-async function getCurrentHospital() {
+function getErrorMessage(
+    data,
+    defaultMessage = "Something went wrong."
+) {
 
-    // --------------------------------------------------------
-    // First use saved hospital ID
-    // --------------------------------------------------------
-
-    const savedHospitalId =
-        localStorage.getItem(
-            "hospitalId"
-        );
+    if (!data) {
+        return defaultMessage;
+    }
 
 
-    if (savedHospitalId) {
+    // FastAPI string detail
+    if (
+        typeof data.detail === "string"
+    ) {
 
-        console.log(
-            "Current Hospital ID:",
-            savedHospitalId
-        );
+        return data.detail;
+    }
 
 
-        return parseInt(
-            savedHospitalId,
-            10
+    // FastAPI validation errors
+    if (
+        Array.isArray(data.detail)
+    ) {
+
+        return data.detail
+            .map(function (error) {
+
+                if (
+                    typeof error === "string"
+                ) {
+
+                    return error;
+                }
+
+
+                if (
+                    error &&
+                    typeof error === "object"
+                ) {
+
+                    const location =
+                        Array.isArray(error.loc)
+                            ? error.loc.join(" → ")
+                            : "";
+
+                    const message =
+                        error.msg ||
+                        error.message ||
+                        "Invalid value";
+
+
+                    return location
+                        ? `${location}: ${message}`
+                        : message;
+                }
+
+
+                return String(error);
+
+            })
+            .join("\n");
+    }
+
+
+    // Object detail
+    if (
+        data.detail &&
+        typeof data.detail === "object"
+    ) {
+
+        return (
+            data.detail.msg ||
+            data.detail.message ||
+            JSON.stringify(data.detail)
         );
     }
 
 
-    // --------------------------------------------------------
-    // If ID doesn't exist, find hospital by name
-    // --------------------------------------------------------
+    // Normal message
+    if (
+        typeof data.message === "string"
+    ) {
 
-    const hospitalName =
-        localStorage.getItem(
-            "hospitalName"
+        return data.message;
+    }
+
+
+    return defaultMessage;
+}
+
+
+async function readJsonResponse(response) {
+
+    const text =
+        await response.text();
+
+
+    if (!text) {
+        return {};
+    }
+
+
+    try {
+
+        return JSON.parse(text);
+
+    } catch (error) {
+
+        return {
+            detail: text
+        };
+    }
+}
+
+
+function getHospitalFromResponse(data) {
+
+    if (
+        data &&
+        data.hospital &&
+        typeof data.hospital === "object"
+    ) {
+
+        return data.hospital;
+    }
+
+
+    return data;
+}
+
+
+// =========================================================
+// BACKEND CONNECTION
+// =========================================================
+
+async function checkBackend() {
+
+    try {
+
+        const response =
+            await fetch(`${API}/`);
+
+
+        const data =
+            await readJsonResponse(
+                response
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "FastAPI returned an error."
+                )
+            );
+        }
+
+
+        console.log(
+            "FastAPI connected successfully:",
+            data
         );
 
 
-    if (!hospitalName) {
+        return true;
 
-        throw new Error(
-            "Hospital information not found."
+    } catch (error) {
+
+        console.error(
+            "FASTAPI CONNECTION ERROR:",
+            error
         );
+
+
+        return false;
+    }
+}
+
+
+// =========================================================
+// HOSPITAL LOGIN CHECK
+// =========================================================
+
+function requireHospitalLogin() {
+
+    const hospitalId =
+        getHospitalId();
+
+
+    if (!hospitalId) {
+
+        alert(
+            "Hospital login information not found. Please login again."
+        );
+
+
+        // IMPORTANT:
+        // Your actual hospital login page is index.html
+        window.location.href =
+            "index.html";
+
+
+        return null;
+    }
+
+
+    return hospitalId;
+}
+
+
+// =========================================================
+// GOOGLE LOGIN
+// =========================================================
+
+async function handleHospitalGoogleLogin(
+    response
+) {
+
+    console.log(
+        "Hospital Google Login Response:",
+        response
+    );
+
+
+    if (
+        !response ||
+        !response.credential
+    ) {
+
+        alert(
+            "Google login failed. No credential received."
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const result =
+            await fetch(
+                `${API}/hospitals/google-login`,
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        credential:
+                            response.credential
+
+                    })
+                }
+            );
+
+
+        const data =
+            await readJsonResponse(
+                result
+            );
+
+
+        console.log(
+            "Google Login Backend Response:",
+            data
+        );
+
+
+        if (!result.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Google hospital login failed."
+                )
+            );
+        }
+
+
+        const hospital =
+            getHospitalFromResponse(
+                data
+            );
+
+
+        if (
+            !hospital ||
+            !hospital.id
+        ) {
+
+            throw new Error(
+                "Hospital information was not returned by the server."
+            );
+        }
+
+
+        saveHospitalData(
+            hospital
+        );
+
+
+        alert(
+            "Google login successful."
+        );
+
+
+        window.location.href =
+            "dashboard.html";
+
+
+    } catch (error) {
+
+        console.error(
+            "GOOGLE HOSPITAL LOGIN ERROR:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Google login failed."
+        );
+    }
+}
+
+
+// =========================================================
+// NORMAL HOSPITAL LOGIN
+// =========================================================
+
+async function hospitalLogin(event) {
+
+    if (event) {
+        event.preventDefault();
+    }
+
+
+    const emailInput =
+        document.getElementById("email") ||
+        document.getElementById(
+            "hospitalEmail"
+        );
+
+
+    const passwordInput =
+        document.getElementById("password") ||
+        document.getElementById(
+            "hospitalPassword"
+        );
+
+
+    if (!emailInput) {
+
+        alert(
+            "Hospital email input not found."
+        );
+
+        return;
+    }
+
+
+    if (!passwordInput) {
+
+        alert(
+            "Hospital password input not found."
+        );
+
+        return;
+    }
+
+
+    const email =
+        emailInput.value
+            .trim()
+            .toLowerCase();
+
+
+    const password =
+        passwordInput.value;
+
+
+    if (!email) {
+
+        alert(
+            "Please enter hospital email."
+        );
+
+        return;
+    }
+
+
+    if (!password) {
+
+        alert(
+            "Please enter password."
+        );
+
+        return;
     }
 
 
@@ -587,74 +580,115 @@ async function getCurrentHospital() {
 
         const response =
             await fetch(
-                `${API}/hospitals`
+                `${API}/hospitals/login`,
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        email,
+                        password
+
+                    })
+                }
             );
+
+
+        const data =
+            await readJsonResponse(
+                response
+            );
+
+
+        console.log(
+            "Hospital login response:",
+            data
+        );
 
 
         if (!response.ok) {
 
             throw new Error(
-                "Unable to load hospitals."
+                getErrorMessage(
+                    data,
+                    "Hospital login failed."
+                )
             );
         }
-
-
-        const hospitals =
-            await response.json();
 
 
         const hospital =
-            hospitals.find(
-                function (item) {
-
-                    return (
-                        item.name ===
-                        hospitalName
-                    );
-
-                }
+            getHospitalFromResponse(
+                data
             );
 
 
-        if (!hospital) {
+        if (
+            !hospital ||
+            !hospital.id
+        ) {
 
             throw new Error(
-                "Hospital not found in database."
+                "Hospital information was not returned by the server."
             );
         }
 
 
-        localStorage.setItem(
-            "hospitalId",
-            hospital.id
+        saveHospitalData(
+            hospital
         );
 
 
-        console.log(
-            "Hospital ID found:",
-            hospital.id
+        alert(
+            "Hospital login successful."
         );
 
 
-        return hospital.id;
+        window.location.href =
+            "dashboard.html";
 
-    }
 
-    catch (error) {
+    } catch (error) {
 
         console.error(
-            "Get current hospital error:",
+            "HOSPITAL LOGIN ERROR:",
             error
         );
 
-        throw error;
+
+        alert(
+            error.message ||
+            "Hospital login failed."
+        );
     }
 }
 
 
-// ============================================================
-// DASHBOARD
-// ============================================================
+// =========================================================
+// LOGOUT
+// =========================================================
+function hospitalLogout() {
+    localStorage.removeItem("hospital_id");
+    localStorage.removeItem("hospital_name");
+    localStorage.removeItem("hospital_email");
+    localStorage.removeItem("hospital_token_fee");
+    localStorage.removeItem("hospital_approval_status");
+    localStorage.removeItem("hospital_is_published");
+
+    window.location.href = "index.html";
+}
+}
+
+
+// =========================================================
+// NAVIGATION
+// =========================================================
 
 function goDashboard() {
 
@@ -684,34 +718,375 @@ function openProfile() {
 }
 
 
-// ============================================================
-// ADD DOCTOR
-// ============================================================
+// =========================================================
+// LOAD HOSPITAL PROFILE
+// =========================================================
 
-async function addDoctor() {
+async function loadProfile() {
+
+    const hospitalId =
+        requireHospitalLogin();
+
+
+    if (!hospitalId) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}`
+            );
+
+
+        const data =
+            await readJsonResponse(
+                response
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Unable to load hospital profile."
+                )
+            );
+        }
+
+
+        const hospital =
+            getHospitalFromResponse(
+                data
+            );
+
+
+        if (
+            !hospital ||
+            !hospital.id
+        ) {
+
+            throw new Error(
+                "Hospital profile data was not returned."
+            );
+        }
+
+
+        // Update local storage
+        saveHospitalData(
+            hospital
+        );
+
+
+        // -----------------------------------------
+        // Profile fields
+        // -----------------------------------------
+
+        const fields = {
+
+            profileName:
+                hospital.name,
+
+            profileEmail:
+                hospital.email,
+
+            profilePhone:
+                hospital.phone,
+
+            profileCity:
+                hospital.city,
+
+            profileAddress:
+                hospital.address,
+
+            profileDescription:
+                hospital.description,
+
+            profileLicense:
+                hospital.license_id,
+
+            profileTokenFee:
+                hospital.token_fee
+        };
+
+
+        Object.keys(fields).forEach(
+            function (id) {
+
+                const element =
+                    document.getElementById(
+                        id
+                    );
+
+
+                if (element) {
+
+                    element.value =
+                        fields[id] ?? "";
+                }
+
+            }
+        );
+
+
+        // -----------------------------------------
+        // Payment status
+        // -----------------------------------------
+
+        updatePaymentStatus(
+            hospital.payment_account_status
+        );
+
+
+        // -----------------------------------------
+        // Location
+        // -----------------------------------------
+
+        const latitude =
+            document.getElementById(
+                "hospitalLatitude"
+            );
+
+
+        const longitude =
+            document.getElementById(
+                "hospitalLongitude"
+            );
+
+
+        if (latitude) {
+
+            latitude.value =
+                hospital.latitude ?? "";
+        }
+
+
+        if (longitude) {
+
+            longitude.value =
+                hospital.longitude ?? "";
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "LOAD PROFILE ERROR:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to load hospital profile."
+        );
+    }
+}
+
+
+// =========================================================
+// PAYMENT STATUS
+// =========================================================
+
+function formatPaymentStatus(status) {
+
+    if (!status) {
+        return "Not Added";
+    }
+
+
+    switch (
+        String(status).toUpperCase()
+    ) {
+
+        case "NOT_ADDED":
+            return "Not Added";
+
+
+        case "PENDING":
+        case "PENDING_VERIFICATION":
+            return "Pending Verification";
+
+
+        case "APPROVED":
+            return "Approved";
+
+
+        case "VERIFIED":
+            return "Verified";
+
+
+        case "REJECTED":
+            return "Rejected";
+
+
+        default:
+            return status;
+    }
+}
+
+
+function updatePaymentStatus(status) {
+
+    const element =
+        document.getElementById(
+            "paymentAccountStatus"
+        );
+
+
+    if (!element) {
+        return;
+    }
+
+
+    const finalStatus =
+        status || "NOT_ADDED";
+
+
+    element.textContent =
+        "Payment account status: " +
+        formatPaymentStatus(
+            finalStatus
+        );
+
+
+    element.className =
+        "payment-status " +
+        String(finalStatus)
+            .toLowerCase();
+}
+
+
+// =========================================================
+// SAVE PROFILE
+// =========================================================
+
+async function saveProfile(event) {
+
+    if (event) {
+        event.preventDefault();
+    }
+
+
+    const hospitalId =
+        requireHospitalLogin();
+
+
+    if (!hospitalId) {
+        return;
+    }
+
 
     const name =
         document.getElementById(
-            "doctorName"
+            "profileName"
         )?.value.trim();
 
 
-    const department =
+    const email =
         document.getElementById(
-            "doctorDepartment"
-        )?.value.trim();
+            "profileEmail"
+        )?.value.trim().toLowerCase();
 
 
-    const experience =
+    const phone =
         document.getElementById(
-            "doctorExperience"
+            "profilePhone"
         )?.value.trim();
 
 
-    if (!name || !department) {
+    const city =
+        document.getElementById(
+            "profileCity"
+        )?.value.trim();
+
+
+    const address =
+        document.getElementById(
+            "profileAddress"
+        )?.value.trim();
+
+
+    const description =
+        document.getElementById(
+            "profileDescription"
+        )?.value.trim();
+
+
+    const tokenFeeInput =
+        document.getElementById(
+            "profileTokenFee"
+        )?.value;
+
+
+    const tokenFee =
+        Number(tokenFeeInput || 0);
+
+
+    // -----------------------------------------
+    // Validation
+    // -----------------------------------------
+
+    if (!name) {
 
         alert(
-            "Please enter doctor name and department."
+            "Please enter hospital name."
+        );
+
+        return;
+    }
+
+
+    if (!email) {
+
+        alert(
+            "Please enter hospital email."
+        );
+
+        return;
+    }
+
+
+    if (!phone) {
+
+        alert(
+            "Please enter hospital phone number."
+        );
+
+        return;
+    }
+
+
+    if (!city) {
+
+        alert(
+            "Please enter city."
+        );
+
+        return;
+    }
+
+
+    if (!address) {
+
+        alert(
+            "Please enter hospital address."
+        );
+
+        return;
+    }
+
+
+    if (
+        !Number.isFinite(tokenFee) ||
+        tokenFee < 0
+    ) {
+
+        alert(
+            "Token fee must be 0 or greater."
         );
 
         return;
@@ -720,21 +1095,12 @@ async function addDoctor() {
 
     try {
 
-        const hospitalId =
-            await getCurrentHospital();
-
-
-        console.log(
-            "Adding doctor to hospital:",
-            hospitalId
-        );
-
-
         const response =
             await fetch(
-                `${API}/hospitals/${hospitalId}/doctors`,
+                `${API}/hospitals/${hospitalId}`,
                 {
-                    method: "POST",
+
+                    method: "PUT",
 
                     headers: {
                         "Content-Type":
@@ -743,14 +1109,17 @@ async function addDoctor() {
 
                     body: JSON.stringify({
 
-                        name:
-                            name,
+                        name,
+                        email,
+                        phone,
+                        city,
+                        address,
 
-                        department:
-                            department,
+                        description:
+                            description || "",
 
-                        experience:
-                            experience || ""
+                        token_fee:
+                            tokenFee
 
                     })
                 }
@@ -758,246 +1127,269 @@ async function addDoctor() {
 
 
         const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            alert(
-                data.detail ||
-                "Doctor could not be added."
-            );
-
-            return;
-        }
-
-
-        alert(
-            "Doctor added successfully!"
-        );
-
-
-        // ----------------------------------------------------
-        // Clear form
-        // ----------------------------------------------------
-
-        const doctorNameInput =
-            document.getElementById(
-                "doctorName"
-            );
-
-        const doctorDepartmentInput =
-            document.getElementById(
-                "doctorDepartment"
-            );
-
-        const doctorExperienceInput =
-            document.getElementById(
-                "doctorExperience"
-            );
-
-
-        if (doctorNameInput) {
-
-            doctorNameInput.value = "";
-        }
-
-
-        if (doctorDepartmentInput) {
-
-            doctorDepartmentInput.value = "";
-        }
-
-
-        if (doctorExperienceInput) {
-
-            doctorExperienceInput.value = "";
-        }
-
-
-        await loadDoctors();
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Add doctor error:",
-            error
-        );
-
-        alert(
-            "Cannot connect to FastAPI."
-        );
-    }
-}
-
-
-// ============================================================
-// LOAD DOCTORS
-// ============================================================
-
-async function loadDoctors() {
-
-    const doctorList =
-        document.getElementById(
-            "doctorList"
-        );
-
-
-    if (!doctorList) {
-
-        return;
-    }
-
-
-    doctorList.innerHTML =
-        "<p>Loading doctors...</p>";
-
-
-    try {
-
-        const hospitalId =
-            await getCurrentHospital();
-
-
-        const response =
-            await fetch(
-                `${API}/hospitals/${hospitalId}/doctors`
+            await readJsonResponse(
+                response
             );
 
 
         if (!response.ok) {
 
             throw new Error(
-                "Unable to load doctors."
+                getErrorMessage(
+                    data,
+                    "Unable to update hospital profile."
+                )
             );
         }
 
 
-        const doctors =
-            await response.json();
+        const hospital =
+            getHospitalFromResponse(
+                data
+            );
 
 
-        console.log(
-            "Doctors received:",
-            doctors
+        const oldHospital =
+            getHospitalData() || {};
+
+
+        const updatedHospital = {
+
+            ...oldHospital,
+
+            ...(hospital || {}),
+
+            id:
+                hospital?.id ||
+                hospitalId,
+
+            name:
+                hospital?.name ??
+                name,
+
+            email:
+                hospital?.email ??
+                email,
+
+            phone:
+                hospital?.phone ??
+                phone,
+
+            city:
+                hospital?.city ??
+                city,
+
+            address:
+                hospital?.address ??
+                address,
+
+            description:
+                hospital?.description ??
+                description,
+
+            token_fee:
+                hospital?.token_fee ??
+                tokenFee
+        };
+
+
+        saveHospitalData(
+            updatedHospital
         );
 
 
-        if (
-            !doctors ||
-            doctors.length === 0
-        ) {
+        alert(
+            "Hospital profile updated successfully."
+        );
 
-            doctorList.innerHTML = `
-                <p>
-                    No doctors added yet.
-                </p>
-            `;
+
+    } catch (error) {
+
+        console.error(
+            "SAVE PROFILE ERROR:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to update hospital profile."
+        );
+    }
+}
+
+
+// =========================================================
+// SAVE PAYMENT ACCOUNT
+// =========================================================
+
+async function savePaymentAccount() {
+
+    const hospitalId =
+        requireHospitalLogin();
+
+
+    if (!hospitalId) {
+        return;
+    }
+
+
+    const accountName =
+        document.getElementById(
+            "paymentAccountName"
+        )?.value.trim();
+
+
+    const accountNumber =
+        document.getElementById(
+            "paymentAccountNumber"
+        )?.value.trim();
+
+
+    const confirmAccountNumber =
+        document.getElementById(
+            "paymentConfirmAccountNumber"
+        )?.value.trim();
+
+
+    const ifsc =
+        document.getElementById(
+            "paymentIfsc"
+        )?.value.trim().toUpperCase();
+
+
+    const upi =
+        document.getElementById(
+            "paymentUpi"
+        )?.value.trim().toLowerCase();
+
+
+    // -----------------------------------------
+    // Payment method required
+    // -----------------------------------------
+
+    if (
+        !accountNumber &&
+        !upi
+    ) {
+
+        alert(
+            "Please enter a bank account number or UPI ID."
+        );
+
+        return;
+    }
+
+
+    // -----------------------------------------
+    // Bank validation
+    // -----------------------------------------
+
+    if (accountNumber) {
+
+        if (!accountName) {
+
+            alert(
+                "Please enter account holder name."
+            );
 
             return;
         }
 
 
-        doctorList.innerHTML = "";
+        if (!confirmAccountNumber) {
+
+            alert(
+                "Please confirm your bank account number."
+            );
+
+            return;
+        }
 
 
-        doctors.forEach(
-            function (doctor) {
+        if (
+            accountNumber !==
+            confirmAccountNumber
+        ) {
 
-                const div =
-                    document.createElement(
-                        "div"
-                    );
+            alert(
+                "Bank account numbers do not match."
+            );
 
-
-                div.className =
-                    "doctor-item";
-
-
-                div.innerHTML = `
-
-                    <div class="doctor-info">
-
-                        <strong>
-                            👨‍⚕️
-                            ${escapeHTML(
-                                doctor.name
-                            )}
-                        </strong>
-
-                        <span>
-                            Department:
-                            ${escapeHTML(
-                                doctor.department
-                            )}
-                        </span>
-
-                        <span>
-                            Experience:
-                            ${escapeHTML(
-                                doctor.experience ||
-                                "Not specified"
-                            )}
-                        </span>
-
-                    </div>
-
-                    <button
-                        class="remove-doctor"
-                        onclick="removeDoctor(${doctor.id})"
-                    >
-                        🗑 Remove
-                    </button>
-
-                `;
+            return;
+        }
 
 
-                doctorList.appendChild(
-                    div
-                );
-            }
-        );
+        if (
+            !/^[0-9]+$/.test(
+                accountNumber
+            )
+        ) {
 
+            alert(
+                "Bank account number must contain only numbers."
+            );
+
+            return;
+        }
+
+
+        if (
+            accountNumber.length < 9 ||
+            accountNumber.length > 18
+        ) {
+
+            alert(
+                "Please enter a valid bank account number."
+            );
+
+            return;
+        }
+
+
+        if (!ifsc) {
+
+            alert(
+                "Please enter IFSC code."
+            );
+
+            return;
+        }
+
+
+        if (
+            !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(
+                ifsc
+            )
+        ) {
+
+            alert(
+                "Please enter a valid IFSC code."
+            );
+
+            return;
+        }
     }
 
-    catch (error) {
 
-        console.error(
-            "Load doctors error:",
-            error
-        );
+    // -----------------------------------------
+    // UPI validation
+    // -----------------------------------------
 
+    if (upi) {
 
-        doctorList.innerHTML = `
+        if (
+            !/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/.test(
+                upi
+            )
+        ) {
 
-            <p>
-                Cannot load doctors.
-                <br><br>
-                Make sure FastAPI is running.
-            </p>
+            alert(
+                "Please enter a valid UPI ID."
+            );
 
-        `;
-    }
-}
-
-
-// ============================================================
-// REMOVE DOCTOR
-// ============================================================
-
-async function removeDoctor(doctorId) {
-
-    const confirmDelete =
-        confirm(
-            "Are you sure you want to remove this doctor?"
-        );
-
-
-    if (!confirmDelete) {
-
-        return;
+            return;
+        }
     }
 
 
@@ -1005,666 +1397,101 @@ async function removeDoctor(doctorId) {
 
         const response =
             await fetch(
-                `${API}/doctors/${doctorId}`,
+                `${API}/hospitals/${hospitalId}/payment-account`,
                 {
-                    method: "DELETE"
+
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        account_name:
+                            accountName || "",
+
+                        account_number:
+                            accountNumber || "",
+
+                        ifsc:
+                            ifsc || "",
+
+                        upi:
+                            upi || ""
+
+                    })
                 }
             );
 
 
         const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            alert(
-                data.detail ||
-                "Doctor could not be removed."
-            );
-
-            return;
-        }
-
-
-        alert(
-            "Doctor removed successfully!"
-        );
-
-
-        await loadDoctors();
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Remove doctor error:",
-            error
-        );
-
-
-        alert(
-            "Cannot connect to FastAPI."
-        );
-    }
-}
-
-
-// ============================================================
-// LOAD PATIENTS / TOKENS
-// ============================================================
-
-async function loadPatients() {
-
-    const patientList =
-        document.getElementById(
-            "patientList"
-        );
-
-
-    if (!patientList) {
-
-        return;
-    }
-
-
-    patientList.innerHTML =
-        "<p>Loading patients...</p>";
-
-
-    try {
-
-        const hospitalName =
-            localStorage.getItem(
-                "hospitalName"
-            );
-
-
-        if (!hospitalName) {
-
-            patientList.innerHTML =
-                "<p>Hospital information not found.</p>";
-
-            return;
-        }
-
-
-        const response =
-            await fetch(
-                `${API}/tokens`
+            await readJsonResponse(
+                response
             );
 
 
         if (!response.ok) {
 
             throw new Error(
-                "Unable to load tokens."
+                getErrorMessage(
+                    data,
+                    "Unable to save payment account."
+                )
             );
         }
 
 
-        const allTokens =
-            await response.json();
+        const paymentAccount =
+            data.payment_account ||
+            data.paymentAccount ||
+            {};
 
 
-        const hospitalTokens =
-            allTokens.filter(
-                function (token) {
-
-                    return (
-                        token.hospital ===
-                        hospitalName
-                    );
-
-                }
-            );
+        const status =
+            paymentAccount.status ||
+            "PENDING_VERIFICATION";
 
 
-        if (
-            hospitalTokens.length === 0
-        ) {
-
-            patientList.innerHTML = `
-
-                <p>
-                    No patients have booked tokens yet.
-                </p>
-
-            `;
-
-            return;
-        }
-
-
-        patientList.innerHTML = "";
-
-
-        hospitalTokens.forEach(
-            function (token) {
-
-                const div =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                div.className =
-                    "patient-item";
-
-
-                div.innerHTML = `
-
-                    <strong>
-                        🎫 Token
-                        ${escapeHTML(
-                            token.token_number
-                        )}
-                    </strong>
-
-                    <span>
-                        Patient:
-                        ${escapeHTML(
-                            token.patient_name
-                        )}
-                    </span>
-
-                    <span>
-                        Department:
-                        ${escapeHTML(
-                            token.department
-                        )}
-                    </span>
-
-                    <span>
-                        Doctor:
-                        ${escapeHTML(
-                            token.doctor
-                        )}
-                    </span>
-
-                    <span>
-                        Status:
-                        ${escapeHTML(
-                            token.status
-                        )}
-                    </span>
-
-                `;
-
-
-                patientList.appendChild(
-                    div
-                );
-            }
+        updatePaymentStatus(
+            status
         );
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Load patients error:",
-            error
-        );
-
-
-        patientList.innerHTML = `
-
-            <p>
-                Cannot load patients.
-                <br><br>
-                Make sure FastAPI is running.
-            </p>
-
-        `;
-    }
-}
-
-
-// ============================================================
-// LOAD HOSPITAL PROFILE
-// ============================================================
-
-async function loadProfile() {
-
-    const nameInput =
-        document.getElementById(
-            "profileHospitalName"
-        );
-
-
-    const emailInput =
-        document.getElementById(
-            "profileHospitalEmail"
-        );
-
-
-    const phoneInput =
-        document.getElementById(
-            "profileHospitalPhone"
-        );
-
-
-    const cityInput =
-        document.getElementById(
-            "profileHospitalCity"
-        );
-
-
-    const addressInput =
-        document.getElementById(
-            "profileHospitalAddress"
-        );
-
-
-    const descriptionInput =
-        document.getElementById(
-            "profileHospitalDescription"
-        );
-
-
-    if (nameInput) {
-
-        nameInput.value =
-            localStorage.getItem(
-                "hospitalName"
-            ) || "";
-    }
-
-
-    if (emailInput) {
-
-        emailInput.value =
-            localStorage.getItem(
-                "hospitalEmail"
-            ) || "";
-    }
-
-
-    if (phoneInput) {
-
-        phoneInput.value =
-            localStorage.getItem(
-                "hospitalPhone"
-            ) || "";
-    }
-
-
-    if (cityInput) {
-
-        cityInput.value =
-            localStorage.getItem(
-                "hospitalCity"
-            ) || "";
-    }
-
-
-    if (addressInput) {
-
-        addressInput.value =
-            localStorage.getItem(
-                "hospitalAddress"
-            ) || "";
-    }
-
-
-    if (descriptionInput) {
-
-        descriptionInput.value =
-            localStorage.getItem(
-                "hospitalDescription"
-            ) || "";
-    }
-}
-
-
-// ============================================================
-// SAVE HOSPITAL PROFILE
-// ============================================================
-
-function saveProfile() {
-
-    const nameInput =
-        document.getElementById(
-            "profileHospitalName"
-        );
-
-
-    const emailInput =
-        document.getElementById(
-            "profileHospitalEmail"
-        );
-
-
-    const phoneInput =
-        document.getElementById(
-            "profileHospitalPhone"
-        );
-
-
-    const cityInput =
-        document.getElementById(
-            "profileHospitalCity"
-        );
-
-
-    const addressInput =
-        document.getElementById(
-            "profileHospitalAddress"
-        );
-
-
-    const descriptionInput =
-        document.getElementById(
-            "profileHospitalDescription"
-        );
-
-
-    if (nameInput) {
-
-        localStorage.setItem(
-            "hospitalName",
-            nameInput.value.trim()
-        );
-    }
-
-
-    if (emailInput) {
-
-        localStorage.setItem(
-            "hospitalEmail",
-            emailInput.value.trim()
-        );
-    }
-
-
-    if (phoneInput) {
-
-        localStorage.setItem(
-            "hospitalPhone",
-            phoneInput.value.trim()
-        );
-    }
-
-
-    if (cityInput) {
-
-        localStorage.setItem(
-            "hospitalCity",
-            cityInput.value.trim()
-        );
-    }
-
-
-    if (addressInput) {
-
-        localStorage.setItem(
-            "hospitalAddress",
-            addressInput.value.trim()
-        );
-    }
-
-
-    if (descriptionInput) {
-
-        localStorage.setItem(
-            "hospitalDescription",
-            descriptionInput.value.trim()
-        );
-    }
-
-
-    alert(
-        "Profile saved successfully!"
-    );
-}
-
-
-// ============================================================
-// LOAD QUEUE
-// ============================================================
-
-async function loadQueue() {
-
-    const queueList =
-        document.getElementById(
-            "queueList"
-        );
-
-
-    if (!queueList) {
-
-        return;
-    }
-
-
-    queueList.innerHTML =
-        "<p>Loading queue...</p>";
-
-
-    try {
-
-        const hospitalName =
-            localStorage.getItem(
-                "hospitalName"
-            );
-
-
-        const response =
-            await fetch(
-                `${API}/tokens`
-            );
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Unable to load queue."
-            );
-        }
-
-
-        const tokens =
-            await response.json();
-
-
-        const hospitalTokens =
-            tokens.filter(
-                function (token) {
-
-                    return (
-                        token.hospital ===
-                        hospitalName
-                    );
-
-                }
-            );
-
-
-        if (
-            hospitalTokens.length === 0
-        ) {
-
-            queueList.innerHTML = `
-                <p>No patients waiting.</p>
-            `;
-
-            return;
-        }
-
-
-        queueList.innerHTML = "";
-
-
-        hospitalTokens.forEach(
-            function (token) {
-
-                const div =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                div.className =
-                    "queue-item";
-
-
-                div.innerHTML = `
-
-                    <strong>
-                        Token
-                        ${escapeHTML(
-                            token.token_number
-                        )}
-                    </strong>
-
-                    <span>
-                        ${escapeHTML(
-                            token.patient_name
-                        )}
-                    </span>
-
-                    <span>
-                        ${escapeHTML(
-                            token.doctor
-                        )}
-                    </span>
-
-                    <span>
-                        ${escapeHTML(
-                            token.status
-                        )}
-                    </span>
-
-                `;
-
-
-                queueList.appendChild(
-                    div
-                );
-            }
-        );
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Queue error:",
-            error
-        );
-
-
-        queueList.innerHTML = `
-            <p>
-                Unable to load queue.
-            </p>
-        `;
-    }
-}
-
-
-// ============================================================
-// CALL NEXT PATIENT
-// ============================================================
-
-async function callNextPatient(
-    department,
-    doctor
-) {
-
-    try {
-
-        const hospitalName =
-            localStorage.getItem(
-                "hospitalName"
-            );
-
-
-        if (!hospitalName) {
-
-            alert(
-                "Hospital information not found."
-            );
-
-            return;
-        }
-
-
-        const url =
-            `${API}/next-patient` +
-            `?hospital=${encodeURIComponent(
-                hospitalName
-            )}` +
-            `&department=${encodeURIComponent(
-                department
-            )}` +
-            `&doctor=${encodeURIComponent(
-                doctor
-            )}`;
-
-
-        const response =
-            await fetch(
-                url,
-                {
-                    method: "POST"
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            alert(
-                data.detail ||
-                "Unable to call next patient."
-            );
-
-            return;
-        }
 
 
         alert(
-            data.message ||
-            "Next patient called."
+            "Payment account saved successfully. It is now pending verification."
         );
 
 
-        await loadQueue();
-
-    }
-
-    catch (error) {
+    } catch (error) {
 
         console.error(
-            "Call next patient error:",
+            "SAVE PAYMENT ACCOUNT ERROR:",
             error
         );
 
 
         alert(
-            "Cannot connect to FastAPI."
+            error.message ||
+            "Unable to save payment account."
         );
     }
 }
 
 
-// ============================================================
+// =========================================================
 // GOOGLE MAP
-// ============================================================
+// =========================================================
 
 let hospitalMap = null;
+
 let hospitalMarker = null;
 
 
-// ============================================================
+// =========================================================
 // INITIALIZE MAP
-// ============================================================
+// =========================================================
 
 function initMap() {
 
@@ -1675,6 +1502,18 @@ function initMap() {
 
 
     if (!mapElement) {
+        return;
+    }
+
+
+    if (
+        typeof google === "undefined" ||
+        !google.maps
+    ) {
+
+        console.error(
+            "Google Maps API is not loaded."
+        );
 
         return;
     }
@@ -1683,9 +1522,7 @@ function initMap() {
     const defaultLocation = {
 
         lat: 17.3850,
-
         lng: 78.4867
-
     };
 
 
@@ -1704,106 +1541,960 @@ function initMap() {
         );
 
 
-    hospitalMarker =
-        new google.maps.Marker({
+    hospitalMap.addListener(
+        "click",
+        function (event) {
 
-            position:
-                defaultLocation,
+            if (
+                event &&
+                event.latLng
+            ) {
 
-            map:
-                hospitalMap,
+                setHospitalLocation(
 
-            draggable:
-                true
+                    event.latLng.lat(),
 
-        });
+                    event.latLng.lng()
 
+                );
+            }
 
-    hospitalMarker.addListener(
-        "dragend",
-        function () {
-
-            const position =
-                hospitalMarker.getPosition();
+        }
+    );
 
 
-            updateHospitalLocation(
-                position.lat(),
-                position.lng()
+    loadSavedHospitalLocation();
+}
+
+
+// =========================================================
+// LOAD SAVED LOCATION
+// =========================================================
+
+function loadSavedHospitalLocation() {
+
+    const hospital =
+        getHospitalData();
+
+
+    if (
+        hospital &&
+        hospital.latitude !== null &&
+        hospital.latitude !== undefined &&
+        hospital.longitude !== null &&
+        hospital.longitude !== undefined
+    ) {
+
+        const lat =
+            Number(
+                hospital.latitude
+            );
+
+
+        const lng =
+            Number(
+                hospital.longitude
+            );
+
+
+        if (
+            Number.isFinite(lat) &&
+            Number.isFinite(lng)
+        ) {
+
+            setHospitalLocation(
+                lat,
+                lng
+            );
+
+            return;
+        }
+    }
+
+
+    try {
+
+        const saved =
+            JSON.parse(
+                localStorage.getItem(
+                    "hospitalLocation"
+                )
+            );
+
+
+        if (
+            saved &&
+            saved.latitude !== undefined &&
+            saved.longitude !== undefined
+        ) {
+
+            const lat =
+                Number(
+                    saved.latitude
+                );
+
+
+            const lng =
+                Number(
+                    saved.longitude
+                );
+
+
+            if (
+                Number.isFinite(lat) &&
+                Number.isFinite(lng)
+            ) {
+
+                setHospitalLocation(
+                    lat,
+                    lng
+                );
+            }
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "LOCATION LOAD ERROR:",
+            error
+        );
+    }
+}
+
+
+// =========================================================
+// SET HOSPITAL LOCATION
+// =========================================================
+
+function setHospitalLocation(
+    latitude,
+    longitude
+) {
+
+    if (!hospitalMap) {
+
+        console.log(
+            "Google Map is not ready."
+        );
+
+        return;
+    }
+
+
+    const lat =
+        Number(latitude);
+
+
+    const lng =
+        Number(longitude);
+
+
+    if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lng)
+    ) {
+
+        alert(
+            "Invalid hospital location."
+        );
+
+        return;
+    }
+
+
+    const position = {
+
+        lat,
+        lng
+    };
+
+
+    hospitalMap.setCenter(
+        position
+    );
+
+
+    hospitalMap.setZoom(
+        16
+    );
+
+
+    if (hospitalMarker) {
+
+        hospitalMarker.setPosition(
+            position
+        );
+
+    } else {
+
+        hospitalMarker =
+            new google.maps.Marker({
+
+                position,
+
+                map:
+                    hospitalMap,
+
+                title:
+                    "Hospital Location"
+
+            });
+    }
+
+
+    const latitudeInput =
+        document.getElementById(
+            "hospitalLatitude"
+        );
+
+
+    const longitudeInput =
+        document.getElementById(
+            "hospitalLongitude"
+        );
+
+
+    if (latitudeInput) {
+
+        latitudeInput.value =
+            lat;
+    }
+
+
+    if (longitudeInput) {
+
+        longitudeInput.value =
+            lng;
+    }
+}
+
+
+// =========================================================
+// SEARCH HOSPITAL LOCATION
+// =========================================================
+
+function searchHospitalLocation() {
+
+    const locationInput =
+        document.getElementById(
+            "hospitalLocation"
+        );
+
+
+    if (!locationInput) {
+        return;
+    }
+
+
+    const address =
+        locationInput.value.trim();
+
+
+    if (!address) {
+
+        alert(
+            "Please enter a hospital location."
+        );
+
+        return;
+    }
+
+
+    if (
+        typeof google === "undefined" ||
+        !google.maps
+    ) {
+
+        alert(
+            "Google Maps is not loaded yet."
+        );
+
+        return;
+    }
+
+
+    const geocoder =
+        new google.maps.Geocoder();
+
+
+    geocoder.geocode(
+
+        {
+            address:
+                address
+        },
+
+        function (
+            results,
+            status
+        ) {
+
+            if (
+                status !== "OK" ||
+                !results ||
+                !results.length
+            ) {
+
+                alert(
+                    "Location not found. Please try another address."
+                );
+
+                return;
+            }
+
+
+            const location =
+                results[0]
+                    .geometry
+                    .location;
+
+
+            setHospitalLocation(
+
+                location.lat(),
+
+                location.lng()
+
             );
         }
     );
 }
 
 
-// ============================================================
-// UPDATE HOSPITAL LOCATION
-// ============================================================
+// =========================================================
+// SAVE HOSPITAL LOCATION
+// =========================================================
 
-function updateHospitalLocation(
-    latitude,
-    longitude
-) {
+async function saveHospitalLocation() {
 
-    const latInput =
+    const hospitalId =
+        requireHospitalLogin();
+
+
+    if (!hospitalId) {
+        return;
+    }
+
+
+    const latitude =
         document.getElementById(
             "hospitalLatitude"
-        );
+        )?.value;
 
 
-    const lngInput =
+    const longitude =
         document.getElementById(
             "hospitalLongitude"
+        )?.value;
+
+
+    if (
+        latitude === undefined ||
+        longitude === undefined ||
+        latitude === "" ||
+        longitude === ""
+    ) {
+
+        alert(
+            "Please select a hospital location on the map first."
+        );
+
+        return;
+    }
+
+
+    const locationData = {
+
+        latitude:
+            Number(latitude),
+
+        longitude:
+            Number(longitude)
+    };
+
+
+    if (
+        !Number.isFinite(
+            locationData.latitude
+        ) ||
+        !Number.isFinite(
+            locationData.longitude
+        )
+    ) {
+
+        alert(
+            "Invalid hospital location."
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}/location`,
+                {
+
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(
+                            locationData
+                        )
+                }
+            );
+
+
+        const data =
+            await readJsonResponse(
+                response
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Hospital location could not be saved."
+                )
+            );
+        }
+
+
+        // Save locally only after backend success
+        localStorage.setItem(
+            "hospitalLocation",
+            JSON.stringify(
+                locationData
+            )
         );
 
 
-    if (latInput) {
+        const hospital =
+            getHospitalFromResponse(
+                data
+            );
 
-        latInput.value =
-            latitude;
+
+        if (
+            hospital &&
+            hospital.id
+        ) {
+
+            saveHospitalData(
+                hospital
+            );
+        }
+
+
+        alert(
+            "Hospital location saved successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "SAVE LOCATION ERROR:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to save hospital location."
+        );
     }
-
-
-    if (lngInput) {
-
-        lngInput.value =
-            longitude;
-    }
-
-
-    localStorage.setItem(
-        "hospitalLatitude",
-        latitude
-    );
-
-
-    localStorage.setItem(
-        "hospitalLongitude",
-        longitude
-    );
 }
 
 
-// ============================================================
-// PAGE INITIALIZATION
-// ============================================================
+// =========================================================
+// LOAD DOCTORS
+// =========================================================
+
+async function loadDoctors() {
+
+    const hospitalId =
+        requireHospitalLogin();
+
+
+    if (!hospitalId) {
+        return;
+    }
+
+
+    const container =
+        document.getElementById(
+            "doctorsList"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}/doctors`
+            );
+
+
+        const data =
+            await readJsonResponse(
+                response
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Unable to load doctors."
+                )
+            );
+        }
+
+
+        const doctors =
+            Array.isArray(data)
+                ? data
+                : Array.isArray(data.doctors)
+                    ? data.doctors
+                    : [];
+
+
+        container.innerHTML = "";
+
+
+        if (!doctors.length) {
+
+            container.innerHTML =
+                "<p>No doctors added yet.</p>";
+
+            return;
+        }
+
+
+        doctors.forEach(
+            function (doctor) {
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "doctor-card";
+
+
+                card.innerHTML = `
+
+                    <h3>
+                        ${escapeHtml(
+                            doctor.name ||
+                            "Doctor"
+                        )}
+                    </h3>
+
+                    <p>
+                        <strong>Department:</strong>
+                        ${escapeHtml(
+                            doctor.department ||
+                            "Not specified"
+                        )}
+                    </p>
+
+                    <p>
+                        <strong>Specialization:</strong>
+                        ${escapeHtml(
+                            doctor.specialization ||
+                            "Not specified"
+                        )}
+                    </p>
+
+                    <p>
+                        <strong>Experience:</strong>
+                        ${escapeHtml(
+                            doctor.experience ||
+                            "Not specified"
+                        )}
+                    </p>
+
+                    <button
+                        type="button"
+                        onclick="deleteDoctor(${Number(
+                            doctor.id
+                        )})"
+                    >
+                        Delete
+                    </button>
+
+                `;
+
+
+                container.appendChild(
+                    card
+                );
+            }
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "LOAD DOCTORS ERROR:",
+            error
+        );
+
+
+        container.innerHTML =
+            `<p>${escapeHtml(
+                error.message
+            )}</p>`;
+    }
+}
+
+
+// =========================================================
+// DELETE DOCTOR
+// =========================================================
+
+async function deleteDoctor(
+    doctorId
+) {
+
+    if (!doctorId) {
+        return;
+    }
+
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to delete this doctor?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/doctors/${doctorId}`,
+                {
+
+                    method: "DELETE"
+
+                }
+            );
+
+
+        const data =
+            await readJsonResponse(
+                response
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Unable to delete doctor."
+                )
+            );
+        }
+
+
+        alert(
+            "Doctor deleted successfully."
+        );
+
+
+        await loadDoctors();
+
+
+    } catch (error) {
+
+        console.error(
+            "DELETE DOCTOR ERROR:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to delete doctor."
+        );
+    }
+}
+
+
+// =========================================================
+// ADD DOCTOR
+// =========================================================
+
+async function addDoctor() {
+
+    const hospitalId =
+        requireHospitalLogin();
+
+
+    if (!hospitalId) {
+        return;
+    }
+
+
+    const name =
+        document.getElementById(
+            "doctorName"
+        )?.value.trim();
+
+
+    const department =
+        document.getElementById(
+            "doctorDepartment"
+        )?.value.trim();
+
+
+    const specialization =
+        document.getElementById(
+            "doctorSpecialization"
+        )?.value.trim();
+
+
+    const experience =
+        document.getElementById(
+            "doctorExperience"
+        )?.value.trim();
+
+
+    if (!name) {
+
+        alert(
+            "Please enter doctor name."
+        );
+
+        return;
+    }
+
+
+    if (!department) {
+
+        alert(
+            "Please enter doctor department."
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}/doctors`,
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        name,
+
+                        department,
+
+                        specialization:
+                            specialization || "",
+
+                        experience:
+                            experience || ""
+
+                    })
+                }
+            );
+
+
+        const data =
+            await readJsonResponse(
+                response
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Unable to add doctor."
+                )
+            );
+        }
+
+
+        alert(
+            "Doctor added successfully."
+        );
+
+
+        [
+            "doctorName",
+            "doctorDepartment",
+            "doctorSpecialization",
+            "doctorExperience"
+
+        ].forEach(
+            function (id) {
+
+                const element =
+                    document.getElementById(
+                        id
+                    );
+
+
+                if (element) {
+
+                    element.value =
+                        "";
+                }
+
+            }
+        );
+
+
+        await loadDoctors();
+
+
+    } catch (error) {
+
+        console.error(
+            "ADD DOCTOR ERROR:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to add doctor."
+        );
+    }
+}
+
+
+// =========================================================
+// HTML ESCAPE
+// =========================================================
+
+function escapeHtml(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return "";
+    }
+
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}
+
+
+// =========================================================
+// PAGE LOAD
+// =========================================================
 
 document.addEventListener(
     "DOMContentLoaded",
     function () {
 
-        console.log(
-            "HospitalCare hospital script loaded."
-        );
+        // -----------------------------------------
+        // Hospital login page
+        // -----------------------------------------
+
+        const loginForm =
+            document.getElementById(
+                "hospitalLoginForm"
+            );
 
 
-        // ----------------------------------------------------
-        // Doctors page
-        // ----------------------------------------------------
+        if (loginForm) {
+
+            loginForm.addEventListener(
+                "submit",
+                hospitalLogin
+            );
+        }
+
+
+        // -----------------------------------------
+        // Profile page
+        // -----------------------------------------
 
         if (
             document.getElementById(
-                "doctorList"
+                "profileName"
+            )
+        ) {
+
+            loadProfile();
+        }
+
+
+        // -----------------------------------------
+        // Doctors page
+        // -----------------------------------------
+
+        if (
+            document.getElementById(
+                "doctorsList"
             )
         ) {
 
@@ -1811,105 +2502,11 @@ document.addEventListener(
         }
 
 
-        // ----------------------------------------------------
-        // Patients page
-        // ----------------------------------------------------
+        // -----------------------------------------
+        // Backend connection test
+        // -----------------------------------------
 
-        if (
-            document.getElementById(
-                "patientList"
-            )
-        ) {
-
-            loadPatients();
-        }
-
-
-        // ----------------------------------------------------
-        // Queue page
-        // ----------------------------------------------------
-
-        if (
-            document.getElementById(
-                "queueList"
-            )
-        ) {
-
-            loadQueue();
-        }
-
-
-        // ----------------------------------------------------
-        // Profile page
-        // ----------------------------------------------------
-
-        if (
-            document.getElementById(
-                "profileHospitalName"
-            )
-        ) {
-
-            loadProfile();
-        }
+        checkBackend();
 
     }
 );
-
-
-// ============================================================
-// EXPORT FUNCTIONS
-// ============================================================
-
-window.registerHospital =
-    registerHospital;
-
-window.hospitalLogin =
-    hospitalLogin;
-
-window.handleHospitalGoogleLogin =
-    handleHospitalGoogleLogin;
-
-window.hospitalLogout =
-    hospitalLogout;
-
-window.openDoctors =
-    openDoctors;
-
-window.openPatients =
-    openPatients;
-
-window.openProfile =
-    openProfile;
-
-window.goDashboard =
-    goDashboard;
-
-window.addDoctor =
-    addDoctor;
-
-window.loadDoctors =
-    loadDoctors;
-
-window.removeDoctor =
-    removeDoctor;
-
-window.loadPatients =
-    loadPatients;
-
-window.loadProfile =
-    loadProfile;
-
-window.saveProfile =
-    saveProfile;
-
-window.loadQueue =
-    loadQueue;
-
-window.callNextPatient =
-    callNextPatient;
-
-window.initMap =
-    initMap;
-
-window.updateHospitalLocation =
-    updateHospitalLocation;

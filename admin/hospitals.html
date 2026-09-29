@@ -1,167 +1,228 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <title>Hospitals - HospitalCare Admin</title>
 
-    <title>Hospitals - HospitalCare</title>
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
-
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="page-container">
+    <div class="page-container">
 
-    <!-- HEADER -->
-
-    <header>
-
-        <div>
-
-            <h1>
-                🏥 Hospitals
-            </h1>
-
-            <p>
-                Verify and manage registered hospitals
-            </p>
-
-        </div>
-
-        <button
-            class="logout"
-            onclick="adminLogout()"
-        >
-            Logout
-        </button>
-
-    </header>
-
-
-    <!-- HOSPITAL TABLE -->
-
-    <div class="table-card">
-
-        <div class="page-heading">
-
+        <!-- HEADER -->
+        <header>
             <div>
-
-                <h2>
-                    Hospital Management
-                </h2>
-
-                <p>
-                    Check license, verify and publish hospitals
-                </p>
-
+                <h1>🏥 Hospitals</h1>
+                <p>Verify and manage registered hospitals</p>
             </div>
 
             <button
-                onclick="loadHospitals()"
+                type="button"
+                class="logout"
+                onclick="adminLogout()"
             >
-                🔄 Refresh
+                Logout
             </button>
+        </header>
+
+        <!-- HOSPITAL TABLE -->
+        <div class="table-card">
+
+            <div class="page-heading">
+                <div>
+                    <h2>Hospital Management</h2>
+                    <p>
+                        Review hospital details, verify certificates,
+                        and manage publication.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    onclick="loadHospitals()"
+                >
+                    🔄 Refresh
+                </button>
+            </div>
+
+            <!-- GENERAL MESSAGE -->
+            <div
+                id="message"
+                class="message"
+                role="status"
+                aria-live="polite"
+            ></div>
+
+            <!-- TABLE -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Hospital</th>
+                            <th>City</th>
+                            <th>License ID</th>
+                            <th>Token Fee</th>
+                            <th>Status</th>
+                            <th>Published</th>
+                            <th>Doctors</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="hospitalTableBody">
+                        <tr>
+                            <td colspan="9" class="loading">
+                                Loading hospitals...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
         </div>
 
+        <!-- BACK TO DASHBOARD -->
+        <button
+            type="button"
+            class="back-button"
+            onclick="goDashboard()"
+        >
+            ← Back to Dashboard
+        </button>
 
-        <div
-            id="message"
-            class="message"
-        ></div>
-
-
-        <div class="table-container">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-
-                        <th>
-                            ID
-                        </th>
-
-                        <th>
-                            Hospital
-                        </th>
-
-                        <th>
-                            City
-                        </th>
-
-                        <th>
-                            License ID
-                        </th>
-
-                        <th>
-                            Status
-                        </th>
-
-                        <th>
-                            Published
-                        </th>
-
-                        <th>
-                            Doctors
-                        </th>
-
-                        <th>
-                            Actions
-                        </th>
-
-                    </tr>
-
-                </thead>
+    </div>
 
 
-                <tbody id="hospitalTableBody">
+    <!-- ============================================= -->
+    <!-- HOSPITAL DETAILS MODAL                        -->
+    <!-- ============================================= -->
 
-                    <tr>
+    <div
+        id="hospitalDetailsModal"
+        class="hospital-modal"
+        style="display: none;"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalHospitalName"
+    >
 
-                        <td
-                            colspan="8"
-                            class="loading"
-                        >
-                            Loading hospitals...
-                        </td>
+        <div class="hospital-modal-content">
 
-                    </tr>
+            <!-- CLOSE BUTTON -->
+            <button
+                type="button"
+                class="modal-close"
+                onclick="closeHospitalDetails()"
+                aria-label="Close hospital details"
+            >
+                &times;
+            </button>
 
-                </tbody>
+            <!-- HOSPITAL NAME -->
+            <h2 id="modalHospitalName">
+                Hospital Details
+            </h2>
 
-            </table>
+            <!-- HOSPITAL INFORMATION -->
+            <div id="hospitalDetailsContent">
+                Select a hospital to view its details.
+            </div>
+
+            <hr>
+
+            <!-- HOSPITAL COVER PHOTO PREVIEW -->
+            <h3>🖼️ Hospital Cover Photo</h3>
+            <p id="hospitalPhotoMessage" role="status" aria-live="polite">
+                No hospital photo loaded yet.
+            </p>
+            <img
+                id="hospitalPhotoPreview"
+                alt="Hospital cover photo"
+                src=""
+                style="display:none; width:100%; max-width:720px; max-height:360px; object-fit:cover; border-radius:10px; border:1px solid #ddd; background:#f5f5f5;"
+            >
+
+            <hr>
+
+            <!-- CERTIFICATE SECTION -->
+            <h3>📄 Hospital Registration Certificate</h3>
+
+            <p
+                id="certificateFileName"
+                aria-live="polite"
+            >
+                No certificate selected.
+            </p>
+
+            <!-- CERTIFICATE PREVIEW -->
+            <iframe
+                id="certificateViewer"
+                title="Hospital registration certificate preview"
+                src="about:blank"
+                style="
+                    display: block;
+                    width: 100%;
+                    height: 400px;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    background: #f5f5f5;
+                "
+            ></iframe>
+
+            <!-- CERTIFICATE STATUS MESSAGE -->
+            <p
+                id="certificateModalMessage"
+                role="status"
+                aria-live="polite"
+            ></p>
+
+            <!-- CERTIFICATE ACTIONS -->
+            <div class="action-buttons">
+
+                <button
+                    type="button"
+                    class="approve-btn"
+                    id="verifyCertificateButton"
+                    onclick="verifyHospitalCertificateFromModal()"
+                    disabled
+                >
+                    ✓ Verify Certificate
+                </button>
+
+                <button
+                    type="button"
+                    class="reject-btn"
+                    id="rejectCertificateButton"
+                    onclick="rejectHospitalCertificateFromModal()"
+                    disabled
+                >
+                    ✕ Reject Certificate
+                </button>
+
+                <button
+                    type="button"
+                    class="view-btn"
+                    onclick="closeHospitalDetails()"
+                >
+                    Close
+                </button>
+
+            </div>
 
         </div>
 
     </div>
 
 
-    <!-- BACK BUTTON -->
-
-    <button
-        class="back-button"
-        onclick="goDashboard()"
-    >
-        ← Back to Dashboard
-    </button>
-
-</div>
-
-
-<script src="script.js"></script>
+    <!-- ADMIN JAVASCRIPT -->
+    <script src="script.js"></script>
 
 </body>
 

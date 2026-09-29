@@ -2,35 +2,671 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Manage Doctors - HospitalCare</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background:
+                #f4f7fb;
+
+            color:
+                #172554;
+        }
+
+
+        .page-container {
+
+            width: 100%;
+
+            max-width: 1000px;
+
+            margin: auto;
+
+            padding: 25px;
+        }
+
+
+        /* ==============================
+           HEADER
+        =============================== */
+
+        header {
+
+            background:
+                white;
+
+            border-radius:
+                16px;
+
+            padding:
+                20px 25px;
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                center;
+
+            margin-bottom:
+                25px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.08
+                );
+        }
+
+
+        header h1 {
+
+            margin:
+                0 0 5px;
+
+            color:
+                #1976d2;
+
+            font-size:
+                28px;
+        }
+
+
+        header p {
+
+            margin:
+                0;
+
+            color:
+                #64748b;
+        }
+
+
+        .logout {
+
+            border:
+                none;
+
+            background:
+                #dc2626;
+
+            color:
+                white;
+
+            padding:
+                11px 20px;
+
+            border-radius:
+                8px;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .logout:hover {
+
+            background:
+                #b91c1c;
+        }
+
+
+        /* ==============================
+           WELCOME
+        =============================== */
+
+        .welcome {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1976d2,
+                    #7c3aed
+                );
+
+            color:
+                white;
+
+            padding:
+                30px;
+
+            border-radius:
+                16px;
+
+            margin-bottom:
+                25px;
+        }
+
+
+        .welcome h2 {
+
+            margin:
+                0 0 8px;
+        }
+
+
+        .welcome p {
+
+            margin:
+                0;
+
+            opacity:
+                0.9;
+        }
+
+
+        /* ==============================
+           FORM CARD
+        =============================== */
+
+        .form-card {
+
+            background:
+                white;
+
+            padding:
+                30px;
+
+            border-radius:
+                16px;
+
+            margin-bottom:
+                25px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.07
+                );
+        }
+
+
+        .form-card h2 {
+
+            margin-top:
+                0;
+
+            margin-bottom:
+                25px;
+        }
+
+
+        .form-group {
+
+            margin-bottom:
+                18px;
+        }
+
+
+        .form-group label {
+
+            display:
+                block;
+
+            margin-bottom:
+                7px;
+
+            font-weight:
+                bold;
+
+            color:
+                #334155;
+        }
+
+
+        .form-group input {
+
+            width:
+                100%;
+
+            padding:
+                13px;
+
+            border:
+                1px solid
+                #cbd5e1;
+
+            border-radius:
+                8px;
+
+            font-size:
+                15px;
+
+            outline:
+                none;
+        }
+
+
+        .form-group input:focus {
+
+            border-color:
+                #1976d2;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(
+                    25,
+                    118,
+                    210,
+                    0.1
+                );
+        }
+
+
+        .add-button {
+
+            width:
+                100%;
+
+            padding:
+                13px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1976d2,
+                    #7c3aed
+                );
+
+            color:
+                white;
+
+            font-size:
+                16px;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .add-button:hover {
+
+            opacity:
+                0.9;
+        }
+
+
+        .add-button:disabled {
+
+            opacity:
+                0.6;
+
+            cursor:
+                not-allowed;
+        }
+
+
+        /* ==============================
+           MESSAGE
+        =============================== */
+
+        #message {
+
+            margin-top:
+                15px;
+
+            text-align:
+                center;
+
+            font-weight:
+                bold;
+
+            min-height:
+                20px;
+        }
+
+
+        /* ==============================
+           DOCTOR LIST
+        =============================== */
+
+        .list-card {
+
+            background:
+                white;
+
+            padding:
+                30px;
+
+            border-radius:
+                16px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.07
+                );
+        }
+
+
+        .list-card h2 {
+
+            margin-top:
+                0;
+
+            margin-bottom:
+                20px;
+        }
+
+
+        #doctorsList {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    1fr
+                );
+
+            gap:
+                15px;
+        }
+
+
+        .doctor-card {
+
+            border:
+                1px solid
+                #e2e8f0;
+
+            border-radius:
+                12px;
+
+            padding:
+                20px;
+
+            background:
+                #f8fafc;
+        }
+
+
+        .doctor-card h3 {
+
+            margin:
+                0 0 12px;
+
+            color:
+                #1976d2;
+        }
+
+
+        .doctor-card p {
+
+            margin:
+                7px 0;
+
+            color:
+                #475569;
+        }
+
+
+        .doctor-card strong {
+
+            color:
+                #172554;
+        }
+
+
+        .delete-button {
+
+            width:
+                100%;
+
+            margin-top:
+                15px;
+
+            padding:
+                10px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                #dc2626;
+
+            color:
+                white;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .delete-button:hover {
+
+            background:
+                #b91c1c;
+        }
+
+
+        .empty-message {
+
+            grid-column:
+                1 / -1;
+
+            text-align:
+                center;
+
+            padding:
+                30px;
+
+            color:
+                #64748b;
+
+            background:
+                #f8fafc;
+
+            border:
+                1px dashed
+                #cbd5e1;
+
+            border-radius:
+                10px;
+        }
+
+
+        /* ==============================
+           BACK BUTTON
+        =============================== */
+
+        .back-button {
+
+            width:
+                100%;
+
+            margin-top:
+                25px;
+
+            padding:
+                13px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                #334155;
+
+            color:
+                white;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .back-button:hover {
+
+            background:
+                #1e293b;
+        }
+
+
+        /* ==============================
+           MOBILE
+        =============================== */
+
+        @media (max-width: 700px) {
+
+            .page-container {
+
+                padding:
+                    15px;
+            }
+
+
+            header {
+
+                flex-direction:
+                    column;
+
+                align-items:
+                    flex-start;
+
+                gap:
+                    15px;
+            }
+
+
+            .logout {
+
+                width:
+                    100%;
+            }
+
+
+            #doctorsList {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .form-card,
+            .list-card {
+
+                padding:
+                    20px;
+            }
+
+        }
+
+    </style>
+
 </head>
+
 
 <body>
 
+
 <div class="page-container">
 
-    <!-- HEADER -->
+
+    <!-- ==============================
+         HEADER
+    =============================== -->
+
     <header>
+
         <div>
-            <h1>🏥 HospitalCare</h1>
-            <p>Doctor Management</p>
+
+            <h1>
+                🏥 HospitalCare
+            </h1>
+
+            <p>
+                Doctor Management
+            </p>
+
         </div>
 
-        <button class="logout" onclick="hospitalLogout()">
+
+        <button
+            type="button"
+            class="logout"
+            onclick="hospitalLogout()"
+        >
+
             Logout
+
         </button>
+
     </header>
 
 
-    <!-- PAGE TITLE -->
+
+    <!-- ==============================
+         PAGE TITLE
+    =============================== -->
+
     <div class="welcome">
 
-        <h2>Manage Doctors</h2>
+        <h2>
+            Manage Doctors
+        </h2>
 
         <p>
             Add and manage doctors belonging to your hospital.
@@ -39,79 +675,152 @@
     </div>
 
 
-    <!-- ADD DOCTOR -->
+
+    <!-- ==============================
+         ADD DOCTOR
+    ============================== -->
+
     <div class="form-card">
 
-        <h2>➕ Add Doctor</h2>
+        <h2>
+            ➕ Add Doctor
+        </h2>
 
-        <label for="doctorName">
-            Doctor Name
-        </label>
 
-        <input
-            type="text"
-            id="doctorName"
-            placeholder="Example: Dr. Kumar"
+        <div class="form-group">
+
+            <label for="doctorName">
+                Doctor Name
+            </label>
+
+            <input
+                type="text"
+                id="doctorName"
+                placeholder="Example: Dr. Kumar"
+                autocomplete="off"
+            >
+
+        </div>
+
+
+
+        <div class="form-group">
+
+            <label for="doctorDepartment">
+                Department
+            </label>
+
+            <input
+                type="text"
+                id="doctorDepartment"
+                placeholder="Example: Cardiology"
+                autocomplete="off"
+            >
+
+        </div>
+
+
+
+        <div class="form-group">
+
+            <label for="doctorSpecialization">
+                Specialization
+            </label>
+
+            <input
+                type="text"
+                id="doctorSpecialization"
+                placeholder="Example: Cardiologist"
+                autocomplete="off"
+            >
+
+        </div>
+
+
+
+        <div class="form-group">
+
+            <label for="doctorExperience">
+                Experience
+            </label>
+
+            <input
+                type="text"
+                id="doctorExperience"
+                placeholder="Example: 8 years"
+                autocomplete="off"
+            >
+
+        </div>
+
+
+
+        <button
+            type="button"
+            class="add-button"
+            id="addDoctorButton"
+            onclick="addDoctor()"
         >
 
-
-        <label for="doctorDepartment">
-            Department
-        </label>
-
-        <input
-            type="text"
-            id="doctorDepartment"
-            placeholder="Example: Cardiology"
-        >
-
-
-        <label for="doctorExperience">
-            Experience
-        </label>
-
-        <input
-            type="text"
-            id="doctorExperience"
-            placeholder="Example: 8 years"
-        >
-
-
-        <button onclick="addDoctor()">
             Add Doctor
+
         </button>
+
+
+        <div id="message"></div>
 
     </div>
 
 
-    <!-- SEPARATE DOCTOR LIST -->
+
+    <!-- ==============================
+         DOCTOR LIST
+    ============================== -->
+
     <div class="list-card">
 
-        <h2>👨‍⚕️ Your Hospital Doctors</h2>
+        <h2>
+            👨‍⚕️ Your Hospital Doctors
+        </h2>
 
-        <div id="doctorList">
 
-            <p>
+        <div id="doctorsList">
+
+            <div class="empty-message">
                 Loading doctors...
-            </p>
+            </div>
 
         </div>
 
     </div>
 
 
-    <!-- BACK -->
+
+    <!-- ==============================
+         BACK BUTTON
+    ============================== -->
+
     <button
+        type="button"
         class="back-button"
         onclick="goDashboard()"
     >
+
         ← Back to Dashboard
+
     </button>
+
 
 </div>
 
 
+
+<!-- ==============================
+     JAVASCRIPT
+=============================== -->
+
 <script src="script.js"></script>
+
 
 </body>
 

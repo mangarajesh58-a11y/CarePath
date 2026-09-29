@@ -19,21 +19,34 @@
 
 </head>
 
+
 <body>
 
+
 <div class="page-container">
+
+
+    <!-- =================================
+         HEADER
+    ================================== -->
 
     <header>
 
         <div>
 
-            <h1>🏥 HospitalCare</h1>
+            <h1>
+                🏥 HospitalCare
+            </h1>
 
-            <p>Patient Token Queue</p>
+            <p>
+                Patient Token Queue
+            </p>
 
         </div>
 
+
         <button
+            type="button"
             class="logout"
             onclick="hospitalLogout()"
         >
@@ -43,25 +56,38 @@
     </header>
 
 
+
+    <!-- =================================
+         PAGE INTRO
+    ================================== -->
+
     <div class="welcome">
 
-        <h2>Patient Queue</h2>
+        <h2>
+            Patient Queue
+        </h2>
 
         <p>
-            Select a department and doctor to manage the queue.
+            Select a department and doctor
+            to manage the patient queue.
         </p>
 
     </div>
 
 
-    <!-- =========================
+
+    <!-- =================================
          QUEUE SELECTION
-    ========================== -->
+    ================================== -->
 
     <div class="form-card">
 
-        <h2>📋 Select Queue</h2>
+        <h2>
+            📋 Select Queue
+        </h2>
 
+
+        <!-- Department -->
 
         <label for="queueDepartment">
             Department
@@ -78,6 +104,9 @@
 
         </select>
 
+
+
+        <!-- Doctor -->
 
         <label for="queueDoctor">
             Doctor
@@ -96,21 +125,54 @@
         </select>
 
 
+
+        <!-- Current Patient -->
+
+        <div
+            id="currentPatient"
+            style="
+                display:none;
+                margin-top:20px;
+                padding:18px;
+                border-radius:12px;
+                background:#eef6ff;
+                border:1px solid #bfdbfe;
+            "
+        >
+
+            <h3 style="margin-top:0;">
+                📢 Current Patient
+            </h3>
+
+            <p id="currentPatientText">
+            </p>
+
+        </div>
+
+
+
+        <!-- Call Next -->
+
         <button
             type="button"
+            id="nextPatientButton"
             onclick="callNextPatient()"
+            style="margin-top:15px;"
         >
             📢 Call Next Patient
         </button>
 
+
     </div>
 
 
-    <!-- =========================
+
+    <!-- =================================
          PATIENT QUEUE
-    ========================== -->
+    ================================== -->
 
     <div class="list-card">
+
 
         <div
             style="
@@ -126,6 +188,7 @@
                 🎫 Patient Tokens
             </h2>
 
+
             <button
                 type="button"
                 onclick="loadPatients()"
@@ -135,6 +198,22 @@
 
         </div>
 
+
+
+        <div
+            id="queueMessage"
+            style="
+                display:none;
+                margin-top:15px;
+                padding:12px;
+                border-radius:8px;
+            "
+        >
+        </div>
+
+
+
+        <!-- TABLE -->
 
         <div
             style="
@@ -148,7 +227,7 @@
                 style="
                     width:100%;
                     border-collapse:collapse;
-                    min-width:700px;
+                    min-width:750px;
                 "
             >
 
@@ -156,29 +235,59 @@
 
                     <tr>
 
-                        <th style="padding:12px;text-align:left;">
+                        <th
+                            style="
+                                padding:12px;
+                                text-align:left;
+                            "
+                        >
                             Token
                         </th>
 
-                        <th style="padding:12px;text-align:left;">
+
+                        <th
+                            style="
+                                padding:12px;
+                                text-align:left;
+                            "
+                        >
                             Patient
                         </th>
 
-                        <th style="padding:12px;text-align:left;">
+
+                        <th
+                            style="
+                                padding:12px;
+                                text-align:left;
+                            "
+                        >
                             Department
                         </th>
 
-                        <th style="padding:12px;text-align:left;">
+
+                        <th
+                            style="
+                                padding:12px;
+                                text-align:left;
+                            "
+                        >
                             Doctor
                         </th>
 
-                        <th style="padding:12px;text-align:left;">
+
+                        <th
+                            style="
+                                padding:12px;
+                                text-align:left;
+                            "
+                        >
                             Status
                         </th>
 
                     </tr>
 
                 </thead>
+
 
 
                 <tbody id="patientTableBody">
@@ -206,98 +315,99 @@
     </div>
 
 
+
+    <!-- =================================
+         BACK
+    ================================== -->
+
     <button
+        type="button"
         class="back-button"
         onclick="goDashboard()"
     >
         ← Back to Dashboard
     </button>
 
+
 </div>
+
 
 
 <script>
 
-const API = "http://127.0.0.1:8000";
+
+/* ==========================================
+   API
+========================================== */
+
+const API =
+    "http://127.0.0.1:8000";
 
 
-// ========================================
-// GET CURRENT HOSPITAL
-// ========================================
 
-function getHospitalName() {
+/* ==========================================
+   GET HOSPITAL ID
+========================================== */
 
-    return localStorage.getItem(
-        "hospitalName"
+const hospitalId =
+    localStorage.getItem(
+        "hospital_id"
     );
+
+
+
+/* ==========================================
+   CHECK LOGIN
+========================================== */
+
+if (!hospitalId) {
+
+    alert(
+        "Hospital login required."
+    );
+
+    window.location.href =
+        "hospital-login.html";
 
 }
 
 
-// ========================================
-// FIND HOSPITAL
-// ========================================
+
+/* ==========================================
+   GET CURRENT HOSPITAL
+========================================== */
 
 async function getCurrentHospital() {
 
-    const hospitalName =
-        getHospitalName();
-
-    if (!hospitalName) {
-
-        throw new Error(
-            "Hospital information not found."
-        );
-
-    }
-
-
     const response =
         await fetch(
-            API + "/hospitals"
+            `${API}/hospitals/${hospitalId}`
         );
+
+
+    const data =
+        await response.json();
 
 
     if (!response.ok) {
 
         throw new Error(
-            "Unable to load hospitals."
+            data.detail ||
+            "Unable to load hospital information."
         );
 
     }
 
 
-    const hospitals =
-        await response.json();
-
-
-    const hospital =
-        hospitals.find(
-            function(item) {
-
-                return item.name === hospitalName;
-
-            }
-        );
-
-
-    if (!hospital) {
-
-        throw new Error(
-            "Your hospital was not found in the database."
-        );
-
-    }
-
-
-    return hospital;
+    return data;
 
 }
 
 
-// ========================================
-// LOAD DEPARTMENTS
-// ========================================
+
+/* ==========================================
+   LOAD DEPARTMENTS
+========================================== */
 
 async function loadQueueDepartments() {
 
@@ -307,24 +417,49 @@ async function loadQueueDepartments() {
         );
 
 
+    const doctorSelect =
+        document.getElementById(
+            "queueDoctor"
+        );
+
+
     try {
 
-        const hospital =
-            await getCurrentHospital();
+        departmentSelect.innerHTML =
+            `
+            <option value="">
+                Loading departments...
+            </option>
+            `;
+
+
+        doctorSelect.innerHTML =
+            `
+            <option value="">
+                Select Doctor
+            </option>
+            `;
+
+
+        doctorSelect.disabled =
+            true;
+
 
 
         const response =
             await fetch(
-                API +
-                "/hospitals/" +
-                hospital.id +
-                "/departments"
+                `${API}/hospitals/${hospitalId}/departments`
             );
+
+
+        const data =
+            await response.json();
 
 
         if (!response.ok) {
 
             throw new Error(
+                data.detail ||
                 "Unable to load departments."
             );
 
@@ -332,28 +467,36 @@ async function loadQueueDepartments() {
 
 
         const departments =
-            await response.json();
+            Array.isArray(data)
+                ? data
+                : data.departments || [];
+
 
 
         departmentSelect.innerHTML =
-            `<option value="">
+            `
+            <option value="">
                 Select Department
-             </option>`;
+            </option>
+            `;
+
 
 
         if (
-            !departments ||
             departments.length === 0
         ) {
 
             departmentSelect.innerHTML =
-                `<option value="">
+                `
+                <option value="">
                     No departments added
-                 </option>`;
+                </option>
+                `;
 
             return;
 
         }
+
 
 
         departments.forEach(
@@ -364,11 +507,14 @@ async function loadQueueDepartments() {
                         "option"
                     );
 
+
                 option.value =
                     department;
 
+
                 option.textContent =
                     department;
+
 
                 departmentSelect.appendChild(
                     option
@@ -380,21 +526,34 @@ async function loadQueueDepartments() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Department error:",
+            error
+        );
+
 
         departmentSelect.innerHTML =
-            `<option value="">
+            `
+            <option value="">
                 Cannot load departments
-             </option>`;
+            </option>
+            `;
+
+
+        showQueueMessage(
+            error.message,
+            false
+        );
 
     }
 
 }
 
 
-// ========================================
-// LOAD DOCTORS
-// ========================================
+
+/* ==========================================
+   LOAD DOCTORS
+========================================== */
 
 async function loadQueueDoctors() {
 
@@ -411,40 +570,44 @@ async function loadQueueDoctors() {
 
 
     doctorSelect.innerHTML =
-        `<option value="">
+        `
+        <option value="">
             Select Doctor
-         </option>`;
+        </option>
+        `;
 
-    doctorSelect.disabled = true;
+
+    doctorSelect.disabled =
+        true;
+
+
+    clearPatients();
 
 
     if (!department) {
-
-        clearPatients();
 
         return;
 
     }
 
 
+
     try {
-
-        const hospital =
-            await getCurrentHospital();
-
 
         const response =
             await fetch(
-                API +
-                "/hospitals/" +
-                hospital.id +
-                "/doctors"
+                `${API}/hospitals/${hospitalId}/doctors`
             );
+
+
+        const data =
+            await response.json();
 
 
         if (!response.ok) {
 
             throw new Error(
+                data.detail ||
                 "Unable to load doctors."
             );
 
@@ -452,7 +615,10 @@ async function loadQueueDoctors() {
 
 
         const doctors =
-            await response.json();
+            Array.isArray(data)
+                ? data
+                : data.doctors || [];
+
 
 
         const filteredDoctors =
@@ -468,20 +634,22 @@ async function loadQueueDoctors() {
             );
 
 
+
         if (
             filteredDoctors.length === 0
         ) {
 
             doctorSelect.innerHTML =
-                `<option value="">
+                `
+                <option value="">
                     No doctors added
-                 </option>`;
-
-            clearPatients();
+                </option>
+                `;
 
             return;
 
         }
+
 
 
         filteredDoctors.forEach(
@@ -492,11 +660,22 @@ async function loadQueueDoctors() {
                         "option"
                     );
 
+
+                /*
+                 * Use doctor ID internally.
+                 */
+
                 option.value =
-                    doctor.name;
+                    doctor.id;
+
 
                 option.textContent =
                     doctor.name;
+
+
+                option.dataset.name =
+                    doctor.name;
+
 
                 doctorSelect.appendChild(
                     option
@@ -506,29 +685,75 @@ async function loadQueueDoctors() {
         );
 
 
-        doctorSelect.disabled = false;
-
-
-        clearPatients();
+        doctorSelect.disabled =
+            false;
 
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Doctor error:",
+            error
+        );
+
 
         doctorSelect.innerHTML =
-            `<option value="">
+            `
+            <option value="">
                 Cannot load doctors
-             </option>`;
+            </option>
+            `;
+
+
+        showQueueMessage(
+            error.message,
+            false
+        );
 
     }
 
 }
 
 
-// ========================================
-// LOAD PATIENTS
-// ========================================
+
+/* ==========================================
+   GET SELECTED DOCTOR NAME
+========================================== */
+
+function getSelectedDoctorName() {
+
+    const doctorSelect =
+        document.getElementById(
+            "queueDoctor"
+        );
+
+
+    const selectedOption =
+        doctorSelect.options[
+            doctorSelect.selectedIndex
+        ];
+
+
+    if (!selectedOption) {
+
+        return "";
+
+    }
+
+
+    return (
+        selectedOption.dataset.name ||
+        selectedOption.textContent ||
+        ""
+    );
+
+}
+
+
+
+/* ==========================================
+   LOAD PATIENTS
+========================================== */
 
 async function loadPatients() {
 
@@ -539,9 +764,7 @@ async function loadPatients() {
 
 
     const doctor =
-        document.getElementById(
-            "queueDoctor"
-        ).value;
+        getSelectedDoctorName();
 
 
     const tableBody =
@@ -550,7 +773,11 @@ async function loadPatients() {
         );
 
 
-    if (!department || !doctor) {
+
+    if (
+        !department ||
+        !doctor
+    ) {
 
         clearPatients();
 
@@ -559,8 +786,10 @@ async function loadPatients() {
     }
 
 
+
     tableBody.innerHTML =
-        `<tr>
+        `
+        <tr>
 
             <td
                 colspan="5"
@@ -572,41 +801,73 @@ async function loadPatients() {
                 Loading patients...
             </td>
 
-        </tr>`;
+        </tr>
+        `;
+
 
 
     try {
 
-        const hospitalName =
-            getHospitalName();
-
-
         const response =
             await fetch(
-                API + "/tokens"
+                `${API}/tokens`
             );
+
+
+        const data =
+            await response.json();
 
 
         if (!response.ok) {
 
             throw new Error(
+                data.detail ||
                 "Unable to load tokens."
             );
 
         }
 
 
+
         const tokens =
-            await response.json();
+            Array.isArray(data)
+                ? data
+                : data.tokens || [];
+
+
+
+        /*
+         * First filter by hospital ID
+         * when backend provides it.
+         *
+         * Fallback to hospital name
+         * for older tokens.
+         */
+
+        const hospital =
+            await getCurrentHospital();
 
 
         const hospitalTokens =
             tokens.filter(
                 function(token) {
 
+                    const correctHospital =
+                        token.hospital_id !==
+                        undefined &&
+                        token.hospital_id !== null
+                            ? Number(
+                                token.hospital_id
+                              ) ===
+                              Number(
+                                hospital.id
+                              )
+                            : token.hospital ===
+                              hospital.name;
+
+
                     return (
-                        token.hospital ===
-                        hospitalName &&
+                        correctHospital &&
 
                         token.department ===
                         department &&
@@ -619,12 +880,31 @@ async function loadPatients() {
             );
 
 
+
+        /*
+         * Sort by token number.
+         */
+
+        hospitalTokens.sort(
+            function(a, b) {
+
+                return (
+                    Number(a.token_number || 0) -
+                    Number(b.token_number || 0)
+                );
+
+            }
+        );
+
+
+
         if (
             hospitalTokens.length === 0
         ) {
 
             tableBody.innerHTML =
-                `<tr>
+                `
+                <tr>
 
                     <td
                         colspan="5"
@@ -633,18 +913,22 @@ async function loadPatients() {
                             text-align:center;
                         "
                     >
-                        No patients waiting for
-                        this doctor.
+                        No patients waiting
+                        for this doctor.
                     </td>
 
-                </tr>`;
+                </tr>
+                `;
 
             return;
 
         }
 
 
-        tableBody.innerHTML = "";
+
+        tableBody.innerHTML =
+            "";
+
 
 
         hospitalTokens.forEach(
@@ -656,44 +940,59 @@ async function loadPatients() {
                     );
 
 
-                row.innerHTML = `
-
+                row.innerHTML =
+                    `
                     <td style="padding:12px;">
+
                         <strong>
                             ${escapeHTML(
                                 token.token_number
                             )}
                         </strong>
+
                     </td>
 
+
                     <td style="padding:12px;">
+
                         ${escapeHTML(
                             token.patient_name
                         )}
+
                     </td>
 
+
                     <td style="padding:12px;">
+
                         ${escapeHTML(
                             token.department
                         )}
+
                     </td>
 
+
                     <td style="padding:12px;">
+
                         ${escapeHTML(
                             token.doctor
                         )}
+
                     </td>
 
+
                     <td style="padding:12px;">
+
                         ${getStatusText(
                             token.status
                         )}
+
                     </td>
+                    `;
 
-                `;
 
-
-                tableBody.appendChild(row);
+                tableBody.appendChild(
+                    row
+                );
 
             }
         );
@@ -701,10 +1000,15 @@ async function loadPatients() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Patient queue error:",
+            error
+        );
+
 
         tableBody.innerHTML =
-            `<tr>
+            `
+            <tr>
 
                 <td
                     colspan="5"
@@ -713,27 +1017,31 @@ async function loadPatients() {
                         text-align:center;
                     "
                 >
+
                     Cannot connect to FastAPI.
+
                     <br><br>
-                    Make sure the backend is running.
+
+                    ${escapeHTML(
+                        error.message
+                    )}
+
                 </td>
 
-            </tr>`;
+            </tr>
+            `;
 
     }
 
 }
 
 
-// ========================================
-// CALL NEXT PATIENT
-// ========================================
+
+/* ==========================================
+   CALL NEXT PATIENT
+========================================== */
 
 async function callNextPatient() {
-
-    const hospital =
-        getHospitalName();
-
 
     const department =
         document.getElementById(
@@ -742,20 +1050,7 @@ async function callNextPatient() {
 
 
     const doctor =
-        document.getElementById(
-            "queueDoctor"
-        ).value;
-
-
-    if (!hospital) {
-
-        alert(
-            "Hospital information not found."
-        );
-
-        return;
-
-    }
+        getSelectedDoctorName();
 
 
     if (!department) {
@@ -780,24 +1075,47 @@ async function callNextPatient() {
     }
 
 
+
+    const button =
+        document.getElementById(
+            "nextPatientButton"
+        );
+
+
+    button.disabled =
+        true;
+
+
+    button.textContent =
+        "Calling...";
+
+
+
     try {
 
-        const url =
-            API +
-            "/next-patient" +
-            "?hospital=" +
-            encodeURIComponent(hospital) +
-            "&department=" +
-            encodeURIComponent(department) +
-            "&doctor=" +
-            encodeURIComponent(doctor);
-
+        /*
+         * Backend currently expects
+         * hospital_id in the request.
+         */
 
         const response =
             await fetch(
-                url,
+                `${API}/next-patient`,
                 {
-                    method: "POST"
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            hospital_id:
+                                Number(
+                                    hospitalId
+                                )
+                        })
                 }
             );
 
@@ -808,32 +1126,70 @@ async function callNextPatient() {
 
         if (!response.ok) {
 
-            alert(
+            throw new Error(
                 data.detail ||
                 "Unable to call next patient."
             );
 
-            return;
-
         }
 
 
-        if (data.token) {
+
+        if (
+            data.token_number !==
+            undefined &&
+            data.token_number !== null
+        ) {
+
+            showCurrentPatient(
+                data.token_number,
+                data.patient_name ||
+                data.patient ||
+                "Patient"
+            );
+
 
             alert(
                 "📢 Patient Called\n\n" +
+
+                "Token: " +
+                data.token_number +
+
+                "\nPatient: " +
+                (
+                    data.patient_name ||
+                    data.patient ||
+                    "Patient"
+                )
+            );
+
+
+        } else if (
+            data.token !==
+            undefined &&
+            data.token !== null
+        ) {
+
+            showCurrentPatient(
+                data.token,
+                data.patient ||
+                "Patient"
+            );
+
+
+            alert(
+                "📢 Patient Called\n\n" +
+
                 "Token: " +
                 data.token +
-                "\n" +
-                "Patient: " +
-                data.patient +
-                "\n\n" +
-                "Department: " +
-                department +
-                "\n" +
-                "Doctor: " +
-                doctor
+
+                "\nPatient: " +
+                (
+                    data.patient ||
+                    "Patient"
+                )
             );
+
 
         } else {
 
@@ -845,26 +1201,86 @@ async function callNextPatient() {
         }
 
 
+
         await loadPatients();
 
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Call next patient error:",
+            error
+        );
+
 
         alert(
-            "Cannot connect to FastAPI.\n\n" +
-            "Make sure the backend is running."
+            error.message ||
+            "Unable to call next patient."
         );
+
+
+    } finally {
+
+        button.disabled =
+            false;
+
+
+        button.textContent =
+            "📢 Call Next Patient";
 
     }
 
 }
 
 
-// ========================================
-// CLEAR PATIENT TABLE
-// ========================================
+
+/* ==========================================
+   CURRENT PATIENT
+========================================== */
+
+function showCurrentPatient(
+    token,
+    patient
+) {
+
+    const box =
+        document.getElementById(
+            "currentPatient"
+        );
+
+
+    const text =
+        document.getElementById(
+            "currentPatientText"
+        );
+
+
+    text.innerHTML =
+        `
+        <strong>
+            Token:
+        </strong>
+        ${escapeHTML(token)}
+
+        <br>
+
+        <strong>
+            Patient:
+        </strong>
+        ${escapeHTML(patient)}
+        `;
+
+
+    box.style.display =
+        "block";
+
+}
+
+
+
+/* ==========================================
+   CLEAR PATIENTS
+========================================== */
 
 function clearPatients() {
 
@@ -875,7 +1291,8 @@ function clearPatients() {
 
 
     tableBody.innerHTML =
-        `<tr>
+        `
+        <tr>
 
             <td
                 colspan="5"
@@ -887,46 +1304,77 @@ function clearPatients() {
                 Select a department and doctor.
             </td>
 
-        </tr>`;
+        </tr>
+        `;
+
+
+
+    document.getElementById(
+        "currentPatient"
+    ).style.display =
+        "none";
 
 }
 
 
-// ========================================
-// STATUS
-// ========================================
+
+/* ==========================================
+   STATUS
+========================================== */
 
 function getStatusText(status) {
 
-    if (status === "waiting") {
+    if (
+        status ===
+        "waiting"
+    ) {
 
         return "🟡 Waiting";
 
     }
 
 
-    if (status === "serving") {
+    if (
+        status ===
+        "serving"
+    ) {
 
         return "🟢 Serving";
 
     }
 
 
-    if (status === "completed") {
+    if (
+        status ===
+        "completed"
+    ) {
 
         return "✅ Completed";
 
     }
 
 
-    return escapeHTML(status);
+    if (
+        status ===
+        "cancelled"
+    ) {
+
+        return "🔴 Cancelled";
+
+    }
+
+
+    return escapeHTML(
+        status || "Unknown"
+    );
 
 }
 
 
-// ========================================
-// ESCAPE HTML
-// ========================================
+
+/* ==========================================
+   ESCAPE HTML
+========================================== */
 
 function escapeHTML(value) {
 
@@ -941,18 +1389,77 @@ function escapeHTML(value) {
 
 
     return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
 
 
-// ========================================
-// DASHBOARD
-// ========================================
+
+/* ==========================================
+   QUEUE MESSAGE
+========================================== */
+
+function showQueueMessage(
+    message,
+    success
+) {
+
+    const element =
+        document.getElementById(
+            "queueMessage"
+        );
+
+
+    element.textContent =
+        message;
+
+
+    element.style.display =
+        "block";
+
+
+    element.style.background =
+        success
+            ? "#dcfce7"
+            : "#fee2e2";
+
+
+    element.style.color =
+        success
+            ? "#166534"
+            : "#991b1b";
+
+}
+
+
+
+/* ==========================================
+   DASHBOARD
+========================================== */
 
 function goDashboard() {
 
@@ -962,32 +1469,69 @@ function goDashboard() {
 }
 
 
-// ========================================
-// LOGOUT
-// ========================================
+
+/* ==========================================
+   LOGOUT
+========================================== */
 
 function hospitalLogout() {
+
+    localStorage.removeItem(
+        "hospital_id"
+    );
+
+    localStorage.removeItem(
+        "hospital_name"
+    );
+
+    localStorage.removeItem(
+        "hospital_email"
+    );
+
+    localStorage.removeItem(
+        "hospital_token_fee"
+    );
+
+    localStorage.removeItem(
+        "hospital_approval_status"
+    );
+
+    localStorage.removeItem(
+        "hospital_is_published"
+    );
+
+    localStorage.removeItem(
+        "hospital_latitude"
+    );
+
+    localStorage.removeItem(
+        "hospital_longitude"
+    );
+
 
     localStorage.removeItem(
         "hospitalLoggedIn"
     );
 
+
     window.location.href =
-        "index.html";
+        "hospital-login.html";
 
 }
 
 
-// ========================================
-// INITIAL LOAD
-// ========================================
+
+/* ==========================================
+   INITIAL LOAD
+========================================== */
 
 loadQueueDepartments();
 
 
-// ========================================
-// AUTO REFRESH
-// ========================================
+
+/* ==========================================
+   AUTO REFRESH
+========================================== */
 
 setInterval(
     function() {
@@ -999,12 +1543,13 @@ setInterval(
 
 
         const doctor =
-            document.getElementById(
-                "queueDoctor"
-            ).value;
+            getSelectedDoctorName();
 
 
-        if (department && doctor) {
+        if (
+            department &&
+            doctor
+        ) {
 
             loadPatients();
 
@@ -1015,6 +1560,7 @@ setInterval(
 );
 
 </script>
+
 
 </body>
 

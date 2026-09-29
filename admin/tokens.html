@@ -10,7 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Payments - HospitalCare</title>
+    <title>Tokens - HospitalCare</title>
 
     <link
         rel="stylesheet"
@@ -32,11 +32,11 @@
         <div>
 
             <h1>
-                💳 Payments
+                🎫 Patient Tokens
             </h1>
 
             <p>
-                HospitalCare payment records
+                Monitor hospital token activity
             </p>
 
         </div>
@@ -54,7 +54,7 @@
 
 
 
-    <!-- PAYMENT TABLE -->
+    <!-- TOKEN TABLE -->
 
     <div class="table-card">
 
@@ -66,11 +66,11 @@
             <div>
 
                 <h2>
-                    Payment Records
+                    Token List
                 </h2>
 
                 <p>
-                    View token fees, platform fees and payment status
+                    View all patient tokens and payment status.
                 </p>
 
             </div>
@@ -78,7 +78,7 @@
 
             <button
                 type="button"
-                onclick="loadPayments()"
+                onclick="loadTokens()"
             >
                 🔄 Refresh
             </button>
@@ -127,6 +127,10 @@
                         </th>
 
                         <th>
+                            Token
+                        </th>
+
+                        <th>
                             Token Fee
                         </th>
 
@@ -139,11 +143,11 @@
                         </th>
 
                         <th>
-                            Payment Status
+                            Payment
                         </th>
 
                         <th>
-                            Razorpay Payment ID
+                            Status
                         </th>
 
                     </tr>
@@ -151,15 +155,15 @@
                 </thead>
 
 
-                <tbody id="paymentTableBody">
+                <tbody id="tokenTableBody">
 
                     <tr>
 
                         <td
-                            colspan="10"
+                            colspan="11"
                             class="loading"
                         >
-                            Loading payments...
+                            Loading tokens...
                         </td>
 
                     </tr>

@@ -5,10 +5,13 @@
 
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <title>Doctors - QueueLess</title>
+    <title>Doctors - HospitalCare</title>
+
 
     <style>
 
@@ -18,115 +21,297 @@
             padding: 0;
         }
 
+
         body {
             font-family: Arial, sans-serif;
             background: #f4f7fb;
             min-height: 100vh;
         }
 
+
+        /* ================================
+           HEADER
+        ================================= */
+
         .header {
+
             background: #2563eb;
+
             color: white;
+
             padding: 18px 30px;
+
             display: flex;
+
             justify-content: space-between;
+
             align-items: center;
+
         }
+
+
+        .header h1 {
+            margin-bottom: 5px;
+        }
+
+
+        .header p {
+            opacity: 0.9;
+        }
+
 
         .back-button {
+
             background: white;
+
             color: #2563eb;
+
             border: none;
+
             padding: 10px 18px;
+
             border-radius: 8px;
+
             cursor: pointer;
+
             font-weight: bold;
+
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 35px auto;
-            padding: 20px;
+
+        .back-button:hover {
+            background: #eff6ff;
         }
+
+
+
+        /* ================================
+           CONTAINER
+        ================================= */
+
+        .container {
+
+            max-width: 1000px;
+
+            margin: 35px auto;
+
+            padding: 20px;
+
+        }
+
 
         .title {
             margin-bottom: 25px;
         }
 
+
         .title h2 {
+
             color: #111827;
+
             margin-bottom: 8px;
+
         }
+
 
         .title p {
             color: #6b7280;
         }
 
+
+
+        /* ================================
+           DOCTOR GRID
+        ================================= */
+
         #doctorList {
+
             display: grid;
+
             grid-template-columns:
-                repeat(auto-fit, minmax(280px, 1fr));
+                repeat(
+                    auto-fit,
+                    minmax(280px, 1fr)
+                );
 
             gap: 20px;
+
         }
+
+
+
+        /* ================================
+           DOCTOR CARD
+        ================================= */
 
         .doctor-card {
+
             background: white;
+
             padding: 25px;
+
             border-radius: 14px;
+
             box-shadow:
-                0 4px 15px rgba(0,0,0,0.08);
+                0 4px 15px rgba(0, 0, 0, 0.08);
+
         }
+
 
         .doctor-icon {
+
             font-size: 45px;
+
             margin-bottom: 15px;
+
         }
+
 
         .doctor-card h3 {
+
             color: #1d4ed8;
+
             margin-bottom: 15px;
+
         }
+
 
         .detail {
+
             margin: 10px 0;
+
             color: #4b5563;
+
+            line-height: 1.5;
+
         }
+
 
         .token-button {
+
             width: 100%;
+
             margin-top: 18px;
+
             padding: 12px;
+
             background: #2563eb;
+
             color: white;
+
             border: none;
+
             border-radius: 8px;
+
             cursor: pointer;
+
             font-weight: bold;
+
         }
+
 
         .token-button:hover {
+
             background: #1d4ed8;
+
         }
+
+
+
+        /* ================================
+           EMPTY
+        ================================= */
 
         .empty {
+
             background: white;
+
             padding: 35px;
+
             text-align: center;
+
             border-radius: 12px;
+
             color: #6b7280;
+
+            grid-column: 1 / -1;
+
         }
+
+
+
+        /* ================================
+           ERROR
+        ================================= */
 
         .error {
+
             background: #fee2e2;
+
             color: #b91c1c;
+
             padding: 15px;
+
             border-radius: 8px;
+
+            grid-column: 1 / -1;
+
         }
 
+
+
+        /* ================================
+           LOADING
+        ================================= */
+
         .loading {
+
             text-align: center;
+
             color: #6b7280;
+
+            grid-column: 1 / -1;
+
+            padding: 30px;
+
+        }
+
+
+
+        /* ================================
+           MOBILE
+        ================================= */
+
+        @media (max-width: 600px) {
+
+            .header {
+
+                padding: 15px;
+
+                flex-direction: column;
+
+                align-items: flex-start;
+
+                gap: 15px;
+
+            }
+
+
+            .back-button {
+
+                width: 100%;
+
+            }
+
+
+            .container {
+
+                margin: 20px auto;
+
+                padding: 15px;
+
+            }
+
         }
 
     </style>
@@ -134,275 +319,603 @@
 </head>
 
 
+
 <body>
 
 
-<div class="header">
+    <!-- =========================================
+         HEADER
+    ========================================== -->
 
-    <div>
+    <header class="header">
 
-        <h1>👨‍⚕️ QueueLess</h1>
 
-        <p>Doctors</p>
+        <div>
 
-    </div>
+            <h1>
+                🏥 HospitalCare
+            </h1>
 
+            <p>
+                Available Doctors
+            </p>
 
-    <button
-        class="back-button"
-        onclick="goBack()">
+        </div>
 
-        ← Hospital
 
-    </button>
+        <button
+            type="button"
+            class="back-button"
+            id="backButton"
+        >
 
-</div>
+            ← Back
 
+        </button>
 
 
-<div class="container">
+    </header>
 
-    <div class="title">
 
-        <h2>
-            Available Doctors
-        </h2>
 
-        <p>
-            Select a doctor to take a token.
-        </p>
+    <!-- =========================================
+         MAIN
+    ========================================== -->
 
-    </div>
+    <main class="container">
 
 
-    <div id="doctorList">
+        <div class="title">
 
-        <p class="loading">
-            Loading doctors...
-        </p>
+            <h2>
+                Available Doctors
+            </h2>
 
-    </div>
 
-</div>
+            <p id="hospitalName">
 
+                Loading hospital...
 
+            </p>
 
-<script>
+        </div>
 
-const API =
-    "http://127.0.0.1:8000";
 
 
-const hospitalId =
-    localStorage.getItem("hospitalId");
+        <div id="doctorList">
 
+            <p class="loading">
 
-async function loadDoctors() {
+                Loading doctors...
 
-    const list =
-        document.getElementById(
-            "doctorList"
-        );
+            </p>
 
+        </div>
 
-    if (!hospitalId) {
 
-        list.innerHTML = `
+    </main>
 
-            <div class="error">
 
-                Hospital not selected.
 
-            </div>
+    <script>
 
-        `;
+        const API =
+            "http://127.0.0.1:8000";
 
-        return;
 
-    }
+        /* =========================================
+           GET HOSPITAL ID
+        ========================================== */
 
+        const hospitalId =
+            localStorage.getItem("hospital_id") ||
+            localStorage.getItem("hospitalId");
 
-    try {
 
-        const response =
-            await fetch(
-                `${API}/hospitals/${hospitalId}/doctors`
-            );
+        /* =========================================
+           ELEMENTS
+        ========================================== */
 
+        const doctorList =
+            document.getElementById("doctorList");
 
-        if (!response.ok) {
 
-            throw new Error(
-                "Could not load doctors"
-            );
+        const hospitalNameElement =
+            document.getElementById("hospitalName");
 
-        }
 
+        const backButton =
+            document.getElementById("backButton");
 
-        const doctors =
-            await response.json();
 
 
-        if (
-            !doctors ||
-            doctors.length === 0
-        ) {
+        /* =========================================
+           LOAD HOSPITAL
+        ========================================== */
 
-            list.innerHTML = `
+        async function loadHospital() {
 
-                <div class="empty">
+            if (!hospitalId) {
 
-                    <h3>
-                        No Doctors Available
-                    </h3>
+                hospitalNameElement.textContent =
+                    "No hospital selected.";
 
-                    <br>
+                return;
 
-                    <p>
-                        Doctors will appear
-                        after the hospital
-                        adds them.
-                    </p>
+            }
 
-                </div>
 
-            `;
+            try {
 
-            return;
-
-        }
-
-
-        list.innerHTML = "";
-
-
-        doctors.forEach(
-            doctor => {
-
-                const card =
-                    document.createElement(
-                        "div"
+                const response =
+                    await fetch(
+                        `${API}/hospitals/${hospitalId}`
                     );
 
 
-                card.className =
-                    "doctor-card";
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Unable to load hospital."
+                    );
+
+                }
 
 
-                card.innerHTML = `
+                const hospital =
+                    await response.json();
 
-                    <div class="doctor-icon">
-                        👨‍⚕️
+
+                hospitalNameElement.textContent =
+                    hospital.name ||
+                    "Hospital";
+
+
+                /*
+                 * Save the latest hospital data.
+                 */
+
+                localStorage.setItem(
+                    "hospital_id",
+                    hospital.id
+                );
+
+
+                localStorage.setItem(
+                    "hospitalId",
+                    hospital.id
+                );
+
+
+                localStorage.setItem(
+                    "selectedHospitalId",
+                    hospital.id
+                );
+
+
+                localStorage.setItem(
+                    "selectedHospitalName",
+                    hospital.name || ""
+                );
+
+
+                /*
+                 * Save hospital token fee.
+                 */
+
+                localStorage.setItem(
+                    "selectedHospitalTokenFee",
+                    Number(hospital.token_fee || 0)
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Hospital loading error:",
+                    error
+                );
+
+                hospitalNameElement.textContent =
+                    "Hospital information unavailable.";
+
+            }
+
+        }
+
+
+
+        /* =========================================
+           LOAD DOCTORS
+        ========================================== */
+
+        async function loadDoctors() {
+
+
+            if (!hospitalId) {
+
+                doctorList.innerHTML = `
+
+                    <div class="error">
+
+                        ❌ Hospital not selected.
+
+                        <br><br>
+
+                        Please go back and
+                        select a hospital.
+
                     </div>
-
-                    <h3>
-                        ${doctor.name}
-                    </h3>
-
-                    <div class="detail">
-
-                        <strong>
-                            Department:
-                        </strong>
-
-                        ${doctor.department}
-
-                    </div>
-
-                    <div class="detail">
-
-                        <strong>
-                            Experience:
-                        </strong>
-
-                        ${doctor.experience}
-                        years
-
-                    </div>
-
-                    <button
-                        class="token-button"
-                        onclick="
-                            takeToken(
-                                '${doctor.name}',
-                                '${doctor.department}'
-                            )
-                        ">
-
-                        🎟️ Take Token
-
-                    </button>
 
                 `;
 
+                return;
 
-                list.appendChild(card);
+            }
+
+
+            try {
+
+
+                const response =
+                    await fetch(
+                        `${API}/hospitals/${hospitalId}/doctors`
+                    );
+
+
+                if (!response.ok) {
+
+                    let message =
+                        "Could not load doctors.";
+
+
+                    try {
+
+                        const errorData =
+                            await response.json();
+
+
+                        if (errorData.detail) {
+
+                            message =
+                                errorData.detail;
+
+                        }
+
+                    } catch {
+
+                        // Keep default message
+
+                    }
+
+
+                    throw new Error(message);
+
+                }
+
+
+                const doctors =
+                    await response.json();
+
+
+                if (
+                    !Array.isArray(doctors) ||
+                    doctors.length === 0
+                ) {
+
+                    doctorList.innerHTML = `
+
+                        <div class="empty">
+
+                            <h3>
+                                No Doctors Available
+                            </h3>
+
+                            <br>
+
+                            <p>
+
+                                This hospital has not
+                                added any doctors yet.
+
+                            </p>
+
+                        </div>
+
+                    `;
+
+                    return;
+
+                }
+
+
+                doctorList.innerHTML = "";
+
+
+                doctors.forEach(
+                    doctor => {
+
+
+                        const card =
+                            document.createElement("div");
+
+
+                        card.className =
+                            "doctor-card";
+
+
+                        const icon =
+                            document.createElement("div");
+
+
+                        icon.className =
+                            "doctor-icon";
+
+
+                        icon.textContent =
+                            "👨‍⚕️";
+
+
+                        const name =
+                            document.createElement("h3");
+
+
+                        name.textContent =
+                            doctor.name ||
+                            "Doctor";
+
+
+                        const department =
+                            document.createElement("div");
+
+
+                        department.className =
+                            "detail";
+
+
+                        department.innerHTML =
+                            "<strong>Department:</strong> ";
+
+
+                        const departmentText =
+                            document.createTextNode(
+                                doctor.department ||
+                                "Not specified"
+                            );
+
+
+                        department.appendChild(
+                            departmentText
+                        );
+
+
+                        const specialization =
+                            document.createElement("div");
+
+
+                        specialization.className =
+                            "detail";
+
+
+                        specialization.innerHTML =
+                            "<strong>Specialization:</strong> ";
+
+
+                        const specializationText =
+                            document.createTextNode(
+                                doctor.specialization ||
+                                "Not specified"
+                            );
+
+
+                        specialization.appendChild(
+                            specializationText
+                        );
+
+
+                        const experience =
+                            document.createElement("div");
+
+
+                        experience.className =
+                            "detail";
+
+
+                        experience.innerHTML =
+                            "<strong>Experience:</strong> ";
+
+
+                        const experienceText =
+                            document.createTextNode(
+                                doctor.experience ||
+                                "Not specified"
+                            );
+
+
+                        experience.appendChild(
+                            experienceText
+                        );
+
+
+                        const button =
+                            document.createElement("button");
+
+
+                        button.type =
+                            "button";
+
+
+                        button.className =
+                            "token-button";
+
+
+                        button.textContent =
+                            "🎟️ Select Doctor";
+
+
+                        button.addEventListener(
+                            "click",
+                            function () {
+
+                                selectDoctor(
+                                    doctor
+                                );
+
+                            }
+                        );
+
+
+                        card.appendChild(icon);
+
+                        card.appendChild(name);
+
+                        card.appendChild(
+                            department
+                        );
+
+                        card.appendChild(
+                            specialization
+                        );
+
+                        card.appendChild(
+                            experience
+                        );
+
+                        card.appendChild(button);
+
+
+                        doctorList.appendChild(card);
+
+                    }
+                );
+
+
+            } catch (error) {
+
+
+                console.error(
+                    "Doctor loading error:",
+                    error
+                );
+
+
+                doctorList.innerHTML = `
+
+                    <div class="error">
+
+                        ❌ Cannot load doctors.
+
+                        <br><br>
+
+                        ${escapeHtml(
+                            error.message
+                        )}
+
+                    </div>
+
+                `;
+
+            }
+
+        }
+
+
+
+        /* =========================================
+           SELECT DOCTOR
+        ========================================== */
+
+        function selectDoctor(doctor) {
+
+
+            /*
+             * Store doctor information.
+             */
+
+            localStorage.setItem(
+                "selectedDoctor",
+                doctor.name || ""
+            );
+
+
+            localStorage.setItem(
+                "selectedDoctorId",
+                doctor.id || ""
+            );
+
+
+            localStorage.setItem(
+                "selectedDepartment",
+                doctor.department || ""
+            );
+
+
+            localStorage.setItem(
+                "selectedDoctorSpecialization",
+                doctor.specialization || ""
+            );
+
+
+            /*
+             * Go to token/payment page.
+             */
+
+            window.location.href =
+                "token.html";
+
+        }
+
+
+
+        /* =========================================
+           BACK
+        ========================================== */
+
+        backButton.addEventListener(
+            "click",
+            function () {
+
+                /*
+                 * Return to patient dashboard.
+                 */
+
+                window.location.href =
+                    "dashboard.html";
 
             }
         );
 
-    }
-
-    catch (error) {
-
-        console.error(error);
 
 
-        list.innerHTML = `
+        /* =========================================
+           ESCAPE HTML
+        ========================================== */
 
-            <div class="error">
+        function escapeHtml(value) {
 
-                ❌ Cannot load doctors.
+            const div =
+                document.createElement("div");
 
-                <br><br>
 
-                ${error.message}
+            div.textContent =
+                value ?? "";
 
-            </div>
 
-        `;
+            return div.innerHTML;
 
-    }
-
-}
+        }
 
 
 
-function takeToken(
-    doctor,
-    department
-) {
+        /* =========================================
+           START
+        ========================================== */
 
-    localStorage.setItem(
-        "selectedDoctor",
-        doctor
-    );
+        loadHospital();
 
-    localStorage.setItem(
-        "selectedDepartment",
-        department
-    );
+        loadDoctors();
 
-
-    window.location.href =
-        "token.html";
-
-}
-
-
-
-function goBack() {
-
-    window.location.href =
-        "hospital.html";
-
-}
-
-
-
-loadDoctors();
-
-</script>
+    </script>
 
 
 </body>

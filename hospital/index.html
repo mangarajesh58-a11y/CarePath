@@ -2,32 +2,55 @@
 <html lang="en">
 
 <head>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>HospitalCare - Hospital Login</title>
 
-    <link rel="stylesheet"
-          href="style.css">
+
+    <!-- =====================================================
+         GOOGLE IDENTITY SERVICES
+    ====================================================== -->
+
+    <script
+        src="https://accounts.google.com/gsi/client"
+        async
+        defer>
+    </script>
+
+
+    <!-- =====================================================
+         HOSPITAL CSS
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
 
     <style>
-
-        /* =========================
-           LOGIN PAGE
-        ========================= */
 
         * {
             box-sizing: border-box;
         }
 
+
         body {
+
             margin: 0;
+
             padding: 0;
 
-            font-family: Arial, Helvetica, sans-serif;
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
 
             background:
                 radial-gradient(
@@ -35,11 +58,13 @@
                     rgba(33, 150, 243, 0.15),
                     transparent 35%
                 ),
+
                 radial-gradient(
                     circle at bottom right,
                     rgba(124, 58, 237, 0.15),
                     transparent 35%
                 ),
+
                 linear-gradient(
                     135deg,
                     #eef7ff,
@@ -47,28 +72,31 @@
                 );
 
             min-height: 100vh;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
         }
 
-
-        /* =========================
-           LOGIN CONTAINER
-        ========================= */
 
         .login-container {
+
             width: 100%;
+
             max-width: 520px;
 
-            margin: 0 auto;
-
-            padding: 50px 20px;
+            padding: 40px 20px;
         }
 
 
-        /* =========================
-           LOGO SECTION
-        ========================= */
+        /* =================================================
+           LOGO
+        ================================================= */
 
         .logo-section {
+
             text-align: center;
 
             margin-bottom: 30px;
@@ -76,7 +104,9 @@
 
 
         .logo {
+
             width: 90px;
+
             height: 90px;
 
             margin: auto;
@@ -93,17 +123,24 @@
             display: flex;
 
             justify-content: center;
+
             align-items: center;
 
             font-size: 45px;
 
             box-shadow:
                 0 12px 30px
-                rgba(37, 99, 235, 0.25);
+                rgba(
+                    37,
+                    99,
+                    235,
+                    0.25
+                );
         }
 
 
         .logo-section h1 {
+
             margin-top: 18px;
 
             margin-bottom: 6px;
@@ -121,11 +158,13 @@
 
             background-clip: text;
 
-            -webkit-text-fill-color: transparent;
+            -webkit-text-fill-color:
+                transparent;
         }
 
 
         .logo-section p {
+
             margin: 0;
 
             color: #64748b;
@@ -136,23 +175,53 @@
         }
 
 
-        /* =========================
+        .portal-info {
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            gap: 7px;
+
+            margin-top: 12px;
+
+            color: #64748b;
+
+            font-size: 13px;
+        }
+
+
+        /* =================================================
            LOGIN CARD
-        ========================= */
+        ================================================= */
 
         .login-card {
 
-            background: rgba(255, 255, 255, 0.96);
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.97
+                );
 
             padding: 32px;
 
             border-radius: 20px;
 
-            border: 1px solid #e2e8f0;
+            border:
+                1px solid #e2e8f0;
 
             box-shadow:
                 0 20px 50px
-                rgba(37, 99, 235, 0.12);
+                rgba(
+                    37,
+                    99,
+                    235,
+                    0.12
+                );
         }
 
 
@@ -168,9 +237,9 @@
         }
 
 
-        /* =========================
+        /* =================================================
            FORM
-        ========================= */
+        ================================================= */
 
         .form-group {
 
@@ -198,9 +267,11 @@
 
             height: 50px;
 
-            padding: 0 14px;
+            padding:
+                0 14px;
 
-            border: 2px solid #e2e8f0;
+            border:
+                2px solid #e2e8f0;
 
             border-radius: 10px;
 
@@ -210,31 +281,39 @@
 
             outline: none;
 
-            transition: 0.25s;
+            transition:
+                0.25s;
         }
 
 
         .form-group input:hover {
 
-            border-color: #93c5fd;
+            border-color:
+                #93c5fd;
         }
 
 
         .form-group input:focus {
 
-            border-color: #6366f1;
+            border-color:
+                #6366f1;
 
             background: white;
 
             box-shadow:
                 0 0 0 4px
-                rgba(99, 102, 241, 0.10);
+                rgba(
+                    99,
+                    102,
+                    241,
+                    0.10
+                );
         }
 
 
-        /* =========================
+        /* =================================================
            LOGIN BUTTON
-        ========================= */
+        ================================================= */
 
         .login-button {
 
@@ -263,29 +342,73 @@
 
             cursor: pointer;
 
-            transition: 0.25s;
+            transition:
+                0.25s;
         }
 
 
         .login-button:hover {
 
-            transform: translateY(-2px);
+            transform:
+                translateY(-2px);
 
             box-shadow:
                 0 10px 25px
-                rgba(79, 70, 229, 0.25);
+                rgba(
+                    79,
+                    70,
+                    229,
+                    0.25
+                );
         }
 
 
-        .login-button:active {
+        .login-button:disabled {
 
-            transform: translateY(0);
+            opacity: 0.6;
+
+            cursor:
+                not-allowed;
+
+            transform: none;
         }
 
 
-        /* =========================
+        /* =================================================
+           MESSAGE
+        ================================================= */
+
+        #message {
+
+            margin-top: 15px;
+
+            text-align: center;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+            min-height: 20px;
+        }
+
+
+        .success-message {
+
+            color:
+                #15803d;
+        }
+
+
+        .error-message {
+
+            color:
+                #dc2626;
+        }
+
+
+        /* =================================================
            OR SEPARATOR
-        ========================= */
+        ================================================= */
 
         .or-separator {
 
@@ -297,7 +420,8 @@
 
             width: 100%;
 
-            margin: 22px 0;
+            margin:
+                22px 0;
 
             color: #777;
 
@@ -316,183 +440,161 @@
 
             height: 1px;
 
-            background: #e2e8f0;
+            background:
+                #e2e8f0;
         }
 
 
         .or-separator span {
 
-            padding: 0 15px;
+            padding:
+                0 15px;
 
-            background: white;
+            background:
+                white;
 
-            color: #64748b;
+            color:
+                #64748b;
 
-            font-weight: bold;
+            font-weight:
+                bold;
         }
 
 
-        /* =========================
+        /* =================================================
            GOOGLE BUTTON
-        ========================= */
+        ================================================= */
 
-        .google-button {
+        .google-button-container {
 
             width: 100%;
 
-            height: 50px;
+            min-height: 44px;
 
             display: flex;
 
+            justify-content: center;
+
             align-items: center;
+
+            overflow: hidden;
+        }
+
+
+        #googleButton {
+
+            width: 100%;
+
+            display: flex;
 
             justify-content: center;
 
-            gap: 12px;
-
-            background: white;
-
-            border: 2px solid #e2e8f0;
-
-            border-radius: 10px;
-
-            color: #334155;
-
-            font-size: 15px;
-
-            font-weight: 500;
-
-            cursor: pointer;
-
-            transition: 0.25s;
+            align-items: center;
         }
 
 
-        .google-button:hover {
-
-            background: #f8fafc;
-
-            border-color: #cbd5e1;
-
-            transform: translateY(-1px);
-        }
-
-
-        .google-icon {
-
-            font-size: 21px;
-
-            font-weight: bold;
-
-            color: #4285f4;
-        }
-
-
-        /* =========================
+        /* =================================================
            REGISTER
-        ========================= */
+        ================================================= */
 
-        .register-text {
+        .register-link {
+
+            margin-top: 20px;
 
             text-align: center;
 
-            margin-top: 25px;
-
-            color: #64748b;
+            color:
+                #64748b;
 
             font-size: 14px;
         }
 
 
-        .register-text a {
+        .register-link a {
 
-            color: #1976d2;
+            color:
+                #1976d2;
 
-            font-weight: bold;
+            text-decoration:
+                none;
 
-            text-decoration: none;
+            font-weight:
+                bold;
         }
 
 
-        .register-text a:hover {
+        .register-link a:hover {
 
-            text-decoration: underline;
+            text-decoration:
+                underline;
         }
 
 
-        /* =========================
-           HOSPITAL ICON INFO
-        ========================= */
-
-        .portal-info {
-
-            display: flex;
-
-            justify-content: center;
-
-            align-items: center;
-
-            gap: 7px;
-
-            margin-top: 12px;
-
-            color: #64748b;
-
-            font-size: 13px;
-        }
-
-
-        /* =========================
+        /* =================================================
            MOBILE
-        ========================= */
+        ================================================= */
 
         @media (max-width: 600px) {
 
+            body {
+
+                align-items:
+                    flex-start;
+            }
+
+
             .login-container {
 
-                margin: 0 auto;
-
-                padding: 35px 15px;
+                padding:
+                    35px 15px;
             }
 
 
             .login-card {
 
-                padding: 25px 20px;
+                padding:
+                    25px 20px;
 
-                border-radius: 18px;
+                border-radius:
+                    18px;
             }
 
 
             .logo {
 
-                width: 78px;
+                width:
+                    78px;
 
-                height: 78px;
+                height:
+                    78px;
 
-                font-size: 38px;
+                font-size:
+                    38px;
 
-                border-radius: 22px;
+                border-radius:
+                    22px;
             }
 
 
             .logo-section h1 {
 
-                font-size: 28px;
+                font-size:
+                    28px;
             }
 
 
             .logo-section p {
 
-                font-size: 15px;
+                font-size:
+                    15px;
             }
 
 
             .login-card h2 {
 
-                font-size: 22px;
+                font-size:
+                    22px;
             }
-
         }
 
     </style>
@@ -503,183 +605,46 @@
 <body>
 
 
-    <!-- =========================
-         LOGIN CONTAINER
-    ========================= -->
-
-    <div class="login-container">
+<div class="login-container">
 
 
-        <!-- =========================
-             HOSPITAL LOGO
-        ========================= -->
+    <!-- =================================================
+         LOGO SECTION
+    ================================================== -->
 
-        <div class="logo-section">
-
-
-            <div class="logo">
-
-                🏥
-
-            </div>
+    <div class="logo-section">
 
 
-            <h1>
+        <div class="logo">
 
-                HospitalCare
-
-            </h1>
-
-
-            <p>
-
-                Hospital Portal
-
-            </p>
-
-
-            <div class="portal-info">
-
-                🏥
-                <span>
-                    Manage your hospital
-                </span>
-
-            </div>
-
+            🏥
 
         </div>
 
 
+        <h1>
 
-        <!-- =========================
-             LOGIN CARD
-        ========================= -->
+            HospitalCare
 
-        <div class="login-card">
-
-
-            <h2>
-
-                Hospital Login
-
-            </h2>
+        </h1>
 
 
+        <p>
 
-            <!-- =========================
-                 EMAIL
-            ========================= -->
+            Hospital Portal
 
-            <div class="form-group">
-
-
-                <label for="loginEmail">
-
-                    Email
-
-                </label>
+        </p>
 
 
-                <input
-                    type="email"
-                    id="loginEmail"
-                    placeholder="Enter your email"
-                    autocomplete="email"
-                >
+        <div class="portal-info">
 
+            <span>
+                🏥
+            </span>
 
-            </div>
-
-
-
-            <!-- =========================
-                 PASSWORD
-            ========================= -->
-
-            <div class="form-group">
-
-
-                <label for="loginPassword">
-
-                    Password
-
-                </label>
-
-
-                <input
-                    type="password"
-                    id="loginPassword"
-                    placeholder="Enter your password"
-                    autocomplete="current-password"
-                >
-
-
-            </div>
-
-
-
-            <!-- =========================
-                 LOGIN BUTTON
-            ========================= -->
-
-            <button
-                type="button"
-                class="login-button"
-                onclick="hospitalLogin()"
-            >
-
-                Login
-
-            </button>
-
-
-
-            <!-- =========================
-                 OR
-            ========================= -->
-
-            <div class="or-separator">
-
-                <span>
-
-                    OR
-
-                </span>
-
-            </div>
-
-
-
-            <!-- =========================
-                 GOOGLE LOGIN
-            ========================= -->
-
-            <div class="google-button-container">
-           <div id="googleButton"></div>
-         </div>
-
-
-
-            <!-- =========================
-                 REGISTER
-            ========================= -->
-
-            <p class="register-text">
-
-
-                Don't have a hospital account?
-
-
-                <a href="register.html">
-
-                    Register
-
-                </a>
-
-
-            </p>
-
+            <span>
+                Manage your hospital
+            </span>
 
         </div>
 
@@ -688,48 +653,519 @@
 
 
 
-    <!-- =========================
-         JAVASCRIPT
-    ========================= -->
+    <!-- =================================================
+         LOGIN CARD
+    ================================================== -->
 
-     <script src="script.js"></script>
+    <div class="login-card">
+
+
+        <h2>
+
+            Hospital Login
+
+        </h2>
+
+
+
+        <!-- =================================================
+             LOGIN FORM
+        ================================================== -->
+
+        <form
+            id="hospitalLoginForm"
+        >
+
+
+            <div class="form-group">
+
+
+                <label for="email">
+
+                    Email
+
+                </label>
+
+
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    autocomplete="email"
+                    required
+                >
+
+
+            </div>
+
+
+
+            <div class="form-group">
+
+
+                <label for="password">
+
+                    Password
+
+                </label>
+
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
+
+
+            </div>
+
+
+
+            <button
+                type="submit"
+                class="login-button"
+                id="loginButton"
+            >
+
+                Login
+
+            </button>
+
+
+        </form>
+
+
+
+        <!-- =================================================
+             MESSAGE
+        ================================================== -->
+
+        <div
+            id="message"
+        ></div>
+
+
+
+        <!-- =================================================
+             GOOGLE SEPARATOR
+        ================================================== -->
+
+        <div class="or-separator">
+
+            <span>
+
+                OR
+
+            </span>
+
+        </div>
+
+
+
+        <!-- =================================================
+             GOOGLE LOGIN
+        ================================================== -->
+
+        <div
+            class="google-button-container"
+        >
+
+            <div
+                id="googleButton"
+            ></div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             REGISTER
+        ================================================== -->
+
+        <div class="register-link">
+
+            Don't have a hospital account?
+
+            <a href="register.html">
+
+                Register Hospital
+
+            </a>
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+
+<!-- =====================================================
+     HOSPITAL JAVASCRIPT
+====================================================== -->
+
+<script src="script.js"></script>
+
+
+
+<!-- =====================================================
+     GOOGLE LOGIN
+====================================================== -->
 
 <script>
-    window.onload = function () {
+
+
+/*
+ * IMPORTANT
+ *
+ * This Client ID must be the same Web OAuth Client ID
+ * configured in Google Cloud Console and used by your
+ * backend GOOGLE_CLIENT_ID environment variable.
+ */
+
+const GOOGLE_CLIENT_ID =
+    "124194505435-nirpgumce4ek0f368mjnkm8daq5dof9p.apps.googleusercontent.com"
+
+
+/* =====================================================
+   GOOGLE LOGIN CALLBACK
+===================================================== */
+
+async function handleHospitalGoogleLogin(
+    response
+) {
+
+    console.log(
+        "Google Hospital Login Response:",
+        response
+    );
+
+
+    if (
+        !response ||
+        !response.credential
+    ) {
+
+        showMessage(
+            "Google login failed. No credential received.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+
+        showMessage(
+            "Signing in with Google...",
+            "success"
+        );
+
+
+        /*
+         * Send Google credential to FastAPI
+         */
+
+        const result =
+            await fetch(
+                "http://127.0.0.1:8000/hospitals/google-login",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            credential:
+                                response.credential
+
+                        })
+                }
+            );
+
+
+        const data =
+            await result.json();
+
+
+        console.log(
+            "Google Backend Response:",
+            data
+        );
+
+
+        if (!result.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Google hospital login failed."
+            );
+        }
+
+
+        /*
+         * Backend may return hospital directly
+         * or inside a hospital property.
+         */
+
+        const hospital =
+            data.hospital ||
+            data;
+
 
         if (
-            typeof google !== "undefined" &&
-            document.getElementById("googleButton")
+            !hospital ||
+            !hospital.id
         ) {
 
-            google.accounts.id.initialize({
-
-                client_id:
-                    "124194505435-5rpj0kjdj3fgkle4vhp18gg89qs4he3l.apps.googleusercontent.com",
-
-                callback:
-                    handleHospitalGoogleLogin
-            });
-
-
-            google.accounts.id.renderButton(
-
-                document.getElementById("googleButton"),
-
-                {
-                    theme: "outline",
-                    size: "large",
-                    width: 400,
-                    text: "continue_with",
-                    shape: "rectangular"
-                }
-
+            throw new Error(
+                "Hospital information was not returned by the server."
             );
+        }
+
+
+        /*
+         * Save hospital information
+         */
+
+        localStorage.setItem(
+            "hospital",
+            JSON.stringify(hospital)
+        );
+
+
+        localStorage.setItem(
+            "hospital_id",
+            hospital.id
+        );
+
+
+        /*
+         * Success
+         */
+
+        showMessage(
+            "Google login successful. Redirecting...",
+            "success"
+        );
+
+
+        setTimeout(
+            function () {
+
+                window.location.href =
+                    "dashboard.html";
+
+            },
+            700
+        );
+
+
+    }
+    catch (error) {
+
+
+        console.error(
+            "GOOGLE HOSPITAL LOGIN ERROR:",
+            error
+        );
+
+
+        showMessage(
+            error.message ||
+            "Google login failed.",
+            "error"
+        );
+
+    }
+
+}
+
+
+
+/* =====================================================
+   MESSAGE FUNCTION
+===================================================== */
+
+function showMessage(
+    message,
+    type
+) {
+
+    const messageElement =
+        document.getElementById(
+            "message"
+        );
+
+
+    if (!messageElement) {
+
+        return;
+    }
+
+
+    messageElement.textContent =
+        message;
+
+
+    messageElement.className =
+        type === "success"
+            ? "success-message"
+            : "error-message";
+}
+
+
+
+/* =====================================================
+   INITIALIZE GOOGLE
+===================================================== */
+
+function initializeHospitalGoogleLogin() {
+
+
+    const googleButton =
+        document.getElementById(
+            "googleButton"
+        );
+
+
+    if (!googleButton) {
+
+        console.error(
+            "Google button container not found."
+        );
+
+        return;
+    }
+
+
+
+    /*
+     * Google Identity Services may load
+     * slightly after this page.
+     */
+
+    if (
+        typeof google === "undefined" ||
+        !google.accounts ||
+        !google.accounts.id
+    ) {
+
+        console.log(
+            "Google Identity Services is not ready. Retrying..."
+        );
+
+
+        setTimeout(
+            initializeHospitalGoogleLogin,
+            500
+        );
+
+
+        return;
+    }
+
+
+
+    /*
+     * Initialize Google
+     */
+
+    google.accounts.id.initialize({
+
+        client_id:
+            GOOGLE_CLIENT_ID,
+
+        callback:
+            handleHospitalGoogleLogin,
+
+        auto_select:
+            false,
+
+        cancel_on_tap_outside:
+            true
+
+    });
+
+
+
+    /*
+     * Clear previous button
+     */
+
+    googleButton.innerHTML = "";
+
+
+
+    /*
+     * Render Google button
+     */
+
+    google.accounts.id.renderButton(
+
+        googleButton,
+
+        {
+
+            type:
+                "standard",
+
+            theme:
+                "outline",
+
+            size:
+                "large",
+
+            text:
+                "continue_with",
+
+            shape:
+                "rectangular",
+
+            width:
+                400
 
         }
 
-    };
+    );
+
+
+    console.log(
+        "Google Hospital Login button rendered successfully."
+    );
+
+}
+
+
+
+/* =====================================================
+   PAGE LOAD
+===================================================== */
+
+window.addEventListener(
+    "load",
+    function () {
+
+        initializeHospitalGoogleLogin();
+
+    }
+);
+
+
 </script>
+
 
 </body>
 
