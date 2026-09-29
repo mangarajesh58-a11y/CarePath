@@ -1,10 +1,9 @@
 fastapi
-uvicorn
+uvicorn[standard]
 sqlalchemy
-pymysql
+psycopg2-binary
 python-dotenv
 python-multipart
 passlib[bcrypt]
 razorpay
 google-auth
-python-multipart
