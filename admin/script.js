@@ -2,8 +2,8 @@
 // CAREPATH ADMIN JAVASCRIPT
 // =====================================================
 
-const API = "[https://carepath-3q9q.onrender.com](https://carepath-3q9q.onrender.com)";
-const FRONTEND = "[https://carepath-admin.vercel.app](https://carepath-admin.vercel.app)";
+const API = "https://carepath-3q9q.onrender.com";
+const FRONTEND = "https://carepath-admin.vercel.app";
 
 // =====================================================
 // SAFE RESPONSE READER
