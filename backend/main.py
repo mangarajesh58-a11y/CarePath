@@ -223,38 +223,63 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 def send_otp_email(receiver_email: str, otp: str):
-    sender_email = os.getenv("SMTP_EMAIL")
-    app_password = os.getenv("SMTP_APP_PASSWORD")
+    import json
+    import urllib.request
+    import urllib.error
 
-    if not sender_email or not app_password:
-        raise RuntimeError(
-            "Email configuration is missing. Check your backend .env file."
-        )
-
-    message = EmailMessage()
-    message["Subject"] = "CarePath Registration OTP"
-    message["From"] = sender_email
-    message["To"] = receiver_email
-
-    message.set_content(
-        f"""
-Hello,
-
-Your CarePath registration verification code is: {otp}
-
-This code expires in 5 minutes.
-
-If you did not request this code, please ignore this email.
-
-CarePath Team
-"""
+    api_key = os.getenv("RESEND_API_KEY")
+    sender_email = os.getenv(
+        "RESEND_FROM_EMAIL",
+        "CarePath <onboarding@resend.dev>"
     )
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(sender_email, app_password)
-        server.send_message(message)
+    if not api_key:
+        raise RuntimeError(
+            "RESEND_API_KEY is missing from environment variables."
+        )
 
+    payload = {
+        "from": sender_email,
+        "to": [receiver_email],
+        "subject": "CarePath Registration OTP",
+        "text": (
+            "Hello,\n\n"
+            f"Your CarePath registration verification code is: {otp}\n\n"
+            "This code expires in 5 minutes.\n\n"
+            "If you did not request this code, please ignore this email.\n\n"
+            "CarePath Team"
+        ),
+    }
+
+    request = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            if response.status not in (200, 201):
+                raise RuntimeError(
+                    f"Resend returned status {response.status}"
+                )
+
+    except urllib.error.HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(
+            f"Resend email API returned HTTP {exc.code}: {error_body}"
+        ) from exc
+
+    except urllib.error.URLError as exc:
+        raise RuntimeError(
+            f"Could not connect to Resend: {exc.reason}"
+        ) from exc
 # ============================================================
 # DATABASE SESSION
 # ============================================================
