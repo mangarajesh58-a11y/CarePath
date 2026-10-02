@@ -689,13 +689,15 @@ def request_registration_otp(
 
         send_otp_email(email, otp)
 
+    
     except Exception:
+        import logging
+        logging.exception("Registration OTP request failed")
         db.rollback()
         raise HTTPException(
             status_code=500,
             detail="Unable to send OTP. Check your email configuration.",
         )
-
     return {
         "success": True,
         "message": "OTP sent to your email address",
