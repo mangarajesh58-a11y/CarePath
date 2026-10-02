@@ -2,7 +2,7 @@
 // CarePath - HOSPITAL APP SCRIPT
 // =========================================================
 
-const API = "https://carepath-backend-fgb9.onrender.com";
+const API = "https://carepath-3q9q.onrender.com";
 const FRONTEND = "https://hospitalcare-hospital.vercel.app/";
 
 

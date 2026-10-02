@@ -2,7 +2,7 @@
 // CAREPATH ADMIN JAVASCRIPT
 // =====================================================
 
-const API = "https://carepath-backend-fgb9.onrender.com";
+const API = "https://carepath-3q9q.onrender.com";
 
 const FRONTEND = "https://hospitalcare-admin.vercel.app/";
 
@@ -165,7 +165,7 @@ async function adminLogin() {
         console.error("Admin login connection error:", error);
 
         showLoginMessage(
-            "Cannot connect to FastAPI. Make sure your backend is running at https://carepath-backend-fgb9.onrender.com.",
+            "Cannot connect to FastAPI. Make sure your backend is running at https://carepath-3q9q.onrender.com",
             "error"
         );
     }
