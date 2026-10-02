@@ -215,7 +215,7 @@ app.add_middleware(
     allow_origins=[
         "http://127.0.0.1:5500",
         "http://localhost:5500",
-        "https://carepath-patient-8jzu.vercel.app",
+        "https://carepath-patient.vercel.app",
         "https://carepath-hospital-ten.vercel.app",
         "https://carepath-admin.vercel.app",
     ],
@@ -1658,7 +1658,7 @@ def generic_google_login(
         admin = (
             db.query(Admin)
             .filter(
-                Admin.email == email
+                func.lower(Admin.email) == email.strip().lower()
             )
             .first()
         )
