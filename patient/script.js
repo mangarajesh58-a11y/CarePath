@@ -3,7 +3,7 @@
    ========================================================= */
 
 const API = "https://carepath-backend-fgb9.onrender.com";
-const FRONTEND = "http://127.0.0.1:5500/patient";
+const FRONTEND = "https://hospitalcare-patient.vercel.app/";
 
 const PLATFORM_FEE = 10;
 

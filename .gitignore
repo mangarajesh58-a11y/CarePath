@@ -1,12 +1,7 @@
-# Environment variables and secrets
+﻿.venv/
+venv/
+__pycache__/
+*.py[cod]
 .env
 .env.*
 !.env.example
-
-# Python
-__pycache__/
-*.py[cod]
-venv/
-.venv/
-
-# Local uploads and temporary files

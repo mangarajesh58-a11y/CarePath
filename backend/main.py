@@ -214,16 +214,19 @@ app.add_middleware(
     CORSMiddleware,
 
     allow_origins=[
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-    ],
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
 
-    allow_credentials=False,
+    "https://hospitalcare-admin.vercel.app/",
+    "https://hospitalcare-patient.vercel.app/",
+    "https://hospitalcare-admin.vercel.app/",
+],
 
-    allow_methods=["*"],
+allow_credentials=False,
 
-    allow_headers=["*"],
-)
+allow_methods=["*"],
+
+allow_headers=["*"]
 
 def send_otp_email(receiver_email: str, otp: str):
     sender_email = os.getenv("SMTP_EMAIL")

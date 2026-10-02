@@ -173,7 +173,7 @@ if (typeof hospital === "string") {
                     image.className = "hospital-image";
                     image.src = imageUrl.startsWith("http")
     ? imageUrl
-    : "http://127.0.0.1:8000/" + imageUrl.replace(/^\/+/, "");
+    : "https://carepath-backend-fgb9.onrender.com/" + imageUrl.replace(/^\/+/, "");
                     image.alt = "Hospital building";
                     image.onerror = () => image.remove();
                     hospitalContainer.appendChild(image);
