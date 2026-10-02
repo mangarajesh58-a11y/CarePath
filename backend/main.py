@@ -227,7 +227,7 @@ allow_credentials=False,
 allow_methods=["*"],
 
 allow_headers=["*"]
-
+)
 def send_otp_email(receiver_email: str, otp: str):
     sender_email = os.getenv("SMTP_EMAIL")
     app_password = os.getenv("SMTP_APP_PASSWORD")
