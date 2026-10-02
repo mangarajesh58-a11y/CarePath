@@ -216,8 +216,8 @@ app.add_middleware(
         "http://127.0.0.1:5500",
         "http://localhost:5500",
         "https://carepath-patient-8jzu.vercel.app",
-        "https://carepath-hospital-ten.vercel.app"
-        "https://carepath-admin.vercel.app"
+        "https://carepath-hospital-ten.vercel.app",
+        "https://carepath-admin.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
