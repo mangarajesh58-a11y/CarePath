@@ -4,7 +4,7 @@
 
 const API = "https://carepath-3q9q.onrender.com";
 
-const FRONTEND = "https://hospitalcare-admin.vercel.app/";
+const FRONTEND = "https://carepath-admin.vercel.app/";
 
 
 // =====================================================
