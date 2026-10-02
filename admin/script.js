@@ -127,17 +127,23 @@ async function adminLogin() {
             })
         });
 
-        const data = await readResponse(response);
+const data = await readResponse(response);
 
-        console.log("Admin login status:", response.status);
-        console.log("Admin login response:", data);
+console.log("Admin login status:", response.status);
 
-        if (!response.ok) {
-            console.error("Admin login failed:", {
-                status: response.status,
-                response: data
-            });
+console.log(
+    "Admin login response:",
+    JSON.stringify(data, null, 2)
+);
 
+if (!response.ok) {
+    console.error(
+        "Admin login failed:",
+        JSON.stringify({
+            status: response.status,
+            response: data
+        }, null, 2)
+    );
             showLoginMessage(
                 getErrorMessage(
                     data,
