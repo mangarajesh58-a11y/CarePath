@@ -8,3 +8,4 @@ python-multipart
 passlib[bcrypt]
 razorpay
 google-auth
+pg8000
