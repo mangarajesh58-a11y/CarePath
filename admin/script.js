@@ -1,5 +1,5 @@
 // =====================================================
-// HOSPITALCARE ADMIN JAVASCRIPT
+// CAREPATH ADMIN JAVASCRIPT
 // =====================================================
 
 const API = "http://127.0.0.1:8000";
@@ -35,7 +35,7 @@ async function readResponse(response) {
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    console.log("HospitalCare Admin started.");
+    console.log("CarePath Admin started.");
 
     const path =
         window.location.pathname.toLowerCase();
@@ -237,7 +237,7 @@ async function handleGoogleLogin(response) {
         console.error("Google login connection error:", error);
 
         showLoginMessage(
-            "Cannot connect to HospitalCare FastAPI.",
+            "Cannot connect to CarePath FastAPI.",
             "error"
         );
     }

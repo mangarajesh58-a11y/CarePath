@@ -1,21 +1,12 @@
-# Environment variables
+# Environment variables and secrets
 .env
-backend/.env
+.env.*
+!.env.example
 
-# Python virtual environments
-.venv/
-venv/
-backend/venv/
-backend/.venv/
-
-# Python cache
+# Python
 __pycache__/
-*/__pycache__/
-*.pyc
+*.py[cod]
+venv/
+.venv/
 
-# IDE
-.vscode/
-
-# OS files
-.DS_Store
-Thumbs.db
+# Local uploads and temporary files

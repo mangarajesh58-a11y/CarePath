@@ -1,5 +1,5 @@
 /* =========================================================
-   HospitalCare - Patient Dashboard
+   CarePath - Patient Dashboard
    ========================================================= */
 
 const API = "http://127.0.0.1:8000";
@@ -90,7 +90,7 @@ document.addEventListener(
     function () {
 
         console.log(
-            "HospitalCare patient dashboard loaded."
+            "CarePath patient dashboard loaded."
         );
 
         loadPatientName();
@@ -1666,7 +1666,7 @@ function openRazorpay(
             "INR",
 
         name:
-            "HospitalCare",
+            "CarePath",
 
         description:
             `Hospital Token ₹${tokenFee} + Platform Fee ₹${platformFee}`,

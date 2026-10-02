@@ -1,5 +1,5 @@
 // =========================================================
-// HOSPITALCARE - HOSPITAL APP SCRIPT
+// CarePath - HOSPITAL APP SCRIPT
 // =========================================================
 
 const API = "http://127.0.0.1:8000";
@@ -683,7 +683,7 @@ function hospitalLogout() {
 
     window.location.href = "index.html";
 }
-}
+
 
 
 // =========================================================
@@ -2017,156 +2017,138 @@ async function saveHospitalLocation() {
 }
 
 
-// =========================================================
-// LOAD DOCTORS
-// =========================================================
+ // =========================================================
+ // LOAD DOCTORS
+ // =========================================================
 
 async function loadDoctors() {
 
-    const hospitalId =
-        requireHospitalLogin();
-
+    const hospitalId = requireHospitalLogin();
 
     if (!hospitalId) {
         return;
     }
 
-
-    const container =
-        document.getElementById(
-            "doctorsList"
-        );
-
+    const container = document.getElementById("doctorsList");
 
     if (!container) {
         return;
     }
 
+    container.innerHTML = "<p>Loading doctors...</p>";
 
     try {
+        const response = await fetch(
+            `${API}/hospitals/${hospitalId}/doctors`
+        );
 
-        const response =
-            await fetch(
-                `${API}/hospitals/${hospitalId}/doctors`
-            );
-
-
-        const data =
-            await readJsonResponse(
-                response
-            );
-
+        const data = await readJsonResponse(response);
 
         if (!response.ok) {
-
             throw new Error(
-                getErrorMessage(
-                    data,
-                    "Unable to load doctors."
-                )
+                getErrorMessage(data, "Unable to load doctors.")
             );
         }
 
-
-        const doctors =
-            Array.isArray(data)
-                ? data
-                : Array.isArray(data.doctors)
-                    ? data.doctors
-                    : [];
-
+        const doctors = Array.isArray(data)
+            ? data
+            : Array.isArray(data.doctors)
+                ? data.doctors
+                : [];
 
         container.innerHTML = "";
 
-
-        if (!doctors.length) {
-
-            container.innerHTML =
-                "<p>No doctors added yet.</p>";
-
+        if (doctors.length === 0) {
+            container.innerHTML = "<p>No doctors added yet.</p>";
             return;
         }
 
+        doctors.forEach(function (doctor) {
+            const card = document.createElement("div");
+            card.className = "doctor-card";
 
-        doctors.forEach(
-            function (doctor) {
+            const days = doctor.available_days
+                ? doctor.available_days
+                    .split(",")
+                    .map(day => day.trim())
+                    .filter(Boolean)
+                    .join(", ")
+                : "Not specified";
 
-                const card =
-                    document.createElement(
-                        "div"
-                    );
+            const startTime = doctor.start_time || "";
+            const endTime = doctor.end_time || "";
 
+            const consultationHours =
+                startTime && endTime
+                    ? `${startTime} - ${endTime}`
+                    : "Not specified";
 
-                card.className =
-                    "doctor-card";
+            const available = doctor.is_available !== false;
 
+            const statusText = available
+                ? "Available"
+                : "Unavailable";
 
-                card.innerHTML = `
+            const statusClass = available
+                ? "doctor-available"
+                : "doctor-unavailable";
 
-                    <h3>
-                        ${escapeHtml(
-                            doctor.name ||
-                            "Doctor"
-                        )}
-                    </h3>
+            card.innerHTML = `
+                <h3>${escapeHtml(doctor.name || "Doctor")}</h3>
 
-                    <p>
-                        <strong>Department:</strong>
-                        ${escapeHtml(
-                            doctor.department ||
-                            "Not specified"
-                        )}
-                    </p>
+                <p>
+                    <strong>Department:</strong>
+                    ${escapeHtml(doctor.department || "Not specified")}
+                </p>
 
-                    <p>
-                        <strong>Specialization:</strong>
-                        ${escapeHtml(
-                            doctor.specialization ||
-                            "Not specified"
-                        )}
-                    </p>
+                <p>
+                    <strong>Specialization:</strong>
+                    ${escapeHtml(doctor.specialization || "Not specified")}
+                </p>
 
-                    <p>
-                        <strong>Experience:</strong>
-                        ${escapeHtml(
-                            doctor.experience ||
-                            "Not specified"
-                        )}
-                    </p>
+                <p>
+                    <strong>Experience:</strong>
+                    ${escapeHtml(doctor.experience || "Not specified")}
+                </p>
 
-                    <button
-                        type="button"
-                        onclick="deleteDoctor(${Number(
-                            doctor.id
-                        )})"
-                    >
-                        Delete
-                    </button>
+                <p>
+                    <strong>Available Days:</strong>
+                    ${escapeHtml(days)}
+                </p>
 
-                `;
+                <p>
+                    <strong>Consultation Hours:</strong>
+                    ${escapeHtml(consultationHours)}
+                </p>
 
+                <p>
+                    <strong>Status:</strong>
+                    <span class="${statusClass}">
+                        ${statusText}
+                    </span>
+                </p>
 
-                container.appendChild(
-                    card
-                );
-            }
-        );
+                <button
+                    type="button"
+                    onclick="deleteDoctor(${Number(doctor.id)})"
+                >
+                    Delete
+                </button>
+            `;
 
+            container.appendChild(card);
+        });
 
     } catch (error) {
-
-        console.error(
-            "LOAD DOCTORS ERROR:",
-            error
-        );
-
+        console.error("LOAD DOCTORS ERROR:", error);
 
         container.innerHTML =
             `<p>${escapeHtml(
-                error.message
+                error.message || "Unable to load doctors."
             )}</p>`;
     }
 }
+
 
 
 // =========================================================
@@ -2251,158 +2233,148 @@ async function deleteDoctor(
 // ADD DOCTOR
 // =========================================================
 
+
 async function addDoctor() {
 
-    const hospitalId =
-        requireHospitalLogin();
-
+    const hospitalId = requireHospitalLogin();
 
     if (!hospitalId) {
         return;
     }
 
-
     const name =
-        document.getElementById(
-            "doctorName"
-        )?.value.trim();
-
+        document.getElementById("doctorName")?.value.trim();
 
     const department =
-        document.getElementById(
-            "doctorDepartment"
-        )?.value.trim();
-
+        document.getElementById("doctorDepartment")?.value.trim();
 
     const specialization =
-        document.getElementById(
-            "doctorSpecialization"
-        )?.value.trim();
-
+        document.getElementById("doctorSpecialization")?.value.trim();
 
     const experience =
-        document.getElementById(
-            "doctorExperience"
-        )?.value.trim();
+        document.getElementById("doctorExperience")?.value.trim();
 
+    // Get selected availability days
+    const availableDays = Array.from(
+        document.querySelectorAll(
+            'input[name="doctorAvailableDays"]:checked'
+        )
+    ).map(function (checkbox) {
+        return checkbox.value;
+    });
+
+    // Get consultation times
+    const startTime =
+        document.getElementById("doctorStartTime")?.value || "";
+
+    const endTime =
+        document.getElementById("doctorEndTime")?.value || "";
+
+    // Get availability status
+    const isAvailable =
+        document.getElementById("doctorIsAvailable")?.value === "true";
 
     if (!name) {
-
-        alert(
-            "Please enter doctor name."
-        );
-
+        alert("Please enter doctor name.");
         return;
     }
-
 
     if (!department) {
-
-        alert(
-            "Please enter doctor department."
-        );
-
+        alert("Please enter doctor department.");
         return;
     }
 
+    if (availableDays.length === 0) {
+        alert("Please select at least one available day.");
+        return;
+    }
+
+    if (!startTime || !endTime) {
+        alert("Please select consultation start and end times.");
+        return;
+    }
+
+    if (startTime >= endTime) {
+        alert("End time must be later than start time.");
+        return;
+    }
 
     try {
 
-        const response =
-            await fetch(
-                `${API}/hospitals/${hospitalId}/doctors`,
-                {
+        const response = await fetch(
+            `${API}/hospitals/${hospitalId}/doctors`,
+            {
+                method: "POST",
 
-                    method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                body: JSON.stringify({
+                    name,
+                    department,
+                    specialization: specialization || "",
+                    experience: experience || "",
+                    available_days: availableDays.join(","),
+                    start_time: startTime,
+                    end_time: endTime,
+                    is_available: isAvailable
+                })
+            }
+        );
 
-                    body: JSON.stringify({
-
-                        name,
-
-                        department,
-
-                        specialization:
-                            specialization || "",
-
-                        experience:
-                            experience || ""
-
-                    })
-                }
-            );
-
-
-        const data =
-            await readJsonResponse(
-                response
-            );
-
+        const data = await readJsonResponse(response);
 
         if (!response.ok) {
-
             throw new Error(
-                getErrorMessage(
-                    data,
-                    "Unable to add doctor."
-                )
+                getErrorMessage(data, "Unable to add doctor.")
             );
         }
 
-
-        alert(
-            "Doctor added successfully."
-        );
-
+        alert("Doctor added successfully.");
 
         [
             "doctorName",
             "doctorDepartment",
             "doctorSpecialization",
-            "doctorExperience"
+            "doctorExperience",
+            "doctorStartTime",
+            "doctorEndTime"
+        ].forEach(function (id) {
 
-        ].forEach(
-            function (id) {
+            const element = document.getElementById(id);
 
-                const element =
-                    document.getElementById(
-                        id
-                    );
-
-
-                if (element) {
-
-                    element.value =
-                        "";
-                }
-
+            if (element) {
+                element.value = "";
             }
-        );
+        });
 
+        // Clear selected weekdays
+        document.querySelectorAll(
+            'input[name="doctorAvailableDays"]'
+        ).forEach(function (checkbox) {
+            checkbox.checked = false;
+        });
+
+        // Reset doctor status
+        const statusElement =
+            document.getElementById("doctorIsAvailable");
+
+        if (statusElement) {
+            statusElement.value = "true";
+        }
 
         await loadDoctors();
 
-
     } catch (error) {
 
-        console.error(
-            "ADD DOCTOR ERROR:",
-            error
-        );
-
+        console.error("ADD DOCTOR ERROR:", error);
 
         alert(
-            error.message ||
-            "Unable to add doctor."
+            error.message || "Unable to add doctor."
         );
     }
 }
-
-
 // =========================================================
 // HTML ESCAPE
 // =========================================================

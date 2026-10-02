@@ -10,7 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Manage Doctors - HospitalCare</title>
+    <title>Manage Doctors - CarePath</title>
 
     <link
         rel="stylesheet"
@@ -634,7 +634,7 @@
         <div>
 
             <h1>
-                🏥 HospitalCare
+                🏥 CarePath
             </h1>
 
             <p>
@@ -680,92 +680,92 @@
          ADD DOCTOR
     ============================== -->
 
-    <div class="form-card">
+<div class="form-card">
 
-        <h2>
-            ➕ Add Doctor
-        </h2>
+    <h2>➕ Add Doctor</h2>
 
-
-        <div class="form-group">
-
-            <label for="doctorName">
-                Doctor Name
-            </label>
-
-            <input
-                type="text"
-                id="doctorName"
-                placeholder="Example: Dr. Kumar"
-                autocomplete="off"
-            >
-
-        </div>
-
-
-
-        <div class="form-group">
-
-            <label for="doctorDepartment">
-                Department
-            </label>
-
-            <input
-                type="text"
-                id="doctorDepartment"
-                placeholder="Example: Cardiology"
-                autocomplete="off"
-            >
-
-        </div>
-
-
-
-        <div class="form-group">
-
-            <label for="doctorSpecialization">
-                Specialization
-            </label>
-
-            <input
-                type="text"
-                id="doctorSpecialization"
-                placeholder="Example: Cardiologist"
-                autocomplete="off"
-            >
-
-        </div>
-
-
-
-        <div class="form-group">
-
-            <label for="doctorExperience">
-                Experience
-            </label>
-
-            <input
-                type="text"
-                id="doctorExperience"
-                placeholder="Example: 8 years"
-                autocomplete="off"
-            >
-
-        </div>
-
-
-
-        <button
-            type="button"
-            class="add-button"
-            id="addDoctorButton"
-            onclick="addDoctor()"
+    <div class="form-group">
+        <label for="doctorName">Doctor Name</label>
+        <input
+            type="text"
+            id="doctorName"
+            placeholder="Example: Dr. Kumar"
+            autocomplete="off"
         >
+    </div>
 
-            Add Doctor
+    <div class="form-group">
+        <label for="doctorDepartment">Department</label>
+        <input
+            type="text"
+            id="doctorDepartment"
+            placeholder="Example: Cardiology"
+            autocomplete="off"
+        >
+    </div>
 
-        </button>
+    <div class="form-group">
+        <label for="doctorSpecialization">Specialization</label>
+        <input
+            type="text"
+            id="doctorSpecialization"
+            placeholder="Example: Cardiologist"
+            autocomplete="off"
+        >
+    </div>
 
+    <div class="form-group">
+        <label for="doctorExperience">Experience</label>
+        <input
+            type="text"
+            id="doctorExperience"
+            placeholder="Example: 8 years"
+            autocomplete="off"
+        >
+    </div>
+
+    <div class="form-group">
+        <label>Available Days</label>
+
+        <div>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Monday"> Monday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Tuesday"> Tuesday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Wednesday"> Wednesday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Thursday"> Thursday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Friday"> Friday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Saturday"> Saturday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Sunday"> Sunday</label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="doctorStartTime">Consultation Start Time</label>
+        <input type="time" id="doctorStartTime">
+    </div>
+
+    <div class="form-group">
+        <label for="doctorEndTime">Consultation End Time</label>
+        <input type="time" id="doctorEndTime">
+    </div>
+
+    <div class="form-group">
+        <label for="doctorIsAvailable">Doctor Status</label>
+        <select id="doctorIsAvailable">
+            <option value="true">Available</option>
+            <option value="false">Unavailable</option>
+        </select>
+    </div>
+
+    <button
+        type="button"
+        class="add-button"
+        id="addDoctorButton"
+        onclick="addDoctor()"
+    >
+        Add Doctor
+    </button>
+
+   
 
         <div id="message"></div>
 

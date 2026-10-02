@@ -10,7 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Doctors - HospitalCare</title>
+    <title>Doctors - CarePath</title>
 
 
     <style>
@@ -333,7 +333,7 @@
         <div>
 
             <h1>
-                🏥 HospitalCare
+                🏥 CarePath
             </h1>
 
             <p>
@@ -363,38 +363,52 @@
     ========================================== -->
 
     <main class="container">
+<div class="title">
+
+    <h2>Find Your Doctor</h2>
+
+    <p id="hospitalName">
+        Loading hospital...
+    </p>
+
+</div>
+
+<!-- Department Selection -->
+<div style="margin-bottom: 25px;">
+
+    <label
+        for="departmentSelect"
+        style="display:block; margin-bottom:10px; font-weight:bold;"
+    >
+        Select Department
+    </label>
+
+    <select
+        id="departmentSelect"
+        style="
+            width:100%;
+            max-width:450px;
+            padding:14px;
+            border:1px solid #d1d5db;
+            border-radius:8px;
+            font-size:16px;
+            background:white;
+        "
+    >
+        <option value="">Loading departments...</option>
+    </select>
 
 
-        <div class="title">
+</div>
 
-            <h2>
-                Available Doctors
-            </h2>
+<!-- Doctor List -->
+<div id="doctorList">
+    <div class="loading">
+        Select a department to view available doctors.
+    </div>
+</div>
 
-
-            <p id="hospitalName">
-
-                Loading hospital...
-
-            </p>
-
-        </div>
-
-
-
-        <div id="doctorList">
-
-            <p class="loading">
-
-                Loading doctors...
-
-            </p>
-
-        </div>
-
-
-    </main>
-
+</main>
 
 
     <script>
@@ -418,6 +432,11 @@
 
         const doctorList =
             document.getElementById("doctorList");
+
+            const departmentSelect =
+    document.getElementById("departmentSelect");
+
+let allDoctors = [];
 
 
         const hospitalNameElement =
@@ -594,14 +613,40 @@
                 }
 
 
-                const doctors =
-                    await response.json();
+                allDoctors = await response.json();
 
+if (!Array.isArray(allDoctors)) {
+    allDoctors = [];
+}
 
-                if (
-                    !Array.isArray(doctors) ||
-                    doctors.length === 0
-                ) {
+// Keep the currently selected department
+const previousDepartment = departmentSelect.value;
+
+// Get unique departments from this hospital's doctors
+const departments = [
+    ...new Set(
+        allDoctors
+            .map(doctor => (doctor.department || "").trim())
+            .filter(department => department !== "")
+    )
+].sort();
+
+departmentSelect.innerHTML =
+    '<option value="">Select a department</option>';
+
+departments.forEach(department => {
+    const option = document.createElement("option");
+    option.value = department;
+    option.textContent = department;
+    departmentSelect.appendChild(option);
+});
+
+// Restore previous selection when refreshing
+if (departments.includes(previousDepartment)) {
+    departmentSelect.value = previousDepartment;
+}
+
+                if (allDoctors.length === 0) {
 
                     doctorList.innerHTML = `
 
@@ -631,9 +676,42 @@
 
                 doctorList.innerHTML = "";
 
+const selectedDepartment = departmentSelect.value;
 
-                doctors.forEach(
-                    doctor => {
+// Ask the patient to select a department first
+if (!selectedDepartment) {
+    doctorList.innerHTML = `
+        <div class="empty">
+            <h3>Select a Department</h3>
+            <br>
+            <p>
+                Please choose a department above
+                to view its available doctors.
+            </p>
+        </div>
+    `;
+    return;
+}
+
+// Display doctors only from the selected department
+const filteredDoctors = allDoctors.filter(doctor =>
+    (doctor.department || "").trim() === selectedDepartment
+);
+               
+
+if (filteredDoctors.length === 0) {
+    doctorList.innerHTML = `
+        <div class="empty">
+            <h3>No Doctors in This Department</h3>
+            <br>
+            <p>Please select another department.</p>
+        </div>
+    `;
+    return;
+}
+
+filteredDoctors.forEach(
+    doctor => {
 
 
                         const card =
@@ -736,7 +814,47 @@
                             experienceText
                         );
 
+// Doctor available weekdays
+const availableDays = document.createElement("div");
+availableDays.className = "detail";
 
+availableDays.innerHTML = "<strong>Available Days:</strong> ";
+
+availableDays.appendChild(
+    document.createTextNode(
+        doctor.available_days || "Not specified"
+    )
+);
+
+// Consultation hours
+const consultationHours = document.createElement("div");
+consultationHours.className = "detail";
+
+consultationHours.innerHTML = "<strong>Consultation Hours:</strong> ";
+
+consultationHours.appendChild(
+    document.createTextNode(
+        doctor.start_time && doctor.end_time
+            ? `${doctor.start_time} - ${doctor.end_time}`
+            : "Not specified"
+    )
+);
+
+// Doctor status
+const doctorStatus = document.createElement("div");
+doctorStatus.className = "detail";
+
+const isAvailable = doctor.is_available !== false;
+
+doctorStatus.innerHTML = "<strong>Status:</strong> ";
+
+doctorStatus.appendChild(
+    document.createTextNode(
+        isAvailable ? "Available" : "Unavailable"
+    )
+);
+
+doctorStatus.style.color = isAvailable ? "green" : "red";
                         const button =
                             document.createElement("button");
 
@@ -749,8 +867,18 @@
                             "token-button";
 
 
-                        button.textContent =
-                            "🎟️ Select Doctor";
+                        const isDoctorAvailable = doctor.is_available !== false;
+
+button.textContent = isDoctorAvailable
+    ? "🎟️ Select Doctor"
+    : "Doctor Unavailable";
+
+button.disabled = !isDoctorAvailable;
+
+if (!isDoctorAvailable) {
+    button.style.background = "#9ca3af";
+    button.style.cursor = "not-allowed";
+}
 
 
                         button.addEventListener(
@@ -764,34 +892,21 @@
                             }
                         );
 
-
                         card.appendChild(icon);
-
                         card.appendChild(name);
-
-                        card.appendChild(
-                            department
-                        );
-
-                        card.appendChild(
-                            specialization
-                        );
-
-                        card.appendChild(
-                            experience
-                        );
-
+                        card.appendChild(department);
+card.appendChild(specialization);
+card.appendChild(experience);
+card.appendChild(availableDays);
+card.appendChild(consultationHours);
+card.appendChild(doctorStatus);
                         card.appendChild(button);
-
 
                         doctorList.appendChild(card);
 
-                    }
-                );
+                    });
 
-
-            } catch (error) {
-
+                } catch (error) {
 
                 console.error(
                     "Doctor loading error:",
@@ -910,11 +1025,12 @@
         /* =========================================
            START
         ========================================== */
+            departmentSelect.addEventListener("change", loadDoctors);
 
-        loadHospital();
+loadHospital();
 
-        loadDoctors();
-
+loadDoctors();
+        
     </script>
 
 

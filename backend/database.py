@@ -1,55 +1,37 @@
+
+
 import os
 
 from dotenv import load_dotenv
-
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
-
-
-# ==========================================
-# LOAD ENVIRONMENT VARIABLES
-# ==========================================
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
-
-# ==========================================
-# DATABASE URL
-# ==========================================
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-
 if not DATABASE_URL:
-    raise ValueError(
-        "DATABASE_URL is not set in .env"
+    raise ValueError("DATABASE_URL environment variable is not set")
+
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgresql://",
+        "postgresql+pg8000://",
+        1
     )
-
-
-# ==========================================
-# DATABASE ENGINE
-# ==========================================
-
 engine = create_engine(
     DATABASE_URL,
-    echo=True
+    echo=True,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    pool_size=5,
+    max_overflow=2,
 )
-
-
-# ==========================================
-# DATABASE SESSION
-# ==========================================
 
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
 )
-
-
-# ==========================================
-# SQLAlchemy BASE
-# ==========================================
 
 Base = declarative_base()

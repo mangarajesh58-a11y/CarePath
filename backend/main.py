@@ -1,5 +1,5 @@
 # ============================================================
-# HospitalCare - FastAPI Backend
+# CarePath - FastAPI Backend
 # ============================================================
 
 import os
@@ -7,8 +7,10 @@ import hmac
 import hashlib
 import secrets
 import uuid
+import smtplib
+from email.message import EmailMessage
 
-from datetime import datetime,date
+from datetime import datetime,date, timedelta
 from typing import Optional
 
 import razorpay
@@ -31,7 +33,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic import BaseModel
 
-from sqlalchemy import inspect, text
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    Boolean,
+    inspect,
+    text,
+    func,
+)
 
 from sqlalchemy.orm import Session
 
@@ -45,6 +56,7 @@ from models import (
     Doctor,
     Token,
     Admin,
+    RegistrationOTP,
 )
 from fastapi.responses import FileResponse
 
@@ -54,19 +66,25 @@ import mimetypes
 # ENVIRONMENT
 # ============================================================
 
-load_dotenv()
+# ============================================================
+# ENVIRONMENT
+# ============================================================
 
-RAZORPAY_KEY_ID = os.getenv(
-    "RAZORPAY_KEY_ID"
-)
+from pathlib import Path
 
-RAZORPAY_KEY_SECRET = os.getenv(
-    "RAZORPAY_KEY_SECRET"
-)
+# Load the .env file located in the same folder as main.py
+ENV_FILE = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=ENV_FILE, override=False)
 
-GOOGLE_CLIENT_ID = os.getenv(
-    "GOOGLE_CLIENT_ID"
-)
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+
+# Check configuration without displaying secret values
+print("Environment file exists:", ENV_FILE.is_file())
+print("Razorpay Key ID loaded:", bool(RAZORPAY_KEY_ID))
+print("Razorpay Key Secret loaded:", bool(RAZORPAY_KEY_SECRET))
+print("Google Client ID loaded:", bool(GOOGLE_CLIENT_ID))
 
 
 # ============================================================
@@ -75,7 +93,7 @@ GOOGLE_CLIENT_ID = os.getenv(
 
 PLATFORM_FEE = 10
 
-PLATFORM_NAME = "HospitalCare"
+PLATFORM_NAME = "CarePath"
 
 # ============================================================
 # HOSPITAL CERTIFICATE UPLOAD
@@ -174,7 +192,7 @@ if (
 # ============================================================
 
 app = FastAPI(
-    title="HospitalCare API",
+    title="CarePath API",
     version="11.0.0",
 )
 # Keep hospital certificates in a private folder.
@@ -207,6 +225,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def send_otp_email(receiver_email: str, otp: str):
+    sender_email = os.getenv("SMTP_EMAIL")
+    app_password = os.getenv("SMTP_APP_PASSWORD")
+
+    if not sender_email or not app_password:
+        raise RuntimeError(
+            "Email configuration is missing. Check your backend .env file."
+        )
+
+    message = EmailMessage()
+    message["Subject"] = "CarePath Registration OTP"
+    message["From"] = sender_email
+    message["To"] = receiver_email
+
+    message.set_content(
+        f"""
+Hello,
+
+Your CarePath registration verification code is: {otp}
+
+This code expires in 5 minutes.
+
+If you did not request this code, please ignore this email.
+
+CarePath Team
+"""
+    )
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(sender_email, app_password)
+        server.send_message(message)
 
 # ============================================================
 # DATABASE SESSION
@@ -304,7 +353,7 @@ def run_database_migration():
         "VARCHAR(100) NULL",
 
     "certificate_uploaded_at":
-        "DATETIME NULL",
+        "DATESTEMP NULL",
 
     "certificate_verification_status":
         "VARCHAR(30) NOT NULL DEFAULT 'PENDING'",
@@ -328,7 +377,7 @@ def run_database_migration():
             "TEXT NULL",
 
         "is_published":
-            "BOOLEAN NOT NULL DEFAULT 0",
+            "BOOLEAN NOT NULL DEFAULT FALSE",
 
         "payment_account_name":
             "VARCHAR(255) NULL",
@@ -566,6 +615,169 @@ class PatientRegister(BaseModel):
 
     password: str
 
+class RegistrationOTPRequest(BaseModel):
+    role: str
+    email: str
+    
+
+
+class RegistrationOTPVerifyRequest(BaseModel):
+    role: str
+    email: str
+    otp: str
+
+
+@app.post("/registration/request-otp")
+def request_registration_otp(
+    data: RegistrationOTPRequest,
+    db: Session = Depends(get_db),
+):
+    role = data.role.strip().lower()
+    email = data.email.strip().lower()
+
+    if role not in ["patient", "hospital"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Role must be patient or hospital",
+        )
+
+    if not email or "@" not in email:
+        raise HTTPException(
+            status_code=400,
+            detail="Please provide a valid email address",
+        )
+
+    if role == "patient":
+        existing = (
+            db.query(Patient)
+            .filter(Patient.email == email)
+            .first()
+        )
+    else:
+        existing = (
+            db.query(Hospital)
+            .filter(Hospital.email == email)
+            .first()
+        )
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="This email is already registered",
+        )
+
+    otp = f"{secrets.randbelow(1000000):06d}"
+    otp_hash = hashlib.sha256(otp.encode()).hexdigest()
+
+    try:
+        db.query(RegistrationOTP).filter(
+            RegistrationOTP.role == role,
+            RegistrationOTP.contact_method == "email",
+            RegistrationOTP.contact_value == email,
+        ).delete(synchronize_session=False)
+
+        otp_record = RegistrationOTP(
+            role=role,
+            contact_method="email",
+            contact_value=email,
+            otp_hash=otp_hash,
+            expires_at=datetime.utcnow() + timedelta(minutes=5),
+            attempts=0,
+            verified=False,
+        )
+
+        db.add(otp_record)
+        db.commit()
+
+        send_otp_email(email, otp)
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to send OTP. Check your email configuration.",
+        )
+
+    return {
+        "success": True,
+        "message": "OTP sent to your email address",
+    }
+
+@app.post("/registration/verify-otp")
+def verify_registration_otp(
+    data: RegistrationOTPVerifyRequest,
+    db: Session = Depends(get_db),
+):
+    role = data.role.strip().lower()
+    email = data.email.strip().lower()
+    otp = data.otp.strip()
+
+    if role not in ["patient", "hospital"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid registration role",
+        )
+
+    if len(otp) != 6 or not otp.isdigit():
+        raise HTTPException(
+            status_code=400,
+            detail="Enter a valid 6-digit OTP",
+        )
+
+    otp_record = (
+        db.query(RegistrationOTP)
+        .filter(
+            RegistrationOTP.role == role,
+            RegistrationOTP.contact_method == "email",
+            RegistrationOTP.contact_value == email,
+            RegistrationOTP.verified == False,
+        )
+        .order_by(RegistrationOTP.created_at.desc())
+        .first()
+    )
+
+    if not otp_record:
+        raise HTTPException(
+            status_code=400,
+            detail="OTP not found. Please request a new OTP.",
+        )
+
+    if otp_record.expires_at <= datetime.utcnow():
+        db.delete(otp_record)
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail="OTP expired. Please request a new OTP.",
+        )
+
+    if otp_record.attempts >= 5:
+        db.delete(otp_record)
+        db.commit()
+        raise HTTPException(
+            status_code=429,
+            detail="Too many attempts. Please request a new OTP.",
+        )
+
+    otp_record.attempts += 1
+    submitted_hash = hashlib.sha256(otp.encode()).hexdigest()
+
+    if not hmac.compare_digest(
+        submitted_hash,
+        otp_record.otp_hash,
+    ):
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail="Incorrect OTP. Please try again.",
+        )
+
+    otp_record.verified = True
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Email verified successfully",
+    }
 
 class PatientLogin(BaseModel):
 
@@ -644,14 +856,16 @@ class DoctorCreate(BaseModel):
     experience: Optional[str] = None
 
 class HospitalDoctorCreate(BaseModel):
-
     name: str
-
     department: str
-
     specialization: Optional[str] = None
-
     experience: Optional[str] = None
+
+    # Doctor availability
+    available_days: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    is_available: bool = True
 
 class TokenRequest(BaseModel):
 
@@ -769,33 +983,24 @@ def hospital_to_dict(hospital):
     }
 # ============================================================
 # HELPER - DOCTOR RESPONSE
-# ============================================================
+# ============================
 
-def doctor_to_dict(
-    doctor
-):
+def doctor_to_dict(doctor):
 
     return {
+        "id": doctor.id,
+        "hospital_id": doctor.hospital_id,
+        "name": doctor.name,
+        "department": doctor.department,
+        "specialization": doctor.specialization,
+        "experience": doctor.experience,
 
-        "id":
-            doctor.id,
-
-        "hospital_id":
-            doctor.hospital_id,
-
-        "name":
-            doctor.name,
-
-        "department":
-            doctor.department,
-
-        "specialization":
-            doctor.specialization,
-
-        "experience":
-            doctor.experience,
+        # Doctor availability details
+        "available_days": doctor.available_days,
+        "start_time": doctor.start_time,
+        "end_time": doctor.end_time,
+        "is_available": doctor.is_available,
     }
-
 
 # ============================================================
 # HELPER - TOKEN RESPONSE
@@ -965,7 +1170,7 @@ def root():
         "success": True,
 
         "message":
-            "HospitalCare API is running",
+            "CarePath API is running",
 
         "version":
             "11.0.0",
@@ -991,15 +1196,13 @@ def health():
 # ============================================================
 # PATIENT REGISTER
 # ============================================================
-
 @app.post("/patients/register")
 def register_patient(
     data: PatientRegister,
     db: Session = Depends(get_db),
 ):
-
+    # Get and normalize registration details
     full_name = data.full_name.strip()
-
     email = data.email.strip().lower()
 
     phone = (
@@ -1008,30 +1211,63 @@ def register_patient(
         else None
     )
 
+    # Validate required fields
     if not full_name:
-
         raise HTTPException(
             status_code=400,
             detail="Full name is required",
         )
 
     if not email:
-
         raise HTTPException(
             status_code=400,
             detail="Email is required",
         )
 
     if len(data.password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must contain at least 6 characters",
+        )
+
+    # Check whether email OTP has been verified
+    otp_record = (
+        db.query(RegistrationOTP)
+        .filter(
+            RegistrationOTP.role == "patient",
+            RegistrationOTP.contact_method == "email",
+            RegistrationOTP.contact_value == email,
+            RegistrationOTP.verified == True,
+        )
+        .order_by(
+            RegistrationOTP.created_at.desc()
+        )
+        .first()
+    )
+
+    if not otp_record:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Please verify your email with OTP "
+                "before registering."
+            ),
+        )
+
+    # Check OTP verification expiry
+    if otp_record.expires_at <= datetime.utcnow():
+        db.delete(otp_record)
+        db.commit()
 
         raise HTTPException(
             status_code=400,
             detail=(
-                "Password must contain "
-                "at least 6 characters"
+                "Email verification expired. "
+                "Please request a new OTP."
             ),
         )
 
+    # Check for an existing email
     existing_email = (
         db.query(Patient)
         .filter(
@@ -1041,14 +1277,13 @@ def register_patient(
     )
 
     if existing_email:
-
         raise HTTPException(
             status_code=400,
             detail="Email already registered",
         )
 
+    # Check for an existing phone number
     if phone:
-
         existing_phone = (
             db.query(Patient)
             .filter(
@@ -1058,55 +1293,49 @@ def register_patient(
         )
 
         if existing_phone:
-
             raise HTTPException(
                 status_code=400,
                 detail="Phone number already registered",
             )
 
+    # Create patient
     patient = Patient(
-
         full_name=full_name,
-
         email=email,
-
         phone=phone,
-
         password=hash_password(
             data.password
         ),
     )
 
-    db.add(patient)
+    try:
+        db.add(patient)
+        db.commit()
+        db.refresh(patient)
 
-    db.commit()
+        # Delete OTP after successful registration
+        db.delete(otp_record)
+        db.commit()
 
-    db.refresh(patient)
+    except Exception:
+        db.rollback()
 
+        raise HTTPException(
+            status_code=500,
+            detail="Patient registration failed. Please try again.",
+        )
+
+    # Return registration response
     return {
-
         "success": True,
-
-        "message":
-            "Patient registered successfully",
-
+        "message": "Patient registered successfully",
         "patient": {
-
-            "id":
-                patient.id,
-
-            "full_name":
-                patient.full_name,
-
-            "email":
-                patient.email,
-
-            "phone":
-                patient.phone,
+            "id": patient.id,
+            "full_name": patient.full_name,
+            "email": patient.email,
+            "phone": patient.phone,
         },
     }
-
-
 # ============================================================
 # PATIENT LOGIN
 # ============================================================
@@ -1476,9 +1705,7 @@ def generic_google_login(
     )
 
 
-# ============================================================
-# HOSPITAL REGISTER
-# ============================================================
+
 
 # ============================================================
 # HOSPITAL REGISTER
@@ -1505,6 +1732,45 @@ async def register_hospital(
 
     db: Session = Depends(get_db),
 ):
+        # Normalize hospital email
+    email = email.strip().lower()
+
+    # Check whether hospital email OTP is verified
+    otp_record = (
+        db.query(RegistrationOTP)
+        .filter(
+            RegistrationOTP.role == "hospital",
+            RegistrationOTP.contact_method == "email",
+            RegistrationOTP.contact_value == email,
+            RegistrationOTP.verified == True,
+        )
+        .order_by(
+            RegistrationOTP.created_at.desc()
+        )
+        .first()
+    )
+
+    if not otp_record:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Please verify your hospital email "
+                "with OTP before registering."
+            ),
+        )
+
+    # Check OTP expiry
+    if otp_record.expires_at <= datetime.utcnow():
+        db.delete(otp_record)
+        db.commit()
+
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Email verification expired. "
+                "Please request a new OTP."
+            ),
+        )
 
     # --------------------------------------------------------
     # CLEAN DATA
@@ -1818,13 +2084,17 @@ async def register_hospital(
         payment_account_status=
             "NOT_ADDED",
     )
-
     db.add(hospital)
 
     db.commit()
 
     db.refresh(hospital)
 
+    # Delete verified OTP after successful registration
+    db.delete(otp_record)
+
+    db.commit()
+    
     # --------------------------------------------------------
     # RESPONSE
     # --------------------------------------------------------
@@ -2789,7 +3059,7 @@ def create_razorpay_order(
 
                     "receipt":
                         (
-                            "hospitalcare_"
+                            "carepath_"
                             f"{hospital.id}_"
                             f"{secrets.token_hex(4)}"
                         ),
@@ -3102,23 +3372,20 @@ def create_token(
                     existing_token
                 ),
         }
-
-
-    # --------------------------------------------------------
+            # --------------------------------------------------------
     # NEXT TOKEN NUMBER
+    # Per hospital + department + doctor + date
     # --------------------------------------------------------
+
+    today = date.today()
 
     latest_token = (
         db.query(Token)
         .filter(
-            Token.hospital_id ==
-            hospital.id,
-
-            Token.department ==
-            data.department,
-
-            Token.doctor ==
-            data.doctor,
+            Token.hospital_id == hospital.id,
+            Token.department == data.department.strip(),
+            Token.doctor == data.doctor.strip(),
+            func.date(Token.created_at) == today,
         )
         .order_by(
             Token.token_number.desc()
@@ -3127,87 +3394,41 @@ def create_token(
     )
 
     if latest_token:
-
-        next_token_number = (
-            latest_token.token_number + 1
-        )
-
+        next_token_number = latest_token.token_number + 1
     else:
-
         next_token_number = 1
-
 
     # --------------------------------------------------------
     # CREATE TOKEN
     # --------------------------------------------------------
 
     token = Token(
-
-        patient_name=
-            data.patient_name.strip(),
-
-        hospital=
-            hospital.name,
-
-        hospital_id=
-            hospital.id,
-
-        department=
-            data.department.strip(),
-
-        doctor=
-            data.doctor.strip(),
-
-        token_number=
-            next_token_number,
-
-        platform=
-            PLATFORM_NAME,
-
-        token_fee=
-            token_fee,
-
-        platform_fee=
-            platform_fee,
-
-        total_amount=
-            total_amount,
-
-        payment_status=
-            "paid",
-
-        razorpay_order_id=
-            data.razorpay_order_id,
-
-        razorpay_payment_id=
-            data.razorpay_payment_id,
-
-        razorpay_signature=
-            data.razorpay_signature,
-
-        status=
-            "waiting",
+        patient_name=data.patient_name.strip(),
+        hospital=hospital.name,
+        hospital_id=hospital.id,
+        department=data.department.strip(),
+        doctor=data.doctor.strip(),
+        token_number=next_token_number,
+        platform=PLATFORM_NAME,
+        token_fee=token_fee,
+        platform_fee=platform_fee,
+        total_amount=total_amount,
+        payment_status="paid",
+        razorpay_order_id=data.razorpay_order_id,
+        razorpay_payment_id=data.razorpay_payment_id,
+        razorpay_signature=data.razorpay_signature,
+        status="waiting",
     )
 
-
     db.add(token)
-
     db.commit()
-
     db.refresh(token)
 
-
     return {
-
         "success": True,
-
-        "message":
-            "Hospital token created successfully",
-
-        "token":
-            token_to_dict(token),
+        "message": "Hospital token created successfully",
+        "token": token_to_dict(token),
     }
-
 
 # ============================================================
 # GET ALL TOKENS
@@ -3574,7 +3795,7 @@ def admin_login(
 
         if (
             email ==
-            "admin@hospitalcare.com"
+            "admin@CAREPATH.com"
             and
             data.password ==
             "admin123"
@@ -4265,6 +4486,136 @@ def add_hospital_doctor(
     data: HospitalDoctorCreate,
     db: Session = Depends(get_db),
 ):
+    # Check hospital
+    hospital = (
+        db.query(Hospital)
+        .filter(Hospital.id == hospital_id)
+        .first()
+    )
+
+    if not hospital:
+        raise HTTPException(
+            status_code=404,
+            detail="Hospital not found",
+        )
+
+    # Clean data
+    name = data.name.strip()
+    department = data.department.strip()
+
+    specialization = (
+        data.specialization.strip()
+        if data.specialization
+        else None
+    )
+
+    experience = (
+        data.experience.strip()
+        if data.experience
+        else None
+    )
+
+    # Validate required fields
+    if not name:
+        raise HTTPException(
+            status_code=400,
+            detail="Doctor name is required",
+        )
+
+    if not department:
+        raise HTTPException(
+            status_code=400,
+            detail="Department is required",
+        )
+
+    # Validate available days
+    valid_days = {
+        "Monday", "Tuesday", "Wednesday",
+        "Thursday", "Friday", "Saturday", "Sunday"
+    }
+
+    available_days = []
+
+    if data.available_days:
+        available_days = [
+            day.strip().capitalize()
+            for day in data.available_days.split(",")
+            if day.strip()
+        ]
+
+        invalid_days = [
+            day for day in available_days
+            if day not in valid_days
+        ]
+
+        if invalid_days:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid availability day: "
+                + ", ".join(invalid_days),
+            )
+
+        available_days = list(dict.fromkeys(available_days))
+
+    # Validate consultation times
+    from datetime import datetime
+
+    start_time = (
+        data.start_time.strip()
+        if data.start_time
+        else None
+    )
+
+    end_time = (
+        data.end_time.strip()
+        if data.end_time
+        else None
+    )
+
+    if bool(start_time) != bool(end_time):
+        raise HTTPException(
+            status_code=400,
+            detail="Enter both start time and end time.",
+        )
+
+    if start_time and end_time:
+        try:
+            start = datetime.strptime(start_time, "%H:%M")
+            end = datetime.strptime(end_time, "%H:%M")
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Times must use HH:MM format, for example 09:00.",
+            )
+
+        if start >= end:
+            raise HTTPException(
+                status_code=400,
+                detail="End time must be later than start time.",
+            )
+
+    # Create doctor
+    doctor = Doctor(
+        hospital_id=hospital_id,
+        name=name,
+        department=department,
+        specialization=specialization,
+        experience=experience,
+        available_days=",".join(available_days) or None,
+        start_time=start_time,
+        end_time=end_time,
+        is_available=data.is_available,
+    )
+
+    db.add(doctor)
+    db.commit()
+    db.refresh(doctor)
+
+    return {
+        "success": True,
+        "message": "Doctor added successfully",
+        "doctor": doctor_to_dict(doctor),
+    }
 
     # --------------------------------------------------------
     # CHECK HOSPITAL
@@ -4718,7 +5069,7 @@ def admin_hospital_revenue(
 
 print()
 print("================================================")
-print("HospitalCare FastAPI backend loaded")
+print("CarePath FastAPI backend loaded")
 print("Version: 11.0.0")
 print(
     f"Razorpay configured: "
