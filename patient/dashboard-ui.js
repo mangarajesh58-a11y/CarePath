@@ -8,7 +8,7 @@
   "use strict";
 
   // LOCAL DEVELOPMENT:
-  const API_BASE = "http://127.0.0.1:8000";
+  const API_BASE = "https://carepath-backend-fgb9.onrender.com";
 
   // IMPORTANT:
   // When deployed, replace API_BASE with your deployed

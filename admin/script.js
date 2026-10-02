@@ -2,7 +2,7 @@
 // CAREPATH ADMIN JAVASCRIPT
 // =====================================================
 
-const API = "http://127.0.0.1:8000";
+const API = "https://carepath-backend-fgb9.onrender.com";
 
 const FRONTEND = "http://127.0.0.1:5500/admin";
 
@@ -165,7 +165,7 @@ async function adminLogin() {
         console.error("Admin login connection error:", error);
 
         showLoginMessage(
-            "Cannot connect to FastAPI. Make sure your backend is running at http://127.0.0.1:8000.",
+            "Cannot connect to FastAPI. Make sure your backend is running at https://carepath-backend-fgb9.onrender.com.",
             "error"
         );
     }
