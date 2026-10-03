@@ -64,7 +64,7 @@ class Hospital(Base):
 
     # Token fee (Indian rupees)
     token_fee = Column(Integer, default=0, nullable=False)
-    appointment_date = Column(Date, nullable=False, index=True)
+
 
     # Approval and publishing
     approval_status = Column(
@@ -118,6 +118,7 @@ class Token(Base):
     department = Column(String(255), nullable=False)
     doctor = Column(String(255), nullable=False)
     token_number = Column(Integer, nullable=False)
+    appointment_date = Column(Date, nullable=False, index=True)
 
     # Platform
     platform = Column(String(100), default="CarePath")
