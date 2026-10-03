@@ -8,6 +8,7 @@ import hashlib
 import secrets
 import uuid
 import smtplib
+import logging
 from email.message import EmailMessage
 
 from datetime import datetime,date, timedelta
