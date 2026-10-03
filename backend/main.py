@@ -252,17 +252,18 @@ def send_otp_email(receiver_email: str, otp: str):
             "CarePath Team"
         ),
     }
-
-    request = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-
+                    request = urllib.request.Request(
+    "https://api.resend.com/emails",
+    data=json.dumps(payload).encode("utf-8"),
+    headers={
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "CarePath/1.0",
+    },
+    method="POST",
+)
+    
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             if response.status not in (200, 201):
