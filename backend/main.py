@@ -233,7 +233,7 @@ def send_otp_email(receiver_email: str, otp: str):
     from email.message import EmailMessage
 
     sender_email = os.getenv("mangarajesh58@gmail.com")
-    app_password = os.getenv("flymadgvieftewn")
+    app_password = os.getenv("irtknqwbhqyspkzp")
 
     if not sender_email or not app_password:
         raise RuntimeError(
