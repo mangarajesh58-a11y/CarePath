@@ -3,7 +3,7 @@
    ========================================================= */
 
 const API = "https://carepath-3q9q.onrender.com";
-const FRONTEND = "https://carepath-patient-mx5v.vercel.app/";
+const FRONTEND = "https://carepath-patient-mx5v.vercel.app";
 
 const PLATFORM_FEE = 10;
 

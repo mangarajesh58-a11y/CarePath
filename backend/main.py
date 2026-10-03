@@ -336,7 +336,7 @@ def add_column_if_missing(
 
 
 def run_database_migration():
-    
+
 
     # --------------------------------------------------------
     # HOSPITALS
@@ -634,7 +634,7 @@ class PatientRegister(BaseModel):
 class RegistrationOTPRequest(BaseModel):
     role: str
     email: str
-    
+
 
 
 class RegistrationOTPVerifyRequest(BaseModel):
@@ -707,7 +707,7 @@ def request_registration_otp(
 
         send_otp_email(email, otp)
 
-    
+
     except Exception:
         import logging
         logging.exception("Registration OTP request failed")
@@ -1249,41 +1249,6 @@ def register_patient(
         )
 
     # Check whether email OTP has been verified
-    otp_record = (
-        db.query(RegistrationOTP)
-        .filter(
-            RegistrationOTP.role == "patient",
-            RegistrationOTP.contact_method == "email",
-            RegistrationOTP.contact_value == email,
-            RegistrationOTP.verified == True,
-        )
-        .order_by(
-            RegistrationOTP.created_at.desc()
-        )
-        .first()
-    )
-
-    if not otp_record:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Please verify your email with OTP "
-                "before registering."
-            ),
-        )
-
-    # Check OTP verification expiry
-    if otp_record.expires_at <= datetime.utcnow():
-        db.delete(otp_record)
-        db.commit()
-
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Email verification expired. "
-                "Please request a new OTP."
-            ),
-        )
 
     # Check for an existing email
     existing_email = (
@@ -1332,8 +1297,8 @@ def register_patient(
         db.refresh(patient)
 
         # Delete OTP after successful registration
-        db.delete(otp_record)
-        db.commit()
+
+
 
     except Exception:
         db.rollback()
@@ -1754,41 +1719,6 @@ async def register_hospital(
     email = email.strip().lower()
 
     # Check whether hospital email OTP is verified
-    otp_record = (
-        db.query(RegistrationOTP)
-        .filter(
-            RegistrationOTP.role == "hospital",
-            RegistrationOTP.contact_method == "email",
-            RegistrationOTP.contact_value == email,
-            RegistrationOTP.verified == True,
-        )
-        .order_by(
-            RegistrationOTP.created_at.desc()
-        )
-        .first()
-    )
-
-    if not otp_record:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Please verify your hospital email "
-                "with OTP before registering."
-            ),
-        )
-
-    # Check OTP expiry
-    if otp_record.expires_at <= datetime.utcnow():
-        db.delete(otp_record)
-        db.commit()
-
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Email verification expired. "
-                "Please request a new OTP."
-            ),
-        )
 
     # --------------------------------------------------------
     # CLEAN DATA
@@ -2109,10 +2039,10 @@ async def register_hospital(
     db.refresh(hospital)
 
     # Delete verified OTP after successful registration
-    db.delete(otp_record)
 
-    db.commit()
-    
+
+
+
     # --------------------------------------------------------
     # RESPONSE
     # --------------------------------------------------------
@@ -2130,7 +2060,7 @@ async def register_hospital(
             hospital_to_dict(
                 hospital
             ),
-            
+
     }
 
 # ============================================================
@@ -2412,7 +2342,7 @@ def update_hospital(
             status_code=404,
             detail="Hospital not found",
         )
-    
+
     if hospital.certificate_verification_status != "VERIFIED":
         raise HTTPException(
             status_code=400,

@@ -212,7 +212,7 @@
 
 <div class="container">
 
-    <div class="logo">🏥 CarePath</div>
+    <div class="logo">ðŸ¥ CarePath</div>
 
     <p class="subtitle">
         Register your hospital with CarePath
@@ -328,7 +328,7 @@
         </div>
 
         <div class="form-group">
-            <label for="token_fee">Token Fee (₹)</label>
+            <label for="token_fee">Token Fee (â‚¹)</label>
             <input
                 type="number"
                 id="token_fee"
@@ -365,11 +365,11 @@
         </div>
 
         <button type="submit" id="registerButton">
-            Send Email OTP
+            Register Hospital
         </button>
 
-        <div id="otpPanel" class="otp-panel">
-            <h3>Verify Hospital Email</h3>
+
+
 
             <p id="otpInstructions">
                 Enter the verification code sent to your hospital email.
@@ -417,72 +417,36 @@
 <script>
 "use strict";
 
-/* Backend URL */
 const API_URL = "https://carepath-3q9q.onrender.com";
 
-/* Page elements */
 const form = document.getElementById("hospitalRegisterForm");
 const message = document.getElementById("message");
 const registerButton = document.getElementById("registerButton");
-const otpPanel = document.getElementById("otpPanel");
-const emailOtpInput = document.getElementById("emailOtp");
-const verifyOtpButton = document.getElementById("verifyOtpButton");
-const resendOtpButton = document.getElementById("resendOtpButton");
 
-/* Registration state */
-let pendingFormData = null;
-let pendingEmail = "";
-let otpRequested = false;
-let otpVerified = false;
-let isRegistering = false;
-
-/* Display success and error messages */
 function showMessage(text, type = "error") {
     message.textContent = text;
     message.className = type;
 }
 
-/* Get trimmed form value */
 function getValue(id) {
     return document.getElementById(id).value.trim();
 }
 
-/* Disable registration fields while OTP is pending */
-function setFormFieldsDisabled(disabled) {
-    const fields = form.querySelectorAll(
-        "input:not(#emailOtp), textarea"
-    );
-
-    fields.forEach(function(field) {
-        field.disabled = disabled;
-    });
-}
-
-/* Build the hospital registration data */
 function buildRegistrationFormData() {
     const password = document.getElementById("password").value;
-    const confirmPassword =
-        document.getElementById("confirm_password").value;
+    const confirmPassword = document.getElementById("confirm_password").value;
+    const certificate = document.getElementById("license_certificate").files[0];
+    const tokenFee = Number(document.getElementById("token_fee").value);
 
-    const certificate =
-        document.getElementById("license_certificate").files[0];
-
-    const tokenFee = Number(
-        document.getElementById("token_fee").value
-    );
-
-    if (!getValue("name")) {
-        throw new Error("Please enter the hospital name.");
-    }
-
-    if (!getValue("email")) {
-        throw new Error("Please enter the hospital email.");
+    if (!getValue("name") || !getValue("email") ||
+        !getValue("phone") || !getValue("city") ||
+        !getValue("address") || !getValue("registration_number") ||
+        !getValue("issuing_authority")) {
+        throw new Error("Please complete all required fields.");
     }
 
     if (password.length < 6) {
-        throw new Error(
-            "Password must contain at least 6 characters."
-        );
+        throw new Error("Password must contain at least 6 characters.");
     }
 
     if (password !== confirmPassword) {
@@ -494,368 +458,96 @@ function buildRegistrationFormData() {
     }
 
     if (!certificate) {
-        throw new Error(
-            "Please upload the hospital registration certificate."
-        );
+        throw new Error("Please upload the hospital registration certificate.");
     }
 
-    const allowedExtensions = /\.(pdf|jpe?g|png)$/i;
-
-    if (!allowedExtensions.test(certificate.name)) {
-        throw new Error(
-            "Certificate must be a PDF, JPG, JPEG, or PNG file."
-        );
+    if (!/\.(pdf|jpe?g|png)$/i.test(certificate.name)) {
+        throw new Error("Certificate must be PDF, JPG, JPEG, or PNG.");
     }
 
     if (certificate.size > 10 * 1024 * 1024) {
-        throw new Error(
-            "Certificate file must be 10 MB or smaller."
-        );
+        throw new Error("Certificate must be 10 MB or smaller.");
     }
 
-    const formData = new FormData();
+    const data = new FormData();
 
-    formData.append("name", getValue("name"));
-    formData.append("email", getValue("email").toLowerCase());
-    formData.append("phone", getValue("phone"));
-    formData.append("city", getValue("city"));
-    formData.append("address", getValue("address"));
-    formData.append("description", getValue("description"));
+    data.append("name", getValue("name"));
+    data.append("email", getValue("email").toLowerCase());
+    data.append("phone", getValue("phone"));
+    data.append("city", getValue("city"));
+    data.append("address", getValue("address"));
+    data.append("description", getValue("description"));
+    data.append("registration_number", getValue("registration_number"));
+    data.append("issuing_authority", getValue("issuing_authority"));
+    data.append("password", password);
+    data.append("token_fee", String(tokenFee));
+    data.append("license_certificate", certificate);
 
-    formData.append(
-        "registration_number",
-        getValue("registration_number")
-    );
-
-    formData.append(
-        "issuing_authority",
-        getValue("issuing_authority")
-    );
-
-    formData.append("password", password);
-    formData.append("token_fee", String(tokenFee));
-    formData.append("license_certificate", certificate);
-
-    const expiryDate = document.getElementById(
-        "license_expiry_date"
-    ).value;
-
+    const expiryDate = document.getElementById("license_expiry_date").value;
     if (expiryDate) {
-        formData.append("license_expiry_date", expiryDate);
-    }
-
-    return formData;
-}
-
-/* Read API responses and display useful errors */
-async function readResponse(response) {
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-        let errorMessage =
-            "Request failed (HTTP " + response.status + ").";
-
-        if (Array.isArray(data.detail)) {
-            errorMessage = data.detail.map(function(item) {
-                const field = Array.isArray(item.loc)
-                    ? item.loc[item.loc.length - 1]
-                    : "";
-
-                return field
-                    ? field + ": " + item.msg
-                    : item.msg;
-            }).join("; ");
-
-        } else if (typeof data.detail === "string") {
-            errorMessage = data.detail;
-
-        } else if (typeof data.message === "string") {
-            errorMessage = data.message;
-        }
-
-        throw new Error(errorMessage);
+        data.append("license_expiry_date", expiryDate);
     }
 
     return data;
 }
 
-/* Request email OTP */
-async function requestOtp() {
-    const email = getValue("email").toLowerCase();
+async function readResponse(response) {
+    const data = await response.json().catch(() => ({}));
 
-    if (!email) {
-        throw new Error(
-            "Please enter the hospital email address."
-        );
+    if (!response.ok) {
+        let error = data.detail || data.message || "Registration failed.";
+
+        if (Array.isArray(data.detail)) {
+            error = data.detail.map(item => item.msg).join("; ");
+        }
+
+        throw new Error(error);
     }
 
-    const response = await fetch(
-        `${API_URL}/registration/request-otp`,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                role: "hospital",
-                email: email
-            })
-        }
-    );
-
-    const data = await readResponse(response);
-
-    pendingEmail = email;
-    otpRequested = true;
-    otpVerified = false;
-
-    otpPanel.style.display = "block";
-    registerButton.style.display = "none";
-
-    setFormFieldsDisabled(true);
-
-    document.getElementById("otpInstructions").textContent =
-        "A verification code was requested for " +
-        pendingEmail +
-        ". Enter the 6-digit code from that email.";
-
-    emailOtpInput.value = "";
-    emailOtpInput.required = true;
-    emailOtpInput.focus();
-
-    showMessage(
-        data.message ||
-        "OTP sent. Check your hospital email inbox and spam folder.",
-        "success"
-    );
+    return data;
 }
 
-/* Verify OTP and then submit hospital registration */
-async function verifyOtpAndRegister() {
-    if (!otpRequested || !pendingFormData || !pendingEmail) {
-        throw new Error("Please request an email OTP first.");
-    }
+form.addEventListener("submit", async function(event) {
+    event.preventDefault();
 
-    if (isRegistering) {
-        return;
-    }
+    if (registerButton.disabled) return;
 
-    isRegistering = true;
+    registerButton.disabled = true;
+    registerButton.textContent = "Registering Hospital...";
 
     try {
-        if (!otpVerified) {
-            const otp = emailOtpInput.value.trim();
+        const formData = buildRegistrationFormData();
 
-            if (!/^\d{6}$/.test(otp)) {
-                throw new Error(
-                    "Enter the 6-digit OTP sent to your email."
-                );
-            }
+        const response = await fetch(`${API_URL}/hospitals`, {
+            method: "POST",
+            body: formData
+        });
 
-            verifyOtpButton.textContent = "Verifying OTP...";
-
-            const verifyResponse = await fetch(
-                `${API_URL}/registration/verify-otp`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        role: "hospital",
-                        email: pendingEmail,
-                        otp: otp
-                    })
-                }
-            );
-
-            const verificationData =
-                await readResponse(verifyResponse);
-
-            if (verificationData.verified === false) {
-                throw new Error(
-                    verificationData.message ||
-                    "OTP verification was not successful."
-                );
-            }
-
-            otpVerified = true;
-        }
-
-        verifyOtpButton.textContent = "Registering Hospital...";
+        const data = await readResponse(response);
 
         showMessage(
-            "Email verified. Creating hospital registration...",
-            "success"
-        );
-
-        /*
-         * The backend must independently enforce email verification
-         * before allowing this registration request.
-         */
-        const registerResponse = await fetch(
-            `${API_URL}/hospitals`,
-            {
-                method: "POST",
-                body: pendingFormData
-            }
-        );
-
-        const registrationData =
-            await readResponse(registerResponse);
-
-        showMessage(
-            registrationData.message ||
-            "Hospital registered successfully. Waiting for admin approval.",
+            data.message ||
+            "Hospital registration submitted successfully. Waiting for admin approval.",
             "success"
         );
 
         form.reset();
 
-        otpPanel.style.display = "none";
-        registerButton.style.display = "block";
-        registerButton.textContent = "Send Email OTP";
-
-        setFormFieldsDisabled(false);
-
-        emailOtpInput.required = false;
-
-        pendingFormData = null;
-        pendingEmail = "";
-        otpRequested = false;
-        otpVerified = false;
-
-    } finally {
-        isRegistering = false;
-    }
-}
-
-/* Initial form submission sends OTP */
-form.addEventListener("submit", async function(event) {
-    event.preventDefault();
-
-    if (otpRequested) {
-        showMessage(
-            "Enter the email OTP below and select Verify OTP & Register.",
-            "error"
-        );
-        return;
-    }
-
-    registerButton.disabled = true;
-    registerButton.textContent = "Sending OTP...";
-
-    try {
-        pendingFormData = buildRegistrationFormData();
-
-        await requestOtp();
-
     } catch (error) {
-        console.error("Hospital OTP request error:", error);
+        console.error("Hospital registration error:", error);
 
         showMessage(
             error instanceof TypeError
-                ? "Cannot connect to FastAPI. Make sure the backend is running at " + API_URL
-                : (error.message || "Could not send the verification OTP."),
+                ? "Cannot connect to the CarePath server. Please try again."
+                : error.message,
             "error"
         );
 
     } finally {
         registerButton.disabled = false;
-
-        if (!otpRequested) {
-            registerButton.textContent = "Send Email OTP";
-        }
+        registerButton.textContent = "Register Hospital";
     }
 });
-
-/* Verify OTP and register */
-verifyOtpButton.addEventListener("click", async function() {
-    if (isRegistering) {
-        return;
-    }
-
-    verifyOtpButton.disabled = true;
-    resendOtpButton.disabled = true;
-
-    try {
-        await verifyOtpAndRegister();
-
-    } catch (error) {
-        console.error(
-            "Hospital OTP verification/registration error:",
-            error
-        );
-
-        showMessage(
-            error instanceof TypeError
-                ? "Cannot connect to FastAPI. Make sure the backend is running at " + API_URL
-                : (error.message || "OTP verification or registration failed."),
-            "error"
-        );
-
-    } finally {
-        verifyOtpButton.disabled = false;
-        resendOtpButton.disabled = false;
-
-        if (otpRequested) {
-            verifyOtpButton.textContent = "Verify OTP & Register";
-        }
-    }
-});
-
-/* Resend OTP */
-resendOtpButton.addEventListener("click", async function() {
-    if (!pendingEmail || !otpRequested) {
-        showMessage("Please request an OTP first.", "error");
-        return;
-    }
-
-    resendOtpButton.disabled = true;
-    resendOtpButton.textContent = "Sending...";
-
-    try {
-        const response = await fetch(
-            `${API_URL}/registration/request-otp`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    role: "hospital",
-                    email: pendingEmail
-                })
-            }
-        );
-
-        const data = await readResponse(response);
-
-        emailOtpInput.value = "";
-        otpVerified = false;
-
-        showMessage(
-            data.message ||
-            "A new OTP was requested. Check your email.",
-            "success"
-        );
-
-    } catch (error) {
-        console.error("Resend OTP error:", error);
-
-        showMessage(
-            error instanceof TypeError
-                ? "Cannot connect to FastAPI. Make sure the backend is running at " + API_URL
-                : (error.message || "Could not resend OTP."),
-            "error"
-        );
-
-    } finally {
-        resendOtpButton.disabled = false;
-        resendOtpButton.textContent = "Resend OTP";
-    }
-});
-</script>in
-
+</script>
 </body>
 </html>
