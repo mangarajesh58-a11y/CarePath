@@ -5,7 +5,8 @@ pymysql
 psycopg[binary]
 python-dotenv
 python-multipart
-passlib[bcrypt]
+passlib==1.7.4
+bcrypt==4.0.1
 razorpay
 google-auth
 pg8000
