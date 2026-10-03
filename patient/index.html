@@ -1615,43 +1615,46 @@
                 }
 
 
-                // -------------------------------------------
-                // SAVE PATIENT
-                // -------------------------------------------
+                // SAVE PATIENT DATA
+                savePatientData(patient);
 
-                savePatientData(
-                    patient
-                );
+                // CHECK WHETHER PHONE NUMBER EXISTS
+                if (!patient.phone || !patient.phone.trim()) {
 
+                    // Temporarily keep the Google credential
+                    // for profile completion.
+                    sessionStorage.setItem(
+                        "patientGoogleCredential",
+                        response.credential
+                    );
 
-                // -------------------------------------------
-                // SUCCESS MESSAGE
-                // -------------------------------------------
+                    showMessage(
+                        "Please complete your patient profile.",
+                        "info"
+                    );
 
-                showMessage(
+                    // Open profile completion page
+                    setTimeout(function() {
+                        window.location.href = "profile.html";
+                    }, 700);
 
-                    "Google login successful. Opening dashboard...",
+                } else {
 
-                    "success"
+                    // Phone number already exists
+                    sessionStorage.removeItem(
+                        "patientGoogleCredential"
+                    );
 
-                );
+                    showMessage(
+                        "Google login successful. Opening dashboard...",
+                        "success"
+                    );
 
-
-                // -------------------------------------------
-                // REDIRECT
-                // -------------------------------------------
-
-                setTimeout(
-                    function() {
-
-                        window.location.href =
-                            "dashboard.html";
-
-                    },
-                    700
-                );
-
-
+                    // Open dashboard
+                    setTimeout(function() {
+                        window.location.href = "dashboard.html";
+                    }, 700);
+                }
             }
 
             catch(error) {

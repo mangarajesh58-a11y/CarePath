@@ -804,6 +804,13 @@ class PatientLogin(BaseModel):
     password: str
 
 
+class PatientProfileUpdate(BaseModel):
+
+    credential: str
+
+    phone: str
+
+
 class HospitalRegister(BaseModel):
 
     name: str
@@ -895,12 +902,13 @@ class TokenRequest(BaseModel):
 
     doctor: str
 
+    appointment_date: Optional[date] = None
+
     razorpay_order_id: str
 
     razorpay_payment_id: str
 
     razorpay_signature: str
-
 
 class CreateOrderRequest(BaseModel):
 
@@ -1494,7 +1502,83 @@ def patient_google_login(
         },
     }
 
+# ============================================================
+# UPDATE PATIENT PROFILE
+# ============================================================
 
+@app.put("/patients/profile")
+def update_patient_profile(
+    data: PatientProfileUpdate,
+    db: Session = Depends(get_db),
+):
+    # Verify the Google credential
+    google_data = verify_google_credential(
+        data.credential
+    )
+
+    email = google_data["email"].strip().lower()
+    phone = data.phone.strip()
+
+    # Validate phone number
+    if not phone:
+        raise HTTPException(
+            status_code=400,
+            detail="Phone number is required",
+        )
+
+    # Find the patient using the verified Google email
+    patient = (
+        db.query(Patient)
+        .filter(Patient.email == email)
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient account not found",
+        )
+
+    # Check whether another patient uses this phone
+    existing_phone = (
+        db.query(Patient)
+        .filter(
+            Patient.phone == phone,
+            Patient.id != patient.id,
+        )
+        .first()
+    )
+
+    if existing_phone:
+        raise HTTPException(
+            status_code=409,
+            detail="Phone number already registered",
+        )
+
+    # Save the phone number
+    try:
+        patient.phone = phone
+
+        db.commit()
+        db.refresh(patient)
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to update patient profile",
+        )
+
+    return {
+        "success": True,
+        "message": "Patient profile updated successfully",
+        "patient": {
+            "id": patient.id,
+            "full_name": patient.full_name,
+            "email": patient.email,
+            "phone": patient.phone,
+        },
+    }
 # ============================================================
 # GENERIC GOOGLE LOGIN
 #
@@ -3324,12 +3408,15 @@ def create_token(
                     existing_token
                 ),
         }
-            # --------------------------------------------------------
+
+    # --------------------------------------------------------
     # NEXT TOKEN NUMBER
-    # Per hospital + department + doctor + date
+    # Per hospital + department + doctor + appointment date
     # --------------------------------------------------------
 
-    today = date.today()
+    selected_appointment_date = (
+        data.appointment_date or date.today()
+    )
 
     latest_token = (
         db.query(Token)
@@ -3337,7 +3424,7 @@ def create_token(
             Token.hospital_id == hospital.id,
             Token.department == data.department.strip(),
             Token.doctor == data.doctor.strip(),
-            func.date(Token.created_at) == today,
+            Token.appointment_date == selected_appointment_date,
         )
         .order_by(
             Token.token_number.desc()
@@ -3361,6 +3448,7 @@ def create_token(
         department=data.department.strip(),
         doctor=data.doctor.strip(),
         token_number=next_token_number,
+        appointment_date=selected_appointment_date,
         platform=PLATFORM_NAME,
         token_fee=token_fee,
         platform_fee=platform_fee,

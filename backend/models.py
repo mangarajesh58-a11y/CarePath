@@ -1,5 +1,6 @@
 
 from datetime import datetime
+from datetime import datetime, date
 
 from sqlalchemy import (
     Column,
@@ -63,6 +64,7 @@ class Hospital(Base):
 
     # Token fee (Indian rupees)
     token_fee = Column(Integer, default=0, nullable=False)
+    appointment_date = Column(Date, nullable=False, index=True)
 
     # Approval and publishing
     approval_status = Column(

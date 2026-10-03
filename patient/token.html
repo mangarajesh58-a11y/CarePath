@@ -321,9 +321,32 @@
             </div>
         </div>
 
-        <div class="fee-card">
-            <div class="fee-row">
-                <span>Hospital Token Fee</span>
+<!-- Appointment Date -->
+<div class="info-card">
+    <label for="appointmentDate">
+        <strong>Select Appointment Date</strong>
+    </label>
+
+    <input
+        type="date"
+        id="appointmentDate"
+        required
+        style="
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        "
+    />
+</div>
+
+<div class="fee-card">
+    <div class="fee-row">
+        <span>Hospital Token Fee</span>
                 <strong id="tokenFee">Loading...</strong>
             </div>
             <div class="fee-row">
@@ -560,6 +583,20 @@ function showMessage(text, type = "info") {
 function clearMessage() {
     messageElement.textContent = "";
     messageElement.className = "message";
+}
+// Set the earliest appointment date to today.
+const appointmentDateInput = document.getElementById("appointmentDate");
+
+if (appointmentDateInput) {
+    const today = new Date();
+    const localToday = [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        String(today.getDate()).padStart(2, "0")
+    ].join("-");
+
+    appointmentDateInput.min = localToday;
+    appointmentDateInput.value = localToday;
 }
 
 async function loadBookingData() {
@@ -888,11 +925,19 @@ async function verifyPayment(paymentResponse) {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                razorpay_order_id: paymentResponse.razorpay_order_id,
-                razorpay_payment_id: paymentResponse.razorpay_payment_id,
-                razorpay_signature: paymentResponse.razorpay_signature
-            })
+           body: JSON.stringify({
+    patient_name: getStoredValue(
+        ["patientName", "patient_name", "fullName", "patientFullName"],
+        ""
+    ),
+    hospital: hospital.name,
+    department: department,
+    doctor: doctor,
+    appointment_date: document.getElementById("appointmentDate").value,
+    razorpay_order_id: paymentResponse.razorpay_order_id,
+    razorpay_payment_id: paymentResponse.razorpay_payment_id,
+    razorpay_signature: paymentResponse.razorpay_signature
+})
         });
 
         let data;
