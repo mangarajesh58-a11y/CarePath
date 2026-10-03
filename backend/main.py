@@ -225,25 +225,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 def send_otp_email(receiver_email: str, otp: str):
-    import json
-    import urllib.request
-    import urllib.error
+    import os
+    import smtplib
+    import logging
+    from email.message import EmailMessage
 
-    api_key = os.getenv("RESEND_API_KEY")
-    sender_email = os.getenv("RESEND_FROM_EMAIL")
+    sender_email = os.getenv("SMTP_EMAIL")
+    app_password = os.getenv("SMTP_APP_PASSWORD")
 
-    if not api_key:
-        raise RuntimeError("RESEND_API_KEY is missing.")
+    if not sender_email or not app_password:
+        raise RuntimeError(
+            "SMTP_EMAIL or SMTP_APP_PASSWORD is missing."
+        )
 
-    if not sender_email:
-        raise RuntimeError("RESEND_FROM_EMAIL is missing.")
+    message = EmailMessage()
+    message["Subject"] = "CarePath Registration OTP"
+    message["From"] = sender_email
+    message["To"] = receiver_email
 
-    payload = {
-        "from": sender_email,
-        "to": [receiver_email],
-        "subject": "CarePath Registration OTP",
-        "text": f"""Hello,
+    message.set_content(
+        f"""Hello,
 
 Your CarePath registration verification code is: {otp}
 
@@ -253,34 +256,22 @@ If you did not request this code, please ignore this email.
 
 CarePath Team
 """
-    }
-
-    request = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=20) as response:
-            if response.status not in (200, 201):
-                raise RuntimeError(
-                    f"Resend returned HTTP {response.status}."
-                )
+        with smtplib.SMTP(
+            "smtp.gmail.com", 587, timeout=20
+        ) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(sender_email, app_password)
+            server.send_message(message)
 
-    except urllib.error.HTTPError as exc:
-        error_body = exc.read().decode("utf-8", errors="replace")
+    except Exception as exc:
+        logging.exception("Gmail SMTP email sending failed")
         raise RuntimeError(
-            f"Resend email request failed: HTTP {exc.code}: {error_body}"
-        ) from exc
-
-    except urllib.error.URLError as exc:
-        raise RuntimeError(
-            f"Could not connect to Resend: {exc.reason}"
+            f"Unable to send OTP email: {exc}"
         ) from exc
 # ============================================================
 # DATABASE SESSION
