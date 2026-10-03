@@ -1297,11 +1297,15 @@ def register_patient(
         db.refresh(patient)
 
         # Delete OTP after successful registration
-
-
-
-    except Exception:
+        # NOTE: Insert OTP cleanup logic here if needed.
+    except Exception as e:
         db.rollback()
+
+        print(
+            "PATIENT REGISTRATION DATABASE ERROR:",
+            repr(e),
+            flush=True,
+        )
 
         raise HTTPException(
             status_code=500,
