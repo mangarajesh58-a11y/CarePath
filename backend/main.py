@@ -252,7 +252,7 @@ def send_otp_email(receiver_email: str, otp: str):
             "CarePath Team"
         ),
     }
-                    request = urllib.request.Request(
+    request = urllib.request.Request(
     "https://api.resend.com/emails",
     data=json.dumps(payload).encode("utf-8"),
     headers={
