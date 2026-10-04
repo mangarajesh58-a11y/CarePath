@@ -283,6 +283,9 @@
                         >
                             Status
                         </th>
+                        <th style="padding:12px; text-align:left;">
+                             Action
+                            </th>
 
                     </tr>
 
@@ -792,7 +795,7 @@ async function loadPatients() {
         <tr>
 
             <td
-                colspan="5"
+                colspan="6"
                 style="
                     padding:20px;
                     text-align:center;
@@ -853,8 +856,7 @@ async function loadPatients() {
                 function(token) {
 
                     const correctHospital =
-                        token.hospital_id !==
-                        undefined &&
+                        token.hospital_id !== undefined &&
                         token.hospital_id !== null
                             ? Number(
                                 token.hospital_id
@@ -862,23 +864,19 @@ async function loadPatients() {
                               Number(
                                 hospital.id
                               )
-                            : token.hospital ===
-                              hospital.name;
-
+                            : token.hospital === hospital.name;
 
                     return (
                         correctHospital &&
-
-                        token.department ===
-                        department &&
-
-                        token.doctor ===
-                        doctor
+                        token.department === department &&
+                        token.doctor === doctor &&
+                        ["waiting", "serving"].includes(
+                            String(token.status).toLowerCase()
+                        )
                     );
 
                 }
             );
-
 
 
         /*
@@ -940,6 +938,24 @@ async function loadPatients() {
                     );
 
 
+                const completeButtonHtml =
+                    token.status !== "completed" &&
+                    token.status !== "cancelled"
+                        ? `<button
+                            onclick="completePatientToken(${Number(token.id)})"
+                            style="
+                                background:#16a34a;
+                                color:white;
+                                border:none;
+                                padding:8px 12px;
+                                border-radius:6px;
+                                cursor:pointer;
+                            "
+                        >
+                            Complete
+                        </button>`
+                        : "—";
+
                 row.innerHTML =
                     `
                     <td style="padding:12px;">
@@ -957,6 +973,7 @@ async function loadPatients() {
 
                         ${escapeHTML(
                             token.patient_name
+
                         )}
 
                     </td>
@@ -986,6 +1003,10 @@ async function loadPatients() {
                             token.status
                         )}
 
+                    </td>
+
+                    <td style="padding:12px;">
+                        ${completeButtonHtml}
                     </td>
                     `;
 
@@ -1108,14 +1129,11 @@ async function callNextPatient() {
                         "Content-Type":
                             "application/json"
                     },
-
-                    body:
-                        JSON.stringify({
-                            hospital_id:
-                                Number(
-                                    hospitalId
-                                )
-                        })
+body: JSON.stringify({
+    hospital_id: Number(hospitalId),
+    department: department,
+    doctor: doctor
+})
                 }
             );
 
@@ -1230,8 +1248,53 @@ async function callNextPatient() {
 
     }
 
-}
+}/* ==========================================
+   COMPLETE PATIENT TOKEN
+========================================== */
 
+async function completePatientToken(tokenId) {
+
+    if (!tokenId || !Number.isFinite(Number(tokenId))) {
+        alert("Invalid token ID.");
+        return;
+    }
+
+    if (!confirm("Mark this patient as completed?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${API}/tokens/${tokenId}/complete`,
+            {
+                method: "POST"
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail || "Unable to complete token."
+            );
+        }
+
+        alert(
+            data.message ||
+            "Patient token completed successfully."
+        );
+
+        await loadPatients();
+
+    } catch (error) {
+        console.error("Complete token error:", error);
+
+        alert(
+            error.message ||
+            "Unable to complete patient token."
+        );
+    }
+}
 
 
 /* ==========================================
