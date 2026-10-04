@@ -16,6 +16,8 @@ from typing import Optional
 
 import razorpay
 
+import jwt
+
 from dotenv import load_dotenv
 
 from google.oauth2 import id_token
@@ -28,6 +30,7 @@ from fastapi import (
     UploadFile,
     File,
     Form,
+    Header,
 )
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -80,6 +83,95 @@ load_dotenv(dotenv_path=ENV_FILE, override=False)
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+
+# JWT Authentication Configuration
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+JWT_ALGORITHM = "HS256"
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+
+def create_access_token(user_id: int, role: str) -> str:
+    if not JWT_SECRET_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="JWT authentication is not configured."
+        )
+
+    expire = datetime.utcnow() + timedelta(
+        minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+
+    payload = {
+        "sub": str(user_id),
+        "role": role,
+        "exp": expire,
+    }
+
+    return jwt.encode(
+        payload,
+        JWT_SECRET_KEY,
+        algorithm=JWT_ALGORITHM
+    )
+
+
+def get_current_user(
+    authorization: Optional[str] = Header(default=None),
+):
+    if not JWT_SECRET_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="JWT authentication is not configured."
+        )
+
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required."
+        )
+
+    token = authorization.split(" ", 1)[1].strip()
+
+    try:
+        payload = jwt.decode(
+            token,
+            JWT_SECRET_KEY,
+            algorithms=[JWT_ALGORITHM],
+        )
+
+        user_id = payload.get("sub")
+        role = payload.get("role")
+
+        if not user_id or role not in ("patient", "hospital", "admin"):
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authentication token."
+            )
+
+        return {
+            "user_id": int(user_id),
+            "role": role,
+        }
+
+    except (jwt.PyJWTError, ValueError, TypeError):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired authentication token."
+        )
+
+
+def require_role(required_role: str):
+    def role_checker(
+        current_user: dict = Depends(get_current_user),
+    ):
+        if current_user["role"] != required_role:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to access this resource."
+            )
+
+        return current_user
+
+    return role_checker
 
 # Check configuration without displaying secret values
 print("Environment file exists:", ENV_FILE.is_file())
@@ -1340,71 +1432,51 @@ def patient_login(
     data: PatientLogin,
     db: Session = Depends(get_db),
 ):
-
     login_value = data.email.strip()
 
     patient = (
         db.query(Patient)
         .filter(
             (
-                Patient.email ==
-                login_value.lower()
+                Patient.email == login_value.lower()
             )
             |
             (
-                Patient.phone ==
-                login_value
+                Patient.phone == login_value
             )
         )
         .first()
     )
 
     if not patient:
-
         raise HTTPException(
             status_code=401,
-            detail=(
-                "Invalid email/phone "
-                "or password"
-            ),
+            detail="Invalid email/phone or password",
         )
 
-    if not verify_password(
-        data.password,
-        patient.password,
-    ):
-
+    if not verify_password(data.password, patient.password):
         raise HTTPException(
             status_code=401,
-            detail=(
-                "Invalid email/phone "
-                "or password"
-            ),
+            detail="Invalid email/phone or password",
         )
+
+    access_token = create_access_token(
+        user_id=patient.id,
+        role="patient",
+    )
 
     return {
-
         "success": True,
-
-        "message":
-            "Patient login successful",
-
+        "message": "Patient login successful",
+        "access_token": access_token,
+        "token_type": "bearer",
         "patient": {
-
-            "id":
-                patient.id,
-
-            "full_name":
-                patient.full_name,
-
-            "email":
-                patient.email,
-
-            "phone":
-                patient.phone,
+            "id": patient.id,
+            "full_name": patient.full_name,
+            "email": patient.email,
+            "phone": patient.phone,
         },
     }
-
 
 # ============================================================
 # PATIENT GOOGLE LOGIN
@@ -1590,12 +1662,12 @@ def update_patient_profile(
 # The admin account must already exist.
 # ============================================================
 
+
 @app.post("/auth/google")
 def generic_google_login(
     data: GenericGoogleLoginRequest,
     db: Session = Depends(get_db),
 ):
-
     role = data.role.strip().lower()
 
     google_data = verify_google_credential(
@@ -1603,94 +1675,61 @@ def generic_google_login(
     )
 
     email = google_data["email"]
-
     google_id = google_data["google_id"]
-
     name = google_data["name"]
 
-
-    # --------------------------------------------------------
     # PATIENT
-    # --------------------------------------------------------
-
     if role == "patient":
-
         patient = (
             db.query(Patient)
-            .filter(
-                Patient.email == email
-            )
+            .filter(Patient.email == email)
             .first()
         )
 
         if not patient:
-
             patient = Patient(
-
                 full_name=name,
-
                 email=email,
-
                 password=hash_password(
                     secrets.token_urlsafe(24)
                 ),
-
                 google_id=google_id,
             )
-
             db.add(patient)
-
         else:
-
             patient.google_id = google_id
 
         db.commit()
-
         db.refresh(patient)
 
+        access_token = create_access_token(
+            user_id=patient.id,
+            role="patient",
+        )
+
         return {
-
             "success": True,
-
-            "role":
-                "patient",
-
-            "message":
-                "Google login successful",
-
+            "role": "patient",
+            "message": "Google login successful",
+            "access_token": access_token,
+            "token_type": "bearer",
             "patient": {
-
-                "id":
-                    patient.id,
-
-                "full_name":
-                    patient.full_name,
-
-                "email":
-                    patient.email,
-
-                "phone":
-                    patient.phone,
+                "id": patient.id,
+                "full_name": patient.full_name,
+                "email": patient.email,
+                "phone": patient.phone,
             },
         }
 
-
-    # --------------------------------------------------------
     # HOSPITAL
-    # --------------------------------------------------------
-
     if role == "hospital":
-
         hospital = (
             db.query(Hospital)
-            .filter(
-                Hospital.email == email
-            )
+            .filter(Hospital.email == email)
             .first()
         )
 
         if not hospital:
-
             raise HTTPException(
                 status_code=404,
                 detail=(
@@ -1702,42 +1741,34 @@ def generic_google_login(
         hospital.google_id = google_id
 
         db.commit()
-
         db.refresh(hospital)
 
+        access_token = create_access_token(
+            user_id=hospital.id,
+            role="hospital",
+        )
+
         return {
-
             "success": True,
-
-            "role":
-                "hospital",
-
-            "message":
-                "Google login successful",
-
-            "hospital":
-                hospital_to_dict(
-                    hospital
-                ),
+            "role": "hospital",
+            "message": "Google login successful",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "hospital": hospital_to_dict(hospital),
         }
 
-
-    # --------------------------------------------------------
     # ADMIN
-    # --------------------------------------------------------
-
     if role == "admin":
-
         admin = (
             db.query(Admin)
             .filter(
-                func.lower(Admin.email) == email.strip().lower()
+                func.lower(Admin.email)
+                == email.strip().lower()
             )
             .first()
         )
 
         if not admin:
-
             raise HTTPException(
                 status_code=403,
                 detail=(
@@ -1746,26 +1777,22 @@ def generic_google_login(
                 ),
             )
 
+        access_token = create_access_token(
+            user_id=admin.id,
+            role="admin",
+        )
+
         return {
-
             "success": True,
-
-            "role":
-                "admin",
-
-            "message":
-                "Google admin login successful",
-
+            "role": "admin",
+            "message": "Google admin login successful",
+            "access_token": access_token,
+            "token_type": "bearer",
             "admin": {
-
-                "id":
-                    admin.id,
-
-                "email":
-                    admin.email,
+                "id": admin.id,
+                "email": admin.email,
             },
         }
-
 
     raise HTTPException(
         status_code=400,
@@ -1774,9 +1801,6 @@ def generic_google_login(
             "Use patient, hospital or admin."
         ),
     )
-
-
-
 
 # ============================================================
 # HOSPITAL REGISTER
@@ -2155,6 +2179,7 @@ async def register_hospital(
 # HOSPITAL EMAIL AND PASSWORD LOGIN
 # ============================================================
 
+
 @app.post("/hospitals/login")
 def hospital_login(
     data: HospitalLogin,
@@ -2177,12 +2202,18 @@ def hospital_login(
             detail="Invalid hospital email or password",
         )
 
+    access_token = create_access_token(
+        user_id=hospital.id,
+        role="hospital",
+    )
+
     return {
         "success": True,
         "message": "Hospital login successful",
+        "access_token": access_token,
+        "token_type": "bearer",
         "hospital": hospital_to_dict(hospital),
-    }
-# ============================================================
+    }# ============================================================
 # HOSPITAL GOOGLE LOGIN
 # ============================================================
 
@@ -2975,185 +3006,123 @@ def find_published_hospital(
 def create_razorpay_order(
     data: CreateOrderRequest,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("patient")),
 ):
+    # Identify the patient using the verified JWT.
+    patient = (
+        db.query(Patient)
+        .filter(
+            Patient.id == current_user["user_id"]
+        )
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=401,
+            detail="Patient account not found.",
+        )
 
     if not razorpay_client:
-
         raise HTTPException(
             status_code=500,
             detail=(
                 "Razorpay is not configured. "
                 "Check RAZORPAY_KEY_ID and "
-                "RAZORPAY_KEY_SECRET in .env"
+                "RAZORPAY_KEY_SECRET."
             ),
         )
 
-    patient_name = (
-        data.patient_name.strip()
-    )
-
-    hospital_name = (
-        data.hospital.strip()
-    )
-
-    department_name = (
-        data.department.strip()
-    )
-
-    doctor_name = (
-        data.doctor.strip()
-    )
-
-    if not patient_name:
-
-        raise HTTPException(
-            status_code=400,
-            detail="Patient name is required",
-        )
+    hospital_name = data.hospital.strip()
+    department_name = data.department.strip()
+    doctor_name = data.doctor.strip()
 
     if not hospital_name:
-
         raise HTTPException(
             status_code=400,
             detail="Hospital is required",
         )
 
     if not department_name:
-
         raise HTTPException(
             status_code=400,
             detail="Department is required",
         )
 
     if not doctor_name:
-
         raise HTTPException(
             status_code=400,
             detail="Doctor is required",
         )
 
+    # Find the published hospital.
     hospital = find_published_hospital(
         db,
         hospital_name,
     )
 
+    # Confirm the selected doctor belongs to this hospital.
     doctor = (
         db.query(Doctor)
         .filter(
-            Doctor.hospital_id ==
-            hospital.id,
-
-            Doctor.department ==
-            department_name,
-
-            Doctor.name ==
-            doctor_name,
+            Doctor.hospital_id == hospital.id,
+            Doctor.department == department_name,
+            Doctor.name == doctor_name,
         )
         .first()
     )
 
     if not doctor:
-
         raise HTTPException(
             status_code=404,
             detail="Doctor not found",
         )
 
-    token_fee = int(
-        hospital.token_fee or 0
-    )
-
+    # Calculate the amount on the server.
+    token_fee = int(hospital.token_fee or 0)
     platform_fee = PLATFORM_FEE
-
-    total_amount = (
-        token_fee +
-        platform_fee
-    )
+    total_amount = token_fee + platform_fee
 
     if total_amount <= 0:
-
         raise HTTPException(
             status_code=400,
             detail="Invalid payment amount",
         )
 
-    amount_paise = (
-        total_amount * 100
-    )
+    amount_paise = total_amount * 100
 
     try:
-
-        order = (
-            razorpay_client.order.create(
-                {
-
-                    "amount":
-                        amount_paise,
-
-                    "currency":
-                        "INR",
-
-                    "receipt":
-                        (
-                            "carepath_"
-                            f"{hospital.id}_"
-                            f"{secrets.token_hex(4)}"
-                        ),
-                }
-            )
-        )
+        order = razorpay_client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": (
+                "carepath_"
+                f"{hospital.id}_"
+                f"{secrets.token_hex(4)}"
+            ),
+        })
 
         return {
-
             "success": True,
-
-            "order_id":
-                order["id"],
-
-            "key_id":
-                RAZORPAY_KEY_ID,
-
-            "razorpay_key_id":
-                RAZORPAY_KEY_ID,
-
-            "amount":
-                amount_paise,
-
-            "currency":
-                "INR",
-
-            "token_fee":
-                token_fee,
-
-            "platform_fee":
-                platform_fee,
-
-            "total_amount":
-                total_amount,
-
-            "hospital_id":
-                hospital.id,
-
-            "razorpay_account_id":
-                hospital.razorpay_account_id,
+            "order_id": order["id"],
+            "key_id": RAZORPAY_KEY_ID,
+            "razorpay_key_id": RAZORPAY_KEY_ID,
+            "amount": amount_paise,
+            "currency": "INR",
+            "token_fee": token_fee,
+            "platform_fee": platform_fee,
+            "total_amount": total_amount,
+            "hospital_id": hospital.id,
+            "razorpay_account_id": hospital.razorpay_account_id,
         }
 
     except Exception as error:
-
-        print(
-            "Razorpay order error:",
-            error,
-        )
+        print("Razorpay order error:", error)
 
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Unable to create "
-                "Razorpay order"
-            ),
+            detail="Unable to create Razorpay order",
         )
-
-
 # ============================================================
 # RAZORPAY SIGNATURE
 # ============================================================
@@ -3195,225 +3164,151 @@ def verify_razorpay_signature(
 # CREATE TOKEN AFTER PAYMENT
 # ============================================================
 
+
 @app.post("/tokens")
 @app.post("/payments/verify")
 def create_token(
     data: TokenRequest,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("patient")),
 ):
+    # Identify the patient from the verified JWT, not request data.
+    patient = (
+        db.query(Patient)
+        .filter(Patient.id == current_user["user_id"])
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=401,
+            detail="Patient account not found.",
+        )
 
     if not data.razorpay_order_id:
-
         raise HTTPException(
             status_code=400,
             detail="Razorpay order ID is required",
         )
 
     if not data.razorpay_payment_id:
-
         raise HTTPException(
             status_code=400,
             detail="Razorpay payment ID is required",
         )
 
     if not data.razorpay_signature:
-
         raise HTTPException(
             status_code=400,
             detail="Razorpay signature is required",
         )
 
-
-    # --------------------------------------------------------
-    # CHECK SIGNATURE
-    # --------------------------------------------------------
-
-    valid_signature = (
-        verify_razorpay_signature(
-            data.razorpay_order_id,
-            data.razorpay_payment_id,
-            data.razorpay_signature,
-        )
+    # Verify Razorpay signature.
+    valid_signature = verify_razorpay_signature(
+        data.razorpay_order_id,
+        data.razorpay_payment_id,
+        data.razorpay_signature,
     )
 
     if not valid_signature:
-
         raise HTTPException(
             status_code=400,
             detail="Invalid Razorpay payment signature",
         )
 
-
-    # --------------------------------------------------------
-    # CHECK RAZORPAY
-    # --------------------------------------------------------
-
     if not razorpay_client:
-
         raise HTTPException(
             status_code=500,
             detail="Razorpay is not configured",
         )
 
-
     try:
-
-        payment = (
-            razorpay_client.payment.fetch(
-                data.razorpay_payment_id
-            )
+        payment = razorpay_client.payment.fetch(
+            data.razorpay_payment_id
         )
 
-        payment_order_id = (
-            payment.get("order_id")
-        )
-
-        if (
-            payment_order_id
-            != data.razorpay_order_id
-        ):
-
+        if payment.get("order_id") != data.razorpay_order_id:
             raise HTTPException(
                 status_code=400,
                 detail="Payment order mismatch",
             )
 
-        payment_status = (
-            payment.get("status")
-        )
-        if payment_status != "captured":
+        if payment.get("status") != "captured":
             raise HTTPException(
                 status_code=400,
                 detail="Payment has not been captured successfully",
             )
 
     except HTTPException:
-
         raise
-
     except Exception as error:
-
-        print(
-            "Payment verification error:",
-            error,
-        )
-
+        print("Payment verification error:", error)
         raise HTTPException(
             status_code=400,
-            detail=(
-                "Unable to verify "
-                "Razorpay payment"
-            ),
+            detail="Unable to verify Razorpay payment",
         )
 
-
-    # --------------------------------------------------------
-    # FIND HOSPITAL
-    # --------------------------------------------------------
-
-    hospital = find_published_hospital(
-        db,
-        data.hospital,
-    )
-
-
-    # --------------------------------------------------------
-    # FIND DOCTOR
-    # --------------------------------------------------------
-
-    doctor = (
-        db.query(Doctor)
-        .filter(
-            Doctor.hospital_id ==
-            hospital.id,
-
-            Doctor.department ==
-            data.department,
-
-            Doctor.name ==
-            data.doctor,
-        )
-        .first()
-    )
-
-    if not doctor:
-
-        raise HTTPException(
-            status_code=404,
-            detail="Doctor not found",
-        )
-
-
-    # --------------------------------------------------------
-    # CALCULATE PAYMENT
-    # --------------------------------------------------------
-
-    token_fee = int(
-        hospital.token_fee or 0
-    )
-
-    platform_fee = PLATFORM_FEE
-
-    total_amount = (
-        token_fee +
-        platform_fee
-    )
-
-    expected_amount_paise = (
-        total_amount * 100
-    )
-
-    actual_amount_paise = int(
-        payment.get(
-            "amount",
-            0,
-        )
-    )
-
-    if (
-        actual_amount_paise
-        != expected_amount_paise
-    ):
-
-        raise HTTPException(
-            status_code=400,
-            detail="Payment amount mismatch",
-        )
-
-
-    # --------------------------------------------------------
-    # PREVENT DUPLICATE PAYMENT
-    # --------------------------------------------------------
-
+    # Prevent duplicate payment use and cross-patient access.
     existing_token = (
         db.query(Token)
         .filter(
-            Token.razorpay_payment_id ==
-            data.razorpay_payment_id
+            Token.razorpay_payment_id
+            == data.razorpay_payment_id
         )
         .first()
     )
 
     if existing_token:
+        if existing_token.patient_id != patient.id:
+            raise HTTPException(
+                status_code=403,
+                detail="This payment belongs to another patient.",
+            )
 
         return {
-
             "success": True,
-
-            "message":
-                "Token already created",
-
-            "token":
-                token_to_dict(
-                    existing_token
-                ),
+            "message": "Token already created",
+            "token": token_to_dict(existing_token),
         }
 
-    # --------------------------------------------------------
-    # NEXT TOKEN NUMBER
-    # Per hospital + department + doctor + appointment date
-    # --------------------------------------------------------
+    # Find the published hospital.
+    hospital = find_published_hospital(
+        db,
+        data.hospital,
+    )
 
+    # Find the selected doctor at that hospital.
+    doctor = (
+        db.query(Doctor)
+        .filter(
+            Doctor.hospital_id == hospital.id,
+            Doctor.department == data.department,
+            Doctor.name == data.doctor,
+        )
+        .first()
+    )
+
+    if not doctor:
+        raise HTTPException(
+            status_code=404,
+            detail="Doctor not found",
+        )
+
+    # Verify payment amount.
+    token_fee = int(hospital.token_fee or 0)
+    platform_fee = PLATFORM_FEE
+    total_amount = token_fee + platform_fee
+
+    expected_amount_paise = total_amount * 100
+    actual_amount_paise = int(payment.get("amount", 0))
+
+    if actual_amount_paise != expected_amount_paise:
+        raise HTTPException(
+            status_code=400,
+            detail="Payment amount mismatch",
+        )
+
+    # Generate a token number for the selected appointment date.
     selected_appointment_date = (
         data.appointment_date or date.today()
     )
@@ -3426,23 +3321,20 @@ def create_token(
             Token.doctor == data.doctor.strip(),
             Token.appointment_date == selected_appointment_date,
         )
-        .order_by(
-            Token.token_number.desc()
-        )
+        .order_by(Token.token_number.desc())
         .first()
     )
 
-    if latest_token:
-        next_token_number = latest_token.token_number + 1
-    else:
-        next_token_number = 1
+    next_token_number = (
+        latest_token.token_number + 1
+        if latest_token
+        else 1
+    )
 
-    # --------------------------------------------------------
-    # CREATE TOKEN
-    # --------------------------------------------------------
-
+    # Create the token linked to the authenticated patient.
     token = Token(
-        patient_name=data.patient_name.strip(),
+        patient_id=patient.id,
+        patient_name=patient.full_name,
         hospital=hospital.name,
         hospital_id=hospital.id,
         department=data.department.strip(),
@@ -3469,129 +3361,12 @@ def create_token(
         "message": "Hospital token created successfully",
         "token": token_to_dict(token),
     }
-
-# ============================================================
-# GET ALL TOKENS
-# ============================================================
-
-@app.get("/tokens")
-def get_tokens(
-    hospital: Optional[str] = None,
-    hospital_id: Optional[int] = None,
-    department: Optional[str] = None,
-    doctor: Optional[str] = None,
-    payment_status: Optional[str] = None,
-    status: Optional[str] = None,
-    db: Session = Depends(get_db),
-):
-
-    query = db.query(Token)
-
-
-    if hospital:
-
-        query = query.filter(
-            Token.hospital ==
-            hospital
-        )
-
-
-    if hospital_id is not None:
-
-        query = query.filter(
-            Token.hospital_id ==
-            hospital_id
-        )
-
-
-    if department:
-
-        query = query.filter(
-            Token.department ==
-            department
-        )
-
-
-    if doctor:
-
-        query = query.filter(
-            Token.doctor ==
-            doctor
-        )
-
-
-    if payment_status:
-
-        query = query.filter(
-            Token.payment_status ==
-            payment_status
-        )
-
-
-    if status:
-
-        query = query.filter(
-            Token.status ==
-            status
-        )
-
-
-    tokens = (
-        query
-        .order_by(
-            Token.created_at.desc()
-        )
-        .all()
-    )
-
-
-    return [
-
-        token_to_dict(token)
-
-        for token in tokens
-    ]
-
-
-# ============================================================
-# PATIENT TOKEN
-# ============================================================
-
-@app.get(
-    "/patient-token/{token_id}"
-)
-def get_patient_token(
-    token_id: int,
-    db: Session = Depends(get_db),
-):
-
-    token = (
-        db.query(Token)
-        .filter(
-            Token.id ==
-            token_id
-        )
-        .first()
-    )
-
-    if not token:
-
-        raise HTTPException(
-            status_code=404,
-            detail="Token not found",
-        )
-
-    return {
-
-        "success": True,
-
-        "token":
-            token_to_dict(token),
-    }
-
-
 # ============================================================
 # NEXT PATIENT
+# ============================================================
+
+# ============================================================
+# NEXT PATIENT - HOSPITAL AUTHENTICATION REQUIRED
 # ============================================================
 
 @app.post("/next-patient")
@@ -3601,104 +3376,77 @@ def next_patient(
     department: Optional[str] = None,
     doctor: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
 ):
+    # Always identify the hospital using the verified JWT.
+    authenticated_hospital_id = current_user["user_id"]
 
-    if hospital_id is not None:
-
-        hospital_object = (
-            db.query(Hospital)
-            .filter(
-                Hospital.id ==
-                hospital_id
-            )
-            .first()
+    hospital_object = (
+        db.query(Hospital)
+        .filter(
+            Hospital.id == authenticated_hospital_id
         )
+        .first()
+    )
 
-        if not hospital_object:
-
-            raise HTTPException(
-                status_code=404,
-                detail="Hospital not found",
-            )
-
-        hospital = (
-            hospital_object.name
-        )
-
-
-    if not hospital:
-
+    if not hospital_object:
         raise HTTPException(
-            status_code=400,
-            detail="Hospital is required",
+            status_code=401,
+            detail="Hospital account not found",
         )
 
+    # Reject attempts to operate on another hospital.
+    if (
+        hospital_id is not None
+        and hospital_id != authenticated_hospital_id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot access another hospital's queue",
+        )
+
+    if hospital and hospital != hospital_object.name:
+        raise HTTPException(
+            status_code=403,
+            detail="Hospital does not match your account",
+        )
 
     if not department:
-
         raise HTTPException(
             status_code=400,
             detail="Department is required",
         )
 
-
     if not doctor:
-
         raise HTTPException(
             status_code=400,
             detail="Doctor is required",
         )
 
-
-    # --------------------------------------------------------
-    # COMPLETE CURRENT SERVING TOKEN
-    # --------------------------------------------------------
-
+    # Find the currently serving token at this hospital.
     current = (
         db.query(Token)
         .filter(
-            Token.hospital ==
-            hospital,
-
-            Token.department ==
-            department,
-
-            Token.doctor ==
-            doctor,
-
-            Token.status ==
-            "serving",
+            Token.hospital_id == authenticated_hospital_id,
+            Token.department == department,
+            Token.doctor == doctor,
+            Token.status == "serving",
         )
         .first()
     )
 
-
     if current:
-
         current.status = "completed"
 
-
-    # --------------------------------------------------------
-    # FIND NEXT PATIENT
-    # --------------------------------------------------------
-
+    # Find the next paid waiting token at this hospital.
     next_token = (
         db.query(Token)
         .filter(
-            Token.hospital ==
-            hospital,
-
-            Token.department ==
-            department,
-
-            Token.doctor ==
-            doctor,
-
-            Token.status ==
-            "waiting",
-
-            Token.payment_status ==
-            "paid",
+            Token.hospital_id == authenticated_hospital_id,
+            Token.department == department,
+            Token.doctor == doctor,
+            Token.status == "waiting",
+            Token.payment_status == "paid",
         )
         .order_by(
             Token.token_number.asc()
@@ -3706,81 +3454,55 @@ def next_patient(
         .first()
     )
 
-
     if not next_token:
-
         db.commit()
-
         raise HTTPException(
             status_code=404,
             detail="No waiting patients",
         )
 
-
     next_token.status = "serving"
 
     db.commit()
-
     db.refresh(next_token)
 
-
     return {
-
         "success": True,
-
-        "message":
-            (
-                f"Token "
-                f"{next_token.token_number} "
-                "is now being served"
-            ),
-
+        "message": (
+            f"Token {next_token.token_number} "
+            "is now being served"
+        ),
         "token": {
-
-            "id":
-                next_token.id,
-
-            "token_number":
-                next_token.token_number,
-
-            "patient_name":
-                next_token.patient_name,
-
-            "doctor":
-                next_token.doctor,
-
-            "department":
-                next_token.department,
-
-            "status":
-                next_token.status,
+            "id": next_token.id,
+            "token_number": next_token.token_number,
+            "patient_name": next_token.patient_name,
+            "doctor": next_token.doctor,
+            "department": next_token.department,
+            "status": next_token.status,
         },
     }
 
 
 # ============================================================
-# COMPLETE TOKEN
+# COMPLETE TOKEN - HOSPITAL AUTHENTICATION REQUIRED
 # ============================================================
 
-@app.put(
-    "/tokens/{token_id}/complete"
-)
+@app.put("/tokens/{token_id}/complete")
 def complete_token(
     token_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
 ):
-
     token = (
         db.query(Token)
         .filter(
-            Token.id ==
-            token_id
+            Token.id == token_id,
+            Token.hospital_id == current_user["user_id"],
         )
         .first()
     )
 
     if not token:
-
         raise HTTPException(
             status_code=404,
             detail="Token not found",
@@ -3789,112 +3511,61 @@ def complete_token(
     token.status = "completed"
 
     db.commit()
-
     db.refresh(token)
 
     return {
-
         "success": True,
-
-        "message":
-            "Token completed successfully",
-
-        "token":
-            token_to_dict(token),
+        "message": "Token completed successfully",
+        "token": token_to_dict(token),
     }
-
-
 # ============================================================
 # ADMIN LOGIN
 # ============================================================
+
 
 @app.post("/admin/login")
 def admin_login(
     data: AdminLoginRequest,
     db: Session = Depends(get_db),
 ):
-
     email = data.email.strip().lower()
-
 
     admin = (
         db.query(Admin)
-        .filter(
-            Admin.email ==
-            email
-        )
+        .filter(Admin.email == email)
         .first()
     )
 
-
-    # --------------------------------------------------------
-    # DEVELOPMENT DEFAULT ADMIN
-    # --------------------------------------------------------
-
     if not admin:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid admin credentials",
+        )
 
-        if (
-            email ==
-            "admin@CAREPATH.com"
-            and
-            data.password ==
-            "admin123"
-        ):
+    if not verify_password(
+        data.password,
+        admin.password or "",
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid admin credentials",
+        )
 
-            admin = Admin(
-
-                email=email,
-
-                password=
-                    hash_password(
-                        data.password
-                    ),
-            )
-
-            db.add(admin)
-
-            db.commit()
-
-            db.refresh(admin)
-
-        else:
-
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid admin credentials",
-            )
-
-
-    else:
-
-        if not verify_password(
-            data.password,
-            admin.password,
-        ):
-
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid admin credentials",
-            )
-
+    access_token = create_access_token(
+        user_id=admin.id,
+        role="admin",
+    )
 
     return {
-
         "success": True,
-
-        "message":
-            "Admin login successful",
-
+        "message": "Admin login successful",
+        "access_token": access_token,
+        "token_type": "bearer",
         "admin": {
-
-            "id":
-                admin.id,
-
-            "email":
-                admin.email,
+            "id": admin.id,
+            "email": admin.email,
         },
     }
-
 
 # ============================================================
 # ADMIN - ALL HOSPITALS
@@ -3903,93 +3574,57 @@ def admin_login(
 @app.get("/admin/hospitals")
 def admin_get_hospitals(
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
-
     hospitals = (
         db.query(Hospital)
-        .order_by(
-            Hospital.id.desc()
-        )
+        .order_by(Hospital.id.desc())
         .all()
     )
 
     result = []
 
-
     for hospital in hospitals:
-
         doctor_count = (
             db.query(Doctor)
             .filter(
-                Doctor.hospital_id ==
-                hospital.id
+                Doctor.hospital_id == hospital.id
             )
             .count()
         )
-
 
         token_count = (
             db.query(Token)
             .filter(
-                Token.hospital_id ==
-                hospital.id
+                Token.hospital_id == hospital.id
             )
             .count()
         )
-
 
         paid_count = (
             db.query(Token)
             .filter(
-                Token.hospital_id ==
-                hospital.id,
-
-                Token.payment_status ==
-                "paid",
+                Token.hospital_id == hospital.id,
+                Token.payment_status == "paid",
             )
             .count()
         )
 
-
-        hospital_data = (
-            hospital_to_dict(
-                hospital
-            )
-        )
-
+        hospital_data = hospital_to_dict(hospital)
 
         hospital_data.update({
-
-            "doctor_count":
-                doctor_count,
-
-            "token_count":
-                token_count,
-
-            "paid_token_count":
-                paid_count,
-
-            "payment_account_name":
-                hospital.payment_account_name,
-
-            "payment_account_number":
-                hospital.payment_account_number,
-
-            "payment_ifsc":
-                hospital.payment_ifsc,
-
-            "payment_upi":
-                hospital.payment_upi,
+            "doctor_count": doctor_count,
+            "token_count": token_count,
+            "paid_token_count": paid_count,
+            "payment_account_name": hospital.payment_account_name,
+            "payment_account_number": hospital.payment_account_number,
+            "payment_ifsc": hospital.payment_ifsc,
+            "payment_upi": hospital.payment_upi,
         })
 
-
-        result.append(
-            hospital_data
-        )
-
+        result.append(hospital_data)
 
     return result
-
 
 # ============================================================
 # ADMIN - ONE HOSPITAL
@@ -4068,7 +3703,6 @@ def admin_get_hospital(
 
 
     return result
-
 # ============================================================
 # ADMIN - VERIFY HOSPITAL CERTIFICATE
 # ============================================================
@@ -4077,6 +3711,7 @@ def admin_get_hospital(
 def verify_hospital_certificate(
     hospital_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
     hospital = (
         db.query(Hospital)
@@ -4096,19 +3731,6 @@ def verify_hospital_certificate(
             detail="No certificate uploaded",
         )
 
-    certificate_path = os.path.join(
-        UPLOAD_DIR,
-        hospital.license_certificate,
-    )
-
-    if not os.path.isfile(certificate_path):
-        raise HTTPException(
-            status_code=404,
-            detail="Certificate file is missing",
-        )
-
-    # Record the admin's decision only after inspecting
-    # the certificate in the Admin App.
     hospital.certificate_verification_status = "VERIFIED"
 
     db.commit()
@@ -4118,85 +3740,10 @@ def verify_hospital_certificate(
         "success": True,
         "message": "Hospital certificate verified successfully",
         "hospital": hospital_to_dict(hospital),
-    }#============================================================
-# ADMIN - VIEW HOSPITAL CERTIFICATE
-# Supports PDF, JPG, JPEG, PNGF
-# ============================================================
-
-@app.get("/admin/hospitals/{hospital_id}/certificate")
-def get_hospital_certificate(
-    hospital_id: int,
-    db: Session = Depends(get_db),
-):
-    hospital = (
-        db.query(Hospital)
-        .filter(Hospital.id == hospital_id)
-        .first()
-    )
-
-    if not hospital:
-        raise HTTPException(
-            status_code=404,
-            detail="Hospital not found",
-        )
-
-    if not hospital.license_certificate:
-        raise HTTPException(
-            status_code=404,
-            detail="No certificate has been uploaded.",
-        )
-
-    # Build the saved certificate file path
-    certificate_path = os.path.join(
-        os.path.dirname(__file__),
-        "uploads",
-        "hospital_certificates",
-        hospital.license_certificate,
-    )
-
-    # Check whether the file exists
-    if not os.path.isfile(certificate_path):
-        raise HTTPException(
-            status_code=404,
-            detail="Certificate file is missing from the server.",
-        )
-
-    # Detect the actual file type from its extension
-    media_type, _ = mimetypes.guess_type(certificate_path)
-
-    allowed_types = {
-        ".pdf": "application/pdf",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".png": "image/png",
     }
-
-    extension = os.path.splitext(certificate_path)[1].lower()
-
-    if extension not in allowed_types:
-        raise HTTPException(
-            status_code=415,
-            detail="Unsupported certificate file type.",
-        )
-
-    # Return the file inline so the browser can display it
-    return FileResponse(
-        path=certificate_path,
-        media_type=allowed_types[extension],
-        content_disposition_type="inline",
-    )
-#   db.commit()
-    db.refresh(hospital)
-
-    return {
-        "success": True,
-        "message": "Hospital certificate verified successfully",
-        "hospital": hospital_to_dict(hospital),
-    }
-    #============================================================
-# ADMIN - REJECT HOSPITAL CERTIFICATE
 # ============================================================
-
+# ADMIN - VERIFY HOSPITAL CERTIFICATE
+# ============================================================
 @app.put(
     "/admin/hospitals/{hospital_id}/certificate/reject"
 )
@@ -4204,8 +3751,8 @@ def reject_hospital_certificate(
     hospital_id: int,
     data: AdminActionRequest,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
-
     hospital = (
         db.query(Hospital)
         .filter(Hospital.id == hospital_id)
@@ -4228,21 +3775,77 @@ def reject_hospital_certificate(
         "message": "Hospital certificate rejected",
         "reason": data.reason or "Certificate rejected by admin",
         "hospital": hospital_to_dict(hospital),
+    }#============================================================
+# ADMIN - VIEW HOSPITAL CERTIFICATE
+# Supports PDF, JPG, JPEG, PNGF
+# ============================================================
+@app.get("/admin/hospitals/{hospital_id}/certificate")
+def get_hospital_certificate(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    hospital = (
+        db.query(Hospital)
+        .filter(Hospital.id == hospital_id)
+        .first()
+    )
+
+    if not hospital:
+        raise HTTPException(
+            status_code=404,
+            detail="Hospital not found",
+        )
+
+    if not hospital.license_certificate:
+        raise HTTPException(
+            status_code=404,
+            detail="No certificate has been uploaded.",
+        )
+
+    certificate_path = os.path.join(
+        os.path.dirname(__file__),
+        "uploads",
+        "hospital_certificates",
+        hospital.license_certificate,
+    )
+
+    if not os.path.isfile(certificate_path):
+        raise HTTPException(
+            status_code=404,
+            detail="Certificate file is missing from the server.",
+        )
+
+    allowed_types = {
+        ".pdf": "application/pdf",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
     }
 
+    extension = os.path.splitext(certificate_path)[1].lower()
+
+    if extension not in allowed_types:
+        raise HTTPException(
+            status_code=415,
+            detail="Unsupported certificate file type.",
+        )
+
+    return FileResponse(
+        path=certificate_path,
+        media_type=allowed_types[extension],
+        content_disposition_type="inline",
+    )    
+  
 # ============================================================
 # ADMIN - APPROVE HOSPITAL
-# ============================================================
-
-
-# ============================================================
-# ADMIN - APPROVE HOSPITAL
-# ============================================================
+# 
 
 @app.put("/admin/hospitals/{hospital_id}/approve")
 def approve_hospital(
     hospital_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
     # Find hospital
     hospital = (
@@ -4287,57 +3890,38 @@ def reject_hospital(
     hospital_id: int,
     data: AdminActionRequest,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
-
     hospital = (
         db.query(Hospital)
         .filter(
-            Hospital.id ==
-            hospital_id
+            Hospital.id == hospital_id
         )
         .first()
     )
 
     if not hospital:
-
         raise HTTPException(
             status_code=404,
             detail="Hospital not found",
         )
 
-
-    hospital.approval_status = (
-        "REJECTED"
-    )
-
+    hospital.approval_status = "REJECTED"
     hospital.is_published = False
 
     hospital.rejection_reason = (
         data.reason
-        or
-        "Hospital registration rejected"
+        or "Hospital registration rejected"
     )
 
-
     db.commit()
-
     db.refresh(hospital)
 
-
     return {
-
         "success": True,
-
-        "message":
-            "Hospital rejected successfully",
-
-        "hospital":
-            hospital_to_dict(
-                hospital
-            ),
+        "message": "Hospital rejected successfully",
+        "hospital": hospital_to_dict(hospital),
     }
-
-
 # ============================================================
 # ADMIN - PUBLISH HOSPITAL
 # ============================================================
@@ -4348,61 +3932,38 @@ def reject_hospital(
 def publish_hospital(
     hospital_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
-
     hospital = (
         db.query(Hospital)
         .filter(
-            Hospital.id ==
-            hospital_id
+            Hospital.id == hospital_id
         )
         .first()
     )
 
     if not hospital:
-
         raise HTTPException(
             status_code=404,
             detail="Hospital not found",
         )
 
-
-    if (
-        hospital.approval_status
-        !=
-        "APPROVED"
-    ):
-
+    if hospital.approval_status != "APPROVED":
         raise HTTPException(
             status_code=400,
-            detail=(
-                "Approve hospital "
-                "before publishing"
-            ),
+            detail="Approve hospital before publishing",
         )
-
 
     hospital.is_published = True
 
     db.commit()
-
     db.refresh(hospital)
 
-
     return {
-
         "success": True,
-
-        "message":
-            "Hospital published to Patient App",
-
-        "hospital":
-            hospital_to_dict(
-                hospital
-            ),
+        "message": "Hospital published to Patient App",
+        "hospital": hospital_to_dict(hospital),
     }
-
-
 # ============================================================
 # ADMIN - UNPUBLISH HOSPITAL
 # ============================================================
@@ -4413,50 +3974,8 @@ def publish_hospital(
 def unpublish_hospital(
     hospital_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
-
-    hospital = (
-        db.query(Hospital)
-        .filter(
-            Hospital.id ==
-            hospital_id
-        )
-        .first()
-    )
-
-    if not hospital:
-
-        raise HTTPException(
-            status_code=404,
-            detail="Hospital not found",
-        )
-
-
-    hospital.is_published = False
-
-    db.commit()
-
-    db.refresh(hospital)
-
-
-    return {
-
-        "success": True,
-
-        "message":
-            "Hospital unpublished",
-    }
-
-# ============================================================
-# ADMIN - DELETE HOSPITAL
-# ============================================================
-
-@app.delete("/admin/hospitals/{hospital_id}")
-def delete_hospital(
-    hospital_id: int,
-    db: Session = Depends(get_db),
-):
-
     hospital = (
         db.query(Hospital)
         .filter(
@@ -4466,47 +3985,67 @@ def delete_hospital(
     )
 
     if not hospital:
-
         raise HTTPException(
             status_code=404,
             detail="Hospital not found",
         )
 
-    # --------------------------------------------------------
-    # Delete doctors
-    # --------------------------------------------------------
+    hospital.is_published = False
 
+    db.commit()
+    db.refresh(hospital)
+
+    return {
+        "success": True,
+        "message": "Hospital unpublished",
+    }
+# ============================================================
+# ADMIN - DELETE HOSPITAL
+# ============================================================
+
+@app.delete("/admin/hospitals/{hospital_id}")
+def delete_hospital(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    hospital = (
+        db.query(Hospital)
+        .filter(
+            Hospital.id == hospital_id
+        )
+        .first()
+    )
+
+    if not hospital:
+        raise HTTPException(
+            status_code=404,
+            detail="Hospital not found",
+        )
+
+    # Delete doctors belonging to this hospital
     db.query(Doctor).filter(
         Doctor.hospital_id == hospital_id
     ).delete(
         synchronize_session=False
     )
 
-    # --------------------------------------------------------
-    # Delete tokens linked by hospital_id
-    # --------------------------------------------------------
-
+    # Delete tokens linked to this hospital
     db.query(Token).filter(
         Token.hospital_id == hospital_id
     ).delete(
         synchronize_session=False
     )
 
-    # --------------------------------------------------------
-    # Delete old tokens without hospital_id
-    # --------------------------------------------------------
-
+    # Delete legacy tokens without hospital_id
     db.query(Token).filter(
         Token.hospital == hospital.name,
-        Token.hospital_id == None,
+        Token.hospital_id.is_(None),
     ).delete(
         synchronize_session=False
     )
 
-    # --------------------------------------------------------
-    # Delete hospital
-    # --------------------------------------------------------
-
+    # Delete the hospital
     db.delete(hospital)
 
     db.commit()
@@ -4515,7 +4054,6 @@ def delete_hospital(
         "success": True,
         "message": "Hospital deleted successfully",
     }
-
 # ============================================================
 # ADD DOCTOR TO SPECIFIC HOSPITAL
 # ============================================================
@@ -4984,12 +4522,15 @@ def admin_payments(
 # ============================================================
 # ADMIN - TOKEN LIST
 # ============================================================
+# ============================================================
+# ADMIN - ALL TOKENS (ADMIN AUTHENTICATION REQUIRED)
+# ============================================================
 
 @app.get("/admin/tokens")
 def admin_tokens(
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
-
     tokens = (
         db.query(Token)
         .order_by(
@@ -4998,111 +4539,69 @@ def admin_tokens(
         .all()
     )
 
-
     return [
-
         token_to_dict(token)
-
         for token in tokens
     ]
 
 
 # ============================================================
-# ADMIN - HOSPITAL REVENUE
+# ADMIN - HOSPITAL REVENUE (ADMIN AUTHENTICATION REQUIRED)
 # ============================================================
 
-@app.get(
-    "/admin/hospitals/{hospital_id}/revenue"
-)
+@app.get("/admin/hospitals/{hospital_id}/revenue")
 def admin_hospital_revenue(
     hospital_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
-
     hospital = (
         db.query(Hospital)
         .filter(
-            Hospital.id ==
-            hospital_id
+            Hospital.id == hospital_id
         )
         .first()
     )
 
     if not hospital:
-
         raise HTTPException(
             status_code=404,
             detail="Hospital not found",
         )
 
-
     paid_tokens = (
         db.query(Token)
         .filter(
-            Token.hospital_id ==
-            hospital_id,
-
-            Token.payment_status ==
-            "paid",
+            Token.hospital_id == hospital_id,
+            Token.payment_status == "paid",
         )
         .all()
     )
 
-
     hospital_revenue = sum(
-
-        int(
-            token.token_fee or 0
-        )
-
+        int(token.token_fee or 0)
         for token in paid_tokens
     )
-
 
     platform_revenue = sum(
-
-        int(
-            token.platform_fee or 0
-        )
-
+        int(token.platform_fee or 0)
         for token in paid_tokens
     )
-
 
     total_collected = sum(
-
-        int(
-            token.total_amount or 0
-        )
-
+        int(token.total_amount or 0)
         for token in paid_tokens
     )
 
-
     return {
-
         "success": True,
-
-        "hospital_id":
-            hospital.id,
-
-        "hospital":
-            hospital.name,
-
-        "paid_tokens":
-            len(paid_tokens),
-
-        "hospital_revenue":
-            hospital_revenue,
-
-        "platform_revenue":
-            platform_revenue,
-
-        "total_collected":
-            total_collected,
+        "hospital_id": hospital.id,
+        "hospital": hospital.name,
+        "paid_tokens": len(paid_tokens),
+        "hospital_revenue": hospital_revenue,
+        "platform_revenue": platform_revenue,
+        "total_collected": total_collected,
     }
-
-
 # ============================================================
 # STARTUP INFORMATION
 # ============================================================

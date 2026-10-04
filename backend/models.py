@@ -112,6 +112,7 @@ class Token(Base):
     __tablename__ = "tokens"
 
     id = Column(Integer, primary_key=True, index=True)
+    patient_id = Column(Integer, nullable=True, index=True)
     patient_name = Column(String(255), nullable=False)
     hospital = Column(String(255), nullable=False, index=True)
     hospital_id = Column(Integer, nullable=True, index=True)
