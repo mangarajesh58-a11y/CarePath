@@ -1095,68 +1095,69 @@ async function loadHospitalLocation() {
    SET MAP LOCATION
 ================================== */
 
-function setMapLocation(
-    latitude,
-    longitude
-) {
+function setMapLocation(latitude, longitude) {
+    const lat = Number(latitude);
+    const lng = Number(longitude);
 
-    const location = {
-
-        lat:
-            Number(latitude),
-
-        lng:
-            Number(longitude)
-
-    };
-
-
-    document.getElementById(
-        "hospitalLatitude"
-    ).value =
-        location.lat;
-
-
-    document.getElementById(
-        "hospitalLongitude"
-    ).value =
-        location.lng;
-
-
-
-    if (marker) {
-
-        marker.setMap(null);
-
+    // Prevent invalid coordinates from reaching Google Maps.
+    if (
+        latitude === null ||
+        latitude === undefined ||
+        String(latitude).trim() === "" ||
+        longitude === null ||
+        longitude === undefined ||
+        String(longitude).trim() === "" ||
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lng) ||
+        lat < -90 ||
+        lat > 90 ||
+        lng < -180 ||
+        lng > 180
+    ) {
+        console.warn(
+            "Invalid hospital coordinates:",
+            latitude,
+            longitude
+        );
+        return;
     }
 
+    if (!map) {
+        console.warn("Google Map is not initialized yet.");
+        return;
+    }
 
+    const location = {
+        lat: lat,
+        lng: lng
+    };
 
-    marker =
-        new google.maps.Marker({
+    const latitudeInput =
+        document.getElementById("hospitalLatitude");
 
-            position:
-                location,
+    const longitudeInput =
+        document.getElementById("hospitalLongitude");
 
-            map:
-                map
+    if (latitudeInput) {
+        latitudeInput.value = lat;
+    }
 
-        });
+    if (longitudeInput) {
+        longitudeInput.value = lng;
+    }
 
+    if (marker) {
+        marker.setMap(null);
+    }
 
+    marker = new google.maps.Marker({
+        position: location,
+        map: map
+    });
 
-    map.setCenter(
-        location
-    );
-
-
-    map.setZoom(
-        16
-    );
-
+    map.setCenter(location);
+    map.setZoom(16);
 }
-
-
 
 /* ==================================
    SEARCH LOCATION

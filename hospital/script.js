@@ -1448,10 +1448,12 @@ async function savePaymentAccount() {
             data.paymentAccount ||
             {};
 
-
-        const status =
-            paymentAccount.status ||
-            "PENDING_VERIFICATION";
+const status =
+    paymentAccount.status ||
+    paymentAccount.payment_account_status ||
+    data.payment_account_status ||
+    data.status ||
+    "PENDING_VERIFICATION";
 
 
         updatePaymentStatus(
