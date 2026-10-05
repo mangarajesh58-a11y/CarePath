@@ -3394,8 +3394,30 @@ def create_token(
         "token": token_to_dict(token),
     }
 # ============================================================
-# NEXT PATIENT
+# HOSPITAL - OWN TOKENS
 # ============================================================
+
+@app.get("/hospital/tokens")
+def get_hospital_tokens(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    tokens = (
+        db.query(Token)
+        .filter(
+            Token.hospital_id ==
+            current_user["user_id"]
+        )
+        .order_by(
+            Token.created_at.desc()
+        )
+        .all()
+    )
+
+    return [
+        token_to_dict(token)
+        for token in tokens
+    ]
 
 # ============================================================
 # NEXT PATIENT - HOSPITAL AUTHENTICATION REQUIRED
@@ -4577,7 +4599,30 @@ def admin_tokens(
         for token in tokens
     ]
 
+@app.get("/hospitals/{hospital_id}/tokens")
+def hospital_tokens(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    # Hospital can only access its own queue
+    if hospital_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot access another hospital's tokens."
+        )
 
+    tokens = (
+        db.query(Token)
+        .filter(Token.hospital_id == hospital_id)
+        .order_by(Token.created_at.asc())
+        .all()
+    )
+
+    return [
+        token_to_dict(token)
+        for token in tokens
+    ]
 # ============================================================
 # ADMIN - HOSPITAL REVENUE (ADMIN AUTHENTICATION REQUIRED)
 # ============================================================

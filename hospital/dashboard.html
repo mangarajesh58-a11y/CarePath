@@ -1196,6 +1196,10 @@ function hospitalLogout() {
         "hospital_is_published"
     );
 
+    localStorage.removeItem(
+    "hospitalToken"
+);
+
 
     window.location.href =
         "index.html";
@@ -1536,10 +1540,13 @@ async function callNextPatient() {
 
                     headers: {
 
-                        "Content-Type":
-                            "application/json"
+    "Content-Type":
+        "application/json",
 
-                    },
+    "Authorization":
+        `Bearer ${localStorage.getItem("hospitalToken") || ""}`
+
+},
 
                     body:
                         JSON.stringify({
@@ -1651,10 +1658,15 @@ async function loadQueue() {
          */
 
         const response =
-            await fetch(
-                `${API_URL}/tokens`
-            );
-
+    await fetch(
+        `${API_URL}/hospital/tokens`,
+        {
+            headers: {
+                "Authorization":
+                    `Bearer ${localStorage.getItem("hospitalToken") || ""}`
+            }
+        }
+    );
 
         if (!response.ok) {
 
