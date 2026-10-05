@@ -1636,6 +1636,17 @@ if (data.access_token) {
 
                 // SAVE PATIENT DATA
                 savePatientData(patient);
+                // SAVE JWT ACCESS TOKEN
+if (data.access_token) {
+    localStorage.setItem(
+        "patientToken",
+        data.access_token
+    );
+} else {
+    throw new Error(
+        "Google login succeeded, but authentication token was not returned."
+    );
+}
 
                 // CHECK WHETHER PHONE NUMBER EXISTS
                 if (!patient.phone || !patient.phone.trim()) {

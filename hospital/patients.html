@@ -122,13 +122,12 @@ function getHospitalAuthHeaders(includeJson = false) {
 /* Prevent overlapping patient queue requests */
 let isLoadingPatients = false;
 
-
-
-/* Get current hospital */
 async function getCurrentHospital() {
     const response = await fetch(`${API}/hospitals/${hospitalId}`, {
         headers: getHospitalAuthHeaders()
     });
+
+    const data = await response.json();
 
     if (!response.ok) {
         throw new Error(data.detail || "Unable to load hospital information.");
@@ -136,7 +135,6 @@ async function getCurrentHospital() {
 
     return data;
 }
-
 /* Load departments */
 async function loadQueueDepartments() {
     const departmentSelect = document.getElementById("queueDepartment");
@@ -147,15 +145,19 @@ async function loadQueueDepartments() {
     doctorSelect.disabled = true;
 
     try {
-        const response = await fetch(`${API}/hospitals/${hospitalId}/departments`, {
-    headers: getHospitalAuthHeaders()
-});
+    const response = await fetch(`${API}/hospitals/${hospitalId}/departments`, {
+        headers: getHospitalAuthHeaders()
+    });
 
-        if (!response.ok) {
-            throw new Error(data.detail || "Unable to load departments.");
-        }
+    const data = await response.json();
 
-        const departments = Array.isArray(data) ? data : (data.departments || []);
+    if (!response.ok) {
+        throw new Error(data.detail || "Unable to load departments.");
+    }
+
+    const departments = Array.isArray(data)
+        ? data
+        : (data.departments || []);
 
         departmentSelect.innerHTML = `<option value="">Select Department</option>`;
 
@@ -190,14 +192,18 @@ async function loadQueueDoctors() {
 
     try {
         const response = await fetch(`${API}/hospitals/${hospitalId}/doctors`, {
-    headers: getHospitalAuthHeaders()
-});
+            headers: getHospitalAuthHeaders()
+        });
+
+        const data = await response.json();
 
         if (!response.ok) {
             throw new Error(data.detail || "Unable to load doctors.");
         }
 
-        const doctors = Array.isArray(data) ? data : (data.doctors || []);
+        const doctors = Array.isArray(data)
+            ? data
+            : (data.doctors || []);
         const filteredDoctors = doctors.filter(function(doctor) {
             return doctor.department === department;
         });
@@ -383,7 +389,10 @@ async function callNextPatient() {
     try {
         const response = await fetch(`${API}/next-patient`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                ...getHospitalAuthHeaders()
+            },
             body: JSON.stringify({
                 hospital_id: Number(hospitalId),
                 department: department,
@@ -437,10 +446,10 @@ async function completePatientToken(tokenId) {
     if (!confirm("Mark this patient as completed?")) return;
 
     try {
-      const response = await fetch(`${API}/tokens/${tokenId}/complete`, {
-    method: "PUT",
-    headers: getHospitalAuthHeaders()
-});
+        const response = await fetch(`${API}/tokens/${tokenId}/complete`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders()
+        });
 
         const data = await response.json();
 
@@ -535,7 +544,8 @@ function hospitalLogout() {
         "hospital_is_published",
         "hospital_latitude",
         "hospital_longitude",
-        "hospitalLoggedIn"
+        "hospitalLoggedIn",
+        "hospitalToken"
     ].forEach(function(key) {
         localStorage.removeItem(key);
     });
