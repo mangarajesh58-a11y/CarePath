@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,14 +8,19 @@
 
     <link rel="stylesheet" href="style.css">
 
-    <!-- Check whether a hospital session already exists -->
+    <!-- Check whether a valid hospital session already exists -->
     <script>
         (function () {
-            const isLoggedIn =
-                localStorage.getItem("hospital_logged_in") === "true" &&
+            const hospitalId =
                 localStorage.getItem("hospital_id");
 
-            if (isLoggedIn) {
+            const hospitalToken =
+                localStorage.getItem("hospitalToken");
+
+            const loggedIn =
+                localStorage.getItem("hospital_logged_in") === "true";
+
+            if (hospitalId && hospitalToken && loggedIn) {
                 window.location.replace("dashboard.html");
             }
         })();
@@ -122,6 +126,11 @@
             background: #0d4fb3;
         }
 
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
         #message {
             display: none;
             margin-bottom: 18px;
@@ -182,7 +191,11 @@
         }
     </style>
 
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script
+        src="https://accounts.google.com/gsi/client"
+        async
+        defer>
+    </script>
 </head>
 
 <body>
@@ -195,6 +208,7 @@
         </div>
 
         <h2>Hospital Login</h2>
+
         <p class="subtitle">
             Sign in to access your hospital dashboard.
         </p>
@@ -204,7 +218,10 @@
         <form id="hospitalLoginForm">
 
             <div class="form-group">
-                <label for="email">Hospital Email</label>
+                <label for="email">
+                    Hospital Email
+                </label>
+
                 <input
                     type="email"
                     id="email"
@@ -216,7 +233,10 @@
             </div>
 
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password">
+                    Password
+                </label>
+
                 <input
                     type="password"
                     id="password"
@@ -225,75 +245,150 @@
                     autocomplete="current-password"
                     required
                 >
-                <a class="forgot" href="forgot-password.html">
+
+                <a
+                    class="forgot"
+                    href="forgot-password.html">
                     Forgot password?
                 </a>
             </div>
 
-            <button type="submit" id="loginButton">
+            <button
+                type="submit"
+                id="loginButton">
                 Login
             </button>
 
         </form>
 
-        <div class="divider">OR</div>
+        <div class="divider">
+            OR
+        </div>
 
         <div id="googleButton"></div>
 
         <p class="register">
             New hospital?
-            <a href="register.html">Register Hospital</a>
+            <a href="register.html">
+                Register Hospital
+            </a>
         </p>
 
     </main>
 
     <script>
-        const API_URL = "https://carepath-3q9q.onrender.com";
+        "use strict";
+
+        /* ================================
+           API CONFIGURATION
+        ================================= */
+
+        const API_URL =
+            "https://carepath-3q9q.onrender.com";
 
         const GOOGLE_CLIENT_ID =
             "124194505435-nirpgumce4ek0f368mjnkm8daq5dof9p.apps.googleusercontent.com";
 
-        const form = document.getElementById("hospitalLoginForm");
-        const loginButton = document.getElementById("loginButton");
-        const message = document.getElementById("message");
 
-        function showMessage(text, type = "error") {
+        /* ================================
+           DOM ELEMENTS
+        ================================= */
+
+        const form =
+            document.getElementById("hospitalLoginForm");
+
+        const loginButton =
+            document.getElementById("loginButton");
+
+        const message =
+            document.getElementById("message");
+
+
+        /* ================================
+           MESSAGE HELPER
+        ================================= */
+
+        function showMessage(
+            text,
+            type = "error"
+        ) {
             message.textContent = text;
             message.className = type;
         }
 
+
+        /* ================================
+           SAVE HOSPITAL SESSION
+        ================================= */
+
         function saveHospitalSession(hospital) {
+
             if (!hospital || !hospital.id) {
-                throw new Error("Hospital information is missing.");
+                throw new Error(
+                    "Hospital information is missing."
+                );
             }
 
-            localStorage.setItem("hospital", JSON.stringify(hospital));
-            localStorage.setItem("hospital_id", String(hospital.id));
-            localStorage.setItem("hospital_logged_in", "true");
+            localStorage.setItem(
+                "hospital",
+                JSON.stringify(hospital)
+            );
+
+            localStorage.setItem(
+                "hospital_id",
+                String(hospital.id)
+            );
+
+            localStorage.setItem(
+                "hospital_logged_in",
+                "true"
+            );
+
 
             if (hospital.name) {
-                localStorage.setItem("hospital_name", hospital.name);
+
+                localStorage.setItem(
+                    "hospital_name",
+                    hospital.name
+                );
             }
+
 
             if (hospital.email) {
-                localStorage.setItem("hospital_email", hospital.email);
+
+                localStorage.setItem(
+                    "hospital_email",
+                    hospital.email
+                );
             }
 
-            if (hospital.token_fee !== undefined) {
+
+            if (
+                hospital.token_fee !== undefined &&
+                hospital.token_fee !== null
+            ) {
+
                 localStorage.setItem(
                     "hospital_token_fee",
                     String(hospital.token_fee)
                 );
             }
 
+
             if (hospital.approval_status) {
+
                 localStorage.setItem(
                     "hospital_approval_status",
                     hospital.approval_status
                 );
             }
 
-            if (hospital.is_published !== undefined) {
+
+            if (
+                hospital.is_published !== undefined &&
+                hospital.is_published !== null
+            ) {
+
                 localStorage.setItem(
                     "hospital_is_published",
                     String(hospital.is_published)
@@ -301,127 +396,284 @@
             }
         }
 
-        // First-time login on a new browser/device
-        form.addEventListener("submit", async function (event) {
-            event.preventDefault();
 
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value;
+        /* ================================
+           NORMAL EMAIL/PASSWORD LOGIN
+        ================================= */
 
-            loginButton.disabled = true;
-            loginButton.textContent = "Logging in...";
+        form.addEventListener(
+            "submit",
+            async function (event) {
 
-            try {
-                /*
-                 * Your existing script.js may already implement this login.
-                 * If so, avoid submitting the same form twice.
-                 *
-                 * This handler expects POST /hospitals/login to accept
-                 * { email, password } and return the hospital record.
-                 */
-                const response = await fetch(`${API_URL}/hospitals/login`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+                event.preventDefault();
 
-                const data = await response.json();
+                const email =
+                    document
+                        .getElementById("email")
+                        .value
+                        .trim();
 
-                if (!response.ok) {
-                    throw new Error(
-                        data.detail || "Login failed. Check your credentials."
-                    );
-                }
+                const password =
+                    document
+                        .getElementById("password")
+                        .value;
 
-                const hospital = data.hospital || data;
 
-if (!data.access_token) {
-    throw new Error(
-        "Login succeeded, but the authentication token was not returned."
-    );
-}
+                loginButton.disabled = true;
 
-localStorage.setItem(
-    "hospitalToken",
-    data.access_token
-);
+                loginButton.textContent =
+                    "Logging in...";
 
-saveHospitalSession(hospital);
 
-showMessage("Login successful. Opening dashboard...", "success");
+                try {
 
-                window.location.replace("dashboard.html");
+                    const response =
+                        await fetch(
+                            `${API_URL}/hospitals/login`,
+                            {
+                                method: "POST",
 
-            } catch (error) {
-                showMessage(
-                    error.message || "Unable to connect to the server."
-                );
-            } finally {
-                loginButton.disabled = false;
-                loginButton.textContent = "Login";
-            }
-        });
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
 
-        // Google login
-        async function handleGoogleLogin(googleResponse) {
-            try {
-                showMessage("Signing in with Google...", "success");
+                                body: JSON.stringify({
+                                    email: email,
+                                    password: password
+                                })
+                            }
+                        );
 
-                const response = await fetch(
-                    `${API_URL}/hospitals/google-login`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            credential: googleResponse.credential
-                        })
+
+                    const data =
+                        await response.json();
+
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            data.detail ||
+                            "Login failed. Check your credentials."
+                        );
                     }
-                );
 
-                const data = await response.json();
 
-                if (!response.ok) {
+                    /* Authentication token is mandatory */
+
+                    if (!data.access_token) {
+
+                        throw new Error(
+                            "Login succeeded, but the authentication token was not returned."
+                        );
+                    }
+
+
+                    /* Save JWT */
+
+                    localStorage.setItem(
+                        "hospitalToken",
+                        data.access_token
+                    );
+
+
+                    /* Save hospital information */
+
+                    const hospital =
+                        data.hospital || data;
+
+                    saveHospitalSession(
+                        hospital
+                    );
+
+
+                    showMessage(
+                        "Login successful. Opening dashboard...",
+                        "success"
+                    );
+
+
+                    window.location.replace(
+                        "dashboard.html"
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Hospital login error:",
+                        error
+                    );
+
+                    showMessage(
+                        error.message ||
+                        "Unable to connect to the server."
+                    );
+
+                } finally {
+
+                    loginButton.disabled = false;
+
+                    loginButton.textContent =
+                        "Login";
+                }
+            }
+        );
+
+
+        /* ================================
+           GOOGLE LOGIN
+        ================================= */
+
+        async function handleGoogleLogin(
+            googleResponse
+        ) {
+
+            try {
+
+                if (
+                    !googleResponse ||
+                    !googleResponse.credential
+                ) {
+
                     throw new Error(
-                        data.detail || "Google login failed."
+                        "Google authentication credential was not received."
                     );
                 }
 
-                saveHospitalSession(data.hospital || data);
 
-                window.location.replace("dashboard.html");
+                showMessage(
+                    "Signing in with Google...",
+                    "success"
+                );
+
+
+                const response =
+                    await fetch(
+                        `${API_URL}/hospitals/google-login`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                credential:
+                                    googleResponse.credential
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.detail ||
+                        "Google login failed."
+                    );
+                }
+
+
+                /* Authentication token is mandatory */
+
+                if (!data.access_token) {
+
+                    throw new Error(
+                        "Google login succeeded, but the authentication token was not returned."
+                    );
+                }
+
+
+                /* Save JWT */
+
+                localStorage.setItem(
+                    "hospitalToken",
+                    data.access_token
+                );
+
+
+                /* Save hospital information */
+
+                saveHospitalSession(
+                    data.hospital || data
+                );
+
+
+                showMessage(
+                    "Google login successful. Opening dashboard...",
+                    "success"
+                );
+
+
+                window.location.replace(
+                    "dashboard.html"
+                );
 
             } catch (error) {
-                showMessage(error.message || "Google login failed.");
+
+                console.error(
+                    "Google hospital login error:",
+                    error
+                );
+
+                showMessage(
+                    error.message ||
+                    "Google login failed."
+                );
             }
         }
 
-        window.addEventListener("load", function () {
-            if (
-                window.google &&
-                google.accounts &&
-                google.accounts.id
-            ) {
-                google.accounts.id.initialize({
-                    client_id: GOOGLE_CLIENT_ID,
-                    callback: handleGoogleLogin
-                });
 
-                google.accounts.id.renderButton(
-                    document.getElementById("googleButton"),
-                    {
-                        theme: "outline",
-                        size: "large",
-                        text: "signin_with",
-                        shape: "rectangular",
-                        width: 320
-                    }
-                );
+        /* ================================
+           INITIALIZE GOOGLE SIGN-IN
+        ================================= */
+
+        window.addEventListener(
+            "load",
+            function () {
+
+                if (
+                    window.google &&
+                    google.accounts &&
+                    google.accounts.id
+                ) {
+
+                    google.accounts.id.initialize({
+                        client_id:
+                            GOOGLE_CLIENT_ID,
+
+                        callback:
+                            handleGoogleLogin
+                    });
+
+
+                    google.accounts.id.renderButton(
+                        document.getElementById(
+                            "googleButton"
+                        ),
+                        {
+                            theme: "outline",
+                            size: "large",
+                            text: "signin_with",
+                            shape: "rectangular",
+                            width: 320
+                        }
+                    );
+
+                } else {
+
+                    console.warn(
+                        "Google Identity Services was not loaded."
+                    );
+                }
             }
-        });
+        );
+
     </script>
 
 </body>

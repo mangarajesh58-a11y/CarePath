@@ -17,577 +17,291 @@
         href="style.css"
     >
 
-
     <style>
 
         * {
             box-sizing: border-box;
         }
 
-
         body {
-
             margin: 0;
-
             font-family:
                 Arial,
                 Helvetica,
                 sans-serif;
-
-            background:
-                #f4f7fb;
-
-            color:
-                #172554;
+            background: #f4f7fb;
+            color: #172554;
         }
-
 
         .dashboard {
-
             width: 100%;
-
             max-width: 1200px;
-
             margin: auto;
-
             padding: 25px;
         }
-
 
         /* =================================================
            HEADER
         ================================================= */
 
         header {
-
-            background:
-                white;
-
-            border-radius:
-                16px;
-
-            padding:
-                20px 25px;
-
-            display:
-                flex;
-
-            justify-content:
-                space-between;
-
-            align-items:
-                center;
-
+            background: white;
+            border-radius: 16px;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             box-shadow:
                 0 8px 25px
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.08
-                );
-
-            margin-bottom:
-                25px;
+                rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
         }
-
 
         header h1 {
-
-            margin:
-                0 0 5px;
-
-            font-size:
-                28px;
-
-            color:
-                #1976d2;
+            margin: 0 0 5px;
+            font-size: 28px;
+            color: #1976d2;
         }
-
 
         header p {
-
-            margin:
-                0;
-
-            color:
-                #64748b;
+            margin: 0;
+            color: #64748b;
         }
-
 
         .logout {
-
-            border:
-                none;
-
-            background:
-                #dc2626;
-
-            color:
-                white;
-
-            padding:
-                11px 20px;
-
-            border-radius:
-                8px;
-
-            font-size:
-                14px;
-
-            font-weight:
-                bold;
-
-            cursor:
-                pointer;
+            border: none;
+            background: #dc2626;
+            color: white;
+            padding: 11px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
         }
-
 
         .logout:hover {
-
-            background:
-                #b91c1c;
+            background: #b91c1c;
         }
-
 
         /* =================================================
            WELCOME
         ================================================= */
 
         .welcome {
-
             background:
                 linear-gradient(
                     135deg,
                     #1976d2,
                     #7c3aed
                 );
-
-            color:
-                white;
-
-            padding:
-                30px;
-
-            border-radius:
-                16px;
-
-            margin-bottom:
-                25px;
-
+            color: white;
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 25px;
             box-shadow:
                 0 10px 30px
-                rgba(
-                    37,
-                    99,
-                    235,
-                    0.2
-                );
+                rgba(37, 99, 235, 0.2);
         }
-
 
         .welcome h2 {
-
-            margin:
-                0 0 8px;
-
-            font-size:
-                26px;
+            margin: 0 0 8px;
+            font-size: 26px;
         }
-
 
         .welcome p {
-
-            margin:
-                0;
-
-            opacity:
-                0.9;
+            margin: 0;
+            opacity: 0.9;
         }
-
 
         /* =================================================
            DASHBOARD GRID
         ================================================= */
 
         .dashboard-grid {
-
-            display:
-                grid;
-
+            display: grid;
             grid-template-columns:
                 repeat(4, 1fr);
-
-            gap:
-                20px;
-
-            margin-bottom:
-                25px;
+            gap: 20px;
+            margin-bottom: 25px;
         }
-
 
         .dashboard-card {
-
-            background:
-                white;
-
-            padding:
-                25px;
-
-            border-radius:
-                16px;
-
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
             box-shadow:
                 0 8px 25px
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.07
-                );
-
-            transition:
-                0.2s;
+                rgba(0, 0, 0, 0.07);
+            transition: 0.2s;
         }
-
 
         .dashboard-card:hover {
-
-            transform:
-                translateY(-3px);
+            transform: translateY(-3px);
         }
-
 
         .card-icon {
-
-            font-size:
-                35px;
-
-            margin-bottom:
-                12px;
+            font-size: 35px;
+            margin-bottom: 12px;
         }
-
 
         .dashboard-card h3 {
-
-            margin:
-                0 0 8px;
-
-            color:
-                #172554;
+            margin: 0 0 8px;
+            color: #172554;
         }
-
 
         .dashboard-card p {
-
-            color:
-                #64748b;
-
-            min-height:
-                45px;
-
-            line-height:
-                1.5;
+            color: #64748b;
+            min-height: 45px;
+            line-height: 1.5;
         }
-
 
         .dashboard-card button {
-
-            width:
-                100%;
-
-            padding:
-                11px;
-
-            border:
-                none;
-
-            border-radius:
-                8px;
-
-            background:
-                #1976d2;
-
-            color:
-                white;
-
-            font-weight:
-                bold;
-
-            cursor:
-                pointer;
+            width: 100%;
+            padding: 11px;
+            border: none;
+            border-radius: 8px;
+            background: #1976d2;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
         }
-
 
         .dashboard-card button:hover {
-
-            background:
-                #125ca3;
+            background: #125ca3;
         }
-
 
         /* =================================================
            HOSPITAL INFORMATION
         ================================================= */
 
         .hospital-info {
-
-            background:
-                white;
-
-            padding:
-                25px;
-
-            border-radius:
-                16px;
-
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
             box-shadow:
                 0 8px 25px
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.07
-                );
-
-            margin-bottom:
-                25px;
+                rgba(0, 0, 0, 0.07);
+            margin-bottom: 25px;
         }
-
 
         .hospital-info h2 {
-
-            margin-top:
-                0;
+            margin-top: 0;
         }
-
 
         .info-grid {
-
-            display:
-                grid;
-
+            display: grid;
             grid-template-columns:
                 repeat(3, 1fr);
-
-            gap:
-                15px;
+            gap: 15px;
         }
 
-
         .info-box {
-
-            background:
-                #f8fafc;
-
+            background: #f8fafc;
             border:
                 1px solid
                 #e2e8f0;
-
-            border-radius:
-                10px;
-
-            padding:
-                15px;
+            border-radius: 10px;
+            padding: 15px;
         }
-
 
         .info-box span {
-
-            display:
-                block;
-
-            color:
-                #64748b;
-
-            font-size:
-                13px;
-
-            margin-bottom:
-                5px;
+            display: block;
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 5px;
         }
-
 
         .info-box strong {
-
-            color:
-                #172554;
-
-            font-size:
-                17px;
+            color: #172554;
+            font-size: 17px;
         }
-
 
         /* =================================================
            QUEUE
         ================================================= */
 
         .queue-card {
-
-            background:
-                white;
-
-            padding:
-                30px;
-
-            border-radius:
-                16px;
-
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
             box-shadow:
                 0 8px 25px
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.07
-                );
+                rgba(0, 0, 0, 0.07);
         }
-
 
         .queue-card h2 {
-
-            margin-top:
-                0;
-
-            margin-bottom:
-                25px;
+            margin-top: 0;
+            margin-bottom: 25px;
         }
-
 
         .queue-stats {
-
-            display:
-                grid;
-
+            display: grid;
             grid-template-columns:
                 repeat(3, 1fr);
-
-            gap:
-                20px;
-
-            margin-bottom:
-                25px;
+            gap: 20px;
+            margin-bottom: 25px;
         }
 
-
         .queue-stats div {
-
-            background:
-                #f8fafc;
-
-            padding:
-                20px;
-
-            border-radius:
-                12px;
-
-            text-align:
-                center;
-
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
             border:
                 1px solid
                 #e2e8f0;
         }
 
-
         .queue-stats span {
-
-            display:
-                block;
-
-            color:
-                #64748b;
-
-            margin-bottom:
-                8px;
+            display: block;
+            color: #64748b;
+            margin-bottom: 8px;
         }
-
 
         .queue-stats strong {
-
-            font-size:
-                30px;
-
-            color:
-                #1976d2;
+            font-size: 30px;
+            color: #1976d2;
         }
 
-
         .next-button {
-
-            width:
-                100%;
-
-            padding:
-                14px;
-
-            border:
-                none;
-
-            border-radius:
-                10px;
-
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
             background:
                 linear-gradient(
                     135deg,
                     #1976d2,
                     #7c3aed
                 );
-
-            color:
-                white;
-
-            font-size:
-                16px;
-
-            font-weight:
-                bold;
-
-            cursor:
-                pointer;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
         }
-
 
         .next-button:hover {
-
-            opacity:
-                0.9;
+            opacity: 0.9;
         }
-
 
         .next-button:disabled {
-
-            opacity:
-                0.6;
-
-            cursor:
-                not-allowed;
+            opacity: 0.6;
+            cursor: not-allowed;
         }
-
 
         .next-message {
-
-            text-align:
-                center;
-
-            font-weight:
-                bold;
-
-            margin-top:
-                15px;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 15px;
         }
-
 
         /* =================================================
            LOADING
         ================================================= */
 
         .loading {
-
-            opacity:
-                0.7;
+            opacity: 0.7;
         }
-
 
         /* =================================================
            MOBILE
@@ -596,82 +310,51 @@
         @media (max-width: 900px) {
 
             .dashboard-grid {
-
                 grid-template-columns:
                     repeat(2, 1fr);
             }
 
-
             .info-grid {
-
                 grid-template-columns:
                     repeat(2, 1fr);
             }
 
         }
 
-
         @media (max-width: 600px) {
 
             .dashboard {
-
-                padding:
-                    15px;
+                padding: 15px;
             }
-
 
             header {
-
-                flex-direction:
-                    column;
-
-                align-items:
-                    flex-start;
-
-                gap:
-                    15px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
             }
-
 
             .logout {
-
-                width:
-                    100%;
+                width: 100%;
             }
-
 
             .dashboard-grid {
-
-                grid-template-columns:
-                    1fr;
+                grid-template-columns: 1fr;
             }
-
 
             .info-grid {
-
-                grid-template-columns:
-                    1fr;
+                grid-template-columns: 1fr;
             }
-
 
             .queue-stats {
-
-                grid-template-columns:
-                    1fr;
+                grid-template-columns: 1fr;
             }
-
 
             .welcome {
-
-                padding:
-                    22px;
+                padding: 22px;
             }
 
-
             .welcome h2 {
-
-                font-size:
-                    22px;
+                font-size: 22px;
             }
 
         }
@@ -710,13 +393,10 @@
             class="logout"
             id="logoutButton"
         >
-
             Logout
-
         </button>
 
     </header>
-
 
 
     <!-- =================================================
@@ -735,13 +415,11 @@
 
         </h2>
 
-
         <p>
             Manage your hospital, doctors and patient queue.
         </p>
 
     </div>
-
 
 
     <!-- =================================================
@@ -774,7 +452,6 @@
         </div>
 
 
-
         <!-- QUEUE -->
 
         <div class="dashboard-card">
@@ -798,7 +475,6 @@
         </div>
 
 
-
         <!-- PATIENTS -->
 
         <div class="dashboard-card">
@@ -820,7 +496,6 @@
             </button>
 
         </div>
-
 
 
         <!-- PROFILE -->
@@ -849,7 +524,6 @@
     </div>
 
 
-
     <!-- =================================================
          HOSPITAL INFORMATION
     ================================================= -->
@@ -860,9 +534,7 @@
             Hospital Information
         </h2>
 
-
         <div class="info-grid">
-
 
             <div class="info-box">
 
@@ -941,11 +613,9 @@
 
             </div>
 
-
         </div>
 
     </div>
-
 
 
     <!-- =================================================
@@ -958,9 +628,7 @@
             Today's Queue
         </h2>
 
-
         <div class="queue-stats">
-
 
             <div>
 
@@ -1000,7 +668,6 @@
 
             </div>
 
-
         </div>
 
 
@@ -1008,9 +675,7 @@
             class="next-button"
             id="nextButton"
         >
-
             📢 Call Next Patient
-
         </button>
 
 
@@ -1019,16 +684,13 @@
             class="next-message"
         ></p>
 
-
     </div>
 
 
 </div>
 
 
-
 <script>
-
 
 /* =====================================================
    API
@@ -1038,33 +700,52 @@ const API_URL =
     "https://carepath-3q9q.onrender.com";
 
 
-
 /* =====================================================
-   GET HOSPITAL INFORMATION FROM LOCAL STORAGE
+   HOSPITAL SESSION
 ===================================================== */
 
 let hospitalId =
-    localStorage.getItem(
-        "hospital_id"
-    );
-
+    localStorage.getItem("hospital_id");
 
 let hospitalName =
-    localStorage.getItem(
-        "hospital_name"
-    );
+    localStorage.getItem("hospital_name");
 
+const hospitalToken =
+    localStorage.getItem("hospitalToken");
+
+
+/* =====================================================
+   AUTH HEADERS
+===================================================== */
+
+function getHospitalAuthHeaders(includeJson = false) {
+
+    const headers = {
+        "Authorization":
+            `Bearer ${hospitalToken || ""}`
+    };
+
+    if (includeJson) {
+
+        headers["Content-Type"] =
+            "application/json";
+
+    }
+
+    return headers;
+}
+
+
+/* =====================================================
+   READ STORED HOSPITAL
+===================================================== */
 
 let storedHospital = null;
-
 
 try {
 
     const stored =
-        localStorage.getItem(
-            "hospital"
-        );
-
+        localStorage.getItem("hospital");
 
     if (stored) {
 
@@ -1082,7 +763,6 @@ catch (error) {
     );
 
 }
-
 
 
 /* =====================================================
@@ -1118,23 +798,24 @@ if (
 }
 
 
-
 /* =====================================================
    CHECK LOGIN
 ===================================================== */
 
-if (!hospitalId) {
+if (
+    !hospitalId ||
+    !hospitalToken
+) {
 
     alert(
-        "Please login as a hospital first."
+        "Your hospital session is missing or expired. Please login again."
     );
 
-
-    window.location.href =
-        "index.html";
+    window.location.replace(
+        "index.html"
+    );
 
 }
-
 
 
 /* =====================================================
@@ -1151,15 +832,12 @@ if (hospitalName) {
 }
 
 
-
 /* =====================================================
    LOGOUT
 ===================================================== */
 
 document
-    .getElementById(
-        "logoutButton"
-    )
+    .getElementById("logoutButton")
     .addEventListener(
         "click",
         hospitalLogout
@@ -1168,43 +846,29 @@ document
 
 function hospitalLogout() {
 
-    localStorage.removeItem(
-        "hospital"
+    [
+        "hospital",
+        "hospital_id",
+        "hospital_name",
+        "hospital_email",
+        "hospital_token_fee",
+        "hospital_approval_status",
+        "hospital_is_published",
+        "hospital_latitude",
+        "hospital_longitude",
+        "hospital_logged_in",
+        "hospitalToken"
+    ].forEach(function(key) {
+
+        localStorage.removeItem(key);
+
+    });
+
+    window.location.replace(
+        "index.html"
     );
 
-    localStorage.removeItem(
-        "hospital_id"
-    );
-
-    localStorage.removeItem(
-        "hospital_name"
-    );
-
-    localStorage.removeItem(
-        "hospital_email"
-    );
-
-    localStorage.removeItem(
-        "hospital_token_fee"
-    );
-
-    localStorage.removeItem(
-        "hospital_approval_status"
-    );
-
-    localStorage.removeItem(
-        "hospital_is_published"
-    );
-
-    localStorage.removeItem(
-    "hospitalToken"
-);
-
-
-    window.location.href =
-        "index.html";
 }
-
 
 
 /* =====================================================
@@ -1213,9 +877,13 @@ function hospitalLogout() {
 
 async function loadHospital() {
 
-    if (!hospitalId) {
+    if (
+        !hospitalId ||
+        !hospitalToken
+    ) {
 
         return;
+
     }
 
 
@@ -1223,7 +891,11 @@ async function loadHospital() {
 
         const response =
             await fetch(
-                `${API_URL}/hospitals/${hospitalId}`
+                `${API_URL}/hospitals/${hospitalId}`,
+                {
+                    headers:
+                        getHospitalAuthHeaders()
+                }
             );
 
 
@@ -1232,6 +904,17 @@ async function loadHospital() {
 
 
         if (!response.ok) {
+
+            if (
+                response.status === 401 ||
+                response.status === 403
+            ) {
+
+                hospitalLogout();
+
+                return;
+
+            }
 
             throw new Error(
                 data.detail ||
@@ -1381,15 +1064,9 @@ async function loadHospital() {
             "NOT_ADDED";
 
 
-        /*
-         * Update hospital name used
-         * for token filtering.
-         */
-
         hospitalName =
             data.name ||
             hospitalName;
-
 
     }
     catch (error) {
@@ -1404,15 +1081,12 @@ async function loadHospital() {
 }
 
 
-
 /* =====================================================
    DOCTORS
 ===================================================== */
 
 document
-    .getElementById(
-        "doctorsButton"
-    )
+    .getElementById("doctorsButton")
     .addEventListener(
         "click",
         function() {
@@ -1424,20 +1098,16 @@ document
     );
 
 
-
 /* =====================================================
    QUEUE
 ===================================================== */
 
 document
-    .getElementById(
-        "queueButton"
-    )
+    .getElementById("queueButton")
     .addEventListener(
         "click",
         openPatients
     );
-
 
 
 /* =====================================================
@@ -1445,9 +1115,7 @@ document
 ===================================================== */
 
 document
-    .getElementById(
-        "patientsButton"
-    )
+    .getElementById("patientsButton")
     .addEventListener(
         "click",
         openPatients
@@ -1458,8 +1126,8 @@ function openPatients() {
 
     window.location.href =
         "patients.html";
-}
 
+}
 
 
 /* =====================================================
@@ -1467,9 +1135,7 @@ function openPatients() {
 ===================================================== */
 
 document
-    .getElementById(
-        "profileButton"
-    )
+    .getElementById("profileButton")
     .addEventListener(
         "click",
         function() {
@@ -1481,15 +1147,12 @@ document
     );
 
 
-
 /* =====================================================
    CALL NEXT PATIENT
 ===================================================== */
 
 document
-    .getElementById(
-        "nextButton"
-    )
+    .getElementById("nextButton")
     .addEventListener(
         "click",
         callNextPatient
@@ -1503,50 +1166,31 @@ async function callNextPatient() {
             "nextButton"
         );
 
-
     const message =
         document.getElementById(
             "nextMessage"
         );
 
 
-    button.disabled =
-        true;
-
+    button.disabled = true;
 
     button.textContent =
         "Calling...";
 
-
-    message.textContent =
-        "";
+    message.textContent = "";
 
 
     try {
-
-        /*
-         * Your backend currently uses:
-         *
-         * POST /next-patient
-         */
 
         const response =
             await fetch(
                 `${API_URL}/next-patient`,
                 {
 
-                    method:
-                        "POST",
+                    method: "POST",
 
-                    headers: {
-
-    "Content-Type":
-        "application/json",
-
-    "Authorization":
-        `Bearer ${localStorage.getItem("hospitalToken") || ""}`
-
-},
+                    headers:
+                        getHospitalAuthHeaders(true),
 
                     body:
                         JSON.stringify({
@@ -1568,6 +1212,17 @@ async function callNextPatient() {
 
         if (!response.ok) {
 
+            if (
+                response.status === 401 ||
+                response.status === 403
+            ) {
+
+                hospitalLogout();
+
+                return;
+
+            }
+
             throw new Error(
                 data.detail ||
                 "Unable to call next patient."
@@ -1584,10 +1239,6 @@ async function callNextPatient() {
             data.message ||
             "Next patient called successfully.";
 
-
-        /*
-         * Update current token
-         */
 
         if (
             data.token_number !==
@@ -1624,9 +1275,7 @@ async function callNextPatient() {
     }
     finally {
 
-        button.disabled =
-            false;
-
+        button.disabled = false;
 
         button.textContent =
             "📢 Call Next Patient";
@@ -1636,56 +1285,67 @@ async function callNextPatient() {
 }
 
 
-
 /* =====================================================
    LOAD QUEUE
 ===================================================== */
 
 async function loadQueue() {
 
-    if (!hospitalId) {
+    if (
+        !hospitalId ||
+        !hospitalToken
+    ) {
 
         return;
+
     }
 
 
     try {
 
         /*
-         * Existing backend endpoint:
+         * Secure hospital-specific queue endpoint.
          *
-         * GET /tokens
+         * GET /hospitals/{hospital_id}/tokens
          */
 
         const response =
-    await fetch(
-        `${API_URL}/hospital/tokens`,
-        {
-            headers: {
-                "Authorization":
-                    `Bearer ${localStorage.getItem("hospitalToken") || ""}`
-            }
-        }
-    );
-
-        if (!response.ok) {
-
-            return;
-        }
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}/tokens`,
+                {
+                    headers:
+                        getHospitalAuthHeaders()
+                }
+            );
 
 
         const data =
             await response.json();
 
 
+        if (!response.ok) {
+
+            if (
+                response.status === 401 ||
+                response.status === 403
+            ) {
+
+                hospitalLogout();
+
+                return;
+
+            }
+
+            throw new Error(
+                data.detail ||
+                "Unable to load queue."
+            );
+
+        }
+
+
         /*
-         * Backend may return:
-         *
-         * []
-         *
-         * or
-         *
-         * { tokens: [] }
+         * Backend returns an array.
          */
 
         const tokens =
@@ -1701,10 +1361,13 @@ async function loadQueue() {
 
 
         /*
-         * Filter by hospital.
+         * The backend already restricts
+         * this response to the logged-in
+         * hospital.
          *
-         * Prefer hospital_id when the backend
-         * provides it.
+         * We still keep this frontend
+         * filtering as an extra safety
+         * layer.
          */
 
         const hospitalTokens =
@@ -1713,9 +1376,9 @@ async function loadQueue() {
 
                     if (
                         token.hospital_id !==
-                        undefined &&
+                            undefined &&
                         token.hospital_id !==
-                        null
+                            null
                     ) {
 
                         return String(
@@ -1727,15 +1390,10 @@ async function loadQueue() {
                     }
 
 
-                    return String(
-                        token.hospital
-                    ) === String(
-                        hospitalName
-                    );
+                    return true;
 
                 }
             );
-
 
 
         /* ---------------------------------------------
@@ -1756,7 +1414,6 @@ async function loadQueue() {
             waiting.length;
 
 
-
         /* ---------------------------------------------
            COMPLETED
         --------------------------------------------- */
@@ -1775,7 +1432,6 @@ async function loadQueue() {
             completed.length;
 
 
-
         /* ---------------------------------------------
            CURRENT / SERVING
         --------------------------------------------- */
@@ -1786,7 +1442,6 @@ async function loadQueue() {
                     token =>
                         token.status ===
                             "serving" ||
-
                         token.status ===
                             "current"
                 )
@@ -1834,7 +1489,6 @@ async function loadQueue() {
 }
 
 
-
 /* =====================================================
    INITIAL LOAD
 ===================================================== */
@@ -1847,7 +1501,6 @@ loadHospital()
 
         }
     );
-
 
 
 /* =====================================================

@@ -1057,7 +1057,6 @@ def hospital_to_dict(hospital):
 
         "license_id": hospital.license_id,
 
-        # Certificate information
         "registration_number": hospital.registration_number,
         "issuing_authority": hospital.issuing_authority,
 
@@ -1067,27 +1066,7 @@ def hospital_to_dict(hospital):
             else None
         ),
 
-        "certificate_original_name": (
-            hospital.certificate_original_name
-        ),
-
-        "certificate_content_type": (
-            hospital.certificate_content_type
-        ),
-
-        "certificate_uploaded_at": (
-            hospital.certificate_uploaded_at.isoformat()
-            if hospital.certificate_uploaded_at
-            else None
-        ),
-
-        "certificate_verification_status": (
-            hospital.certificate_verification_status
-        ),
-
-        # Hospital approval information
         "approval_status": hospital.approval_status,
-        "rejection_reason": hospital.rejection_reason,
         "is_published": hospital.is_published,
 
         "token_fee": hospital.token_fee,
@@ -1096,10 +1075,6 @@ def hospital_to_dict(hospital):
 
         "payment_account_status": (
             hospital.payment_account_status
-        ),
-
-        "razorpay_account_id": (
-            hospital.razorpay_account_id
         ),
     }
 # ============================================================
@@ -1721,7 +1696,11 @@ def generic_google_login(
     if role == "hospital":
         hospital = (
             db.query(Hospital)
-            .filter(Hospital.email == email)
+            .filter(
+                Hospital.email == email,
+                Hospital.approval_status == "APPROVED",
+                Hospital.is_published == True,
+            )
             .first()
         )
 
@@ -2388,14 +2367,14 @@ def get_hospital(
 ):
 
     hospital = (
-        db.query(Hospital)
-        .filter(
-            Hospital.id ==
-            hospital_id
-        )
-        .first()
+    db.query(Hospital)
+    .filter(
+        Hospital.id == hospital_id,
+        Hospital.approval_status == "APPROVED",
+        Hospital.is_published == True,
     )
-
+    .first()
+)
     if not hospital:
 
         raise HTTPException(
@@ -2666,16 +2645,30 @@ def get_doctors(
 
     if hospital_id is not None:
 
+        hospital = (
+            db.query(Hospital)
+            .filter(
+                Hospital.id == hospital_id,
+                Hospital.approval_status == "APPROVED",
+                Hospital.is_published == True,
+            )
+            .first()
+        )
+
+        if not hospital:
+            raise HTTPException(
+                status_code=404,
+                detail="Hospital not found",
+            )
+
         query = query.filter(
-            Doctor.hospital_id ==
-            hospital_id
+            Doctor.hospital_id == hospital_id
         )
 
     if department:
 
         query = query.filter(
-            Doctor.department ==
-            department
+            Doctor.department == department
         )
 
     doctors = (
@@ -2687,13 +2680,9 @@ def get_doctors(
     )
 
     return [
-
         doctor_to_dict(doctor)
-
         for doctor in doctors
     ]
-
-
 # ============================================================
 # GET HOSPITAL DOCTORS
 # ============================================================
@@ -3124,15 +3113,17 @@ def create_razorpay_order(
     amount_paise = total_amount * 100
 
     try:
-        order = razorpay_client.order.create({
-            "amount": amount_paise,
-            "currency": "INR",
-            "receipt": (
-                "carepath_"
-                f"{hospital.id}_"
-                f"{secrets.token_hex(4)}"
-            ),
-        })
+        order = razorpay_client.order.create(
+            {
+                "amount": amount_paise,
+                "currency": "INR",
+                "receipt": (
+                    "carepath_"
+                    f"{hospital.id}_"
+                    f"{secrets.token_hex(4)}"
+                ),
+            }
+        )
 
         return {
             "success": True,
@@ -3145,7 +3136,6 @@ def create_razorpay_order(
             "platform_fee": platform_fee,
             "total_amount": total_amount,
             "hospital_id": hospital.id,
-            "razorpay_account_id": hospital.razorpay_account_id,
         }
 
     except Exception as error:

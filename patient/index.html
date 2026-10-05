@@ -1058,10 +1058,12 @@
         // API
         // =====================================================
         // Restore the previous login on this device
-if (localStorage.getItem("patientId")) {
+if (
+    localStorage.getItem("patientId") &&
+    localStorage.getItem("patientToken")
+) {
     window.location.replace("dashboard.html");
 }
-
 
         const API =
             "https://carepath-3q9q.onrender.com";

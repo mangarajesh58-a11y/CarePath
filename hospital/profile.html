@@ -375,7 +375,9 @@
             "
         >
             Payment account status:
-            <strong>NOT_ADDED</strong>
+            <strong id="paymentAccountStatusValue">
+                NOT_ADDED
+            </strong>
         </div>
 
 
@@ -487,6 +489,8 @@
 
         <div
             id="message"
+            role="status"
+            aria-live="polite"
             style="
                 display:none;
                 margin-top:15px;
@@ -557,8 +561,9 @@ if (
         "Your hospital session is missing or expired. Please login again."
     );
 
-    window.location.href =
-        "index.html";
+    window.location.replace(
+        "index.html"
+    );
 
 }
 
@@ -601,46 +606,44 @@ function getHospitalAuthHeaders(
 
 
 /* ==================================
-   HANDLE 401
+   CLEAR HOSPITAL SESSION
+================================== */
+
+function clearHospitalSession() {
+
+    [
+        "hospitalToken",
+        "hospital_id",
+        "hospital_name",
+        "hospital_email",
+        "hospital_token_fee",
+        "hospital_approval_status",
+        "hospital_is_published",
+        "hospital_latitude",
+        "hospital_longitude",
+        "hospital_logged_in",
+        "hospital"
+    ].forEach(
+        function(key) {
+
+            localStorage.removeItem(
+                key
+            );
+
+        }
+    );
+
+}
+
+
+
+/* ==================================
+   HANDLE AUTHENTICATION FAILURE
 ================================== */
 
 function handleAuthenticationFailure() {
 
-    localStorage.removeItem(
-        "hospitalToken"
-    );
-
-    localStorage.removeItem(
-        "hospital_id"
-    );
-
-    localStorage.removeItem(
-        "hospital_name"
-    );
-
-    localStorage.removeItem(
-        "hospital_email"
-    );
-
-    localStorage.removeItem(
-        "hospital_token_fee"
-    );
-
-    localStorage.removeItem(
-        "hospital_approval_status"
-    );
-
-    localStorage.removeItem(
-        "hospital_is_published"
-    );
-
-    localStorage.removeItem(
-        "hospital_latitude"
-    );
-
-    localStorage.removeItem(
-        "hospital_longitude"
-    );
+    clearHospitalSession();
 
 
     alert(
@@ -648,8 +651,9 @@ function handleAuthenticationFailure() {
     );
 
 
-    window.location.href =
-        "index.html";
+    window.location.replace(
+        "index.html"
+    );
 
 }
 
@@ -664,6 +668,7 @@ async function parseResponse(
 ) {
 
     let data = {};
+
 
     try {
 
@@ -685,6 +690,18 @@ async function parseResponse(
 
         throw new Error(
             "Authentication required. Please login again."
+        );
+
+    }
+
+
+    if (
+        response.status === 403
+    ) {
+
+        throw new Error(
+            data.detail ||
+            "You do not have permission to perform this action."
         );
 
     }
@@ -714,9 +731,15 @@ async function parseResponse(
 
 async function loadProfile() {
 
+    const currentToken =
+        localStorage.getItem(
+            "hospitalToken"
+        );
+
+
     if (
         !hospitalId ||
-        !hospitalToken
+        !currentToken
     ) {
 
         return;
@@ -730,6 +753,9 @@ async function loadProfile() {
             await fetch(
                 `${API_URL}/hospitals/${hospitalId}`,
                 {
+                    method:
+                        "GET",
+
                     headers:
                         getHospitalAuthHeaders()
                 }
@@ -849,15 +875,18 @@ async function loadProfile() {
             "NOT_ADDED";
 
 
-        document.getElementById(
-            "paymentAccountStatus"
-        ).innerHTML =
-            `
-                Payment account status:
-                <strong>
-                    ${paymentStatus}
-                </strong>
-            `;
+        const paymentStatusValue =
+            document.getElementById(
+                "paymentAccountStatusValue"
+            );
+
+
+        if (paymentStatusValue) {
+
+            paymentStatusValue.textContent =
+                paymentStatus;
+
+        }
 
 
 
@@ -1257,15 +1286,18 @@ async function savePaymentAccount() {
             "PENDING_VERIFICATION";
 
 
-        document.getElementById(
-            "paymentAccountStatus"
-        ).innerHTML =
-            `
-                Payment account status:
-                <strong>
-                    ${status}
-                </strong>
-            `;
+        const paymentStatusValue =
+            document.getElementById(
+                "paymentAccountStatusValue"
+            );
+
+
+        if (paymentStatusValue) {
+
+            paymentStatusValue.textContent =
+                status;
+
+        }
 
 
         showMessage(
@@ -1343,7 +1375,10 @@ function showMessage(
 
 
     element.textContent =
-        message;
+        String(
+            message ||
+            ""
+        );
 
 
     element.style.display =
@@ -1465,9 +1500,15 @@ function initMap() {
 
 async function loadHospitalLocation() {
 
+    const currentToken =
+        localStorage.getItem(
+            "hospitalToken"
+        );
+
+
     if (
         !hospitalId ||
-        !hospitalToken
+        !currentToken
     ) {
 
         return;
@@ -1481,6 +1522,9 @@ async function loadHospitalLocation() {
             await fetch(
                 `${API_URL}/hospitals/${hospitalId}`,
                 {
+                    method:
+                        "GET",
+
                     headers:
                         getHospitalAuthHeaders()
                 }
@@ -1795,17 +1839,49 @@ async function saveHospitalLocation() {
 
 
 
+    const latitudeNumber =
+        Number(
+            latitude
+        );
+
+
+    const longitudeNumber =
+        Number(
+            longitude
+        );
+
+
+    if (
+        !Number.isFinite(
+            latitudeNumber
+        ) ||
+        !Number.isFinite(
+            longitudeNumber
+        ) ||
+        latitudeNumber < -90 ||
+        latitudeNumber > 90 ||
+        longitudeNumber < -180 ||
+        longitudeNumber > 180
+    ) {
+
+        showMessage(
+            "Invalid hospital coordinates.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
     const data = {
 
         latitude:
-            Number(
-                latitude
-            ),
+            latitudeNumber,
 
         longitude:
-            Number(
-                longitude
-            )
+            longitudeNumber
 
     };
 
@@ -1815,7 +1891,7 @@ async function saveHospitalLocation() {
 
         const response =
             await fetch(
-                `${API_URL}/hospitals/${hospitalId}`,
+                `${API_URL}/hospitals/${hospitalId}/location`,
                 {
 
                     method:
@@ -1846,13 +1922,17 @@ async function saveHospitalLocation() {
 
         localStorage.setItem(
             "hospital_latitude",
-            latitude
+            String(
+                latitudeNumber
+            )
         );
 
 
         localStorage.setItem(
             "hospital_longitude",
-            longitude
+            String(
+                longitudeNumber
+            )
         );
 
 
@@ -1913,8 +1993,16 @@ async function uploadHospitalPhoto() {
             : null;
 
 
+    const currentToken =
+        localStorage.getItem(
+            "hospitalToken"
+        );
 
-    if (!hospitalId || !hospitalToken) {
+
+    if (
+        !hospitalId ||
+        !currentToken
+    ) {
 
         if (message) {
 
@@ -2056,12 +2144,49 @@ async function uploadHospitalPhoto() {
         }
 
 
-        localStorage.setItem(
-            "hospital",
-            JSON.stringify(
-                hospital
-            )
-        );
+        /*
+         * Store only the non-sensitive
+         * information needed by the frontend.
+         */
+        if (hospital) {
+
+            const hospitalSessionData = {
+
+                id:
+                    hospital.id ??
+                    Number(
+                        hospitalId
+                    ),
+
+                name:
+                    hospital.name ||
+                    localStorage.getItem(
+                        "hospital_name"
+                    ) ||
+                    "",
+
+                email:
+                    hospital.email ||
+                    localStorage.getItem(
+                        "hospital_email"
+                    ) ||
+                    "",
+
+                image_url:
+                    hospital.image_url ||
+                    ""
+
+            };
+
+
+            localStorage.setItem(
+                "hospital",
+                JSON.stringify(
+                    hospitalSessionData
+                )
+            );
+
+        }
 
 
         if (message) {
@@ -2107,50 +2232,12 @@ async function uploadHospitalPhoto() {
 
 function hospitalLogout() {
 
-    localStorage.removeItem(
-        "hospitalToken"
+    clearHospitalSession();
+
+
+    window.location.replace(
+        "index.html"
     );
-
-    localStorage.removeItem(
-        "hospital_id"
-    );
-
-    localStorage.removeItem(
-        "hospital_name"
-    );
-
-    localStorage.removeItem(
-        "hospital_email"
-    );
-
-    localStorage.removeItem(
-        "hospital_token_fee"
-    );
-
-    localStorage.removeItem(
-        "hospital_approval_status"
-    );
-
-    localStorage.removeItem(
-        "hospital_is_published"
-    );
-
-    localStorage.removeItem(
-        "hospital_latitude"
-    );
-
-    localStorage.removeItem(
-        "hospital_longitude"
-    );
-
-
-    localStorage.removeItem(
-        "hospital"
-    );
-
-
-    window.location.href =
-        "index.html";
 
 }
 

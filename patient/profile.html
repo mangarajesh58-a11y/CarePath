@@ -217,9 +217,10 @@
                     `${API}/patients/profile`,
                     {
                         method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
+                       headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("patientToken") || ""}`
+},
                         body: JSON.stringify({
                             credential: credential,
                             phone: phone

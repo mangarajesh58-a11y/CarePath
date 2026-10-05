@@ -2,8 +2,11 @@
 // CarePath - HOSPITAL APP SCRIPT
 // =========================================================
 
-const API = "https://carepath-3q9q.onrender.com";
-const FRONTEND = "https://carepath-hospital-ten.vercel.app";
+const API =
+    "https://carepath-3q9q.onrender.com";
+
+const FRONTEND =
+    "https://carepath-hospital-ten.vercel.app";
 
 
 // =========================================================
@@ -20,15 +23,54 @@ function getHospitalId() {
 }
 
 
+function getHospitalToken() {
+
+    return localStorage.getItem(
+        "hospitalToken"
+    );
+}
+
+
+function getHospitalAuthHeaders(
+    includeJson = false
+) {
+
+    const token =
+        getHospitalToken();
+
+    const headers = {};
+
+    if (token) {
+
+        headers.Authorization =
+            `Bearer ${token}`;
+
+    }
+
+    if (includeJson) {
+
+        headers["Content-Type"] =
+            "application/json";
+
+    }
+
+    return headers;
+}
+
+
 function getHospitalData() {
 
     try {
 
         const data =
-            localStorage.getItem("hospital");
+            localStorage.getItem(
+                "hospital"
+            );
 
         if (!data) {
+
             return null;
+
         }
 
         return JSON.parse(data);
@@ -41,13 +83,20 @@ function getHospitalData() {
         );
 
         return null;
+
     }
+
 }
 
 
-function saveHospitalData(hospital) {
+function saveHospitalData(
+    hospital
+) {
 
-    if (!hospital || !hospital.id) {
+    if (
+        !hospital ||
+        !hospital.id
+    ) {
 
         console.error(
             "Invalid hospital data:",
@@ -55,24 +104,25 @@ function saveHospitalData(hospital) {
         );
 
         return;
+
     }
+
 
     const id =
         String(hospital.id);
 
 
-    // Main hospital object
     localStorage.setItem(
         "hospital",
         JSON.stringify(hospital)
     );
 
 
-    // Hospital ID
     localStorage.setItem(
         "hospital_id",
         id
     );
+
 
     localStorage.setItem(
         "hospitalId",
@@ -80,21 +130,23 @@ function saveHospitalData(hospital) {
     );
 
 
-    // Basic information
     localStorage.setItem(
         "hospital_name",
         hospital.name || ""
     );
+
 
     localStorage.setItem(
         "hospital_email",
         hospital.email || ""
     );
 
+
     localStorage.setItem(
         "hospital_phone",
         hospital.phone || ""
     );
+
 
     localStorage.setItem(
         "hospital_city",
@@ -102,7 +154,6 @@ function saveHospitalData(hospital) {
     );
 
 
-    // Token fee
     localStorage.setItem(
         "hospital_token_fee",
         String(
@@ -111,14 +162,12 @@ function saveHospitalData(hospital) {
     );
 
 
-    // Approval
     localStorage.setItem(
         "hospital_approval_status",
         hospital.approval_status || ""
     );
 
 
-    // Published
     localStorage.setItem(
         "hospital_is_published",
         String(
@@ -126,11 +175,6 @@ function saveHospitalData(hospital) {
         )
     );
 
-
-    console.log(
-        "Hospital data saved:",
-        hospital
-    );
 }
 
 
@@ -139,28 +183,44 @@ function clearHospitalData() {
     const keys = [
 
         "hospital",
+
         "hospital_id",
+
         "hospitalId",
 
         "hospital_name",
+
         "hospital_email",
+
         "hospital_phone",
+
         "hospital_city",
 
         "hospital_token_fee",
 
         "hospital_approval_status",
+
         "hospital_is_published",
 
+        "hospital_latitude",
+
+        "hospital_longitude",
+
         "hospitalLocation"
+
     ];
 
 
-    keys.forEach(function (key) {
+    keys.forEach(
+        function (key) {
 
-        localStorage.removeItem(key);
+            localStorage.removeItem(
+                key
+            );
 
-    });
+        }
+    );
+
 }
 
 
@@ -174,128 +234,192 @@ function getErrorMessage(
 ) {
 
     if (!data) {
+
         return defaultMessage;
+
     }
 
 
-    // FastAPI string detail
     if (
-        typeof data.detail === "string"
+        typeof data.detail ===
+        "string"
     ) {
 
         return data.detail;
+
     }
 
 
-    // FastAPI validation errors
     if (
-        Array.isArray(data.detail)
+        Array.isArray(
+            data.detail
+        )
     ) {
 
         return data.detail
-            .map(function (error) {
+            .map(
+                function (error) {
 
-                if (
-                    typeof error === "string"
-                ) {
+                    if (
+                        typeof error ===
+                        "string"
+                    ) {
 
-                    return error;
+                        return error;
+
+                    }
+
+
+                    if (
+                        error &&
+                        typeof error ===
+                        "object"
+                    ) {
+
+                        const location =
+                            Array.isArray(
+                                error.loc
+                            )
+                                ? error.loc.join(
+                                    " → "
+                                )
+                                : "";
+
+
+                        const message =
+                            error.msg ||
+                            error.message ||
+                            "Invalid value";
+
+
+                        return location
+                            ? `${location}: ${message}`
+                            : message;
+
+                    }
+
+
+                    return String(
+                        error
+                    );
+
                 }
-
-
-                if (
-                    error &&
-                    typeof error === "object"
-                ) {
-
-                    const location =
-                        Array.isArray(error.loc)
-                            ? error.loc.join(" → ")
-                            : "";
-
-                    const message =
-                        error.msg ||
-                        error.message ||
-                        "Invalid value";
-
-
-                    return location
-                        ? `${location}: ${message}`
-                        : message;
-                }
-
-
-                return String(error);
-
-            })
+            )
             .join("\n");
+
     }
 
 
-    // Object detail
     if (
         data.detail &&
-        typeof data.detail === "object"
+        typeof data.detail ===
+        "object"
     ) {
 
         return (
             data.detail.msg ||
             data.detail.message ||
-            JSON.stringify(data.detail)
+            JSON.stringify(
+                data.detail
+            )
         );
+
     }
 
 
-    // Normal message
     if (
-        typeof data.message === "string"
+        typeof data.message ===
+        "string"
     ) {
 
         return data.message;
+
     }
 
 
     return defaultMessage;
+
 }
 
 
-async function readJsonResponse(response) {
+async function readJsonResponse(
+    response
+) {
 
     const text =
         await response.text();
 
 
     if (!text) {
+
         return {};
+
     }
 
 
     try {
 
-        return JSON.parse(text);
+        return JSON.parse(
+            text
+        );
 
     } catch (error) {
 
         return {
             detail: text
         };
+
     }
+
 }
 
 
-function getHospitalFromResponse(data) {
+function getHospitalFromResponse(
+    data
+) {
 
     if (
         data &&
         data.hospital &&
-        typeof data.hospital === "object"
+        typeof data.hospital ===
+        "object"
     ) {
 
         return data.hospital;
+
     }
 
 
     return data;
+
+}
+
+
+// =========================================================
+// AUTH ERROR HANDLING
+// =========================================================
+
+function handleHospitalAuthFailure(
+    response
+) {
+
+    if (
+        response.status === 401 ||
+        response.status === 403
+    ) {
+
+        alert(
+            "Your hospital session has expired or is not authorized. Please login again."
+        );
+
+        hospitalLogout();
+
+        return true;
+
+    }
+
+    return false;
+
 }
 
 
@@ -305,10 +429,29 @@ function getHospitalFromResponse(data) {
 
 async function checkBackend() {
 
+    /*
+     * Do not call a public API endpoint
+     * unnecessarily on every hospital page.
+     *
+     * /health is enough to check whether
+     * the backend is alive.
+     */
+
     try {
 
         const response =
-            await fetch(`${API}/`);
+            await fetch(
+                `${API}/health`
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Backend health check failed."
+            );
+
+        }
 
 
         const data =
@@ -317,19 +460,8 @@ async function checkBackend() {
             );
 
 
-        if (!response.ok) {
-
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    "FastAPI returned an error."
-                )
-            );
-        }
-
-
         console.log(
-            "FastAPI connected successfully:",
+            "CarePath backend is healthy:",
             data
         );
 
@@ -339,13 +471,14 @@ async function checkBackend() {
     } catch (error) {
 
         console.error(
-            "FASTAPI CONNECTION ERROR:",
+            "BACKEND CONNECTION ERROR:",
             error
         );
 
-
         return false;
+
     }
+
 }
 
 
@@ -354,21 +487,44 @@ async function checkBackend() {
 // =========================================================
 
 function requireHospitalLogin() {
-    const hospitalId = getHospitalId();
-    const hospitalToken = localStorage.getItem("hospitalToken");
 
-    if (!hospitalId || !hospitalToken) {
-        alert("Your session is missing or expired. Please login again.");
+    const hospitalId =
+        getHospitalId();
 
-        localStorage.removeItem("hospitalToken");
+    const hospitalToken =
+        getHospitalToken();
+
+
+    if (
+        !hospitalId ||
+        !hospitalToken
+    ) {
+
+        alert(
+            "Your session is missing or expired. Please login again."
+        );
+
+
+        localStorage.removeItem(
+            "hospitalToken"
+        );
+
+
         clearHospitalData();
 
-        window.location.href = "index.html";
+
+        window.location.replace(
+            "index.html"
+        );
+
 
         return null;
+
     }
 
+
     return hospitalId;
+
 }
 
 
@@ -396,6 +552,7 @@ async function handleHospitalGoogleLogin(
         );
 
         return;
+
     }
 
 
@@ -413,12 +570,14 @@ async function handleHospitalGoogleLogin(
                             "application/json"
                     },
 
-                    body: JSON.stringify({
+                    body:
+                        JSON.stringify({
 
-                        credential:
-                            response.credential
+                            credential:
+                                response.credential
 
-                    })
+                        })
+
                 }
             );
 
@@ -429,12 +588,6 @@ async function handleHospitalGoogleLogin(
             );
 
 
-        console.log(
-            "Google Login Backend Response:",
-            data
-        );
-
-
         if (!result.ok) {
 
             throw new Error(
@@ -443,6 +596,7 @@ async function handleHospitalGoogleLogin(
                     "Google hospital login failed."
                 )
             );
+
         }
 
 
@@ -452,25 +606,34 @@ async function handleHospitalGoogleLogin(
             );
 
 
-               if (
+        if (
             !hospital ||
             !hospital.id
         ) {
+
             throw new Error(
                 "Hospital information was not returned by the server."
             );
+
         }
 
-        if (!data.access_token) {
+
+        if (
+            !data.access_token
+        ) {
+
             throw new Error(
                 "Login succeeded, but the authentication token was not returned."
             );
+
         }
+
 
         localStorage.setItem(
             "hospitalToken",
             data.access_token
         );
+
 
         saveHospitalData(
             hospital
@@ -482,8 +645,9 @@ async function handleHospitalGoogleLogin(
         );
 
 
-        window.location.href =
-            "dashboard.html";
+        window.location.replace(
+            "dashboard.html"
+        );
 
 
     } catch (error) {
@@ -498,7 +662,9 @@ async function handleHospitalGoogleLogin(
             error.message ||
             "Google login failed."
         );
+
     }
+
 }
 
 
@@ -506,10 +672,14 @@ async function handleHospitalGoogleLogin(
 // NORMAL HOSPITAL LOGIN
 // =========================================================
 
-async function hospitalLogin(event) {
+async function hospitalLogin(
+    event
+) {
 
     if (event) {
+
         event.preventDefault();
+
     }
 
 
@@ -534,6 +704,7 @@ async function hospitalLogin(event) {
         );
 
         return;
+
     }
 
 
@@ -544,6 +715,7 @@ async function hospitalLogin(event) {
         );
 
         return;
+
     }
 
 
@@ -564,6 +736,7 @@ async function hospitalLogin(event) {
         );
 
         return;
+
     }
 
 
@@ -574,6 +747,7 @@ async function hospitalLogin(event) {
         );
 
         return;
+
     }
 
 
@@ -591,12 +765,14 @@ async function hospitalLogin(event) {
                             "application/json"
                     },
 
-                    body: JSON.stringify({
+                    body:
+                        JSON.stringify({
 
-                        email,
-                        password
+                            email,
+                            password
 
-                    })
+                        })
+
                 }
             );
 
@@ -607,12 +783,6 @@ async function hospitalLogin(event) {
             );
 
 
-        console.log(
-            "Hospital login response:",
-            data
-        );
-
-
         if (!response.ok) {
 
             throw new Error(
@@ -621,36 +791,58 @@ async function hospitalLogin(event) {
                     "Hospital login failed."
                 )
             );
+
         }
-const hospital =
-    getHospitalFromResponse(data);
-
-if (!hospital || !hospital.id) {
-    throw new Error(
-        "Hospital information was not returned by the server."
-    );
-}
-
-if (!data.access_token) {
-    throw new Error(
-        "Login succeeded, but the authentication token was not returned."
-    );
-}
-
-// Save JWT authentication token
-localStorage.setItem(
-    "hospitalToken",
-    data.access_token
-);
-
-// Save hospital information
-saveHospitalData(hospital);
-
-alert("Hospital login successful.");
 
 
-        window.location.href =
-            "dashboard.html";
+        const hospital =
+            getHospitalFromResponse(
+                data
+            );
+
+
+        if (
+            !hospital ||
+            !hospital.id
+        ) {
+
+            throw new Error(
+                "Hospital information was not returned by the server."
+            );
+
+        }
+
+
+        if (
+            !data.access_token
+        ) {
+
+            throw new Error(
+                "Login succeeded, but the authentication token was not returned."
+            );
+
+        }
+
+
+        localStorage.setItem(
+            "hospitalToken",
+            data.access_token
+        );
+
+
+        saveHospitalData(
+            hospital
+        );
+
+
+        alert(
+            "Hospital login successful."
+        );
+
+
+        window.location.replace(
+            "dashboard.html"
+        );
 
 
     } catch (error) {
@@ -665,22 +857,68 @@ alert("Hospital login successful.");
             error.message ||
             "Hospital login failed."
         );
+
     }
+
 }
 
 
 // =========================================================
 // LOGOUT
 // =========================================================
+
 function hospitalLogout() {
-    // Remove the authentication token
-    localStorage.removeItem("hospitalToken");
 
-    // Clear saved hospital information
-    clearHospitalData();
+    const keys = [
 
-    // Return to the login page
-    window.location.href = "index.html";
+        "hospital",
+
+        "hospital_id",
+
+        "hospitalId",
+
+        "hospital_name",
+
+        "hospital_email",
+
+        "hospital_phone",
+
+        "hospital_city",
+
+        "hospital_token_fee",
+
+        "hospital_approval_status",
+
+        "hospital_is_published",
+
+        "hospital_latitude",
+
+        "hospital_longitude",
+
+        "hospitalLocation",
+
+        "hospital_logged_in",
+
+        "hospitalToken"
+
+    ];
+
+
+    keys.forEach(
+        function (key) {
+
+            localStorage.removeItem(
+                key
+            );
+
+        }
+    );
+
+
+    window.location.replace(
+        "index.html"
+    );
+
 }
 
 
@@ -692,6 +930,7 @@ function goDashboard() {
 
     window.location.href =
         "dashboard.html";
+
 }
 
 
@@ -699,6 +938,7 @@ function openDoctors() {
 
     window.location.href =
         "doctors.html";
+
 }
 
 
@@ -706,6 +946,7 @@ function openPatients() {
 
     window.location.href =
         "patients.html";
+
 }
 
 
@@ -713,6 +954,7 @@ function openProfile() {
 
     window.location.href =
         "profile.html";
+
 }
 
 
@@ -727,21 +969,33 @@ async function loadProfile() {
 
 
     if (!hospitalId) {
+
         return;
+
     }
 
 
     try {
 
         const response =
-    await fetch(
-        `${API}/hospitals/${hospitalId}`,
-        {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
-            }
+            await fetch(
+                `${API}/hospitals/${hospitalId}`,
+                {
+                    headers:
+                        getHospitalAuthHeaders()
+                }
+            );
+
+
+        if (
+            handleHospitalAuthFailure(
+                response
+            )
+        ) {
+
+            return;
+
         }
-    );
 
 
         const data =
@@ -758,6 +1012,7 @@ async function loadProfile() {
                     "Unable to load hospital profile."
                 )
             );
+
         }
 
 
@@ -775,18 +1030,14 @@ async function loadProfile() {
             throw new Error(
                 "Hospital profile data was not returned."
             );
+
         }
 
 
-        // Update local storage
         saveHospitalData(
             hospital
         );
 
-
-        // -----------------------------------------
-        // Profile fields
-        // -----------------------------------------
 
         const fields = {
 
@@ -813,6 +1064,7 @@ async function loadProfile() {
 
             profileTokenFee:
                 hospital.token_fee
+
         };
 
 
@@ -829,24 +1081,17 @@ async function loadProfile() {
 
                     element.value =
                         fields[id] ?? "";
+
                 }
 
             }
         );
 
 
-        // -----------------------------------------
-        // Payment status
-        // -----------------------------------------
-
         updatePaymentStatus(
             hospital.payment_account_status
         );
 
-
-        // -----------------------------------------
-        // Location
-        // -----------------------------------------
 
         const latitude =
             document.getElementById(
@@ -864,6 +1109,7 @@ async function loadProfile() {
 
             latitude.value =
                 hospital.latitude ?? "";
+
         }
 
 
@@ -871,6 +1117,7 @@ async function loadProfile() {
 
             longitude.value =
                 hospital.longitude ?? "";
+
         }
 
 
@@ -886,7 +1133,9 @@ async function loadProfile() {
             error.message ||
             "Unable to load hospital profile."
         );
+
     }
+
 }
 
 
@@ -894,10 +1143,14 @@ async function loadProfile() {
 // PAYMENT STATUS
 // =========================================================
 
-function formatPaymentStatus(status) {
+function formatPaymentStatus(
+    status
+) {
 
     if (!status) {
+
         return "Not Added";
+
     }
 
 
@@ -908,31 +1161,30 @@ function formatPaymentStatus(status) {
         case "NOT_ADDED":
             return "Not Added";
 
-
         case "PENDING":
         case "PENDING_VERIFICATION":
             return "Pending Verification";
 
-
         case "APPROVED":
             return "Approved";
-
 
         case "VERIFIED":
             return "Verified";
 
-
         case "REJECTED":
             return "Rejected";
 
-
         default:
             return status;
+
     }
+
 }
 
 
-function updatePaymentStatus(status) {
+function updatePaymentStatus(
+    status
+) {
 
     const element =
         document.getElementById(
@@ -941,7 +1193,9 @@ function updatePaymentStatus(status) {
 
 
     if (!element) {
+
         return;
+
     }
 
 
@@ -960,6 +1214,7 @@ function updatePaymentStatus(status) {
         "payment-status " +
         String(finalStatus)
             .toLowerCase();
+
 }
 
 
@@ -967,10 +1222,14 @@ function updatePaymentStatus(status) {
 // SAVE PROFILE
 // =========================================================
 
-async function saveProfile(event) {
+async function saveProfile(
+    event
+) {
 
     if (event) {
+
         event.preventDefault();
+
     }
 
 
@@ -979,7 +1238,9 @@ async function saveProfile(event) {
 
 
     if (!hospitalId) {
+
         return;
+
     }
 
 
@@ -1026,12 +1287,10 @@ async function saveProfile(event) {
 
 
     const tokenFee =
-        Number(tokenFeeInput || 0);
+        Number(
+            tokenFeeInput || 0
+        );
 
-
-    // -----------------------------------------
-    // Validation
-    // -----------------------------------------
 
     if (!name) {
 
@@ -1040,6 +1299,7 @@ async function saveProfile(event) {
         );
 
         return;
+
     }
 
 
@@ -1050,6 +1310,7 @@ async function saveProfile(event) {
         );
 
         return;
+
     }
 
 
@@ -1060,6 +1321,7 @@ async function saveProfile(event) {
         );
 
         return;
+
     }
 
 
@@ -1070,6 +1332,7 @@ async function saveProfile(event) {
         );
 
         return;
+
     }
 
 
@@ -1080,6 +1343,7 @@ async function saveProfile(event) {
         );
 
         return;
+
     }
 
 
@@ -1093,39 +1357,58 @@ async function saveProfile(event) {
         );
 
         return;
+
     }
 
 
     try {
 
-       const response =
-    await fetch(
-        `${API}/hospitals/${hospitalId}`,
-        {
-            method: "PUT",
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}`,
+                {
 
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
-            },
+                    method: "PUT",
 
-            body: JSON.stringify({
+                    headers:
+                        getHospitalAuthHeaders(
+                            true
+                        ),
 
-                        name,
-                        email,
-                        phone,
-                        city,
-                        address,
+                    body:
+                        JSON.stringify({
 
-                        description:
-                            description || "",
+                            name,
 
-                        token_fee:
-                            tokenFee
+                            email,
 
-                    })
+                            phone,
+
+                            city,
+
+                            address,
+
+                            description:
+                                description || "",
+
+                            token_fee:
+                                tokenFee
+
+                        })
+
                 }
             );
+
+
+        if (
+            handleHospitalAuthFailure(
+                response
+            )
+        ) {
+
+            return;
+
+        }
 
 
         const data =
@@ -1142,6 +1425,7 @@ async function saveProfile(event) {
                     "Unable to update hospital profile."
                 )
             );
+
         }
 
 
@@ -1192,6 +1476,7 @@ async function saveProfile(event) {
             token_fee:
                 hospital?.token_fee ??
                 tokenFee
+
         };
 
 
@@ -1217,7 +1502,9 @@ async function saveProfile(event) {
             error.message ||
             "Unable to update hospital profile."
         );
+
     }
+
 }
 
 
@@ -1232,7 +1519,9 @@ async function savePaymentAccount() {
 
 
     if (!hospitalId) {
+
         return;
+
     }
 
 
@@ -1266,10 +1555,6 @@ async function savePaymentAccount() {
         )?.value.trim().toLowerCase();
 
 
-    // -----------------------------------------
-    // Payment method required
-    // -----------------------------------------
-
     if (
         !accountNumber &&
         !upi
@@ -1280,12 +1565,9 @@ async function savePaymentAccount() {
         );
 
         return;
+
     }
 
-
-    // -----------------------------------------
-    // Bank validation
-    // -----------------------------------------
 
     if (accountNumber) {
 
@@ -1296,6 +1578,7 @@ async function savePaymentAccount() {
             );
 
             return;
+
         }
 
 
@@ -1306,6 +1589,7 @@ async function savePaymentAccount() {
             );
 
             return;
+
         }
 
 
@@ -1319,6 +1603,7 @@ async function savePaymentAccount() {
             );
 
             return;
+
         }
 
 
@@ -1333,6 +1618,7 @@ async function savePaymentAccount() {
             );
 
             return;
+
         }
 
 
@@ -1346,6 +1632,7 @@ async function savePaymentAccount() {
             );
 
             return;
+
         }
 
 
@@ -1356,6 +1643,7 @@ async function savePaymentAccount() {
             );
 
             return;
+
         }
 
 
@@ -1370,13 +1658,11 @@ async function savePaymentAccount() {
             );
 
             return;
+
         }
+
     }
 
-
-    // -----------------------------------------
-    // UPI validation
-    // -----------------------------------------
 
     if (upi) {
 
@@ -1391,40 +1677,56 @@ async function savePaymentAccount() {
             );
 
             return;
+
         }
+
     }
 
 
     try {
 
-       const response =
-    await fetch(
-        `${API}/hospitals/${hospitalId}/payment-account`,
-        {
-            method: "PUT",
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}/payment-account`,
+                {
 
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
-            },
+                    method: "PUT",
 
-            body: JSON.stringify({
+                    headers:
+                        getHospitalAuthHeaders(
+                            true
+                        ),
 
-                        account_name:
-                            accountName || "",
+                    body:
+                        JSON.stringify({
 
-                        account_number:
-                            accountNumber || "",
+                            account_name:
+                                accountName || "",
 
-                        ifsc:
-                            ifsc || "",
+                            account_number:
+                                accountNumber || "",
 
-                        upi:
-                            upi || ""
+                            ifsc:
+                                ifsc || "",
 
-                    })
+                            upi:
+                                upi || ""
+
+                        })
+
                 }
             );
+
+
+        if (
+            handleHospitalAuthFailure(
+                response
+            )
+        ) {
+
+            return;
+
+        }
 
 
         const data =
@@ -1441,6 +1743,7 @@ async function savePaymentAccount() {
                     "Unable to save payment account."
                 )
             );
+
         }
 
 
@@ -1449,12 +1752,13 @@ async function savePaymentAccount() {
             data.paymentAccount ||
             {};
 
-const status =
-    paymentAccount.status ||
-    paymentAccount.payment_account_status ||
-    data.payment_account_status ||
-    data.status ||
-    "PENDING_VERIFICATION";
+
+        const status =
+            paymentAccount.status ||
+            paymentAccount.payment_account_status ||
+            data.payment_account_status ||
+            data.status ||
+            "PENDING_VERIFICATION";
 
 
         updatePaymentStatus(
@@ -1479,7 +1783,9 @@ const status =
             error.message ||
             "Unable to save payment account."
         );
+
     }
+
 }
 
 
@@ -1505,7 +1811,9 @@ function initMap() {
 
 
     if (!mapElement) {
+
         return;
+
     }
 
 
@@ -1519,13 +1827,16 @@ function initMap() {
         );
 
         return;
+
     }
 
 
     const defaultLocation = {
 
         lat: 17.3850,
+
         lng: 78.4867
+
     };
 
 
@@ -1560,6 +1871,7 @@ function initMap() {
                     event.latLng.lng()
 
                 );
+
             }
 
         }
@@ -1567,6 +1879,7 @@ function initMap() {
 
 
     loadSavedHospitalLocation();
+
 }
 
 
@@ -1611,7 +1924,9 @@ function loadSavedHospitalLocation() {
             );
 
             return;
+
         }
+
     }
 
 
@@ -1652,7 +1967,9 @@ function loadSavedHospitalLocation() {
                     lat,
                     lng
                 );
+
             }
+
         }
 
 
@@ -1662,7 +1979,9 @@ function loadSavedHospitalLocation() {
             "LOCATION LOAD ERROR:",
             error
         );
+
     }
+
 }
 
 
@@ -1682,6 +2001,7 @@ function setHospitalLocation(
         );
 
         return;
+
     }
 
 
@@ -1703,6 +2023,7 @@ function setHospitalLocation(
         );
 
         return;
+
     }
 
 
@@ -1710,6 +2031,7 @@ function setHospitalLocation(
 
         lat,
         lng
+
     };
 
 
@@ -1743,6 +2065,7 @@ function setHospitalLocation(
                     "Hospital Location"
 
             });
+
     }
 
 
@@ -1762,6 +2085,7 @@ function setHospitalLocation(
 
         latitudeInput.value =
             lat;
+
     }
 
 
@@ -1769,7 +2093,9 @@ function setHospitalLocation(
 
         longitudeInput.value =
             lng;
+
     }
+
 }
 
 
@@ -1786,7 +2112,9 @@ function searchHospitalLocation() {
 
 
     if (!locationInput) {
+
         return;
+
     }
 
 
@@ -1801,6 +2129,7 @@ function searchHospitalLocation() {
         );
 
         return;
+
     }
 
 
@@ -1814,6 +2143,7 @@ function searchHospitalLocation() {
         );
 
         return;
+
     }
 
 
@@ -1824,8 +2154,7 @@ function searchHospitalLocation() {
     geocoder.geocode(
 
         {
-            address:
-                address
+            address
         },
 
         function (
@@ -1844,6 +2173,7 @@ function searchHospitalLocation() {
                 );
 
                 return;
+
             }
 
 
@@ -1860,8 +2190,11 @@ function searchHospitalLocation() {
                 location.lng()
 
             );
+
         }
+
     );
+
 }
 
 
@@ -1876,7 +2209,9 @@ async function saveHospitalLocation() {
 
 
     if (!hospitalId) {
+
         return;
+
     }
 
 
@@ -1904,6 +2239,7 @@ async function saveHospitalLocation() {
         );
 
         return;
+
     }
 
 
@@ -1914,6 +2250,7 @@ async function saveHospitalLocation() {
 
         longitude:
             Number(longitude)
+
     };
 
 
@@ -1931,25 +2268,42 @@ async function saveHospitalLocation() {
         );
 
         return;
+
     }
 
 
     try {
 
-       const response =
-    await fetch(
-        `${API}/hospitals/${hospitalId}/location`,
-        {
-            method: "PUT",
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}/location`,
+                {
 
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
-            },
+                    method: "PUT",
 
-            body: JSON.stringify(locationData)
+                    headers:
+                        getHospitalAuthHeaders(
+                            true
+                        ),
+
+                    body:
+                        JSON.stringify(
+                            locationData
+                        )
+
+                }
+            );
+
+
+        if (
+            handleHospitalAuthFailure(
+                response
+            )
+        ) {
+
+            return;
+
         }
-    );
 
 
         const data =
@@ -1966,10 +2320,10 @@ async function saveHospitalLocation() {
                     "Hospital location could not be saved."
                 )
             );
+
         }
 
 
-        // Save locally only after backend success
         localStorage.setItem(
             "hospitalLocation",
             JSON.stringify(
@@ -1992,6 +2346,7 @@ async function saveHospitalLocation() {
             saveHospitalData(
                 hospital
             );
+
         }
 
 
@@ -2012,147 +2367,282 @@ async function saveHospitalLocation() {
             error.message ||
             "Unable to save hospital location."
         );
+
     }
+
 }
 
 
- // =========================================================
- // LOAD DOCTORS
- // =========================================================
+// =========================================================
+// LOAD DOCTORS
+// =========================================================
 
 async function loadDoctors() {
 
-    const hospitalId = requireHospitalLogin();
+    const hospitalId =
+        requireHospitalLogin();
+
 
     if (!hospitalId) {
+
         return;
+
     }
 
-    const container = document.getElementById("doctorsList");
+
+    const container =
+        document.getElementById(
+            "doctorsList"
+        );
+
 
     if (!container) {
+
         return;
+
     }
 
-    container.innerHTML = "<p>Loading doctors...</p>";
+
+    container.innerHTML =
+        "<p>Loading doctors...</p>";
+
 
     try {
-       const response = await fetch(
-    `${API}/hospitals/${hospitalId}/doctors`,
-    {
-        headers: {
-            Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
-        }
-    }
-);
 
-        const data = await readJsonResponse(response);
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}/doctors`,
+                {
+                    headers:
+                        getHospitalAuthHeaders()
+                }
+            );
+
+
+        if (
+            handleHospitalAuthFailure(
+                response
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        const data =
+            await readJsonResponse(
+                response
+            );
+
 
         if (!response.ok) {
+
             throw new Error(
-                getErrorMessage(data, "Unable to load doctors.")
+                getErrorMessage(
+                    data,
+                    "Unable to load doctors."
+                )
             );
+
         }
 
-        const doctors = Array.isArray(data)
-            ? data
-            : Array.isArray(data.doctors)
-                ? data.doctors
-                : [];
+
+        const doctors =
+            Array.isArray(data)
+                ? data
+                : (
+                    Array.isArray(
+                        data.doctors
+                    )
+                        ? data.doctors
+                        : []
+                );
+
 
         container.innerHTML = "";
 
-        if (doctors.length === 0) {
-            container.innerHTML = "<p>No doctors added yet.</p>";
+
+        if (
+            doctors.length === 0
+        ) {
+
+            container.innerHTML =
+                "<p>No doctors added yet.</p>";
+
             return;
+
         }
 
-        doctors.forEach(function (doctor) {
-            const card = document.createElement("div");
-            card.className = "doctor-card";
 
-            const days = doctor.available_days
-                ? doctor.available_days
-                    .split(",")
-                    .map(day => day.trim())
-                    .filter(Boolean)
-                    .join(", ")
-                : "Not specified";
+        doctors.forEach(
+            function (doctor) {
 
-            const startTime = doctor.start_time || "";
-            const endTime = doctor.end_time || "";
+                const card =
+                    document.createElement(
+                        "div"
+                    );
 
-            const consultationHours =
-                startTime && endTime
-                    ? `${startTime} - ${endTime}`
-                    : "Not specified";
 
-            const available = doctor.is_available !== false;
+                card.className =
+                    "doctor-card";
 
-            const statusText = available
-                ? "Available"
-                : "Unavailable";
 
-            const statusClass = available
-                ? "doctor-available"
-                : "doctor-unavailable";
+                const days =
+                    doctor.available_days
+                        ? doctor.available_days
+                            .split(",")
+                            .map(
+                                day =>
+                                    day.trim()
+                            )
+                            .filter(
+                                Boolean
+                            )
+                            .join(", ")
+                        : "Not specified";
 
-            card.innerHTML = `
-                <h3>${escapeHtml(doctor.name || "Doctor")}</h3>
 
-                <p>
-                    <strong>Department:</strong>
-                    ${escapeHtml(doctor.department || "Not specified")}
-                </p>
+                const startTime =
+                    doctor.start_time ||
+                    "";
 
-                <p>
-                    <strong>Specialization:</strong>
-                    ${escapeHtml(doctor.specialization || "Not specified")}
-                </p>
 
-                <p>
-                    <strong>Experience:</strong>
-                    ${escapeHtml(doctor.experience || "Not specified")}
-                </p>
+                const endTime =
+                    doctor.end_time ||
+                    "";
 
-                <p>
-                    <strong>Available Days:</strong>
-                    ${escapeHtml(days)}
-                </p>
 
-                <p>
-                    <strong>Consultation Hours:</strong>
-                    ${escapeHtml(consultationHours)}
-                </p>
+                const consultationHours =
+                    startTime &&
+                    endTime
+                        ? `${startTime} - ${endTime}`
+                        : "Not specified";
 
-                <p>
-                    <strong>Status:</strong>
-                    <span class="${statusClass}">
-                        ${statusText}
-                    </span>
-                </p>
 
-                <button
-                    type="button"
-                    onclick="deleteDoctor(${Number(doctor.id)})"
-                >
-                    Delete
-                </button>
-            `;
+                const available =
+                    doctor.is_available !==
+                    false;
 
-            container.appendChild(card);
-        });
+
+                const statusText =
+                    available
+                        ? "Available"
+                        : "Unavailable";
+
+
+                const statusClass =
+                    available
+                        ? "doctor-available"
+                        : "doctor-unavailable";
+
+
+                card.innerHTML = `
+
+                    <h3>
+                        ${escapeHtml(
+                            doctor.name ||
+                            "Doctor"
+                        )}
+                    </h3>
+
+                    <p>
+                        <strong>
+                            Department:
+                        </strong>
+                        ${escapeHtml(
+                            doctor.department ||
+                            "Not specified"
+                        )}
+                    </p>
+
+                    <p>
+                        <strong>
+                            Specialization:
+                        </strong>
+                        ${escapeHtml(
+                            doctor.specialization ||
+                            "Not specified"
+                        )}
+                    </p>
+
+                    <p>
+                        <strong>
+                            Experience:
+                        </strong>
+                        ${escapeHtml(
+                            doctor.experience ||
+                            "Not specified"
+                        )}
+                    </p>
+
+                    <p>
+                        <strong>
+                            Available Days:
+                        </strong>
+                        ${escapeHtml(
+                            days
+                        )}
+                    </p>
+
+                    <p>
+                        <strong>
+                            Consultation Hours:
+                        </strong>
+                        ${escapeHtml(
+                            consultationHours
+                        )}
+                    </p>
+
+                    <p>
+                        <strong>
+                            Status:
+                        </strong>
+
+                        <span
+                            class="${statusClass}"
+                        >
+                            ${statusText}
+                        </span>
+                    </p>
+
+                    <button
+                        type="button"
+                        onclick="deleteDoctor(${Number(
+                            doctor.id
+                        )})"
+                    >
+                        Delete
+                    </button>
+
+                `;
+
+
+                container.appendChild(
+                    card
+                );
+
+            }
+        );
+
 
     } catch (error) {
-        console.error("LOAD DOCTORS ERROR:", error);
+
+        console.error(
+            "LOAD DOCTORS ERROR:",
+            error
+        );
+
 
         container.innerHTML =
             `<p>${escapeHtml(
-                error.message || "Unable to load doctors."
+                error.message ||
+                "Unable to load doctors."
             )}</p>`;
-    }
-}
 
+    }
+
+}
 
 
 // =========================================================
@@ -2163,8 +2653,21 @@ async function deleteDoctor(
     doctorId
 ) {
 
-    if (!doctorId) {
+    const hospitalId =
+        requireHospitalLogin();
+
+
+    if (!hospitalId) {
+
         return;
+
+    }
+
+
+    if (!doctorId) {
+
+        return;
+
     }
 
 
@@ -2175,22 +2678,37 @@ async function deleteDoctor(
 
 
     if (!confirmed) {
+
         return;
+
     }
 
 
     try {
 
         const response =
-    await fetch(
-        `${API}/doctors/${doctorId}`,
-        {
-            method: "DELETE",
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
-            }
+            await fetch(
+                `${API}/doctors/${doctorId}`,
+                {
+
+                    method: "DELETE",
+
+                    headers:
+                        getHospitalAuthHeaders()
+
+                }
+            );
+
+
+        if (
+            handleHospitalAuthFailure(
+                response
+            )
+        ) {
+
+            return;
+
         }
-    );
 
 
         const data =
@@ -2207,6 +2725,7 @@ async function deleteDoctor(
                     "Unable to delete doctor."
                 )
             );
+
         }
 
 
@@ -2230,7 +2749,9 @@ async function deleteDoctor(
             error.message ||
             "Unable to delete doctor."
         );
+
     }
+
 }
 
 
@@ -2238,154 +2759,304 @@ async function deleteDoctor(
 // ADD DOCTOR
 // =========================================================
 
-
 async function addDoctor() {
 
-    const hospitalId = requireHospitalLogin();
+    const hospitalId =
+        requireHospitalLogin();
+
 
     if (!hospitalId) {
+
         return;
+
     }
+
 
     const name =
-        document.getElementById("doctorName")?.value.trim();
+        document.getElementById(
+            "doctorName"
+        )?.value.trim();
+
 
     const department =
-        document.getElementById("doctorDepartment")?.value.trim();
+        document.getElementById(
+            "doctorDepartment"
+        )?.value.trim();
+
 
     const specialization =
-        document.getElementById("doctorSpecialization")?.value.trim();
+        document.getElementById(
+            "doctorSpecialization"
+        )?.value.trim();
+
 
     const experience =
-        document.getElementById("doctorExperience")?.value.trim();
+        document.getElementById(
+            "doctorExperience"
+        )?.value.trim();
 
-    // Get selected availability days
-    const availableDays = Array.from(
-        document.querySelectorAll(
-            'input[name="doctorAvailableDays"]:checked'
-        )
-    ).map(function (checkbox) {
-        return checkbox.value;
-    });
 
-    // Get consultation times
+    const availableDays =
+        Array.from(
+            document.querySelectorAll(
+                'input[name="doctorAvailableDays"]:checked'
+            )
+        ).map(
+            function (checkbox) {
+
+                return checkbox.value;
+
+            }
+        );
+
+
     const startTime =
-        document.getElementById("doctorStartTime")?.value || "";
+        document.getElementById(
+            "doctorStartTime"
+        )?.value || "";
+
 
     const endTime =
-        document.getElementById("doctorEndTime")?.value || "";
+        document.getElementById(
+            "doctorEndTime"
+        )?.value || "";
 
-    // Get availability status
+
     const isAvailable =
-        document.getElementById("doctorIsAvailable")?.value === "true";
+        document.getElementById(
+            "doctorIsAvailable"
+        )?.value === "true";
+
 
     if (!name) {
-        alert("Please enter doctor name.");
+
+        alert(
+            "Please enter doctor name."
+        );
+
         return;
+
     }
+
 
     if (!department) {
-        alert("Please enter doctor department.");
+
+        alert(
+            "Please enter doctor department."
+        );
+
         return;
+
     }
 
-    if (availableDays.length === 0) {
-        alert("Please select at least one available day.");
+
+    if (
+        availableDays.length === 0
+    ) {
+
+        alert(
+            "Please select at least one available day."
+        );
+
         return;
+
     }
 
-    if (!startTime || !endTime) {
-        alert("Please select consultation start and end times.");
+
+    if (
+        !startTime ||
+        !endTime
+    ) {
+
+        alert(
+            "Please select consultation start and end times."
+        );
+
         return;
+
     }
 
-    if (startTime >= endTime) {
-        alert("End time must be later than start time.");
+
+    if (
+        startTime >= endTime
+    ) {
+
+        alert(
+            "End time must be later than start time."
+        );
+
         return;
+
     }
+
 
     try {
 
-       const response = await fetch(
-    `${API}/hospitals/${hospitalId}/doctors`,
-    {
-        method: "POST",
+        const response =
+            await fetch(
+                `${API}/hospitals/${hospitalId}/doctors`,
+                {
 
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
-        },
+                    method: "POST",
 
-        body: JSON.stringify({
-                    name,
-                    department,
-                    specialization: specialization || "",
-                    experience: experience || "",
-                    available_days: availableDays.join(","),
-                    start_time: startTime,
-                    end_time: endTime,
-                    is_available: isAvailable
-                })
-            }
-        );
+                    headers:
+                        getHospitalAuthHeaders(
+                            true
+                        ),
 
-        const data = await readJsonResponse(response);
+                    body:
+                        JSON.stringify({
 
-        if (!response.ok) {
-            throw new Error(
-                getErrorMessage(data, "Unable to add doctor.")
+                            name,
+
+                            department,
+
+                            specialization:
+                                specialization || "",
+
+                            experience:
+                                experience || "",
+
+                            available_days:
+                                availableDays.join(","),
+
+                            start_time:
+                                startTime,
+
+                            end_time:
+                                endTime,
+
+                            is_available:
+                                isAvailable
+
+                        })
+
+                }
             );
+
+
+        if (
+            handleHospitalAuthFailure(
+                response
+            )
+        ) {
+
+            return;
+
         }
 
-        alert("Doctor added successfully.");
+
+        const data =
+            await readJsonResponse(
+                response
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Unable to add doctor."
+                )
+            );
+
+        }
+
+
+        alert(
+            "Doctor added successfully."
+        );
+
 
         [
             "doctorName",
+
             "doctorDepartment",
+
             "doctorSpecialization",
+
             "doctorExperience",
+
             "doctorStartTime",
+
             "doctorEndTime"
-        ].forEach(function (id) {
 
-            const element = document.getElementById(id);
+        ].forEach(
+            function (id) {
 
-            if (element) {
-                element.value = "";
+                const element =
+                    document.getElementById(
+                        id
+                    );
+
+
+                if (element) {
+
+                    element.value = "";
+
+                }
+
             }
-        });
+        );
 
-        // Clear selected weekdays
-        document.querySelectorAll(
-            'input[name="doctorAvailableDays"]'
-        ).forEach(function (checkbox) {
-            checkbox.checked = false;
-        });
 
-        // Reset doctor status
+        document
+            .querySelectorAll(
+                'input[name="doctorAvailableDays"]'
+            )
+            .forEach(
+                function (checkbox) {
+
+                    checkbox.checked =
+                        false;
+
+                }
+            );
+
+
         const statusElement =
-            document.getElementById("doctorIsAvailable");
+            document.getElementById(
+                "doctorIsAvailable"
+            );
+
 
         if (statusElement) {
-            statusElement.value = "true";
+
+            statusElement.value =
+                "true";
+
         }
+
 
         await loadDoctors();
 
+
     } catch (error) {
 
-        console.error("ADD DOCTOR ERROR:", error);
+        console.error(
+            "ADD DOCTOR ERROR:",
+            error
+        );
+
 
         alert(
-            error.message || "Unable to add doctor."
+            error.message ||
+            "Unable to add doctor."
         );
+
     }
+
 }
+
+
 // =========================================================
 // HTML ESCAPE
 // =========================================================
 
-function escapeHtml(value) {
+function escapeHtml(
+    value
+) {
 
     if (
         value === null ||
@@ -2393,6 +3064,7 @@ function escapeHtml(value) {
     ) {
 
         return "";
+
     }
 
 
@@ -2422,6 +3094,7 @@ function escapeHtml(value) {
             /'/g,
             "&#039;"
         );
+
 }
 
 
@@ -2432,10 +3105,6 @@ function escapeHtml(value) {
 document.addEventListener(
     "DOMContentLoaded",
     function () {
-
-        // -----------------------------------------
-        // Hospital login page
-        // -----------------------------------------
 
         const loginForm =
             document.getElementById(
@@ -2449,12 +3118,9 @@ document.addEventListener(
                 "submit",
                 hospitalLogin
             );
+
         }
 
-
-        // -----------------------------------------
-        // Profile page
-        // -----------------------------------------
 
         if (
             document.getElementById(
@@ -2463,12 +3129,9 @@ document.addEventListener(
         ) {
 
             loadProfile();
+
         }
 
-
-        // -----------------------------------------
-        // Doctors page
-        // -----------------------------------------
 
         if (
             document.getElementById(
@@ -2477,12 +3140,9 @@ document.addEventListener(
         ) {
 
             loadDoctors();
+
         }
 
-
-        // -----------------------------------------
-        // Backend connection test
-        // -----------------------------------------
 
         checkBackend();
 

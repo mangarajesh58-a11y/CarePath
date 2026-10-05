@@ -1883,12 +1883,13 @@ async function createTokenAfterPayment(
 
                     method: "POST",
 
-                    headers: {
+                   headers: {
+    "Content-Type":
+        "application/json",
 
-                        "Content-Type":
-                            "application/json"
-
-                    },
+    "Authorization":
+        `Bearer ${localStorage.getItem("patientToken") || ""}`
+},
 
                     body:
                         JSON.stringify({
