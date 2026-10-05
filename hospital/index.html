@@ -337,9 +337,20 @@
 
                 const hospital = data.hospital || data;
 
-                saveHospitalSession(hospital);
+if (!data.access_token) {
+    throw new Error(
+        "Login succeeded, but the authentication token was not returned."
+    );
+}
 
-                showMessage("Login successful. Opening dashboard...", "success");
+localStorage.setItem(
+    "hospitalToken",
+    data.access_token
+);
+
+saveHospitalSession(hospital);
+
+showMessage("Login successful. Opening dashboard...", "success");
 
                 window.location.replace("dashboard.html");
 

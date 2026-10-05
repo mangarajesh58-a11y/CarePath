@@ -461,7 +461,7 @@ def run_database_migration():
         "VARCHAR(100) NULL",
 
     "certificate_uploaded_at":
-        "DATESTEMP NULL",
+        "DATETIME NULL",
 
     "certificate_verification_status":
         "VARCHAR(30) NOT NULL DEFAULT 'PENDING'",
@@ -610,17 +610,20 @@ def run_database_migration():
 
     token_columns = {
 
-        "hospital_id":
-            "INT NULL",
+    "hospital_id":
+        "INT NULL",
 
-        "platform":
-            "VARCHAR(100) NULL",
+    "patient_id":
+        "INT NULL",
 
-        "token_fee":
-            "INT NOT NULL DEFAULT 0",
+    "platform":
+        "VARCHAR(100) NULL",
 
-        "platform_fee":
-            f"INT NOT NULL DEFAULT {PLATFORM_FEE}",
+    "token_fee":
+        "INT NOT NULL DEFAULT 0",
+
+    "platform_fee":
+        f"INT NOT NULL DEFAULT {PLATFORM_FEE}",
 
         "total_amount":
             f"INT NOT NULL DEFAULT {PLATFORM_FEE}",
@@ -1552,25 +1555,18 @@ def patient_google_login(
         db.refresh(patient)
 
     return {
-
         "success": True,
-
-        "message":
-            "Google login successful",
-
+        "message": "Google login successful",
+        "access_token": create_access_token(
+            patient.id,
+            "patient",
+        ),
+        "token_type": "bearer",
         "patient": {
-
-            "id":
-                patient.id,
-
-            "full_name":
-                patient.full_name,
-
-            "email":
-                patient.email,
-
-            "phone":
-                patient.phone,
+            "id": patient.id,
+            "full_name": patient.full_name,
+            "email": patient.email,
+            "phone": patient.phone,
         },
     }
 
@@ -1589,7 +1585,7 @@ def update_patient_profile(
     )
 
     email = google_data["email"].strip().lower()
-    phone = data.phone.strip()
+    phone = (data.phone or "").strip()
 
     # Validate phone number
     if not phone:
@@ -2256,14 +2252,14 @@ def hospital_google_login(
     db.refresh(hospital)
 
     return {
-
         "success": True,
-
-        "message":
-            "Google login successful",
-
-        "hospital":
-            hospital_to_dict(hospital),
+        "message": "Google login successful",
+        "access_token": create_access_token(
+            hospital.id,
+            "hospital",
+        ),
+        "token_type": "bearer",
+        "hospital": hospital_to_dict(hospital),
     }
 
 
@@ -2284,6 +2280,7 @@ async def upload_hospital_photo(
     hospital_id: int,
     photo: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
 ):
     """Upload a public hospital cover photo for patient browsing cards."""
     hospital = (
@@ -2293,7 +2290,11 @@ async def upload_hospital_photo(
     )
     if not hospital:
         raise HTTPException(status_code=404, detail="Hospital not found")
-
+    if hospital.id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot upload a photo for another hospital",
+        )
     content_type = (photo.content_type or "").lower()
     if content_type not in ALLOWED_HOSPITAL_PHOTO_TYPES:
         raise HTTPException(
@@ -2414,6 +2415,7 @@ def get_hospital(
 def delete_doctor(
     doctor_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
 ):
     doctor = (
         db.query(Doctor)
@@ -2425,6 +2427,11 @@ def delete_doctor(
         raise HTTPException(
             status_code=404,
             detail="Doctor not found",
+        )
+    if doctor.hospital_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot delete another hospital's doctor",
         )
 
     db.delete(doctor)
@@ -2444,8 +2451,8 @@ def update_hospital(
     hospital_id: int,
     data: HospitalUpdate,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
 ):
-
     hospital = (
         db.query(Hospital)
         .filter(
@@ -2460,6 +2467,11 @@ def update_hospital(
         raise HTTPException(
             status_code=404,
             detail="Hospital not found",
+        )
+    if hospital.id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot update another hospital's profile.",
         )
 
     if hospital.certificate_verification_status != "VERIFIED":
@@ -2537,14 +2549,13 @@ def update_hospital(
 # SAVE HOSPITAL LOCATION
 # ============================================================
 
-@app.put(
-    "/hospitals/{hospital_id}/location"
-)
+@app.put("/hospitals/{hospital_id}/location")
 def save_hospital_location(
     hospital_id: int,
     latitude: str,
     longitude: str,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
 ):
 
     hospital = (
@@ -2562,7 +2573,11 @@ def save_hospital_location(
             status_code=404,
             detail="Hospital not found",
         )
-
+    if hospital.id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot update another hospital's location.",
+        )
     hospital.latitude = latitude
 
     hospital.longitude = longitude
@@ -2748,6 +2763,7 @@ def get_hospital_doctors(
 def add_doctor(
     data: DoctorCreate,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
 ):
 
     hospital = (
@@ -2760,12 +2776,16 @@ def add_doctor(
     )
 
     if not hospital:
-
         raise HTTPException(
             status_code=404,
             detail="Hospital not found",
         )
 
+    if hospital.id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot add doctors to another hospital.",
+        )
     name = data.name.strip()
 
     department = data.department.strip()
@@ -2834,6 +2854,7 @@ def save_payment_account(
     hospital_id: int,
     data: PaymentAccountRequest,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
 ):
 
     hospital = (
@@ -2846,10 +2867,15 @@ def save_payment_account(
     )
 
     if not hospital:
-
         raise HTTPException(
             status_code=404,
             detail="Hospital not found",
+        )
+
+    if hospital.id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot modify another hospital's payment details",
         )
 
     if (
@@ -2917,6 +2943,7 @@ def save_payment_account(
 def get_payment_account(
     hospital_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
 ):
 
     hospital = (
@@ -2929,10 +2956,15 @@ def get_payment_account(
     )
 
     if not hospital:
-
         raise HTTPException(
             status_code=404,
             detail="Hospital not found",
+        )
+
+    if hospital.id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot access another hospital's payment details",
         )
 
     return {
@@ -3636,6 +3668,7 @@ def admin_get_hospitals(
 def admin_get_hospital(
     hospital_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
 
     hospital = (
@@ -4063,6 +4096,7 @@ def add_hospital_doctor(
     hospital_id: int,
     data: HospitalDoctorCreate,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
 ):
     # Check hospital
     hospital = (
@@ -4076,7 +4110,11 @@ def add_hospital_doctor(
             status_code=404,
             detail="Hospital not found",
         )
-
+    if hospital.id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot add doctors to another hospital.",
+        )
     # Clean data
     name = data.name.strip()
     department = data.department.strip()
@@ -4293,12 +4331,11 @@ def add_hospital_doctor(
 # ADMIN - APPROVE PAYMENT ACCOUNT
 # ============================================================
 
-@app.put(
-    "/admin/hospitals/{hospital_id}/payment-account/approve"
-)
-def approve_payment_account(
+@app.put("/admin/hospitals/{hospital_id}/payment-account/approve")
+def approve_hospital_payment_account(
     hospital_id: int,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
 
     hospital = (
@@ -4412,6 +4449,7 @@ def reject_payment_account(
 @app.get("/admin/revenue")
 def admin_revenue(
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
 
     paid_tokens = (
@@ -4496,8 +4534,8 @@ def admin_revenue(
 @app.get("/admin/payments")
 def admin_payments(
     db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
 ):
-
     payments = (
         db.query(Token)
         .filter(
@@ -4518,11 +4556,6 @@ def admin_payments(
         for payment in payments
     ]
 
-
-# ============================================================
-# ADMIN - TOKEN LIST
-# ============================================================
-# ============================================================
 # ADMIN - ALL TOKENS (ADMIN AUTHENTICATION REQUIRED)
 # ============================================================
 

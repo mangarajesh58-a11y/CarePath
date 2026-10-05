@@ -354,27 +354,19 @@ async function checkBackend() {
 // =========================================================
 
 function requireHospitalLogin() {
+    const hospitalId = getHospitalId();
+    const hospitalToken = localStorage.getItem("hospitalToken");
 
-    const hospitalId =
-        getHospitalId();
+    if (!hospitalId || !hospitalToken) {
+        alert("Your session is missing or expired. Please login again.");
 
+        localStorage.removeItem("hospitalToken");
+        clearHospitalData();
 
-    if (!hospitalId) {
-
-        alert(
-            "Hospital login information not found. Please login again."
-        );
-
-
-        // IMPORTANT:
-        // Your actual hospital login page is index.html
-        window.location.href =
-            "index.html";
-
+        window.location.href = "index.html";
 
         return null;
     }
-
 
     return hospitalId;
 }
@@ -460,16 +452,25 @@ async function handleHospitalGoogleLogin(
             );
 
 
-        if (
+               if (
             !hospital ||
             !hospital.id
         ) {
-
             throw new Error(
                 "Hospital information was not returned by the server."
             );
         }
 
+        if (!data.access_token) {
+            throw new Error(
+                "Login succeeded, but the authentication token was not returned."
+            );
+        }
+
+        localStorage.setItem(
+            "hospitalToken",
+            data.access_token
+        );
 
         saveHospitalData(
             hospital
@@ -621,33 +622,31 @@ async function hospitalLogin(event) {
                 )
             );
         }
+const hospital =
+    getHospitalFromResponse(data);
 
+if (!hospital || !hospital.id) {
+    throw new Error(
+        "Hospital information was not returned by the server."
+    );
+}
 
-        const hospital =
-            getHospitalFromResponse(
-                data
-            );
+if (!data.access_token) {
+    throw new Error(
+        "Login succeeded, but the authentication token was not returned."
+    );
+}
 
+// Save JWT authentication token
+localStorage.setItem(
+    "hospitalToken",
+    data.access_token
+);
 
-        if (
-            !hospital ||
-            !hospital.id
-        ) {
+// Save hospital information
+saveHospitalData(hospital);
 
-            throw new Error(
-                "Hospital information was not returned by the server."
-            );
-        }
-
-
-        saveHospitalData(
-            hospital
-        );
-
-
-        alert(
-            "Hospital login successful."
-        );
+alert("Hospital login successful.");
 
 
         window.location.href =
@@ -674,16 +673,15 @@ async function hospitalLogin(event) {
 // LOGOUT
 // =========================================================
 function hospitalLogout() {
-    localStorage.removeItem("hospital_id");
-    localStorage.removeItem("hospital_name");
-    localStorage.removeItem("hospital_email");
-    localStorage.removeItem("hospital_token_fee");
-    localStorage.removeItem("hospital_approval_status");
-    localStorage.removeItem("hospital_is_published");
+    // Remove the authentication token
+    localStorage.removeItem("hospitalToken");
 
+    // Clear saved hospital information
+    clearHospitalData();
+
+    // Return to the login page
     window.location.href = "index.html";
 }
-
 
 
 // =========================================================
@@ -736,9 +734,14 @@ async function loadProfile() {
     try {
 
         const response =
-            await fetch(
-                `${API}/hospitals/${hospitalId}`
-            );
+    await fetch(
+        `${API}/hospitals/${hospitalId}`,
+        {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
+            }
+        }
+    );
 
 
         const data =
@@ -1095,19 +1098,18 @@ async function saveProfile(event) {
 
     try {
 
-        const response =
-            await fetch(
-                `${API}/hospitals/${hospitalId}`,
-                {
+       const response =
+    await fetch(
+        `${API}/hospitals/${hospitalId}`,
+        {
+            method: "PUT",
 
-                    method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
+            },
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
+            body: JSON.stringify({
 
                         name,
                         email,
@@ -1395,19 +1397,18 @@ async function savePaymentAccount() {
 
     try {
 
-        const response =
-            await fetch(
-                `${API}/hospitals/${hospitalId}/payment-account`,
-                {
+       const response =
+    await fetch(
+        `${API}/hospitals/${hospitalId}/payment-account`,
+        {
+            method: "PUT",
 
-                    method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
+            },
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
+            body: JSON.stringify({
 
                         account_name:
                             accountName || "",
@@ -1935,24 +1936,20 @@ async function saveHospitalLocation() {
 
     try {
 
-        const response =
-            await fetch(
-                `${API}/hospitals/${hospitalId}/location`,
-                {
+       const response =
+    await fetch(
+        `${API}/hospitals/${hospitalId}/location`,
+        {
+            method: "PUT",
 
-                    method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
+            },
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify(
-                            locationData
-                        )
-                }
-            );
+            body: JSON.stringify(locationData)
+        }
+    );
 
 
         const data =
@@ -2040,9 +2037,14 @@ async function loadDoctors() {
     container.innerHTML = "<p>Loading doctors...</p>";
 
     try {
-        const response = await fetch(
-            `${API}/hospitals/${hospitalId}/doctors`
-        );
+       const response = await fetch(
+    `${API}/hospitals/${hospitalId}/doctors`,
+    {
+        headers: {
+            Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
+        }
+    }
+);
 
         const data = await readJsonResponse(response);
 
@@ -2180,14 +2182,15 @@ async function deleteDoctor(
     try {
 
         const response =
-            await fetch(
-                `${API}/doctors/${doctorId}`,
-                {
-
-                    method: "DELETE"
-
-                }
-            );
+    await fetch(
+        `${API}/doctors/${doctorId}`,
+        {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
+            }
+        }
+    );
 
 
         const data =
@@ -2303,16 +2306,17 @@ async function addDoctor() {
 
     try {
 
-        const response = await fetch(
-            `${API}/hospitals/${hospitalId}/doctors`,
-            {
-                method: "POST",
+       const response = await fetch(
+    `${API}/hospitals/${hospitalId}/doctors`,
+    {
+        method: "POST",
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
+        },
 
-                body: JSON.stringify({
+        body: JSON.stringify({
                     name,
                     department,
                     specialization: specialization || "",

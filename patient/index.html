@@ -1369,9 +1369,21 @@ if (localStorage.getItem("patientId")) {
                         // SAVE PATIENT
                         // -------------------------------------
 
-                        savePatientData(
-                            data.patient
-                        );
+                        // SAVE PATIENT
+// SAVE PATIENT DATA
+savePatientData(patient);
+
+// SAVE JWT ACCESS TOKEN
+if (data.access_token) {
+    localStorage.setItem(
+        "patientToken",
+        data.access_token
+    );
+} else {
+    throw new Error(
+        "Google login succeeded, but authentication token was not returned."
+    );
+}
 
 
                         // -------------------------------------
