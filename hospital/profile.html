@@ -60,15 +60,89 @@
 
         <h2>Hospital Information</h2>
 
-        <div class="hospital-photo-upload-card" style="margin:18px 0 24px;padding:16px;border:1px solid #dbe4f0;border-radius:12px;background:#f8fbff;">
-            <h3 style="margin:0 0 10px;">Hospital Cover Photo</h3>
-            <p style="margin:0 0 12px;color:#64748b;font-size:14px;">Upload a clear photo of your hospital building. JPG, PNG, or WEBP; maximum 5 MB.</p>
-            <img id="hospitalPhotoPreview" alt="Hospital cover preview" style="display:none;width:100%;max-width:420px;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:12px;">
-            <input type="file" id="hospitalPhotoFile" accept="image/jpeg,image/png,image/webp" style="display:block;margin-bottom:12px;">
-            <button type="button" onclick="uploadHospitalPhoto()" style="margin-top:4px;">📷 Upload Hospital Photo</button>
-            <p id="hospitalPhotoMessage" role="status" style="margin-top:10px;font-size:14px;"></p>
+
+        <!-- ==============================
+             HOSPITAL PHOTO
+        =============================== -->
+
+        <div
+            class="hospital-photo-upload-card"
+            style="
+                margin:18px 0 24px;
+                padding:16px;
+                border:1px solid #dbe4f0;
+                border-radius:12px;
+                background:#f8fbff;
+            "
+        >
+
+            <h3 style="margin:0 0 10px;">
+                Hospital Cover Photo
+            </h3>
+
+            <p
+                style="
+                    margin:0 0 12px;
+                    color:#64748b;
+                    font-size:14px;
+                "
+            >
+                Upload a clear photo of your hospital building.
+                JPG, PNG, or WEBP; maximum 5 MB.
+            </p>
+
+
+            <img
+                id="hospitalPhotoPreview"
+                alt="Hospital cover preview"
+                style="
+                    display:none;
+                    width:100%;
+                    max-width:420px;
+                    max-height:220px;
+                    object-fit:cover;
+                    border-radius:10px;
+                    margin-bottom:12px;
+                "
+            >
+
+
+            <input
+                type="file"
+                id="hospitalPhotoFile"
+                accept="image/jpeg,image/png,image/webp"
+                style="
+                    display:block;
+                    margin-bottom:12px;
+                "
+            >
+
+
+            <button
+                type="button"
+                onclick="uploadHospitalPhoto()"
+                style="margin-top:4px;"
+            >
+                📷 Upload Hospital Photo
+            </button>
+
+
+            <p
+                id="hospitalPhotoMessage"
+                role="status"
+                style="
+                    margin-top:10px;
+                    font-size:14px;
+                "
+            ></p>
+
         </div>
 
+
+
+        <!-- ==============================
+             BASIC INFORMATION
+        =============================== -->
 
         <label for="profileName">
             Hospital Name
@@ -147,6 +221,7 @@
         >
 
 
+
         <!-- ==============================
              TOKEN FEE
         =============================== -->
@@ -187,10 +262,17 @@
                 color:#164e8a;
             "
         >
+
             Example:
+
             Hospital token fee ₹100 +
+
             CarePath platform fee ₹10 =
-            <strong>Patient pays ₹110</strong>
+
+            <strong>
+                Patient pays ₹110
+            </strong>
+
         </div>
 
 
@@ -225,6 +307,7 @@
             type="text"
             id="paymentAccountName"
             placeholder="Enter account holder name"
+            autocomplete="off"
         >
 
 
@@ -264,6 +347,7 @@
             placeholder="Example: SBIN0001234"
             maxlength="11"
             style="text-transform:uppercase;"
+            autocomplete="off"
         >
 
 
@@ -297,6 +381,7 @@
 
         <button
             type="button"
+            id="savePaymentAccountButton"
             onclick="savePaymentAccount()"
             style="
                 margin-top:15px;
@@ -454,15 +539,170 @@ const hospitalId =
     localStorage.getItem("hospital_id");
 
 
+const hospitalToken =
+    localStorage.getItem("hospitalToken");
+
+
 
 /* ==================================
    CHECK LOGIN
 ================================== */
 
-if (!hospitalId) {
+if (
+    !hospitalId ||
+    !hospitalToken
+) {
+
+    alert(
+        "Your hospital session is missing or expired. Please login again."
+    );
 
     window.location.href =
         "index.html";
+
+}
+
+
+
+/* ==================================
+   AUTH HEADERS
+================================== */
+
+function getHospitalAuthHeaders(
+    extraHeaders = {}
+) {
+
+    const token =
+        localStorage.getItem(
+            "hospitalToken"
+        );
+
+
+    if (!token) {
+
+        handleAuthenticationFailure();
+
+        return extraHeaders;
+
+    }
+
+
+    return {
+
+        ...extraHeaders,
+
+        "Authorization":
+            `Bearer ${token}`
+
+    };
+
+}
+
+
+
+/* ==================================
+   HANDLE 401
+================================== */
+
+function handleAuthenticationFailure() {
+
+    localStorage.removeItem(
+        "hospitalToken"
+    );
+
+    localStorage.removeItem(
+        "hospital_id"
+    );
+
+    localStorage.removeItem(
+        "hospital_name"
+    );
+
+    localStorage.removeItem(
+        "hospital_email"
+    );
+
+    localStorage.removeItem(
+        "hospital_token_fee"
+    );
+
+    localStorage.removeItem(
+        "hospital_approval_status"
+    );
+
+    localStorage.removeItem(
+        "hospital_is_published"
+    );
+
+    localStorage.removeItem(
+        "hospital_latitude"
+    );
+
+    localStorage.removeItem(
+        "hospital_longitude"
+    );
+
+
+    alert(
+        "Your hospital session has expired. Please login again."
+    );
+
+
+    window.location.href =
+        "index.html";
+
+}
+
+
+
+/* ==================================
+   CHECK RESPONSE AUTH
+================================== */
+
+async function parseResponse(
+    response
+) {
+
+    let data = {};
+
+    try {
+
+        data =
+            await response.json();
+
+    } catch {
+
+        data = {};
+
+    }
+
+
+    if (
+        response.status === 401
+    ) {
+
+        handleAuthenticationFailure();
+
+        throw new Error(
+            "Authentication required. Please login again."
+        );
+
+    }
+
+
+    if (
+        !response.ok
+    ) {
+
+        throw new Error(
+            data.detail ||
+            "Request failed."
+        );
+
+    }
+
+
+    return data;
 
 }
 
@@ -474,26 +714,32 @@ if (!hospitalId) {
 
 async function loadProfile() {
 
+    if (
+        !hospitalId ||
+        !hospitalToken
+    ) {
+
+        return;
+
+    }
+
+
     try {
 
         const response =
             await fetch(
-                `${API_URL}/hospitals/${hospitalId}`
+                `${API_URL}/hospitals/${hospitalId}`,
+                {
+                    headers:
+                        getHospitalAuthHeaders()
+                }
             );
 
 
         const hospital =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                hospital.detail ||
-                "Failed to load hospital profile."
+            await parseResponse(
+                response
             );
-
-        }
 
 
 
@@ -551,39 +797,73 @@ async function loadProfile() {
         ).value =
             hospital.token_fee ?? 0;
 
-        const photoPreview = document.getElementById("hospitalPhotoPreview");
+
+
+        /* ==============================
+           HOSPITAL PHOTO
+        ============================== */
+
+        const photoPreview =
+            document.getElementById(
+                "hospitalPhotoPreview"
+            );
+
+
         if (photoPreview) {
-            if (hospital.image_url) {
-                photoPreview.src = hospital.image_url.startsWith("http")
-                    ? hospital.image_url
-                    : `${API_URL}${hospital.image_url}`;
-                photoPreview.style.display = "block";
+
+            if (
+                hospital.image_url
+            ) {
+
+                photoPreview.src =
+                    hospital.image_url.startsWith(
+                        "http"
+                    )
+                        ? hospital.image_url
+                        : `${API_URL}${hospital.image_url}`;
+
+                photoPreview.style.display =
+                    "block";
+
             } else {
-                photoPreview.removeAttribute("src");
-                photoPreview.style.display = "none";
+
+                photoPreview.removeAttribute(
+                    "src"
+                );
+
+                photoPreview.style.display =
+                    "none";
+
             }
+
         }
 
+
+
+        /* ==============================
+           PAYMENT STATUS
+        ============================== */
+
+        const paymentStatus =
+            hospital.payment_account_status ||
+            "NOT_ADDED";
 
 
         document.getElementById(
             "paymentAccountStatus"
         ).innerHTML =
             `
-            Payment account status:
-            <strong>
-                ${
-                    hospital.payment_account_status ||
-                    "NOT_ADDED"
-                }
-            </strong>
+                Payment account status:
+                <strong>
+                    ${paymentStatus}
+                </strong>
             `;
 
 
 
-        /*
-         * Load saved latitude/longitude
-         */
+        /* ==============================
+           LOCATION
+        ============================== */
 
         if (
             hospital.latitude !== null &&
@@ -613,14 +893,16 @@ async function loadProfile() {
 
 
         /*
-         * If coordinates exist,
-         * place marker on map.
+         * Display existing location
+         * after Google Maps is ready.
          */
 
         if (
+            map &&
             hospital.latitude !== null &&
+            hospital.latitude !== undefined &&
             hospital.longitude !== null &&
-            map
+            hospital.longitude !== undefined
         ) {
 
             setMapLocation(
@@ -630,8 +912,13 @@ async function loadProfile() {
 
         }
 
-
     } catch (error) {
+
+        console.error(
+            "LOAD PROFILE ERROR:",
+            error
+        );
+
 
         showMessage(
             error.message,
@@ -658,7 +945,12 @@ async function saveProfile() {
         );
 
 
-    if (tokenFee < 0) {
+    if (
+        !Number.isFinite(
+            tokenFee
+        ) ||
+        tokenFee < 0
+    ) {
 
         showMessage(
             "Token fee cannot be negative.",
@@ -708,46 +1000,55 @@ async function saveProfile() {
             await fetch(
                 `${API_URL}/hospitals/${hospitalId}`,
                 {
-                    method: "PUT",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                    method:
+                        "PUT",
+
+                    headers:
+                        getHospitalAuthHeaders(
+                            {
+                                "Content-Type":
+                                    "application/json"
+                            }
+                        ),
 
                     body:
-                        JSON.stringify(data)
+                        JSON.stringify(
+                            data
+                        )
+
                 }
             );
 
 
         const result =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                result.detail ||
-                "Failed to save profile."
+            await parseResponse(
+                response
             );
-
-        }
 
 
         localStorage.setItem(
             "hospital_token_fee",
-            String(tokenFee)
+            String(
+                tokenFee
+            )
         );
 
 
         showMessage(
+            result.message ||
             "Hospital profile updated successfully.",
             true
         );
 
 
     } catch (error) {
+
+        console.error(
+            "SAVE PROFILE ERROR:",
+            error
+        );
+
 
         showMessage(
             error.message,
@@ -787,7 +1088,8 @@ async function savePaymentAccount() {
     const ifsc =
         document.getElementById(
             "paymentIfsc"
-        ).value.trim()
+        ).value
+        .trim()
         .toUpperCase();
 
 
@@ -798,7 +1100,13 @@ async function savePaymentAccount() {
 
 
 
-    if (!accountName) {
+    /* ==============================
+       VALIDATION
+    ============================== */
+
+    if (
+        !accountName
+    ) {
 
         showMessage(
             "Enter account holder name.",
@@ -859,6 +1167,22 @@ async function savePaymentAccount() {
 
 
 
+    if (
+        accountNumber &&
+        accountNumber.length < 6
+    ) {
+
+        showMessage(
+            "Enter a valid bank account number.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
     const data = {
 
         account_name:
@@ -877,67 +1201,118 @@ async function savePaymentAccount() {
 
 
 
+    const button =
+        document.getElementById(
+            "savePaymentAccountButton"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "Saving...";
+
+    }
+
+
+
     try {
 
         const response =
             await fetch(
                 `${API_URL}/hospitals/${hospitalId}/payment-account`,
                 {
-                    method: "PUT",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                    method:
+                        "PUT",
+
+                    headers:
+                        getHospitalAuthHeaders(
+                            {
+                                "Content-Type":
+                                    "application/json"
+                            }
+                        ),
 
                     body:
-                        JSON.stringify(data)
+                        JSON.stringify(
+                            data
+                        )
+
                 }
             );
 
 
         const result =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                result.detail ||
-                "Failed to save payment account."
+            await parseResponse(
+                response
             );
 
-        }
 
+        const status =
+            result.payment_account_status ||
+            "PENDING_VERIFICATION";
 
 
         document.getElementById(
             "paymentAccountStatus"
         ).innerHTML =
             `
-            Payment account status:
-            <strong>
-                ${
-                    result.payment_account_status ||
-                    "PENDING_VERIFICATION"
-                }
-            </strong>
+                Payment account status:
+                <strong>
+                    ${status}
+                </strong>
             `;
 
 
-
         showMessage(
-            "Payment account submitted for verification.",
+            "Payment account submitted successfully. It is now pending verification.",
             true
         );
 
 
+        /*
+         * Clear sensitive bank account
+         * fields after successful submission.
+         */
+
+        document.getElementById(
+            "paymentAccountNumber"
+        ).value = "";
+
+
+        document.getElementById(
+            "paymentConfirmAccountNumber"
+        ).value = "";
+
+
     } catch (error) {
+
+        console.error(
+            "SAVE PAYMENT ACCOUNT ERROR:",
+            error
+        );
+
 
         showMessage(
             error.message,
             false
         );
+
+    } finally {
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "💳 Save Payment Account";
+
+        }
 
     }
 
@@ -958,6 +1333,13 @@ function showMessage(
         document.getElementById(
             "message"
         );
+
+
+    if (!element) {
+
+        return;
+
+    }
 
 
     element.textContent =
@@ -987,9 +1369,11 @@ function showMessage(
    GOOGLE MAP
 ================================== */
 
-let map = null;
+let map =
+    null;
 
-let marker = null;
+let marker =
+    null;
 
 
 
@@ -997,9 +1381,11 @@ function initMap() {
 
     const defaultLocation = {
 
-        lat: 17.3850,
+        lat:
+            17.3850,
 
-        lng: 78.4867
+        lng:
+            78.4867
 
     };
 
@@ -1010,11 +1396,13 @@ function initMap() {
                 "map"
             ),
             {
+
                 center:
                     defaultLocation,
 
                 zoom:
                     13
+
             }
         );
 
@@ -1035,11 +1423,37 @@ function initMap() {
 
 
     /*
-     * Load existing hospital
-     * coordinates after map is ready.
+     * Profile data may already have
+     * loaded before Google Maps.
      */
 
-    loadHospitalLocation();
+    const latitude =
+        document.getElementById(
+            "hospitalLatitude"
+        ).value;
+
+
+    const longitude =
+        document.getElementById(
+            "hospitalLongitude"
+        ).value;
+
+
+    if (
+        latitude &&
+        longitude
+    ) {
+
+        setMapLocation(
+            latitude,
+            longitude
+        );
+
+    } else {
+
+        loadHospitalLocation();
+
+    }
 
 }
 
@@ -1051,20 +1465,35 @@ function initMap() {
 
 async function loadHospitalLocation() {
 
+    if (
+        !hospitalId ||
+        !hospitalToken
+    ) {
+
+        return;
+
+    }
+
+
     try {
 
         const response =
             await fetch(
-                `${API_URL}/hospitals/${hospitalId}`
+                `${API_URL}/hospitals/${hospitalId}`,
+                {
+                    headers:
+                        getHospitalAuthHeaders()
+                }
             );
 
 
         const hospital =
-            await response.json();
+            await parseResponse(
+                response
+            );
 
 
         if (
-            response.ok &&
             hospital.latitude !== null &&
             hospital.latitude !== undefined &&
             hospital.longitude !== null &&
@@ -1081,7 +1510,7 @@ async function loadHospitalLocation() {
     } catch (error) {
 
         console.error(
-            "Location load error:",
+            "LOCATION LOAD ERROR:",
             error
         );
 
@@ -1095,69 +1524,146 @@ async function loadHospitalLocation() {
    SET MAP LOCATION
 ================================== */
 
-function setMapLocation(latitude, longitude) {
-    const lat = Number(latitude);
-    const lng = Number(longitude);
+function setMapLocation(
+    latitude,
+    longitude
+) {
 
-    // Prevent invalid coordinates from reaching Google Maps.
+    const lat =
+        Number(
+            latitude
+        );
+
+    const lng =
+        Number(
+            longitude
+        );
+
+
     if (
         latitude === null ||
         latitude === undefined ||
-        String(latitude).trim() === "" ||
+        String(
+            latitude
+        ).trim() === "" ||
+
         longitude === null ||
         longitude === undefined ||
-        String(longitude).trim() === "" ||
-        !Number.isFinite(lat) ||
-        !Number.isFinite(lng) ||
+        String(
+            longitude
+        ).trim() === "" ||
+
+        !Number.isFinite(
+            lat
+        ) ||
+
+        !Number.isFinite(
+            lng
+        ) ||
+
         lat < -90 ||
         lat > 90 ||
+
         lng < -180 ||
         lng > 180
     ) {
+
         console.warn(
             "Invalid hospital coordinates:",
             latitude,
             longitude
         );
+
         return;
+
     }
+
 
     if (!map) {
-        console.warn("Google Map is not initialized yet.");
+
+        console.warn(
+            "Google Map is not initialized yet."
+        );
+
         return;
+
     }
+
 
     const location = {
-        lat: lat,
-        lng: lng
+
+        lat:
+            lat,
+
+        lng:
+            lng
+
     };
 
+
     const latitudeInput =
-        document.getElementById("hospitalLatitude");
+        document.getElementById(
+            "hospitalLatitude"
+        );
+
 
     const longitudeInput =
-        document.getElementById("hospitalLongitude");
+        document.getElementById(
+            "hospitalLongitude"
+        );
+
 
     if (latitudeInput) {
-        latitudeInput.value = lat;
+
+        latitudeInput.value =
+            lat;
+
     }
+
 
     if (longitudeInput) {
-        longitudeInput.value = lng;
+
+        longitudeInput.value =
+            lng;
+
     }
+
 
     if (marker) {
-        marker.setMap(null);
+
+        marker.setMap(
+            null
+        );
+
     }
 
-    marker = new google.maps.Marker({
-        position: location,
-        map: map
-    });
 
-    map.setCenter(location);
-    map.setZoom(16);
+    marker =
+        new google.maps.Marker(
+            {
+
+                position:
+                    location,
+
+                map:
+                    map
+
+            }
+        );
+
+
+    map.setCenter(
+        location
+    );
+
+
+    map.setZoom(
+        16
+    );
+
 }
+
+
 
 /* ==================================
    SEARCH LOCATION
@@ -1183,7 +1689,6 @@ function searchHospitalLocation() {
     }
 
 
-
     if (
         typeof google === "undefined" ||
         !google.maps
@@ -1199,16 +1704,16 @@ function searchHospitalLocation() {
     }
 
 
-
     const geocoder =
         new google.maps.Geocoder();
 
 
-
     geocoder.geocode(
         {
+
             address:
                 address
+
         },
 
         function(
@@ -1293,10 +1798,14 @@ async function saveHospitalLocation() {
     const data = {
 
         latitude:
-            Number(latitude),
+            Number(
+                latitude
+            ),
 
         longitude:
-            Number(longitude)
+            Number(
+                longitude
+            )
 
     };
 
@@ -1308,32 +1817,31 @@ async function saveHospitalLocation() {
             await fetch(
                 `${API_URL}/hospitals/${hospitalId}`,
                 {
-                    method: "PUT",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                    method:
+                        "PUT",
+
+                    headers:
+                        getHospitalAuthHeaders(
+                            {
+                                "Content-Type":
+                                    "application/json"
+                            }
+                        ),
 
                     body:
-                        JSON.stringify(data)
+                        JSON.stringify(
+                            data
+                        )
+
                 }
             );
 
 
         const result =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                result.detail ||
-                "Failed to save hospital location."
+            await parseResponse(
+                response
             );
-
-        }
-
 
 
         localStorage.setItem(
@@ -1348,14 +1856,20 @@ async function saveHospitalLocation() {
         );
 
 
-
         showMessage(
+            result.message ||
             "Hospital location saved to the database.",
             true
         );
 
 
     } catch (error) {
+
+        console.error(
+            "SAVE LOCATION ERROR:",
+            error
+        );
+
 
         showMessage(
             error.message,
@@ -1371,60 +1885,220 @@ async function saveHospitalLocation() {
 /* ==================================
    UPLOAD HOSPITAL COVER PHOTO
 ================================== */
+
 async function uploadHospitalPhoto() {
-    const input = document.getElementById("hospitalPhotoFile");
-    const message = document.getElementById("hospitalPhotoMessage");
-    const preview = document.getElementById("hospitalPhotoPreview");
-    const file = input && input.files ? input.files[0] : null;
 
-    if (!hospitalId) {
-        if (message) message.textContent = "Please log in again.";
+    const input =
+        document.getElementById(
+            "hospitalPhotoFile"
+        );
+
+
+    const message =
+        document.getElementById(
+            "hospitalPhotoMessage"
+        );
+
+
+    const preview =
+        document.getElementById(
+            "hospitalPhotoPreview"
+        );
+
+
+    const file =
+        input &&
+        input.files
+            ? input.files[0]
+            : null;
+
+
+
+    if (!hospitalId || !hospitalToken) {
+
+        if (message) {
+
+            message.textContent =
+                "Your session has expired. Please login again.";
+
+        }
+
+        handleAuthenticationFailure();
+
         return;
+
     }
+
+
+
     if (!file) {
-        if (message) message.textContent = "Please choose a hospital photo first.";
+
+        if (message) {
+
+            message.textContent =
+                "Please choose a hospital photo first.";
+
+        }
+
         return;
-    }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-        if (message) message.textContent = "Choose a JPG, PNG, or WEBP image.";
-        return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-        if (message) message.textContent = "Photo must be 5 MB or smaller.";
-        return;
+
     }
 
-    const formData = new FormData();
-    formData.append("photo", file);
-    if (message) message.textContent = "Uploading photo...";
+
+
+    if (
+        ![
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ].includes(
+            file.type
+        )
+    ) {
+
+        if (message) {
+
+            message.textContent =
+                "Choose a JPG, PNG, or WEBP image.";
+
+        }
+
+        return;
+
+    }
+
+
+
+    if (
+        file.size >
+        5 * 1024 * 1024
+    ) {
+
+        if (message) {
+
+            message.textContent =
+                "Photo must be 5 MB or smaller.";
+
+        }
+
+        return;
+
+    }
+
+
+
+    const formData =
+        new FormData();
+
+
+    formData.append(
+        "photo",
+        file
+    );
+
+
+    if (message) {
+
+        message.textContent =
+            "Uploading photo...";
+
+    }
+
+
 
     try {
-       const response = await fetch(`${API_URL}/hospitals/${hospitalId}/photo`, {
-    method: "POST",
-    headers: {
-        Authorization: `Bearer ${localStorage.getItem("hospitalToken") || ""}`
-    },
-    body: formData
-});
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.detail || "Unable to upload hospital photo.");
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}/photo`,
+                {
+
+                    method:
+                        "POST",
+
+                    headers:
+                        getHospitalAuthHeaders(),
+
+                    body:
+                        formData
+
+                }
+            );
+
+
+        const data =
+            await parseResponse(
+                response
+            );
+
+
+        const hospital =
+            data.hospital ||
+            data;
+
+
+
+        if (
+            preview &&
+            hospital.image_url
+        ) {
+
+            preview.src =
+                hospital.image_url.startsWith(
+                    "http"
+                )
+                    ? hospital.image_url
+                    : `${API_URL}${hospital.image_url}`;
+
+            preview.style.display =
+                "block";
+
         }
-        const hospital = data.hospital || data;
-        if (preview && hospital.image_url) {
-            preview.src = hospital.image_url.startsWith("http")
-                ? hospital.image_url
-                : `${API_URL}${hospital.image_url}`;
-            preview.style.display = "block";
+
+
+        localStorage.setItem(
+            "hospital",
+            JSON.stringify(
+                hospital
+            )
+        );
+
+
+        if (message) {
+
+            message.textContent =
+                "Hospital photo uploaded successfully.";
+
         }
-        localStorage.setItem("hospital", JSON.stringify(hospital));
-        if (message) message.textContent = "Hospital photo uploaded successfully.";
-        if (input) input.value = "";
+
+
+        if (input) {
+
+            input.value =
+                "";
+
+        }
+
     } catch (error) {
-        console.error("HOSPITAL PHOTO UPLOAD ERROR:", error);
-        if (message) message.textContent = error.message || "Unable to upload hospital photo.";
+
+        console.error(
+            "HOSPITAL PHOTO UPLOAD ERROR:",
+            error
+        );
+
+
+        if (message) {
+
+            message.textContent =
+                error.message ||
+                "Unable to upload hospital photo.";
+
+        }
+
     }
+
 }
+
 
 
 /* ==================================
@@ -1432,6 +2106,10 @@ async function uploadHospitalPhoto() {
 ================================== */
 
 function hospitalLogout() {
+
+    localStorage.removeItem(
+        "hospitalToken"
+    );
 
     localStorage.removeItem(
         "hospital_id"
@@ -1466,6 +2144,11 @@ function hospitalLogout() {
     );
 
 
+    localStorage.removeItem(
+        "hospital"
+    );
+
+
     window.location.href =
         "index.html";
 
@@ -1487,7 +2170,7 @@ function goDashboard() {
 
 
 /* ==================================
-   LOAD PROFILE
+   INITIAL LOAD
 ================================== */
 
 loadProfile();
@@ -1499,16 +2182,18 @@ loadProfile();
 <!--
     IMPORTANT:
 
-    Replace YOUR_GOOGLE_MAPS_API_KEY
-    with your restricted Google Maps
-    API key.
+    Use your restricted Google Maps API key here.
 
-    Do NOT use a key that has already
-    been exposed publicly.
+    The key must have:
+    - HTTP referrer restrictions
+    - Only required Google Maps APIs enabled
+
+    If this key has been publicly exposed,
+    rotate/restrict it in Google Cloud Console.
 -->
 
 <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDbbDf9jwQ_GPVfkl5_xkia5jqFlWJCSM4&loading=async&callback=initMap"
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_RESTRICTED_GOOGLE_MAPS_API_KEY&loading=async&callback=initMap"
     async
     defer>
 </script>
