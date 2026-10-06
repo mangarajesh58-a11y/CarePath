@@ -1077,6 +1077,22 @@ def hospital_to_dict(hospital):
             hospital.payment_account_status
         ),
     }
+
+
+def public_hospital_to_dict(hospital):
+    return {
+        "id": hospital.id,
+        "name": hospital.name,
+        "city": hospital.city,
+        "address": hospital.address,
+        "description": hospital.description,
+        "image_url": hospital.image_url,
+        "token_fee": hospital.token_fee,
+        "latitude": hospital.latitude,
+        "longitude": hospital.longitude,
+    }
+
+
 # ============================================================
 # HELPER - DOCTOR RESPONSE
 # ============================
@@ -2349,12 +2365,9 @@ def get_hospitals(
     )
 
     return [
-
-        hospital_to_dict(hospital)
-
-        for hospital in hospitals
-    ]
-
+    public_hospital_to_dict(hospital)
+    for hospital in hospitals
+]
 
 # ============================================================
 # GET HOSPITAL BY ID
@@ -2382,10 +2395,9 @@ def get_hospital(
             detail="Hospital not found",
         )
 
-    return hospital_to_dict(
-        hospital
-    )
-
+    return public_hospital_to_dict(
+    hospital
+)
 # ============================================================
 # DELETE DOCTOR
 # ============================================================
