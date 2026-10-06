@@ -51,7 +51,9 @@ function requireAdminLogin() {
     const role = localStorage.getItem("adminRole");
 
     if (!token || role !== "admin") {
-        alert("Your admin session is missing or expired. Please login again.");
+        alert(
+            "Your admin session is missing or expired. Please login again."
+        );
 
         localStorage.removeItem("adminLoggedIn");
         localStorage.removeItem("adminEmail");
@@ -59,7 +61,6 @@ function requireAdminLogin() {
         localStorage.removeItem("adminToken");
 
         window.location.replace("index.html");
-
         return false;
     }
 
@@ -77,7 +78,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     console.log("Current page:", path);
 
-    // Do not require login on login page
     const isLoginPage =
         path.endsWith("/admin/") ||
         path.endsWith("/admin/index.html") ||
@@ -89,22 +89,18 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Admin dashboard
     if (path.includes("dashboard.html")) {
         loadDashboard();
     }
 
-    // Hospitals
     if (path.includes("hospitals.html")) {
         loadHospitals();
     }
 
-    // Payments
     if (path.includes("payments.html")) {
         loadPayments();
     }
 
-    // Tokens
     if (path.includes("tokens.html")) {
         loadTokens();
     }
@@ -165,18 +161,10 @@ async function adminLogin() {
 
         console.log(
             "Admin login response:",
-            JSON.stringify(data, null, 2)
+            data
         );
 
         if (!response.ok) {
-            console.error(
-                "Admin login failed:",
-                {
-                    status: response.status,
-                    response: data
-                }
-            );
-
             showLoginMessage(
                 getErrorMessage(
                     data,
@@ -184,11 +172,9 @@ async function adminLogin() {
                 ),
                 "error"
             );
-
             return;
         }
 
-        // JWT TOKEN IS REQUIRED
         if (!data.access_token) {
             throw new Error(
                 "Login succeeded, but authentication token was not returned."
@@ -289,14 +275,6 @@ async function handleGoogleLogin(response) {
         );
 
         if (!result.ok) {
-            console.error(
-                "Google login failed:",
-                {
-                    status: result.status,
-                    response: data
-                }
-            );
-
             showLoginMessage(
                 getErrorMessage(
                     data,
@@ -304,11 +282,9 @@ async function handleGoogleLogin(response) {
                 ),
                 "error"
             );
-
             return;
         }
 
-        // JWT TOKEN IS REQUIRED
         if (!data.access_token) {
             throw new Error(
                 "Google login succeeded, but authentication token was not returned."
@@ -332,8 +308,6 @@ async function handleGoogleLogin(response) {
             "admin"
         );
 
-        // IMPORTANT:
-        // Google login MUST ALSO STORE JWT
         localStorage.setItem(
             "adminToken",
             data.access_token
@@ -1015,7 +989,6 @@ async function viewHospital(id) {
             "Hospital details modal is missing from hospitals.html.",
             "error"
         );
-
         return;
     }
 
@@ -1067,6 +1040,10 @@ async function viewHospital(id) {
     }
 
     try {
+        // =====================================================
+        // LOAD HOSPITAL DETAILS
+        // =====================================================
+
         const response =
             await fetch(
                 `${API}/admin/hospitals/${hospitalId}`,
@@ -1253,6 +1230,12 @@ async function viewHospital(id) {
 
         // =====================================================
         // CERTIFICATE
+        // IMPORTANT:
+        // Do NOT depend on certificate metadata from
+        // /admin/hospitals/{id}.
+        //
+        // The protected certificate endpoint is the
+        // source of truth for whether the file exists.
         // =====================================================
 
         const certificateStatus =
@@ -1261,45 +1244,56 @@ async function viewHospital(id) {
                 "PENDING"
             ).toUpperCase();
 
-        const hasCertificate =
-            Boolean(
-                hospital.certificate_original_name ||
-                hospital.license_certificate
-            );
+        let hasCertificate = false;
 
-        if (hasCertificate) {
-            certificateName.textContent =
-                `File: ${
-                    hospital.certificate_original_name ||
-                    "Uploaded certificate"
-                }`;
-
-            // Load protected certificate with JWT
+        try {
             await loadProtectedCertificate(
                 hospitalId,
                 certificateViewer
             );
 
-        } else {
+            // The protected endpoint returned the
+            // certificate successfully.
+            hasCertificate = true;
+
+            certificateName.textContent =
+                hospital.certificate_original_name
+                    ? `File: ${hospital.certificate_original_name}`
+                    : "Hospital registration certificate uploaded.";
+
+        } catch (certificateError) {
+            console.error(
+                "Certificate loading error:",
+                certificateError
+            );
+
             certificateName.textContent =
                 "No certificate uploaded for this hospital.";
 
             certificateViewer.src =
                 "about:blank";
+
+            if (messageElement) {
+                messageElement.textContent =
+                    certificateError.message ||
+                    "Unable to load hospital certificate.";
+            }
         }
+
+        // =====================================================
+        // CERTIFICATE ACTION BUTTONS
+        // =====================================================
 
         if (verifyButton) {
             verifyButton.disabled =
                 !hasCertificate ||
-                certificateStatus ===
-                    "VERIFIED";
+                certificateStatus === "VERIFIED";
         }
 
         if (rejectButton) {
             rejectButton.disabled =
                 !hasCertificate ||
-                certificateStatus ===
-                    "REJECTED";
+                certificateStatus === "REJECTED";
         }
 
     } catch (error) {
@@ -1345,7 +1339,9 @@ async function loadProtectedCertificate(
     viewer
 ) {
     if (!viewer) {
-        return;
+        throw new Error(
+            "Certificate viewer is missing."
+        );
     }
 
     const token =
@@ -1363,6 +1359,7 @@ async function loadProtectedCertificate(
         await fetch(
             `${API}/admin/hospitals/${hospitalId}/certificate`,
             {
+                method: "GET",
                 headers: {
                     Authorization:
                         `Bearer ${token}`
@@ -1387,10 +1384,16 @@ async function loadProtectedCertificate(
     const blob =
         await response.blob();
 
+    if (!blob || blob.size === 0) {
+        throw new Error(
+            "Certificate file is empty."
+        );
+    }
+
     const blobUrl =
         URL.createObjectURL(blob);
 
-    // Release previous certificate URL
+    // Release previous certificate URL.
     if (viewer.dataset.blobUrl) {
         URL.revokeObjectURL(
             viewer.dataset.blobUrl
@@ -1457,7 +1460,6 @@ async function verifyHospitalCertificate(id) {
             "Invalid hospital ID.",
             "error"
         );
-
         return false;
     }
 
@@ -1539,7 +1541,6 @@ async function rejectHospitalCertificate(id) {
             "Invalid hospital ID.",
             "error"
         );
-
         return false;
     }
 
@@ -1557,7 +1558,6 @@ async function rejectHospitalCertificate(id) {
             "Please enter a rejection reason.",
             "error"
         );
-
         return false;
     }
 
@@ -1641,7 +1641,6 @@ async function verifyHospitalCertificateFromModal() {
             "Please open a hospital first.",
             "error"
         );
-
         return;
     }
 
@@ -1671,7 +1670,6 @@ async function rejectHospitalCertificateFromModal() {
             "Please open a hospital first.",
             "error"
         );
-
         return;
     }
 
@@ -1726,7 +1724,6 @@ async function rejectHospital(id) {
         alert(
             "Please enter a rejection reason."
         );
-
         return;
     }
 
@@ -1802,7 +1799,7 @@ async function deleteHospital(id) {
 
 // =====================================================
 // HOSPITAL ACTION
-// APPROVE / REJECT / PUBLISH / DELETE
+// APPROVE / REJECT / PUBLISH / UNPUBLISH / DELETE
 // =====================================================
 
 async function hospitalAction(
@@ -1843,7 +1840,6 @@ async function hospitalAction(
 
         const options = {
             method: method,
-
             headers:
                 getAdminAuthHeaders({
                     "Content-Type":
@@ -1854,7 +1850,8 @@ async function hospitalAction(
         if (action === "reject") {
             options.body =
                 JSON.stringify({
-                    reason: reason
+                    reason:
+                        reason
                 });
 
         } else if (action === "approve") {
@@ -1921,7 +1918,7 @@ async function hospitalAction(
 
 // =====================================================
 // LOAD TOKENS
-// IMPORTANT: ADMIN USES /admin/tokens
+// ADMIN USES /admin/tokens
 // =====================================================
 
 async function loadTokens() {
@@ -1950,9 +1947,6 @@ async function loadTokens() {
     `;
 
     try {
-        // IMPORTANT:
-        // GET /tokens no longer exists.
-        // Admin must use GET /admin/tokens.
         const response =
             await fetch(
                 `${API}/admin/tokens`,
@@ -2143,7 +2137,7 @@ async function loadTokens() {
 
 // =====================================================
 // LOAD PAYMENTS
-// IMPORTANT: ADMIN USES /admin/tokens
+// ADMIN USES /admin/tokens
 // =====================================================
 
 async function loadPayments() {
@@ -2172,13 +2166,6 @@ async function loadPayments() {
     `;
 
     try {
-        // Payment information is stored
-        // inside Token records.
-        //
-        // IMPORTANT:
-        // Use /admin/tokens because /tokens
-        // is POST-only for patient token creation.
-
         const response =
             await fetch(
                 `${API}/admin/tokens`,
@@ -2534,6 +2521,6 @@ window.deleteHospital =
 
 window.hospitalAction =
     hospitalAction;
-    
+
 window.showMessage =
     showMessage;

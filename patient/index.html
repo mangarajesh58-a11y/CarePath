@@ -987,12 +987,6 @@
             <div class="google-login">
 
 
-                <!--
-                    IMPORTANT:
-                    Replace YOUR_GOOGLE_CLIENT_ID with
-                    your Google Web Client ID.
-                -->
-
                 <div
                     id="g_id_onload"
 
@@ -1055,15 +1049,24 @@
 
 
         // =====================================================
+        // RESTORE PREVIOUS LOGIN
+        // =====================================================
+
+        if (
+            localStorage.getItem("patientId") &&
+            localStorage.getItem("patientToken")
+        ) {
+
+            window.location.replace(
+                "dashboard.html"
+            );
+
+        }
+
+
+        // =====================================================
         // API
         // =====================================================
-        // Restore the previous login on this device
-if (
-    localStorage.getItem("patientId") &&
-    localStorage.getItem("patientToken")
-) {
-    window.location.replace("dashboard.html");
-}
 
         const API =
             "https://carepath-3q9q.onrender.com";
@@ -1103,7 +1106,6 @@ if (
         // =====================================================
 
         function savePatientData(patient) {
-
 
             if (!patient) {
 
@@ -1221,7 +1223,6 @@ if (
                 "submit",
                 async function(event) {
 
-
                     event.preventDefault();
 
 
@@ -1332,25 +1333,37 @@ if (
 
                         if (!response.ok) {
 
-                         let errorMessage = "Login failed.";
+                            let errorMessage =
+                                "Login failed.";
 
-                         if (typeof data.detail === "string") {
 
-                                     errorMessage = data.detail;
+                            if (
+                                typeof data.detail ===
+                                "string"
+                            ) {
 
-                              } 
-                               else if (data.detail) {
+                                errorMessage =
+                                    data.detail;
 
-                               errorMessage =
-                                  data.detail.message ||
-                              data.detail.error ||
-                                 JSON.stringify(data.detail);
+                            }
+                            else if (data.detail) {
 
-                                 }
+                                errorMessage =
+                                    data.detail.message ||
+                                    data.detail.error ||
+                                    JSON.stringify(
+                                        data.detail
+                                    );
 
-                                     throw new Error(errorMessage);
+                            }
 
-                                    }
+
+                            throw new Error(
+                                errorMessage
+                            );
+
+                        }
+
 
                         // -------------------------------------
                         // CHECK PATIENT
@@ -1359,33 +1372,43 @@ if (
                         if (!data.patient) {
 
                             throw new Error(
-
                                 "Patient information was not returned by the server."
-
                             );
 
                         }
 
 
                         // -------------------------------------
-                        // SAVE PATIENT
+                        // SAVE PATIENT DATA
+                        // IMPORTANT FIX:
+                        // Use data.patient, not undefined
+                        // variable "patient".
                         // -------------------------------------
 
-                        // SAVE PATIENT
-// SAVE PATIENT DATA
-savePatientData(patient);
+                        savePatientData(
+                            data.patient
+                        );
 
-// SAVE JWT ACCESS TOKEN
-if (data.access_token) {
-    localStorage.setItem(
-        "patientToken",
-        data.access_token
-    );
-} else {
-    throw new Error(
-        "Google login succeeded, but authentication token was not returned."
-    );
-}
+
+                        // -------------------------------------
+                        // SAVE JWT ACCESS TOKEN
+                        // -------------------------------------
+
+                        if (data.access_token) {
+
+                            localStorage.setItem(
+                                "patientToken",
+                                data.access_token
+                            );
+
+                        }
+                        else {
+
+                            throw new Error(
+                                "Login succeeded, but authentication token was not returned."
+                            );
+
+                        }
 
 
                         // -------------------------------------
@@ -1393,11 +1416,8 @@ if (data.access_token) {
                         // -------------------------------------
 
                         showMessage(
-
                             "Login successful. Opening dashboard...",
-
                             "success"
-
                         );
 
 
@@ -1428,12 +1448,9 @@ if (data.access_token) {
 
 
                         showMessage(
-
                             error.message ||
                             "Unable to login.",
-
                             "error"
-
                         );
 
                     }
@@ -1479,11 +1496,8 @@ if (data.access_token) {
             ) {
 
                 showMessage(
-
                     "Google login did not return a credential.",
-
                     "error"
-
                 );
 
                 return;
@@ -1495,11 +1509,8 @@ if (data.access_token) {
 
 
                 showMessage(
-
                     "Signing in with Google...",
-
                     "info"
-
                 );
 
 
@@ -1557,10 +1568,8 @@ if (data.access_token) {
                 if (!result.ok) {
 
                     throw new Error(
-
                         data.detail ||
                         "Google login failed."
-
                     );
 
                 }
@@ -1626,65 +1635,113 @@ if (data.access_token) {
                 if (!patient) {
 
                     throw new Error(
-
                         "Google login succeeded, but patient information was not returned."
-
                     );
 
                 }
 
 
+                // -------------------------------------------
                 // SAVE PATIENT DATA
-                savePatientData(patient);
+                // -------------------------------------------
+
+                savePatientData(
+                    patient
+                );
+
+
+                // -------------------------------------------
                 // SAVE JWT ACCESS TOKEN
-if (data.access_token) {
-    localStorage.setItem(
-        "patientToken",
-        data.access_token
-    );
-} else {
-    throw new Error(
-        "Google login succeeded, but authentication token was not returned."
-    );
-}
+                // -------------------------------------------
 
+                if (data.access_token) {
+
+                    localStorage.setItem(
+                        "patientToken",
+                        data.access_token
+                    );
+
+                }
+                else {
+
+                    throw new Error(
+                        "Google login succeeded, but authentication token was not returned."
+                    );
+
+                }
+
+
+                // -------------------------------------------
                 // CHECK WHETHER PHONE NUMBER EXISTS
-                if (!patient.phone || !patient.phone.trim()) {
+                // -------------------------------------------
 
-                    // Temporarily keep the Google credential
-                    // for profile completion.
+                if (
+                    !patient.phone ||
+                    !patient.phone.trim()
+                ) {
+
+
+                    // Temporarily keep the Google
+                    // credential for profile completion.
+
                     sessionStorage.setItem(
                         "patientGoogleCredential",
                         response.credential
                     );
+
 
                     showMessage(
                         "Please complete your patient profile.",
                         "info"
                     );
 
-                    // Open profile completion page
-                    setTimeout(function() {
-                        window.location.href = "profile.html";
-                    }, 700);
 
-                } else {
+                    // Open profile completion page
+
+                    setTimeout(
+                        function() {
+
+                            window.location.href =
+                                "profile.html";
+
+                        },
+                        700
+                    );
+
+
+                }
+
+                else {
+
 
                     // Phone number already exists
+
                     sessionStorage.removeItem(
                         "patientGoogleCredential"
                     );
+
 
                     showMessage(
                         "Google login successful. Opening dashboard...",
                         "success"
                     );
 
+
                     // Open dashboard
-                    setTimeout(function() {
-                        window.location.href = "dashboard.html";
-                    }, 700);
+
+                    setTimeout(
+                        function() {
+
+                            window.location.href =
+                                "dashboard.html";
+
+                        },
+                        700
+                    );
+
                 }
+
+
             }
 
             catch(error) {
@@ -1697,12 +1754,9 @@ if (data.access_token) {
 
 
                 showMessage(
-
                     error.message ||
                     "Google login failed.",
-
                     "error"
-
                 );
 
             }
@@ -1722,11 +1776,8 @@ if (data.access_token) {
 
 
             showMessage(
-
                 "Password reset will be added soon.",
-
                 "error"
-
             );
 
         }
@@ -1758,7 +1809,6 @@ if (data.access_token) {
                 console.log(
                     "CarePath backend connected."
                 );
-
 
             }
 
