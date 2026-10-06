@@ -1083,6 +1083,7 @@ def public_hospital_to_dict(hospital):
     return {
         "id": hospital.id,
         "name": hospital.name,
+        "phone": hospital.phone,
         "city": hospital.city,
         "address": hospital.address,
         "description": hospital.description,
