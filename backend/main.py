@@ -1091,9 +1091,9 @@ def public_hospital_to_dict(hospital):
         "token_fee": hospital.token_fee,
         "latitude": hospital.latitude,
         "longitude": hospital.longitude,
+        "approval_status": hospital.approval_status,
+        "is_published": hospital.is_published,
     }
-
-
 # ============================================================
 # HELPER - DOCTOR RESPONSE
 # ============================
