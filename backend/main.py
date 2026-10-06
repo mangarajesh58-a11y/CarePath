@@ -2849,22 +2849,16 @@ def add_doctor(
 # HOSPITAL PAYMENT ACCOUNT
 # ============================================================
 
-@app.put(
-    "/hospitals/{hospital_id}/payment-account"
-)
+@app.put("/hospitals/{hospital_id}/payment-account")
 def save_payment_account(
     hospital_id: int,
     data: PaymentAccountRequest,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
 ):
-
     hospital = (
         db.query(Hospital)
-        .filter(
-            Hospital.id ==
-            hospital_id
-        )
+        .filter(Hospital.id == hospital_id)
         .first()
     )
 
@@ -2877,63 +2871,23 @@ def save_payment_account(
     if hospital.id != current_user["user_id"]:
         raise HTTPException(
             status_code=403,
-            detail="You cannot modify another hospital's payment details",
+            detail="You cannot update another hospital's payment details",
         )
 
-    if (
-        not data.account_name
-        and
-        not data.upi
-    ):
-
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Add bank account or UPI details"
-            ),
-        )
-
-    hospital.payment_account_name = (
-        data.account_name
-    )
-
-    hospital.payment_account_number = (
-        data.account_number
-    )
-
-    hospital.payment_ifsc = (
-        data.ifsc
-    )
-
-    hospital.payment_upi = (
-        data.upi
-    )
-
-    hospital.payment_account_status = (
-        "PENDING"
-    )
+    hospital.payment_account_name = data.account_name
+    hospital.payment_account_number = data.account_number
+    hospital.payment_ifsc = data.ifsc
+    hospital.payment_upi = data.upi
+    hospital.payment_account_status = "PENDING"
 
     db.commit()
-
     db.refresh(hospital)
 
     return {
-
         "success": True,
-
-        "message":
-            (
-                "Payment account details saved. "
-                "Waiting for verification."
-            ),
-
-        "payment_account_status":
-            hospital.payment_account_status,
-
-        "razorpay_account_id":
-            hospital.razorpay_account_id,
+        "message": "Payment account details saved successfully.",
+        "payment_account_status": hospital.payment_account_status,
     }
-
 
 # ============================================================
 # GET PAYMENT ACCOUNT
@@ -4356,118 +4310,7 @@ def add_hospital_doctor(
 # ADMIN - APPROVE PAYMENT ACCOUNT
 # ============================================================
 
-@app.put("/admin/hospitals/{hospital_id}/payment-account/approve")
-def approve_hospital_payment_account(
-    hospital_id: int,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("admin")),
-):
-
-    hospital = (
-        db.query(Hospital)
-        .filter(
-            Hospital.id ==
-            hospital_id
-        )
-        .first()
-    )
-
-    if not hospital:
-
-        raise HTTPException(
-            status_code=404,
-            detail="Hospital not found",
-        )
-
-
-    if (
-        not hospital.payment_account_name
-        and
-        not hospital.payment_upi
-    ):
-
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Payment account details "
-                "not added"
-            ),
-        )
-
-
-    hospital.payment_account_status = (
-        "APPROVED"
-    )
-
-    db.commit()
-
-    db.refresh(hospital)
-
-
-    return {
-
-        "success": True,
-
-        "message":
-            (
-                "Payment account marked "
-                "as approved."
-            ),
-
-        "note":
-            (
-                "Approval does not automatically "
-                "create a Razorpay linked account."
-            ),
-    }
-
-
-# ============================================================
-# ADMIN - REJECT PAYMENT ACCOUNT
-# ============================================================
-
-@app.put(
-    "/admin/hospitals/{hospital_id}/payment-account/reject"
-)
-def reject_payment_account(
-    hospital_id: int,
-    db: Session = Depends(get_db),
-):
-
-    hospital = (
-        db.query(Hospital)
-        .filter(
-            Hospital.id ==
-            hospital_id
-        )
-        .first()
-    )
-
-    if not hospital:
-
-        raise HTTPException(
-            status_code=404,
-            detail="Hospital not found",
-        )
-
-
-    hospital.payment_account_status = (
-        "REJECTED"
-    )
-
-    db.commit()
-
-
-    return {
-
-        "success": True,
-
-        "message":
-            "Payment account rejected",
-    }
-
-
-# ============================================================
+#============================================================
 # ADMIN - REVENUE
 # ============================================================
 
