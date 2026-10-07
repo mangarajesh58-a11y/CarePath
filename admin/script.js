@@ -202,7 +202,7 @@ async function adminLogin() {
         );
 
         showLoginMessage(
-            "Login successful. Opening dashboard...",
+            "Login successful",
             "success"
         );
 

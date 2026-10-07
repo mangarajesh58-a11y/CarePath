@@ -11,3 +11,5 @@ razorpay
 google-auth
 pg8000
 PyJWT
+requests
+google-genai==2.28.0

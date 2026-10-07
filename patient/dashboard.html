@@ -204,6 +204,187 @@
 
   </div>
 
+   <!-- CarePath AI Assistant -->
+<button
+  type="button"
+  id="carepathAIButton"
+  aria-label="Open CarePath AI"
+  title="CarePath AI"
+>
+  <span style="font-size: 32px;">💙</span>
+</button>
+
+
+<!-- CarePath AI Chat Window -->
+<div id="carepathAIChat" class="carepath-ai-chat" hidden>
+
+  <div class="carepath-ai-header">
+    <div>
+      <strong>CarePath AI</strong>
+      <span>Your healthcare assistant</span>
+    </div>
+
+    <button
+      type="button"
+      id="carepathAIClose"
+      aria-label="Close CarePath AI"
+    >
+      ×
+    </button>
+  </div>
+
+  <div id="carepathAIMessages" class="carepath-ai-messages">
+    <div class="carepath-ai-message">
+      Hi! 💙 How can I help you today?
+    </div>
+  </div>
+
+  <div class="carepath-ai-input-area">
+    <input
+      type="text"
+      id="carepathAIInput"
+      placeholder="Type your requirement..."
+      autocomplete="off"
+    >
+
+    <button
+      type="button"
+      id="carepathAISend"
+      aria-label="Send"
+    >
+      ➤
+    </button>
+  </div>
+
+</div>
+
+<<script>
+  // CarePath AI open / close
+  const carepathAIButton = document.getElementById("carepathAIButton");
+  const carepathAIChat = document.getElementById("carepathAIChat");
+  const carepathAIClose = document.getElementById("carepathAIClose");
+
+  if (carepathAIButton && carepathAIChat) {
+    carepathAIButton.addEventListener("click", () => {
+      carepathAIChat.hidden = !carepathAIChat.hidden;
+    });
+  }
+
+  if (carepathAIClose && carepathAIChat) {
+    carepathAIClose.addEventListener("click", () => {
+      carepathAIChat.hidden = true;
+    });
+  }
+
+
+  // CarePath AI chat
+  const carepathAIInput = document.getElementById("carepathAIInput");
+  const carepathAISend = document.getElementById("carepathAISend");
+  const carepathAIMessages = document.getElementById("carepathAIMessages");
+
+  function addCarePathMessage(text, type) {
+    const message = document.createElement("div");
+
+    message.className =
+      type === "user"
+        ? "carepath-ai-message user"
+        : "carepath-ai-message";
+
+    message.textContent = text;
+
+    carepathAIMessages.appendChild(message);
+
+    carepathAIMessages.scrollTop =
+      carepathAIMessages.scrollHeight;
+  }
+
+  function sendCarePathMessage() {
+    const text = carepathAIInput.value.trim();
+
+    if (!text) return;
+
+    // Show patient's message
+    addCarePathMessage(text, "user");
+
+    // Clear input
+    carepathAIInput.value = "";
+
+    // Temporary CarePath AI response
+   setTimeout(() => {
+  const message = text.toLowerCase();
+
+  let response =
+    "I understand. 💙 Tell me a little more about your requirement, and I can help you find the appropriate CarePath department.";
+
+  if (
+    message.includes("leg pain") ||
+    message.includes("knee pain") ||
+    message.includes("bone pain") ||
+    message.includes("joint pain")
+  ) {
+    response =
+      "Leg or joint pain can have different causes. 💙 An Orthopedics department may be appropriate. I can help you find CarePath hospitals with Orthopedics.";
+  }
+
+  else if (
+    message.includes("fever") &&
+    (
+      message.includes("child") ||
+      message.includes("kid") ||
+      message.includes("baby")
+    )
+  ) {
+    response =
+      "For a child with fever, Pediatrics may be an appropriate department. 💙 I can help you find CarePath hospitals with Pediatrics.";
+  }
+
+  else if (
+    message.includes("skin") ||
+    message.includes("rash") ||
+    message.includes("acne")
+  ) {
+    response =
+      "For skin problems, Dermatology may be an appropriate department. 💙 I can help you find CarePath hospitals with Dermatology.";
+  }
+
+  else if (
+    message.includes("heart") ||
+    message.includes("chest pain") ||
+    message.includes("cardiac")
+  ) {
+    response =
+      "Heart-related symptoms can require medical evaluation. Cardiology may be an appropriate department. 💙 If you have severe or sudden chest pain, seek urgent medical care.";
+  }
+
+  else if (
+    message.includes("tooth") ||
+    message.includes("teeth") ||
+    message.includes("dental")
+  ) {
+    response =
+      "For tooth or dental problems, Dentistry may be an appropriate department. 💙 I can help you find CarePath hospitals with dental services.";
+  }
+
+  addCarePathMessage(response, "ai");
+}, 500);
+}
+  if (carepathAISend) {
+    carepathAISend.addEventListener(
+      "click",
+      sendCarePathMessage
+    );
+  }
+
+  if (carepathAIInput) {
+    carepathAIInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendCarePathMessage();
+      }
+    });
+  }
+</script>
+
   <script>
     // Display the current year.
     const footerYear = document.getElementById("footerYear");

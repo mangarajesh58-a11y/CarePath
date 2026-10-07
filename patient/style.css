@@ -806,3 +806,183 @@ select:focus-visible {
     font-size: 11px;
   }
 }
+
+/* CarePath AI button */
+
+#carepathAIButton {
+  position: fixed !important;
+  right: 24px !important;
+  bottom: 24px !important;
+  left: auto !important;
+  top: auto !important;
+
+  width: 64px !important;
+  height: 64px !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  border: none !important;
+  border-radius: 50% !important;
+
+  background: transparent !important;
+
+  cursor: pointer;
+  z-index: 99999;
+
+  overflow: hidden;
+
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+#carepathAIButton img {
+  display: block !important;
+  width: 64px !important;
+  height: 64px !important;
+
+  border: none !important;
+  border-radius: 50% !important;
+
+  object-fit: cover !important;
+}
+
+
+/* CarePath AI chat window */
+
+.carepath-ai-chat {
+  position: fixed;
+  right: 24px;
+  bottom: 100px;
+  width: 340px;
+  height: 430px;
+
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: hidden;
+
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.28);
+
+  z-index: 99998;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.carepath-ai-header {
+  background: #0b5ed7;
+  color: white;
+  padding: 15px 16px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.carepath-ai-header strong {
+  display: block;
+  font-size: 16px;
+}
+
+.carepath-ai-header span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+#carepathAIClose {
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.carepath-ai-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #f5f8fc;
+}
+
+.carepath-ai-message {
+  max-width: 85%;
+  padding: 11px 13px;
+
+  border-radius: 14px;
+
+  background: white;
+  color: #172033;
+
+  font-size: 13px;
+  line-height: 1.4;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.carepath-ai-input-area {
+  display: flex;
+  gap: 8px;
+
+  padding: 10px;
+
+  background: white;
+  border-top: 1px solid #e3e8ef;
+}
+
+#carepathAIInput {
+  flex: 1;
+  min-width: 0;
+
+  border: 1px solid #d5dce5;
+  border-radius: 22px;
+
+  padding: 10px 13px;
+
+  outline: none;
+
+  font-size: 13px;
+}
+
+#carepathAIInput:focus {
+  border-color: #0b5ed7;
+}
+
+#carepathAISend {
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #0b5ed7;
+  color: white;
+
+  cursor: pointer;
+  font-size: 17px;
+}
+
+#carepathAISend:hover {
+  background: #084db2;
+}
+
+
+/* Mobile */
+
+@media (max-width: 480px) {
+
+  #carepathAIButton {
+    right: 14px !important;
+    bottom: 14px !important;
+  }
+
+  .carepath-ai-chat {
+    right: 12px;
+    left: 12px;
+    bottom: 88px;
+    width: auto;
+    height: 60vh;
+  }
+}

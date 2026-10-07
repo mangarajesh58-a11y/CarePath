@@ -15,6 +15,11 @@ from datetime import datetime,date, timedelta
 from typing import Optional
 
 import razorpay
+import requests
+
+from database import Base, engine, SessionLocal
+
+from google import genai
 
 import jwt
 
@@ -83,6 +88,78 @@ load_dotenv(dotenv_path=ENV_FILE, override=False)
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
 RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+
+CASHFREE_CLIENT_ID = os.getenv("CASHFREE_CLIENT_ID")
+CASHFREE_CLIENT_SECRET = os.getenv("CASHFREE_CLIENT_SECRET")
+CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg"
+
+CASHFREE_API_VERSION = "2026-01-01"
+
+def create_cashfree_vendor(
+    vendor_id: str,
+    name: str,
+    email: str,
+    phone: str,
+    bank_account_number: str | None = None,
+    bank_ifsc: str | None = None,
+    upi_id: str | None = None,
+):
+    if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=500,
+            detail="Cashfree is not configured.",
+        )
+
+    payload = {
+        "vendor_id": vendor_id,
+        "name": name,
+        "email": email,
+        "phone": phone,
+        "verify_account": True,
+        "kyc_details": {
+            "business_type": "PROPRIETORSHIP",
+        },
+    }
+
+    if bank_account_number and bank_ifsc:
+        payload["bank"] = {
+            "account_number": bank_account_number,
+            "ifsc": bank_ifsc,
+        }
+
+    if upi_id:
+        payload["upi"] = {
+            "upi_id": upi_id,
+        }
+
+    headers = {
+        "x-client-id": CASHFREE_CLIENT_ID,
+        "x-client-secret": CASHFREE_CLIENT_SECRET,
+        "x-api-version": CASHFREE_API_VERSION,
+        "Content-Type": "application/json",
+    }
+
+    response = requests.post(
+        f"{CASHFREE_BASE_URL}/easy-split/vendors",
+        headers=headers,
+        json=payload,
+        timeout=30,
+    )
+
+    if response.status_code not in (200, 201):
+        print("Cashfree vendor creation failed:", response.status_code)
+        print("Cashfree response:", response.text)
+
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to create Cashfree vendor.",
+        )
+
+    return response.json()
+
 
 # JWT Authentication Configuration
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -737,6 +814,78 @@ class RegistrationOTPVerifyRequest(BaseModel):
     email: str
     otp: str
 
+class AIChatRequest(BaseModel):
+    message: str
+
+#GEMINI AI
+@app.post("/ai/chat")
+def carepath_ai_chat(
+    data: AIChatRequest,
+    current_user: dict = Depends(require_role("patient")),
+):
+    if not gemini_client:
+        raise HTTPException(
+            status_code=500,
+            detail="CarePath AI is not configured."
+        )
+
+    message = data.message.strip()
+
+    if not message:
+        raise HTTPException(
+            status_code=400,
+            detail="Message cannot be empty."
+        )
+
+    system_instruction = """
+You are CarePath AI, the healthcare assistant for the CarePath platform.
+
+Your job is to communicate naturally and help patients understand their healthcare
+needs and navigate CarePath.
+
+Rules:
+- Be friendly, calm, and concise.
+- Never claim to diagnose a disease or medical condition.
+- Do not present guesses as medical facts.
+- You may suggest an appropriate medical department based on symptoms.
+- If symptoms could indicate an emergency, clearly tell the patient to seek
+  emergency medical care immediately.
+- Ask useful follow-up questions when necessary.
+- Do not save or remember conversations.
+- Do not mention internal implementation details.
+- Do not invent CarePath hospitals, doctors, prices, availability, or other
+  CarePath data.
+- When CarePath database information is provided later, use only that information.
+"""
+
+    try:
+        response = gemini_client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=message,
+            config={
+                "system_instruction": system_instruction,
+            },
+        )
+
+        reply = response.text
+
+        if not reply:
+            raise HTTPException(
+                status_code=500,
+                detail="CarePath AI returned an empty response."
+            )
+
+        return {
+            "success": True,
+            "reply": reply,
+        }
+
+    except Exception as e:
+        print("CarePath AI error:", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail="CarePath AI is temporarily unavailable."
+        )
 
 @app.post("/registration/request-otp")
 def request_registration_otp(

@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#e3f2fd">
+
     <title>Hospital Registration - CarePath</title>
 
     <style>
@@ -106,6 +106,32 @@
             overflow-wrap: anywhere;
         }
 
+        .photo-preview-container {
+            display: none;
+            margin-top: 14px;
+            text-align: center;
+        }
+
+        .photo-preview-container img {
+            width: 100%;
+            max-width: 280px;
+            max-height: 220px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .photo-preview-label {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .required {
+            color: #dc2626;
+        }
+
         button {
             display: block;
             width: 100%;
@@ -170,6 +196,22 @@
             text-decoration: underline;
         }
 
+        .section-title {
+            margin-top: 28px;
+            margin-bottom: 18px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #1976d2;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .phone-hint {
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
         @media (max-width: 600px) {
             body {
                 padding: 12px;
@@ -202,357 +244,995 @@
 </head>
 
 <body>
-    <main class="container">
 
-        <div class="logo">&#127973; CarePath</div>
+<main class="container">
 
-        <p class="subtitle">
-            Register your hospital with CarePath
-        </p>
+    <div class="logo">🏥 CarePath</div>
 
-        <h2>Hospital Registration</h2>
+    <p class="subtitle">
+        Register your hospital with CarePath
+    </p>
 
-        <form id="hospitalRegisterForm" enctype="multipart/form-data">
+    <h2>Hospital Registration</h2>
 
-            <div class="form-group">
-                <label for="name">Hospital Name</label>
-                <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    placeholder="Enter hospital name"
-                    autocomplete="organization"
-                    required
-                >
-            </div>
+    <form id="hospitalRegisterForm" enctype="multipart/form-data">
 
-            <div class="form-group">
-                <label for="email">Hospital Email</label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="hospital@example.com"
-                    autocomplete="email"
-                    required
-                >
-            </div>
+        <!-- BASIC INFORMATION -->
 
-            <div class="form-group">
-                <label for="phone">Phone Number</label>
-                <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    placeholder="Enter phone number"
-                    autocomplete="tel"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="city">City</label>
-                <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    placeholder="Enter city"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="address">Hospital Address</label>
-                <textarea
-                    id="address"
-                    name="address"
-                    placeholder="Enter complete hospital address"
-                    required
-                ></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="description">Hospital Description</label>
-                <textarea
-                    id="description"
-                    name="description"
-                    placeholder="Enter hospital description"
-                ></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="registration_number">
-                    Hospital Registration / License Number
-                </label>
-                <input
-                    type="text"
-                    id="registration_number"
-                    name="registration_number"
-                    placeholder="Enter registration / license number"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="issuing_authority">Issuing Authority</label>
-                <input
-                    type="text"
-                    id="issuing_authority"
-                    name="issuing_authority"
-                    placeholder="Example: DM&HO / Health Department"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="license_expiry_date">License Expiry Date</label>
-                <input
-                    type="date"
-                    id="license_expiry_date"
-                    name="license_expiry_date"
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="license_certificate">
-                    Hospital Registration Certificate
-                </label>
-                <input
-                    type="file"
-                    id="license_certificate"
-                    name="license_certificate"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    required
-                >
-                <span class="hint">
-                    Accepted formats: PDF, JPG, JPEG, PNG.
-                    Maximum size: 10 MB.
-                </span>
-            </div>
-
-            <div class="form-group">
-                <label for="token_fee">Token Fee (&#8377;)</label>
-                <input
-                    type="number"
-                    id="token_fee"
-                    name="token_fee"
-                    min="0"
-                    step="1"
-                    value="0"
-                    placeholder="Example: 100"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    placeholder="Create password"
-                    minlength="6"
-                    autocomplete="new-password"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="confirm_password">Confirm Password</label>
-                <input
-                    type="password"
-                    id="confirm_password"
-                    name="confirm_password"
-                    placeholder="Confirm password"
-                    minlength="6"
-                    autocomplete="new-password"
-                    required
-                >
-            </div>
-
-            <button type="submit" id="registerButton">
-                Register Hospital
-            </button>
-
-            <div id="message" aria-live="polite" role="status"></div>
-
-        </form>
-
-        <div class="login-link">
-            Already registered?
-            <a href="index.html">Hospital Login</a>
+        <div class="section-title">
+            🏥 Hospital Information
         </div>
 
-    </main>
+        <div class="form-group">
+            <label for="name">
+                Hospital Name <span class="required">*</span>
+            </label>
 
-    <script>
-        "use strict";
+            <input
+                type="text"
+                id="name"
+                name="name"
+                placeholder="Enter hospital name"
+                autocomplete="organization"
+                required
+            >
+        </div>
 
-        const API_URL = "https://carepath-3q9q.onrender.com";
 
-        const form = document.getElementById("hospitalRegisterForm");
-        const message = document.getElementById("message");
-        const registerButton = document.getElementById("registerButton");
+        <div class="form-group">
+            <label for="email">
+                Hospital Email <span class="required">*</span>
+            </label>
 
-        function showMessage(text, type = "error") {
-            message.textContent = text;
-            message.className = type;
+            <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="hospital@example.com"
+                autocomplete="email"
+                required
+            >
+        </div>
+
+
+        <div class="form-group">
+            <label for="phone">
+                Hospital Phone Number <span class="required">*</span>
+            </label>
+
+            <input
+                type="tel"
+                id="phone"
+                name="phone"
+                placeholder="Enter hospital phone number"
+                autocomplete="tel"
+                inputmode="tel"
+                required
+            >
+
+            <div class="phone-hint">
+                This number can be displayed to patients after the hospital is approved and published.
+            </div>
+        </div>
+
+
+        <div class="form-group">
+            <label for="city">
+                City <span class="required">*</span>
+            </label>
+
+            <input
+                type="text"
+                id="city"
+                name="city"
+                placeholder="Enter city"
+                required
+            >
+        </div>
+
+
+        <div class="form-group">
+            <label for="address">
+                Hospital Address <span class="required">*</span>
+            </label>
+
+            <textarea
+                id="address"
+                name="address"
+                placeholder="Enter complete hospital address"
+                required
+            ></textarea>
+        </div>
+
+
+        <div class="form-group">
+            <label for="description">
+                Hospital Description
+            </label>
+
+            <textarea
+                id="description"
+                name="description"
+                placeholder="Example: Multi-speciality hospital providing 24/7 emergency services."
+            ></textarea>
+        </div>
+
+
+        <!-- HOSPITAL PHOTO -->
+
+        <div class="section-title">
+            📷 Hospital Photo
+        </div>
+
+        <div class="form-group">
+
+            <label for="hospital_photo">
+                Upload Hospital Photo <span class="required">*</span>
+            </label>
+
+            <input
+                type="file"
+                id="hospital_photo"
+                name="hospital_photo"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                required
+            >
+
+            <span class="hint">
+                Upload a clear photo of your hospital.
+                Accepted formats: JPG, JPEG, PNG, WEBP.
+                Maximum size: 5 MB.
+            </span>
+
+            <div
+                id="photoPreviewContainer"
+                class="photo-preview-container"
+            >
+                <img
+                    id="photoPreview"
+                    src=""
+                    alt="Hospital photo preview"
+                >
+
+                <div class="photo-preview-label">
+                    Hospital photo preview
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- LICENSE INFORMATION -->
+
+        <div class="section-title">
+            📄 Registration & License Information
+        </div>
+
+
+        <div class="form-group">
+            <label for="registration_number">
+                Hospital Registration / License Number
+                <span class="required">*</span>
+            </label>
+
+            <input
+                type="text"
+                id="registration_number"
+                name="registration_number"
+                placeholder="Enter registration / license number"
+                required
+            >
+        </div>
+
+
+        <div class="form-group">
+            <label for="issuing_authority">
+                Issuing Authority
+                <span class="required">*</span>
+            </label>
+
+            <input
+                type="text"
+                id="issuing_authority"
+                name="issuing_authority"
+                placeholder="Example: DM&HO / Health Department"
+                required
+            >
+        </div>
+
+
+        <div class="form-group">
+            <label for="license_expiry_date">
+                License Expiry Date
+            </label>
+
+            <input
+                type="date"
+                id="license_expiry_date"
+                name="license_expiry_date"
+            >
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="license_certificate">
+                Hospital Registration Certificate
+                <span class="required">*</span>
+            </label>
+
+            <input
+                type="file"
+                id="license_certificate"
+                name="license_certificate"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                required
+            >
+
+            <span class="hint">
+                Accepted formats: PDF, JPG, JPEG, PNG.
+                Maximum size: 10 MB.
+            </span>
+
+        </div>
+
+
+        <!-- TOKEN -->
+
+        <div class="section-title">
+            🎫 Token Information
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="token_fee">
+                Token Fee (₹) <span class="required">*</span>
+            </label>
+
+            <input
+                type="number"
+                id="token_fee"
+                name="token_fee"
+                min="0"
+                step="1"
+                value="0"
+                placeholder="Example: 100"
+                required
+            >
+
+            <span class="hint">
+                Enter the amount patients will pay for one token.
+            </span>
+
+        </div>
+
+        <!-- PAYMENT DETAILS -->
+
+<div class="section-title">
+    💳 Payment / Payout Details
+</div>
+
+<div class="form-group">
+    <label for="account_name">
+        Bank Account Holder Name
+    </label>
+
+    <input
+        type="text"
+        id="account_name"
+        name="account_name"
+        placeholder="Enter account holder name"
+        autocomplete="off"
+    >
+</div>
+
+<div class="form-group">
+    <label for="account_number">
+        Bank Account Number
+    </label>
+
+    <input
+        type="password"
+        id="account_number"
+        name="account_number"
+        placeholder="Enter bank account number"
+        inputmode="numeric"
+        autocomplete="off"
+    >
+
+    <span class="hint">
+        Used only for hospital payout processing.
+    </span>
+</div>
+
+<div class="form-group">
+    <label for="ifsc">
+        IFSC Code
+    </label>
+
+    <input
+        type="text"
+        id="ifsc"
+        name="ifsc"
+        placeholder="Example: SBIN0001234"
+        maxlength="11"
+        autocomplete="off"
+    >
+</div>
+
+<div class="form-group">
+    <label for="upi">
+        UPI ID
+    </label>
+
+    <input
+        type="text"
+        id="upi"
+        name="upi"
+        placeholder="Example: hospital@upi"
+        autocomplete="off"
+    >
+
+    <span class="hint">
+        Optional. You can provide either bank details or UPI details.
+    </span>
+</div>
+
+
+        <!-- PASSWORD -->
+
+        <div class="section-title">
+            🔐 Login Security
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="password">
+                Password <span class="required">*</span>
+            </label>
+
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Create password"
+                minlength="6"
+                autocomplete="new-password"
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="confirm_password">
+                Confirm Password <span class="required">*</span>
+            </label>
+
+            <input
+                type="password"
+                id="confirm_password"
+                name="confirm_password"
+                placeholder="Confirm password"
+                minlength="6"
+                autocomplete="new-password"
+                required
+            >
+
+        </div>
+
+
+        <button
+            type="submit"
+            id="registerButton"
+        >
+            Register Hospital
+        </button>
+
+
+        <div
+            id="message"
+            aria-live="polite"
+            role="status"
+        ></div>
+
+    </form>
+
+
+    <div class="login-link">
+
+        Already registered?
+
+        <a href="index.html">
+            Hospital Login
+        </a>
+
+    </div>
+
+</main>
+
+
+<script>
+"use strict";
+
+
+/* =========================================================
+   CAREPATH API
+========================================================= */
+
+const API_URL = "https://carepath-3q9q.onrender.com";
+
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
+const form = document.getElementById("hospitalRegisterForm");
+
+const message = document.getElementById("message");
+
+const registerButton =
+    document.getElementById("registerButton");
+
+const hospitalPhotoInput =
+    document.getElementById("hospital_photo");
+
+const photoPreviewContainer =
+    document.getElementById("photoPreviewContainer");
+
+const photoPreview =
+    document.getElementById("photoPreview");
+
+const certificateInput =
+    document.getElementById("license_certificate");
+
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+function showMessage(text, type = "error") {
+
+    message.textContent = text;
+
+    message.className = type;
+}
+
+
+/* =========================================================
+   GET INPUT VALUE
+========================================================= */
+
+function getValue(id) {
+
+    const element = document.getElementById(id);
+
+    return element
+        ? element.value.trim()
+        : "";
+}
+
+
+/* =========================================================
+   PHONE VALIDATION
+========================================================= */
+
+function validatePhone(phone) {
+
+    /*
+     * Allows:
+     * +919876543210
+     * 9876543210
+     * 0919876543210
+     * spaces / hyphens / brackets
+     */
+
+    const cleaned = phone.replace(
+        /[\s\-()]/g,
+        ""
+    );
+
+    return /^\+?[0-9]{10,15}$/.test(cleaned);
+}
+
+
+/* =========================================================
+   HOSPITAL PHOTO PREVIEW
+========================================================= */
+
+hospitalPhotoInput.addEventListener(
+    "change",
+    function () {
+
+        const file = this.files[0];
+
+        photoPreviewContainer.style.display = "none";
+
+        photoPreview.src = "";
+
+        if (!file) {
+            return;
         }
 
-        function getValue(id) {
-            return document.getElementById(id).value.trim();
-        }
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
 
-        function buildRegistrationFormData() {
-            const password = document.getElementById("password").value;
-            const confirmPassword =
-                document.getElementById("confirm_password").value;
+        if (!allowedTypes.includes(file.type)) {
 
-            const certificate =
-                document.getElementById("license_certificate").files[0];
-
-            const tokenFee =
-                Number(document.getElementById("token_fee").value);
-
-            if (
-                !getValue("name") ||
-                !getValue("email") ||
-                !getValue("phone") ||
-                !getValue("city") ||
-                !getValue("address") ||
-                !getValue("registration_number") ||
-                !getValue("issuing_authority")
-            ) {
-                throw new Error("Please complete all required fields.");
-            }
-
-            if (password.length < 6) {
-                throw new Error(
-                    "Password must contain at least 6 characters."
-                );
-            }
-
-            if (password !== confirmPassword) {
-                throw new Error("Passwords do not match.");
-            }
-
-            if (!Number.isFinite(tokenFee) || tokenFee < 0) {
-                throw new Error("Please enter a valid token fee.");
-            }
-
-            if (!certificate) {
-                throw new Error(
-                    "Please upload the hospital registration certificate."
-                );
-            }
-
-            if (!/\.(pdf|jpe?g|png)$/i.test(certificate.name)) {
-                throw new Error(
-                    "Certificate must be PDF, JPG, JPEG, or PNG."
-                );
-            }
-
-            if (certificate.size > 10 * 1024 * 1024) {
-                throw new Error(
-                    "Certificate must be 10 MB or smaller."
-                );
-            }
-
-            const data = new FormData();
-
-            data.append("name", getValue("name"));
-            data.append("email", getValue("email").toLowerCase());
-            data.append("phone", getValue("phone"));
-            data.append("city", getValue("city"));
-            data.append("address", getValue("address"));
-            data.append("description", getValue("description"));
-            data.append(
-                "registration_number",
-                getValue("registration_number")
+            showMessage(
+                "Hospital photo must be JPG, JPEG, PNG, or WEBP.",
+                "error"
             );
-            data.append(
-                "issuing_authority",
-                getValue("issuing_authority")
+
+            this.value = "";
+
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+
+            showMessage(
+                "Hospital photo must be 5 MB or smaller.",
+                "error"
             );
-            data.append("password", password);
-            data.append("token_fee", String(tokenFee));
-            data.append("license_certificate", certificate);
 
-            const expiryDate =
-                document.getElementById("license_expiry_date").value;
+            this.value = "";
 
-            if (expiryDate) {
-                data.append("license_expiry_date", expiryDate);
-            }
-
-            return data;
+            return;
         }
 
-        async function readResponse(response) {
-            const data = await response.json().catch(() => ({}));
+        const reader = new FileReader();
 
-            if (!response.ok) {
-                let error =
-                    data.detail ||
-                    data.message ||
-                    "Registration failed.";
+        reader.onload = function (event) {
 
-                if (Array.isArray(data.detail)) {
-                    error = data.detail
-                        .map(item => item.msg)
-                        .join("; ");
-                }
+            photoPreview.src =
+                event.target.result;
 
-                throw new Error(error);
-            }
+            photoPreviewContainer.style.display =
+                "block";
+        };
 
-            return data;
+        reader.readAsDataURL(file);
+    }
+);
+
+
+/* =========================================================
+   BUILD FORM DATA
+========================================================= */
+
+function buildRegistrationFormData() {
+
+    const password =
+        document.getElementById("password").value;
+
+    const confirmPassword =
+        document.getElementById("confirm_password").value;
+
+    const certificate =
+        certificateInput.files[0];
+
+    const hospitalPhoto =
+        hospitalPhotoInput.files[0];
+
+    const tokenFee =
+        Number(
+            document.getElementById("token_fee").value
+        );
+
+
+    /* -----------------------------------------------------
+       REQUIRED FIELDS
+    ----------------------------------------------------- */
+
+    if (
+        !getValue("name") ||
+        !getValue("email") ||
+        !getValue("phone") ||
+        !getValue("city") ||
+        !getValue("address") ||
+        !getValue("registration_number") ||
+        !getValue("issuing_authority")
+    ) {
+
+        throw new Error(
+            "Please complete all required fields."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       PHONE
+    ----------------------------------------------------- */
+
+    if (!validatePhone(getValue("phone"))) {
+
+        throw new Error(
+            "Please enter a valid hospital phone number."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       PASSWORD
+    ----------------------------------------------------- */
+
+    if (password.length < 6) {
+
+        throw new Error(
+            "Password must contain at least 6 characters."
+        );
+    }
+
+
+    if (password !== confirmPassword) {
+
+        throw new Error(
+            "Passwords do not match."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       TOKEN FEE
+    ----------------------------------------------------- */
+
+    if (
+        !Number.isFinite(tokenFee) ||
+        tokenFee < 0
+    ) {
+
+        throw new Error(
+            "Please enter a valid token fee."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       HOSPITAL PHOTO
+    ----------------------------------------------------- */
+
+    if (!hospitalPhoto) {
+
+        throw new Error(
+            "Please upload the hospital photo."
+        );
+    }
+
+
+    const allowedPhotoTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+
+    if (
+        !allowedPhotoTypes.includes(
+            hospitalPhoto.type
+        )
+    ) {
+
+        throw new Error(
+            "Hospital photo must be JPG, JPEG, PNG, or WEBP."
+        );
+    }
+
+
+    if (
+        hospitalPhoto.size >
+        5 * 1024 * 1024
+    ) {
+
+        throw new Error(
+            "Hospital photo must be 5 MB or smaller."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       CERTIFICATE
+    ----------------------------------------------------- */
+
+    if (!certificate) {
+
+        throw new Error(
+            "Please upload the hospital registration certificate."
+        );
+    }
+
+
+    const certificateName =
+        certificate.name.toLowerCase();
+
+
+    if (
+        !/\.(pdf|jpe?g|png)$/i.test(
+            certificateName
+        )
+    ) {
+
+        throw new Error(
+            "Certificate must be PDF, JPG, JPEG, or PNG."
+        );
+    }
+
+
+    if (
+        certificate.size >
+        10 * 1024 * 1024
+    ) {
+
+        throw new Error(
+            "Certificate must be 10 MB or smaller."
+        );
+    }
+
+
+    /* =====================================================
+       FORM DATA
+    ===================================================== */
+
+    const data = new FormData();
+
+
+    data.append(
+        "name",
+        getValue("name")
+    );
+
+
+    data.append(
+        "email",
+        getValue("email").toLowerCase()
+    );
+
+
+    /*
+     * IMPORTANT:
+     * Hospital phone number is stored in the
+     * backend using this field.
+     */
+    data.append(
+        "phone",
+        getValue("phone")
+    );
+
+
+    data.append(
+        "city",
+        getValue("city")
+    );
+
+
+    data.append(
+        "address",
+        getValue("address")
+    );
+
+
+    data.append(
+        "description",
+        getValue("description")
+    );
+
+
+    data.append(
+        "registration_number",
+        getValue("registration_number")
+    );
+
+
+    data.append(
+        "issuing_authority",
+        getValue("issuing_authority")
+    );
+
+
+    data.append(
+        "password",
+        password
+    );
+
+
+    data.append(
+        "token_fee",
+        String(tokenFee)
+    );
+
+
+    /* -----------------------------------------------------
+       LICENSE EXPIRY
+    ----------------------------------------------------- */
+
+    const expiryDate =
+        document.getElementById(
+            "license_expiry_date"
+        ).value;
+
+
+    if (expiryDate) {
+
+        data.append(
+            "license_expiry_date",
+            expiryDate
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       CERTIFICATE
+    ----------------------------------------------------- */
+
+    data.append(
+        "license_certificate",
+        certificate
+    );
+
+
+    /* -----------------------------------------------------
+       HOSPITAL PHOTO
+    ----------------------------------------------------- */
+
+    data.append(
+        "hospital_photo",
+        hospitalPhoto
+    );
+
+
+    return data;
+}
+
+
+/* =========================================================
+   READ API RESPONSE
+========================================================= */
+
+async function readResponse(response) {
+
+    const data =
+        await response
+            .json()
+            .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+        let error =
+            data.detail ||
+            data.message ||
+            "Registration failed.";
+
+
+        if (Array.isArray(data.detail)) {
+
+            error =
+                data.detail
+                    .map(function (item) {
+                        return item.msg;
+                    })
+                    .join("; ");
         }
 
-        form.addEventListener("submit", async function(event) {
-            event.preventDefault();
 
-            if (registerButton.disabled) {
-                return;
-            }
+        throw new Error(error);
+    }
 
-            registerButton.disabled = true;
-            registerButton.textContent = "Registering Hospital...";
-            showMessage("");
 
-            try {
-                const formData = buildRegistrationFormData();
+    return data;
+}
 
-                const response = await fetch(`${API_URL}/hospitals`, {
-                    method: "POST",
-                    body: formData
-                });
 
-                const data = await readResponse(response);
+/* =========================================================
+   FORM SUBMIT
+========================================================= */
 
-                showMessage(
-                    data.message ||
-                    "Hospital registration submitted successfully. Waiting for admin approval.",
-                    "success"
+form.addEventListener(
+    "submit",
+    async function (event) {
+
+        event.preventDefault();
+
+
+        if (registerButton.disabled) {
+
+            return;
+        }
+
+
+        registerButton.disabled = true;
+
+        registerButton.textContent =
+            "Registering Hospital...";
+
+
+        showMessage("");
+
+
+        try {
+
+            /* ---------------------------------------------
+               BUILD DATA
+            --------------------------------------------- */
+
+            const formData =
+                buildRegistrationFormData();
+
+
+            /* ---------------------------------------------
+               SEND TO BACKEND
+            --------------------------------------------- */
+
+            const response =
+                await fetch(
+                    `${API_URL}/hospitals`,
+                    {
+                        method: "POST",
+                        body: formData
+                    }
                 );
 
-                form.reset();
 
-            } catch (error) {
-                console.error("Hospital registration error:", error);
+            const data =
+                await readResponse(response);
 
-                showMessage(
-                    error instanceof TypeError
-                        ? "Cannot connect to the CarePath server. Please try again."
-                        : error.message,
-                    "error"
-                );
 
-            } finally {
-                registerButton.disabled = false;
-                registerButton.textContent = "Register Hospital";
-            }
-        });
-    </script>
+            /* ---------------------------------------------
+               SUCCESS
+            --------------------------------------------- */
+
+            showMessage(
+                data.message ||
+                "Hospital registration submitted successfully. Waiting for admin approval.",
+                "success"
+            );
+
+
+            /* Reset form */
+
+            form.reset();
+
+
+            /* Hide preview */
+
+            photoPreview.src = "";
+
+            photoPreviewContainer.style.display =
+                "none";
+
+
+        } catch (error) {
+
+            console.error(
+                "Hospital registration error:",
+                error
+            );
+
+
+            showMessage(
+                error instanceof TypeError
+                    ? "Cannot connect to the CarePath server. Please try again."
+                    : error.message,
+                "error"
+            );
+
+
+        } finally {
+
+            registerButton.disabled = false;
+
+            registerButton.textContent =
+                "Register Hospital";
+        }
+    }
+);
+</script>
+
 </body>
 </html>

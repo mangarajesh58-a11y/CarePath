@@ -85,6 +85,9 @@ class Hospital(Base):
     # Razorpay linked account
     razorpay_account_id = Column(String(255), nullable=True)
 
+    # Cashfree Easy Split vendor
+    cashfree_vendor_id = Column(String(255), nullable=True, unique=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
