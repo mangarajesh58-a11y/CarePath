@@ -964,7 +964,15 @@ availability, or other CarePath information.
         }
 
     except Exception as e:
-        print("CarePath AI error:", str(e))
+        error_text = str(e)
+        print("CarePath AI error:", error_text)
+
+        if "503" in error_text or "UNAVAILABLE" in error_text:
+            raise HTTPException(
+                status_code=503,
+                detail="CarePath AI is busy right now. Please try again shortly."
+            )
+
         raise HTTPException(
             status_code=500,
             detail="CarePath AI is temporarily unavailable."
