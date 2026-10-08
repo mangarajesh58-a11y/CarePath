@@ -98,7 +98,7 @@ gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 CASHFREE_CLIENT_ID = os.getenv("CASHFREE_CLIENT_ID")
 CASHFREE_CLIENT_SECRET = os.getenv("CASHFREE_CLIENT_SECRET")
-CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg"
+CASHFREE_BASE_URL = "https://api.cashfree.com/pg"
 
 CASHFREE_API_VERSION = "2026-01-01"
 
