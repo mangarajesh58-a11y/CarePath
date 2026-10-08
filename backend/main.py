@@ -880,7 +880,7 @@ def get_carepath_ai_context(db: Session, message: str):
         context.append({
             "hospital_id": hospital.id,
             "name": hospital.name,
-            "location": hospital.location,
+            "location": hospital.city or hospital.address or "Location not available",
             "phone": hospital.phone,
             "token_fee": hospital.token_fee,
         })
