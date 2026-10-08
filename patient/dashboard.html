@@ -258,7 +258,7 @@
 
 </div>
 
-<<script>
+<script>
   // CarePath AI open / close
   const carepathAIButton = document.getElementById("carepathAIButton");
   const carepathAIChat = document.getElementById("carepathAIChat");
@@ -276,7 +276,6 @@
     });
   }
 
-
   // CarePath AI chat
   const carepathAIInput = document.getElementById("carepathAIInput");
   const carepathAISend = document.getElementById("carepathAISend");
@@ -292,82 +291,132 @@
 
     message.textContent = text;
 
-    carepathAIMessages.appendChild(message);
-
-    carepathAIMessages.scrollTop =
-      carepathAIMessages.scrollHeight;
+    if (carepathAIMessages) {
+      carepathAIMessages.appendChild(message);
+      carepathAIMessages.scrollTop =
+        carepathAIMessages.scrollHeight;
+    }
   }
 
-  function sendCarePathMessage() {
-    const text = carepathAIInput.value.trim();
+  async function sendCarePathMessage() {
+    const input = document.getElementById("carepathAIInput");
+
+    if (!input) {
+      console.error("CarePath AI input not found.");
+      return;
+    }
+
+    const text = input.value.trim();
 
     if (!text) return;
 
-    // Show patient's message
     addCarePathMessage(text, "user");
 
-    // Clear input
-    carepathAIInput.value = "";
+    input.value = "";
 
-    // Temporary CarePath AI response
-   setTimeout(() => {
-  const message = text.toLowerCase();
+    const token = localStorage.getItem("patientToken");
 
-  let response =
-    "I understand. 💙 Tell me a little more about your requirement, and I can help you find the appropriate CarePath department.";
+    if (!token) {
+      addCarePathMessage(
+        "Please login again to use CarePath AI.",
+        "ai"
+      );
+      return;
+    }
 
-  if (
-    message.includes("leg pain") ||
-    message.includes("knee pain") ||
-    message.includes("bone pain") ||
-    message.includes("joint pain")
-  ) {
-    response =
-      "Leg or joint pain can have different causes. 💙 An Orthopedics department may be appropriate. I can help you find CarePath hospitals with Orthopedics.";
+    addCarePathMessage("Thinking... 💙", "ai");
+
+    try {
+      const response = await fetch(
+        "https://carepath-3q9q.onrender.com/ai/chat",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+
+          body: JSON.stringify({
+            message: text
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("CarePath AI response:", data);
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail ||
+          "CarePath AI is temporarily unavailable."
+        );
+      }
+
+      if (!data.reply) {
+        throw new Error(
+          "CarePath AI returned an empty response."
+        );
+      }
+
+      // Remove Thinking message
+      if (carepathAIMessages) {
+        const messages =
+          carepathAIMessages.querySelectorAll(
+            ".carepath-ai-message"
+          );
+
+        const lastMessage =
+          messages[messages.length - 1];
+
+        if (
+          lastMessage &&
+          lastMessage.textContent.includes("Thinking...")
+        ) {
+          lastMessage.remove();
+        }
+      }
+
+      // Show Gemini response
+      addCarePathMessage(
+        data.reply,
+        "ai"
+      );
+
+    } catch (error) {
+      console.error(
+        "CarePath AI error:",
+        error
+      );
+
+      // Remove Thinking message
+      if (carepathAIMessages) {
+        const messages =
+          carepathAIMessages.querySelectorAll(
+            ".carepath-ai-message"
+          );
+
+        const lastMessage =
+          messages[messages.length - 1];
+
+        if (
+          lastMessage &&
+          lastMessage.textContent.includes("Thinking...")
+        ) {
+          lastMessage.remove();
+        }
+      }
+
+      addCarePathMessage(
+        error.message ||
+        "CarePath AI is temporarily unavailable.",
+        "ai"
+      );
+    }
   }
 
-  else if (
-    message.includes("fever") &&
-    (
-      message.includes("child") ||
-      message.includes("kid") ||
-      message.includes("baby")
-    )
-  ) {
-    response =
-      "For a child with fever, Pediatrics may be an appropriate department. 💙 I can help you find CarePath hospitals with Pediatrics.";
-  }
-
-  else if (
-    message.includes("skin") ||
-    message.includes("rash") ||
-    message.includes("acne")
-  ) {
-    response =
-      "For skin problems, Dermatology may be an appropriate department. 💙 I can help you find CarePath hospitals with Dermatology.";
-  }
-
-  else if (
-    message.includes("heart") ||
-    message.includes("chest pain") ||
-    message.includes("cardiac")
-  ) {
-    response =
-      "Heart-related symptoms can require medical evaluation. Cardiology may be an appropriate department. 💙 If you have severe or sudden chest pain, seek urgent medical care.";
-  }
-
-  else if (
-    message.includes("tooth") ||
-    message.includes("teeth") ||
-    message.includes("dental")
-  ) {
-    response =
-      "For tooth or dental problems, Dentistry may be an appropriate department. 💙 I can help you find CarePath hospitals with dental services.";
-  }
-
-  addCarePathMessage(response, "ai");
-}, 500);
-}
+  // Send button
   if (carepathAISend) {
     carepathAISend.addEventListener(
       "click",
@@ -375,24 +424,25 @@
     );
   }
 
+  // Enter key
   if (carepathAIInput) {
-    carepathAIInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        sendCarePathMessage();
+    carepathAIInput.addEventListener(
+      "keydown",
+      function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          sendCarePathMessage();
+        }
       }
-    });
+    );
+  }
+
+  // Footer year
+  const footerYear =
+    document.getElementById("footerYear");
+
+  if (footerYear) {
+    footerYear.textContent =
+      new Date().getFullYear();
   }
 </script>
-
-  <script>
-    // Display the current year.
-    const footerYear = document.getElementById("footerYear");
-
-    if (footerYear) {
-      footerYear.textContent = new Date().getFullYear();
-    }
-  </script>
-
-</body>
-</html>
