@@ -1033,22 +1033,21 @@ availability, or other CarePath information.
             "success": True,
             "reply": reply,
         }
-
     except Exception as e:
         error_text = str(e)
         print("CarePath AI error:", error_text)
 
-    if "503" in error_text or "UNAVAILABLE" in error_text:
-        return {
-            "success": True,
-            "reply": get_carepath_ai_fallback(message),
-            "fallback": True,
-        }
+        if "503" in error_text or "UNAVAILABLE" in error_text:
+            return {
+                "success": True,
+                "reply": get_carepath_ai_fallback(message),
+                "fallback": True,
+            }
 
-    raise HTTPException(
-        status_code=500,
-        detail="CarePath AI is temporarily unavailable."
-    )
+        raise HTTPException(
+            status_code=500,
+            detail="CarePath AI is temporarily unavailable."
+        )
 
 @app.post("/registration/request-otp")
 def request_registration_otp(
