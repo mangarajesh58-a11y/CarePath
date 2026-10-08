@@ -863,113 +863,16 @@ def get_carepath_ai_context(db: Session, message: str):
 
     This function does not store the patient's message
     or conversation.
-    - Understand common spelling mistakes, typing errors, abbreviations,
-  missing punctuation, and imperfect grammar.
-- Infer the patient's likely meaning when it is reasonably clear.
-- Do not reject a message just because it contains spelling mistakes.
-- If a message is ambiguous, politely ask a short clarifying question.
-- Respond naturally to greetings and ordinary conversation.
-- For symptom questions, provide general health information without
-  diagnosing the patient or prescribing treatment.
-- Ask relevant follow-up questions when needed.
-- Never invent hospital or doctor details when answering CarePath-specific
-  questions.
     """
 
-    hospitals = (
-        db.query(Hospital)
-        .filter(
-            Hospital.is_published == True,
-            Hospital.approval_status == "APPROVED"
-        )
-        .all()
-    )
-
-    context = []
-
-    for hospital in hospitals:
-        context.append({
-            "hospital_id": hospital.id,
-            "name": hospital.name,
-            "location": hospital.city or hospital.address or "Location not available",
-            "phone": hospital.phone,
-            "token_fee": hospital.token_fee,
-        })
-
-    return context
+    # KEEP YOUR EXISTING HOSPITAL-DATA RETRIEVAL LOGIC HERE.
+    # Do not remove your current database queries or return statement.
 
 
-def get_carepath_ai_fallback(message: str) -> str:
-    text = message.lower().strip()
+# ============================================================
+# CAREPATH AI
+# ============================================================
 
-    # CarePath platform questions
-    if any(word in text for word in [
-        "what is carepath",
-        "tell me about carepath",
-        "about carepath",
-        "what does carepath do",
-        "carepath platform",
-    ]):
-        return (
-            "CarePath 💙 is a healthcare platform that helps patients "
-            "find published hospitals and book tokens online. You can "
-            "browse hospital information, check available details, and "
-            "use the platform to navigate your healthcare options. "
-            "Hospital information and fees should be checked against "
-            "the details displayed in CarePath."
-        )
-
-    # Finding hospitals
-    if any(word in text for word in [
-        "find hospital",
-        "search hospital",
-        "available hospitals",
-        "list of hospitals",
-        "nearby hospital",
-    ]):
-        return (
-            "You can browse the published hospitals on the CarePath "
-            "dashboard. Open a hospital's details to review its "
-            "available information. I can't verify live hospital "
-            "availability while the AI service is unavailable."
-        )
-
-    # Booking tokens
-    if any(word in text for word in [
-        "book token",
-        "booking token",
-        "how to book",
-        "get a token",
-    ]):
-        return (
-            "To book a token, log in to CarePath, select a published "
-            "hospital, open its details, and follow the booking steps "
-            "shown on the website. Check the displayed fee and payment "
-            "status before assuming your booking is confirmed."
-        )
-
-    # Emergency safety
-    if any(word in text for word in [
-        "chest pain",
-        "can't breathe",
-        "cannot breathe",
-        "difficulty breathing",
-        "unconscious",
-        "severe bleeding",
-    ]):
-        return (
-            "These symptoms may be an emergency. Please seek emergency "
-            "medical care immediately or contact your local emergency "
-            "service. Do not wait for an online response."
-        )
-
-    return (
-        "CarePath AI is temporarily unavailable, so I can't answer "
-        "that question reliably right now. Please try again shortly. "
-        "For urgent medical concerns, seek professional medical care."
-    )
-
-#GEMINI AI
 @app.post("/ai/chat")
 def carepath_ai_chat(
     data: AIChatRequest,
@@ -979,38 +882,54 @@ def carepath_ai_chat(
     if not gemini_client:
         raise HTTPException(
             status_code=500,
-            detail="CarePath AI is not configured."
+            detail="CarePath AI is not configured.",
         )
 
     message = data.message.strip()
 
-    carepath_context = get_carepath_ai_context(db, message)
-
     if not message:
         raise HTTPException(
             status_code=400,
-            detail="Message cannot be empty."
+            detail="Message cannot be empty.",
         )
+
+    carepath_context = get_carepath_ai_context(db, message)
 
     system_instruction = """
 You are CarePath AI, the healthcare assistant for the CarePath platform.
 
-Your job is to communicate naturally and help patients understand their healthcare
-needs and navigate CarePath.
+Your job is to communicate naturally and help patients understand their
+healthcare needs and navigate CarePath.
 
-Rules:
+Communication rules:
 - Be friendly, calm, and concise.
+- Understand common spelling mistakes, typing errors, abbreviations,
+  missing punctuation, and imperfect grammar.
+- Infer the patient's likely meaning when it is reasonably clear.
+- Do not reject a message just because it contains spelling mistakes.
+- If a message is ambiguous, politely ask a short clarifying question.
+- Respond naturally to greetings and ordinary conversation.
+- Ask useful follow-up questions when necessary.
+
+Healthcare safety:
 - Never claim to diagnose a disease or medical condition.
 - Do not present guesses as medical facts.
+- Provide general health information without diagnosing the patient
+  or prescribing treatment.
 - You may suggest an appropriate medical department based on symptoms.
-- If symptoms could indicate an emergency, clearly tell the patient to seek
+- If symptoms could indicate an emergency, tell the patient to seek
   emergency medical care immediately.
-- Ask useful follow-up questions when necessary.
+
+CarePath data:
+- Do not invent CarePath hospitals, doctors, prices, availability,
+  phone numbers, or other CarePath information.
+- Use the supplied database information for CarePath-specific answers.
+- If the requested information is not present, say that you cannot
+  verify it rather than guessing.
+
+Privacy:
 - Do not save or remember conversations.
 - Do not mention internal implementation details.
-- Do not invent CarePath hospitals, doctors, prices, availability, or other
-  CarePath data.
-- When CarePath database information is provided later, use only that information.
 """
 
     try:
@@ -1022,6 +941,9 @@ Patient message:
 
 CarePath hospital data:
 {carepath_context}
+
+Answer the patient's message naturally. Understand the intended meaning
+even if the patient makes spelling or grammar mistakes.
 
 Use the CarePath hospital data above when answering questions about
 CarePath hospitals. Never invent a hospital, doctor, fee, phone number,
@@ -1035,15 +957,13 @@ availability, or other CarePath information.
         reply = response.text
 
         if not reply:
-            raise HTTPException(
-                status_code=500,
-                detail="CarePath AI returned an empty response."
-            )
+            raise RuntimeError("CarePath AI returned an empty response.")
 
         return {
             "success": True,
             "reply": reply,
         }
+
     except Exception as e:
         error_text = str(e)
         print("CarePath AI error:", error_text)
@@ -1057,7 +977,7 @@ availability, or other CarePath information.
 
         raise HTTPException(
             status_code=500,
-            detail="CarePath AI is temporarily unavailable."
+            detail="CarePath AI is temporarily unavailable.",
         )
 
 @app.post("/registration/request-otp")
