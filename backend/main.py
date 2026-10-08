@@ -38,6 +38,10 @@ from fastapi import (
     Header,
 )
 
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+security = HTTPBearer()
+
 from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic import BaseModel
@@ -57,7 +61,7 @@ from sqlalchemy.orm import Session
 
 from passlib.context import CryptContext
 
-from database import Base, engine, SessionLocal
+
 
 from models import (
     Patient,
@@ -105,6 +109,7 @@ def create_cashfree_vendor(
     phone: str,
     bank_account_number: str | None = None,
     bank_ifsc: str | None = None,
+    bank_account_holder: str | None = None,
     upi_id: str | None = None,
 ):
     if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
@@ -115,51 +120,84 @@ def create_cashfree_vendor(
 
     payload = {
         "vendor_id": vendor_id,
+        "status": "ACTIVE",
         "name": name,
         "email": email,
-        "phone": phone,
+        "phone": str(phone),
         "verify_account": True,
+        "dashboard_access": False,
+        "schedule_option": 1,
         "kyc_details": {
+            "account_type": "BUSINESS",
             "business_type": "PROPRIETORSHIP",
         },
     }
 
     if bank_account_number and bank_ifsc:
         payload["bank"] = {
-            "account_number": bank_account_number,
+            "account_number": str(bank_account_number),
+            "account_holder": bank_account_holder or name,
             "ifsc": bank_ifsc,
         }
 
     if upi_id:
         payload["upi"] = {
-            "upi_id": upi_id,
+            "vpa": upi_id,
+            "account_holder": bank_account_holder or name,
         }
+
+    if "bank" not in payload and "upi" not in payload:
+        raise HTTPException(
+            status_code=400,
+            detail="Hospital must provide bank account or UPI details.",
+        )
 
     headers = {
         "x-client-id": CASHFREE_CLIENT_ID,
         "x-client-secret": CASHFREE_CLIENT_SECRET,
         "x-api-version": CASHFREE_API_VERSION,
         "Content-Type": "application/json",
+        "x-idempotency-key": str(uuid.uuid4()),
     }
 
-    response = requests.post(
-        f"{CASHFREE_BASE_URL}/easy-split/vendors",
-        headers=headers,
-        json=payload,
-        timeout=30,
-    )
-
-    if response.status_code not in (200, 201):
-        print("Cashfree vendor creation failed:", response.status_code)
-        print("Cashfree response:", response.text)
-
-        raise HTTPException(
-            status_code=400,
-            detail="Unable to create Cashfree vendor.",
+    try:
+        response = requests.post(
+            f"{CASHFREE_BASE_URL}/easy-split/vendors",
+            headers=headers,
+            json=payload,
+            timeout=30,
         )
 
-    return response.json()
+        if response.status_code not in (200, 201):
+            print(
+                "Cashfree vendor creation failed:",
+                response.status_code,
+            )
+            print(
+                "Cashfree response:",
+                response.text,
+            )
 
+            raise HTTPException(
+                status_code=400,
+                detail="Unable to create Cashfree vendor.",
+            )
+
+        return response.json()
+
+    except HTTPException:
+        raise
+
+    except requests.RequestException as error:
+        print(
+            "Cashfree connection error:",
+            str(error),
+        )
+
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to connect to Cashfree.",
+        )
 
 # JWT Authentication Configuration
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -192,7 +230,7 @@ def create_access_token(user_id: int, role: str) -> str:
 
 
 def get_current_user(
-    authorization: Optional[str] = Header(default=None),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
     if not JWT_SECRET_KEY:
         raise HTTPException(
@@ -200,13 +238,13 @@ def get_current_user(
             detail="JWT authentication is not configured."
         )
 
-    if not authorization or not authorization.startswith("Bearer "):
+    if not credentials or not credentials.credentials:
         raise HTTPException(
             status_code=401,
             detail="Authentication required."
         )
 
-    token = authorization.split(" ", 1)[1].strip()
+    token = credentials.credentials.strip()
 
     try:
         payload = jwt.decode(
@@ -816,11 +854,45 @@ class RegistrationOTPVerifyRequest(BaseModel):
 
 class AIChatRequest(BaseModel):
     message: str
+# ==========================================
+# CAREPATH AI - DATABASE CONTEXT
+# ==========================================
+
+def get_carepath_ai_context(db: Session, message: str):
+    """
+    Retrieve relevant CarePath data for the AI.
+
+    This function does not store the patient's message
+    or conversation.
+    """
+
+    hospitals = (
+        db.query(Hospital)
+        .filter(
+            Hospital.is_published == True,
+            Hospital.approval_status == "APPROVED"
+        )
+        .all()
+    )
+
+    context = []
+
+    for hospital in hospitals:
+        context.append({
+            "hospital_id": hospital.id,
+            "name": hospital.name,
+            "location": hospital.location,
+            "phone": hospital.phone,
+            "token_fee": hospital.token_fee,
+        })
+
+    return context
 
 #GEMINI AI
 @app.post("/ai/chat")
 def carepath_ai_chat(
     data: AIChatRequest,
+    db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("patient")),
 ):
     if not gemini_client:
@@ -830,6 +902,8 @@ def carepath_ai_chat(
         )
 
     message = data.message.strip()
+
+    carepath_context = get_carepath_ai_context(db, message)
 
     if not message:
         raise HTTPException(
@@ -860,8 +934,18 @@ Rules:
 
     try:
         response = gemini_client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=message,
+            model="gemini-2.0-flash",
+            contents=f"""
+Patient message:
+{message}
+
+CarePath hospital data:
+{carepath_context}
+
+Use the CarePath hospital data above when answering questions about
+CarePath hospitals. Never invent a hospital, doctor, fee, phone number,
+availability, or other CarePath information.
+""",
             config={
                 "system_instruction": system_instruction,
             },
@@ -3023,80 +3107,68 @@ def save_payment_account(
             detail="You cannot update another hospital's payment details",
         )
 
+    # Require at least one payment method
+    if not data.account_number and not data.upi:
+        raise HTTPException(
+            status_code=400,
+            detail="Please provide bank account details or UPI details.",
+        )
+
+    # ------------------------------------------------------------
+    # SAVE PAYMENT DETAILS IN CAREPATH
+    # ------------------------------------------------------------
+
     hospital.payment_account_name = data.account_name
     hospital.payment_account_number = data.account_number
     hospital.payment_ifsc = data.ifsc
     hospital.payment_upi = data.upi
-    hospital.payment_account_status = "PENDING"
+
+    # ------------------------------------------------------------
+    # CREATE CASHFREE VENDOR
+    # ------------------------------------------------------------
+
+    if not hospital.cashfree_vendor_id:
+
+        vendor_id = f"carepath_hospital_{hospital.id}"
+
+        cashfree_response = create_cashfree_vendor(
+            vendor_id=vendor_id,
+            name=hospital.name,
+            email=hospital.email,
+            phone=hospital.phone,
+            bank_account_number=data.account_number,
+            bank_ifsc=data.ifsc,
+            bank_account_holder=data.account_name,
+            upi_id=data.upi,
+        )
+
+        # Save Cashfree vendor ID
+        hospital.cashfree_vendor_id = (
+            cashfree_response.get("vendor_id")
+            or vendor_id
+        )
+
+        # Save Cashfree vendor status
+        cashfree_status = cashfree_response.get("status")
+
+        if cashfree_status:
+            hospital.payment_account_status = cashfree_status
+        else:
+            hospital.payment_account_status = "IN_BENE_CREATION"
+
+    else:
+        # Vendor already exists
+        hospital.payment_account_status = "ACTIVE"
 
     db.commit()
     db.refresh(hospital)
 
     return {
         "success": True,
-        "message": "Payment account details saved successfully.",
+        "message": "Payment account submitted to Cashfree successfully.",
         "payment_account_status": hospital.payment_account_status,
+        "cashfree_vendor_id": hospital.cashfree_vendor_id,
     }
-
-# ============================================================
-# GET PAYMENT ACCOUNT
-# ============================================================
-
-@app.get(
-    "/hospitals/{hospital_id}/payment-account"
-)
-def get_payment_account(
-    hospital_id: int,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("hospital")),
-):
-
-    hospital = (
-        db.query(Hospital)
-        .filter(
-            Hospital.id ==
-            hospital_id
-        )
-        .first()
-    )
-
-    if not hospital:
-        raise HTTPException(
-            status_code=404,
-            detail="Hospital not found",
-        )
-
-    if hospital.id != current_user["user_id"]:
-        raise HTTPException(
-            status_code=403,
-            detail="You cannot access another hospital's payment details",
-        )
-
-    return {
-
-        "hospital_id":
-            hospital.id,
-
-        "account_name":
-            hospital.payment_account_name,
-
-        "account_number":
-            hospital.payment_account_number,
-
-        "ifsc":
-            hospital.payment_ifsc,
-
-        "upi":
-            hospital.payment_upi,
-
-        "status":
-            hospital.payment_account_status,
-
-        "razorpay_account_id":
-            hospital.razorpay_account_id,
-    }
-
-
 # ============================================================
 # FIND PUBLISHED HOSPITAL
 # ============================================================
