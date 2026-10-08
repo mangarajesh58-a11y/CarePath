@@ -887,6 +887,77 @@ def get_carepath_ai_context(db: Session, message: str):
 
     return context
 
+
+def get_carepath_ai_fallback(message: str) -> str:
+    text = message.lower().strip()
+
+    # CarePath platform questions
+    if any(word in text for word in [
+        "what is carepath",
+        "tell me about carepath",
+        "about carepath",
+        "what does carepath do",
+        "carepath platform",
+    ]):
+        return (
+            "CarePath 💙 is a healthcare platform that helps patients "
+            "find published hospitals and book tokens online. You can "
+            "browse hospital information, check available details, and "
+            "use the platform to navigate your healthcare options. "
+            "Hospital information and fees should be checked against "
+            "the details displayed in CarePath."
+        )
+
+    # Finding hospitals
+    if any(word in text for word in [
+        "find hospital",
+        "search hospital",
+        "available hospitals",
+        "list of hospitals",
+        "nearby hospital",
+    ]):
+        return (
+            "You can browse the published hospitals on the CarePath "
+            "dashboard. Open a hospital's details to review its "
+            "available information. I can't verify live hospital "
+            "availability while the AI service is unavailable."
+        )
+
+    # Booking tokens
+    if any(word in text for word in [
+        "book token",
+        "booking token",
+        "how to book",
+        "get a token",
+    ]):
+        return (
+            "To book a token, log in to CarePath, select a published "
+            "hospital, open its details, and follow the booking steps "
+            "shown on the website. Check the displayed fee and payment "
+            "status before assuming your booking is confirmed."
+        )
+
+    # Emergency safety
+    if any(word in text for word in [
+        "chest pain",
+        "can't breathe",
+        "cannot breathe",
+        "difficulty breathing",
+        "unconscious",
+        "severe bleeding",
+    ]):
+        return (
+            "These symptoms may be an emergency. Please seek emergency "
+            "medical care immediately or contact your local emergency "
+            "service. Do not wait for an online response."
+        )
+
+    return (
+        "CarePath AI is temporarily unavailable, so I can't answer "
+        "that question reliably right now. Please try again shortly. "
+        "For urgent medical concerns, seek professional medical care."
+    )
+
 #GEMINI AI
 @app.post("/ai/chat")
 def carepath_ai_chat(
@@ -967,16 +1038,17 @@ availability, or other CarePath information.
         error_text = str(e)
         print("CarePath AI error:", error_text)
 
-        if "503" in error_text or "UNAVAILABLE" in error_text:
-            raise HTTPException(
-                status_code=503,
-                detail="CarePath AI is busy right now. Please try again shortly."
-            )
+    if "503" in error_text or "UNAVAILABLE" in error_text:
+        return {
+            "success": True,
+            "reply": get_carepath_ai_fallback(message),
+            "fallback": True,
+        }
 
-        raise HTTPException(
-            status_code=500,
-            detail="CarePath AI is temporarily unavailable."
-        )
+    raise HTTPException(
+        status_code=500,
+        detail="CarePath AI is temporarily unavailable."
+    )
 
 @app.post("/registration/request-otp")
 def request_registration_otp(
