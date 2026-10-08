@@ -863,6 +863,17 @@ def get_carepath_ai_context(db: Session, message: str):
 
     This function does not store the patient's message
     or conversation.
+    - Understand common spelling mistakes, typing errors, abbreviations,
+  missing punctuation, and imperfect grammar.
+- Infer the patient's likely meaning when it is reasonably clear.
+- Do not reject a message just because it contains spelling mistakes.
+- If a message is ambiguous, politely ask a short clarifying question.
+- Respond naturally to greetings and ordinary conversation.
+- For symptom questions, provide general health information without
+  diagnosing the patient or prescribing treatment.
+- Ask relevant follow-up questions when needed.
+- Never invent hospital or doctor details when answering CarePath-specific
+  questions.
     """
 
     hospitals = (
