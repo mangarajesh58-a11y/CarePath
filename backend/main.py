@@ -139,8 +139,7 @@ def create_cashfree_vendor(
             "account_holder": bank_account_holder or name,
             "ifsc": bank_ifsc,
         }
-
-    if upi_id:
+    elif upi_id:
         payload["upi"] = {
             "vpa": upi_id,
             "account_holder": bank_account_holder or name,
