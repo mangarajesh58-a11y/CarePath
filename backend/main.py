@@ -98,9 +98,9 @@ gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 CASHFREE_CLIENT_ID = os.getenv("CASHFREE_CLIENT_ID")
 CASHFREE_CLIENT_SECRET = os.getenv("CASHFREE_CLIENT_SECRET")
-CASHFREE_BASE_URL = "https://api.cashfree.com/pg"
+CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg"
 
-CASHFREE_API_VERSION = "2026-01-01"
+CASHFREE_API_VERSION = "2025-01-01"
 
 def create_cashfree_vendor(
     vendor_id: str,
@@ -863,11 +863,103 @@ def get_carepath_ai_context(db: Session, message: str):
 
     This function does not store the patient's message
     or conversation.
+    
     """
 
-    # KEEP YOUR EXISTING HOSPITAL-DATA RETRIEVAL LOGIC HERE.
-    # Do not remove your current database queries or return statement.
+    hospitals = (
+        db.query(Hospital)
+        .filter(
+            Hospital.is_published == True,
+            Hospital.approval_status == "APPROVED"
+        )
+        .all()
+    )
 
+    context = []
+
+    for hospital in hospitals:
+        context.append({
+            "hospital_id": hospital.id,
+            "name": hospital.name,
+            "location": hospital.city or hospital.address or "Location not available",
+            "phone": hospital.phone,
+            "token_fee": hospital.token_fee,
+        })
+
+    return context
+
+
+def get_carepath_ai_fallback(message: str) -> str:
+    text = message.lower().strip()
+
+    # CarePath platform questions
+    if any(word in text for word in [
+        "what is carepath",
+        "tell me about carepath",
+        "about carepath",
+        "what does carepath do",
+        "carepath platform",
+    ]):
+        return (
+            "CarePath 💙 is a healthcare platform that helps patients "
+            "find published hospitals and book tokens online. You can "
+            "browse hospital information, check available details, and "
+            "use the platform to navigate your healthcare options. "
+            "Hospital information and fees should be checked against "
+            "the details displayed in CarePath."
+        )
+
+    # Finding hospitals
+    if any(word in text for word in [
+        "find hospital",
+        "search hospital",
+        "available hospitals",
+        "list of hospitals",
+        "nearby hospital",
+    ]):
+        return (
+            "You can browse the published hospitals on the CarePath "
+            "dashboard. Open a hospital's details to review its "
+            "available information. I can't verify live hospital "
+            "availability while the AI service is unavailable."
+        )
+
+    # Booking tokens
+    if any(word in text for word in [
+        "book token",
+        "booking token",
+        "how to book",
+        "get a token",
+    ]):
+        return (
+            "To book a token, log in to CarePath, select a published "
+            "hospital, open its details, and follow the booking steps "
+            "shown on the website. Check the displayed fee and payment "
+            "status before assuming your booking is confirmed."
+        )
+
+    # Emergency safety
+    if any(word in text for word in [
+        "chest pain",
+        "can't breathe",
+        "cannot breathe",
+        "difficulty breathing",
+        "unconscious",
+        "severe bleeding",
+    ]):
+        return (
+            "These symptoms may be an emergency. Please seek emergency "
+            "medical care immediately or contact your local emergency "
+            "service. Do not wait for an online response."
+        )
+
+    return (
+        "CarePath AI is temporarily unavailable, so I can't answer "
+        "that question reliably right now. Please try again shortly. "
+        "For urgent medical concerns, seek professional medical care."
+    )
+
+#GEMINI AI
 
 # ============================================================
 # CAREPATH AI
@@ -881,8 +973,8 @@ def carepath_ai_chat(
 ):
     if not gemini_client:
         raise HTTPException(
-            status_code=500,
-            detail="CarePath AI is not configured.",
+            status_code=503,
+            detail="CarePath AI is temporarily unavailable.",
         )
 
     message = data.message.strip()
@@ -893,42 +985,45 @@ def carepath_ai_chat(
             detail="Message cannot be empty.",
         )
 
-    carepath_context = get_carepath_ai_context(db, message)
+    try:
+        carepath_context = get_carepath_ai_context(db, message)
+    except Exception:
+        print("CarePath AI context retrieval failed.")
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to retrieve CarePath information.",
+        )
 
     system_instruction = """
 You are CarePath AI, the healthcare assistant for the CarePath platform.
 
-Your job is to communicate naturally and help patients understand their
-healthcare needs and navigate CarePath.
+Your goal is to communicate naturally, kindly, and clearly with patients.
 
-Communication rules:
-- Be friendly, calm, and concise.
-- Understand common spelling mistakes, typing errors, abbreviations,
+Conversation:
+- Understand spelling mistakes, typing errors, abbreviations,
   missing punctuation, and imperfect grammar.
-- Infer the patient's likely meaning when it is reasonably clear.
-- Do not reject a message just because it contains spelling mistakes.
-- If a message is ambiguous, politely ask a short clarifying question.
+- Infer the intended meaning when it is reasonably clear.
+- Do not reject a message simply because it contains mistakes.
 - Respond naturally to greetings and ordinary conversation.
-- Ask useful follow-up questions when necessary.
+- If a message is unclear, ask a short clarifying question.
+- Keep answers friendly, useful, and easy to understand.
 
 Healthcare safety:
 - Never claim to diagnose a disease or medical condition.
-- Do not present guesses as medical facts.
-- Provide general health information without diagnosing the patient
-  or prescribing treatment.
-- You may suggest an appropriate medical department based on symptoms.
-- If symptoms could indicate an emergency, tell the patient to seek
-  emergency medical care immediately.
+- Provide general health information, not a diagnosis.
+- Do not prescribe medication or invent dosages.
+- You may suggest an appropriate medical department.
+- If symptoms may indicate an emergency, advise immediate emergency care.
+- Ask relevant follow-up questions when helpful.
 
-CarePath data:
-- Do not invent CarePath hospitals, doctors, prices, availability,
-  phone numbers, or other CarePath information.
-- Use the supplied database information for CarePath-specific answers.
-- If the requested information is not present, say that you cannot
-  verify it rather than guessing.
+CarePath information:
+- Use the supplied CarePath database information for hospital questions.
+- Never invent hospital names, doctors, fees, phone numbers,
+  or availability.
+- If the supplied data does not answer a question, say you cannot verify it.
 
 Privacy:
-- Do not save or remember conversations.
+- Do not save or claim to remember conversations.
 - Do not mention internal implementation details.
 """
 
@@ -939,15 +1034,12 @@ Privacy:
 Patient message:
 {message}
 
-CarePath hospital data:
+CarePath hospital data from the database:
 {carepath_context}
 
-Answer the patient's message naturally. Understand the intended meaning
-even if the patient makes spelling or grammar mistakes.
-
-Use the CarePath hospital data above when answering questions about
-CarePath hospitals. Never invent a hospital, doctor, fee, phone number,
-availability, or other CarePath information.
+Respond to the patient's actual question. Correctly interpret reasonable
+spelling and grammar mistakes. Use only the supplied database information
+for CarePath-specific facts. Do not guess missing hospital information.
 """,
             config={
                 "system_instruction": system_instruction,
@@ -979,7 +1071,6 @@ availability, or other CarePath information.
             status_code=500,
             detail="CarePath AI is temporarily unavailable.",
         )
-
 @app.post("/registration/request-otp")
 def request_registration_otp(
     data: RegistrationOTPRequest,
@@ -1229,23 +1320,14 @@ class HospitalDoctorCreate(BaseModel):
     end_time: Optional[str] = None
     is_available: bool = True
 
+
 class TokenRequest(BaseModel):
-
     patient_name: str
-
     hospital: str
-
     department: str
-
     doctor: str
-
     appointment_date: Optional[date] = None
-
-    razorpay_order_id: str
-
-    razorpay_payment_id: str
-
-    razorpay_signature: str
+    cashfree_order_id: str
 
 class CreateOrderRequest(BaseModel):
 
@@ -3221,17 +3303,14 @@ def find_published_hospital(
 
 @app.post("/api/create-order")
 @app.post("/payments/create-order")
-def create_razorpay_order(
+def create_cashfree_order(
     data: CreateOrderRequest,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("patient")),
 ):
-    # Identify the patient using the verified JWT.
     patient = (
         db.query(Patient)
-        .filter(
-            Patient.id == current_user["user_id"]
-        )
+        .filter(Patient.id == current_user["user_id"])
         .first()
     )
 
@@ -3241,14 +3320,10 @@ def create_razorpay_order(
             detail="Patient account not found.",
         )
 
-    if not razorpay_client:
+    if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Razorpay is not configured. "
-                "Check RAZORPAY_KEY_ID and "
-                "RAZORPAY_KEY_SECRET."
-            ),
+            detail="Cashfree Sandbox credentials are not configured.",
         )
 
     hospital_name = data.hospital.strip()
@@ -3256,30 +3331,16 @@ def create_razorpay_order(
     doctor_name = data.doctor.strip()
 
     if not hospital_name:
-        raise HTTPException(
-            status_code=400,
-            detail="Hospital is required",
-        )
+        raise HTTPException(status_code=400, detail="Hospital is required")
 
     if not department_name:
-        raise HTTPException(
-            status_code=400,
-            detail="Department is required",
-        )
+        raise HTTPException(status_code=400, detail="Department is required")
 
     if not doctor_name:
-        raise HTTPException(
-            status_code=400,
-            detail="Doctor is required",
-        )
+        raise HTTPException(status_code=400, detail="Doctor is required")
 
-    # Find the published hospital.
-    hospital = find_published_hospital(
-        db,
-        hospital_name,
-    )
+    hospital = find_published_hospital(db, hospital_name)
 
-    # Confirm the selected doctor belongs to this hospital.
     doctor = (
         db.query(Doctor)
         .filter(
@@ -3291,43 +3352,73 @@ def create_razorpay_order(
     )
 
     if not doctor:
-        raise HTTPException(
-            status_code=404,
-            detail="Doctor not found",
-        )
+        raise HTTPException(status_code=404, detail="Doctor not found")
 
-    # Calculate the amount on the server.
     token_fee = int(hospital.token_fee or 0)
     platform_fee = PLATFORM_FEE
     total_amount = token_fee + platform_fee
 
     if total_amount <= 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid payment amount",
-        )
+        raise HTTPException(status_code=400, detail="Invalid payment amount")
 
-    amount_paise = total_amount * 100
+    order_id = f"carepath_{hospital.id}_{secrets.token_hex(8)}"
+
+    payload = {
+        "order_id": order_id,
+        "order_amount": float(total_amount),
+        "order_currency": "INR",
+        "customer_details": {
+            "customer_id": str(patient.id),
+            "customer_name": patient.full_name,
+            "customer_email": patient.email,
+            "customer_phone": str(
+                getattr(patient, "phone", "") or "9999999999"
+            ),
+        },
+        "order_meta": {
+            
+"return_url": (
+    "https://carepath-patient-mx5v.vercel.app/"
+    "dashboard.html?cashfree_order_id={order_id}"
+)
+        },
+        "order_note": "CarePath hospital token booking",
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "x-client-id": CASHFREE_CLIENT_ID,
+        "x-client-secret": CASHFREE_CLIENT_SECRET,
+        "x-api-version": CASHFREE_API_VERSION,
+        "x-idempotency-key": str(uuid.uuid4()),
+    }
 
     try:
-        order = razorpay_client.order.create(
-            {
-                "amount": amount_paise,
-                "currency": "INR",
-                "receipt": (
-                    "carepath_"
-                    f"{hospital.id}_"
-                    f"{secrets.token_hex(4)}"
-                ),
-            }
+        response = requests.post(
+            f"{CASHFREE_BASE_URL}/orders",
+            json=payload,
+            headers=headers,
+            timeout=20,
         )
+
+        if response.status_code not in (200, 201):
+            print(
+                "Cashfree order error:",
+                response.status_code,
+                response.text,
+            )
+            raise HTTPException(
+                status_code=502,
+                detail="Cashfree Sandbox could not create the payment order.",
+            )
+
+        order = response.json()
 
         return {
             "success": True,
-            "order_id": order["id"],
-            "key_id": RAZORPAY_KEY_ID,
-            "razorpay_key_id": RAZORPAY_KEY_ID,
-            "amount": amount_paise,
+            "order_id": order.get("order_id", order_id),
+            "payment_session_id": order.get("payment_session_id"),
+            "amount": int(total_amount * 100),
             "currency": "INR",
             "token_fee": token_fee,
             "platform_fee": platform_fee,
@@ -3335,12 +3426,13 @@ def create_razorpay_order(
             "hospital_id": hospital.id,
         }
 
+    except HTTPException:
+        raise
     except Exception as error:
-        print("Razorpay order error:", error)
-
+        print("Cashfree order error:", str(error))
         raise HTTPException(
-            status_code=500,
-            detail="Unable to create Razorpay order",
+            status_code=502,
+            detail="Unable to create Cashfree Sandbox order.",
         )
 # ============================================================
 # RAZORPAY SIGNATURE
@@ -3384,6 +3476,8 @@ def verify_razorpay_signature(
 # ============================================================
 
 
+
+
 @app.post("/tokens")
 @app.post("/payments/verify")
 def create_token(
@@ -3391,7 +3485,6 @@ def create_token(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("patient")),
 ):
-    # Identify the patient from the verified JWT, not request data.
     patient = (
         db.query(Patient)
         .filter(Patient.id == current_user["user_id"])
@@ -3399,90 +3492,91 @@ def create_token(
     )
 
     if not patient:
-        raise HTTPException(
-            status_code=401,
-            detail="Patient account not found.",
-        )
+        raise HTTPException(status_code=401, detail="Patient account not found.")
 
-    if not data.razorpay_order_id:
-        raise HTTPException(
-            status_code=400,
-            detail="Razorpay order ID is required",
-        )
+    order_id = data.cashfree_order_id.strip()
 
-    if not data.razorpay_payment_id:
-        raise HTTPException(
-            status_code=400,
-            detail="Razorpay payment ID is required",
-        )
+    if not order_id:
+        raise HTTPException(status_code=400, detail="Cashfree order ID is required.")
 
-    if not data.razorpay_signature:
-        raise HTTPException(
-            status_code=400,
-            detail="Razorpay signature is required",
-        )
-
-    # Verify Razorpay signature.
-    valid_signature = verify_razorpay_signature(
-        data.razorpay_order_id,
-        data.razorpay_payment_id,
-        data.razorpay_signature,
-    )
-
-    if not valid_signature:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid Razorpay payment signature",
-        )
-
-    if not razorpay_client:
+    if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
         raise HTTPException(
             status_code=500,
-            detail="Razorpay is not configured",
+            detail="Cashfree Sandbox credentials are not configured.",
         )
+
+    headers = {
+        "x-client-id": CASHFREE_CLIENT_ID,
+        "x-client-secret": CASHFREE_CLIENT_SECRET,
+        "x-api-version": CASHFREE_API_VERSION,
+        "Content-Type": "application/json",
+    }
 
     try:
-        payment = razorpay_client.payment.fetch(
-            data.razorpay_payment_id
+        order_response = requests.get(
+            f"{CASHFREE_BASE_URL}/orders/{order_id}",
+            headers=headers,
+            timeout=20,
         )
 
-        if payment.get("order_id") != data.razorpay_order_id:
-            raise HTTPException(
-                status_code=400,
-                detail="Payment order mismatch",
-            )
+        if order_response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Unable to verify Cashfree order.")
 
-        if payment.get("status") != "captured":
-            raise HTTPException(
-                status_code=400,
-                detail="Payment has not been captured successfully",
-            )
+        order = order_response.json()
+
+        if order.get("order_status") != "PAID":
+            raise HTTPException(status_code=400, detail="Payment is not confirmed as paid.")
+
+        customer_details = order.get("customer_details") or {}
+
+        if str(customer_details.get("customer_id", "")) != str(patient.id):
+            raise HTTPException(status_code=403, detail="This order does not belong to this patient.")
+
+        payments_response = requests.get(
+            f"{CASHFREE_BASE_URL}/orders/{order_id}/payments",
+            headers=headers,
+            timeout=20,
+        )
+
+        if payments_response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Unable to verify Cashfree payment.")
+
+        payments = payments_response.json()
+
+        if not isinstance(payments, list):
+            raise HTTPException(status_code=400, detail="Unexpected Cashfree payment response.")
+
+        payment = next(
+            (
+                item for item in payments
+                if item.get("payment_status") == "SUCCESS"
+            ),
+            None,
+        )
+
+        if not payment:
+            raise HTTPException(status_code=400, detail="No successful Cashfree payment was found.")
+
+        payment_id = str(payment.get("cf_payment_id") or "").strip()
+
+        if not payment_id:
+            raise HTTPException(status_code=400, detail="Cashfree payment ID is missing.")
 
     except HTTPException:
         raise
     except Exception as error:
-        print("Payment verification error:", error)
-        raise HTTPException(
-            status_code=400,
-            detail="Unable to verify Razorpay payment",
-        )
+        print("Cashfree verification error:", str(error))
+        raise HTTPException(status_code=502, detail="Unable to verify Cashfree payment.")
 
-    # Prevent duplicate payment use and cross-patient access.
     existing_token = (
         db.query(Token)
-        .filter(
-            Token.razorpay_payment_id
-            == data.razorpay_payment_id
-        )
+        .filter(Token.cashfree_order_id == order_id)
         .first()
     )
 
     if existing_token:
         if existing_token.patient_id != patient.id:
-            raise HTTPException(
-                status_code=403,
-                detail="This payment belongs to another patient.",
-            )
+            raise HTTPException(status_code=403, detail="This order belongs to another patient.")
 
         return {
             "success": True,
@@ -3490,47 +3584,43 @@ def create_token(
             "token": token_to_dict(existing_token),
         }
 
-    # Find the published hospital.
-    hospital = find_published_hospital(
-        db,
-        data.hospital,
-    )
+    hospital = find_published_hospital(db, data.hospital)
 
-    # Find the selected doctor at that hospital.
     doctor = (
         db.query(Doctor)
         .filter(
             Doctor.hospital_id == hospital.id,
-            Doctor.department == data.department,
-            Doctor.name == data.doctor,
+            Doctor.department == data.department.strip(),
+            Doctor.name == data.doctor.strip(),
         )
         .first()
     )
 
     if not doctor:
-        raise HTTPException(
-            status_code=404,
-            detail="Doctor not found",
-        )
+        raise HTTPException(status_code=404, detail="Doctor not found.")
 
-    # Verify payment amount.
     token_fee = int(hospital.token_fee or 0)
     platform_fee = PLATFORM_FEE
     total_amount = token_fee + platform_fee
 
-    expected_amount_paise = total_amount * 100
-    actual_amount_paise = int(payment.get("amount", 0))
+    try:
+        order_amount = float(order.get("order_amount", 0))
+        payment_amount = float(payment.get("payment_amount", 0))
 
-    if actual_amount_paise != expected_amount_paise:
-        raise HTTPException(
-            status_code=400,
-            detail="Payment amount mismatch",
-        )
+        if (
+            order_amount != float(total_amount)
+            or payment_amount != float(total_amount)
+            or order.get("order_currency") != "INR"
+            or payment.get("payment_currency") != "INR"
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Payment amount or currency mismatch.",
+            )
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid Cashfree payment amount.")
 
-    # Generate a token number for the selected appointment date.
-    selected_appointment_date = (
-        data.appointment_date or date.today()
-    )
+    appointment_date = data.appointment_date or date.today()
 
     latest_token = (
         db.query(Token)
@@ -3538,19 +3628,14 @@ def create_token(
             Token.hospital_id == hospital.id,
             Token.department == data.department.strip(),
             Token.doctor == data.doctor.strip(),
-            Token.appointment_date == selected_appointment_date,
+            Token.appointment_date == appointment_date,
         )
         .order_by(Token.token_number.desc())
         .first()
     )
 
-    next_token_number = (
-        latest_token.token_number + 1
-        if latest_token
-        else 1
-    )
+    next_token_number = latest_token.token_number + 1 if latest_token else 1
 
-    # Create the token linked to the authenticated patient.
     token = Token(
         patient_id=patient.id,
         patient_name=patient.full_name,
@@ -3559,21 +3644,25 @@ def create_token(
         department=data.department.strip(),
         doctor=data.doctor.strip(),
         token_number=next_token_number,
-        appointment_date=selected_appointment_date,
+        appointment_date=appointment_date,
         platform=PLATFORM_NAME,
         token_fee=token_fee,
         platform_fee=platform_fee,
         total_amount=total_amount,
         payment_status="paid",
-        razorpay_order_id=data.razorpay_order_id,
-        razorpay_payment_id=data.razorpay_payment_id,
-        razorpay_signature=data.razorpay_signature,
+        cashfree_order_id=order_id,
+        cashfree_payment_id=payment_id,
         status="waiting",
     )
 
-    db.add(token)
-    db.commit()
-    db.refresh(token)
+    try:
+        db.add(token)
+        db.commit()
+        db.refresh(token)
+    except Exception as error:
+        db.rollback()
+        print("Token creation error:", str(error))
+        raise HTTPException(status_code=500, detail="Unable to create the hospital token.")
 
     return {
         "success": True,

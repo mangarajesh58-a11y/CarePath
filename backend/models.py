@@ -138,6 +138,10 @@ class Token(Base):
     razorpay_payment_id = Column(String(255), nullable=True)
     razorpay_signature = Column(String(500), nullable=True)
 
+        # Cashfree
+    cashfree_order_id = Column(String(255), nullable=True, unique=True)
+    cashfree_payment_id = Column(String(255), nullable=True, unique=True)
+
     # Token status
     status = Column(String(50), default="waiting")
     created_at = Column(DateTime, default=datetime.utcnow)

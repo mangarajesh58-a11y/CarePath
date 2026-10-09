@@ -85,102 +85,71 @@ function getErrorMessage(data, fallback) {
 // PAGE LOAD
 // =========================================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        console.log(
-            "CarePath patient dashboard loaded."
-        );
-
-        loadPatientName();
-
-        setupEvents();
-
-        loadHospitals();
-
-    }
-);
 
 
-// =========================================================
-// SETUP EVENTS
-// =========================================================
+document.addEventListener("DOMContentLoaded", async function () {
+    console.log("CarePath patient dashboard loaded.");
 
-function setupEvents() {
+    loadPatientName();
+    setupEvents();
+    loadHospitals();
 
-    const hospitalSelect =
-        document.getElementById("hospital");
+    const params = new URLSearchParams(window.location.search);
+    const cashfreeOrderId = params.get("cashfree_order_id");
 
-    const departmentSelect =
-        document.getElementById("department");
+    if (!cashfreeOrderId) return;
 
-    const doctorSelect =
-        document.getElementById("doctor");
-
-    const continueBtn =
-        document.getElementById("continueBtn");
-
-    const logoutButton =
-        document.getElementById("logoutButton");
-
-
-    if (hospitalSelect) {
-
-        hospitalSelect.addEventListener(
-            "change",
-            hospitalSelected
-        );
-
+    // Prevent duplicate verification if the page is refreshed.
+    if (localStorage.getItem("verifiedCashfreeOrderId") === cashfreeOrderId) {
+        return;
     }
 
+    const hospitalName = localStorage.getItem("selectedHospitalName");
+    const department = localStorage.getItem("selectedDepartment");
+    const doctorName = localStorage.getItem("selectedDoctorName");
+    const patientName = localStorage.getItem("patientName");
 
-    if (departmentSelect) {
-
-        departmentSelect.addEventListener(
-            "change",
-            departmentSelected
+    if (!hospitalName || !department || !doctorName || !patientName) {
+        console.error("Saved booking details are missing.");
+        showMessage(
+            "Booking details are missing. Please contact CarePath support before retrying.",
+            "error"
         );
-
+        return;
     }
 
+    localStorage.setItem("cashfreeOrderId", cashfreeOrderId);
 
-    if (doctorSelect) {
+        try {
+        localStorage.removeItem("tokenNumber");
 
-        doctorSelect.addEventListener(
-            "change",
-            doctorSelected
+        await createTokenAfterPayment(
+            cashfreeOrderId,
+            hospitalName,
+            department,
+            doctorName,
+            patientName
         );
 
-    }
+        if (localStorage.getItem("tokenNumber")) {
+            localStorage.setItem("verifiedCashfreeOrderId", cashfreeOrderId);
 
-
-    if (continueBtn) {
-
-        continueBtn.addEventListener(
-            "click",
-            continueAndGetToken
+            window.history.replaceState(
+                {},
+                document.title,
+                window.location.pathname
+            );
+        } else {
+            throw new Error("Token was not created after payment verification.");
+        }
+    } catch (error) {
+        console.error("Cashfree return handling failed:", error);
+        showMessage(
+            error.message || "Payment verification failed. Please contact CarePath support.",
+            "error"
         );
-
     }
-
-
-    if (logoutButton) {
-
-        logoutButton.addEventListener(
-            "click",
-            logout
-        );
-
-    }
-
-
-    updateFeeDisplay();
-
-    updatePaymentButton();
-
-}
-
+});
 
 // =========================================================
 // LOAD PATIENT NAME
@@ -1222,369 +1191,127 @@ function updatePaymentButton() {
 // CONTINUE & PAY
 // =========================================================
 
+
 async function continueAndGetToken() {
+    if (paymentInProgress) return;
 
-    if (paymentInProgress) {
+    const hospitalSelect = document.getElementById("hospital");
+    const departmentSelect = document.getElementById("department");
+    const doctorSelect = document.getElementById("doctor");
+
+    if (!hospitalSelect || !departmentSelect || !doctorSelect) {
+        showMessage("Booking form is not available.", "error");
         return;
     }
 
-
-    const hospitalSelect =
-        document.getElementById(
-            "hospital"
-        );
-
-    const departmentSelect =
-        document.getElementById(
-            "department"
-        );
-
-    const doctorSelect =
-        document.getElementById(
-            "doctor"
-        );
-
-
-    if (
-        !hospitalSelect ||
-        !departmentSelect ||
-        !doctorSelect
-    ) {
-
-        showMessage(
-            "Booking form is not available.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    const hospitalId =
-        hospitalSelect.value;
-
-
-    const department =
-        departmentSelect.value;
-
-
-    const doctorId =
-        doctorSelect.value;
-
-
-    const patientName =
-        localStorage.getItem(
-            "patientName"
-        );
-
-
-    // ---------------------------------------------------------
-    // VALIDATION
-    // ---------------------------------------------------------
+    const hospitalId = hospitalSelect.value;
+    const department = departmentSelect.value;
+    const doctorId = doctorSelect.value;
+    const patientName = localStorage.getItem("patientName");
 
     if (!patientName) {
-
-        showMessage(
-            "Please login first.",
-            "error"
-        );
-
+        showMessage("Please login first.", "error");
         return;
-
     }
 
-
-    if (!hospitalId) {
-
-        showMessage(
-            "Please select a hospital.",
-            "error"
-        );
-
+    if (!hospitalId || !department || !doctorId) {
+        showMessage("Please select a hospital, department, and doctor.", "error");
         return;
-
     }
 
-
-    if (!department) {
-
-        showMessage(
-            "Please select a department.",
-            "error"
-        );
-
+    if (!selectedHospital || !selectedDoctor) {
+        showMessage("Hospital or doctor information is unavailable.", "error");
         return;
-
     }
 
+    const hospitalName = selectedHospital.name;
+    const doctorName = selectedDoctor.name;
 
-    if (!doctorId) {
-
-        showMessage(
-            "Please select a doctor.",
-            "error"
-        );
-
+    if (!hospitalName || !doctorName) {
+        showMessage("Hospital or doctor name is missing.", "error");
         return;
-
     }
 
-
-    if (!selectedHospital) {
-
-        showMessage(
-            "Hospital information is unavailable.",
-            "error"
-        );
-
+    if (typeof Cashfree === "undefined") {
+        showMessage("Cashfree SDK is not loaded. Please refresh the page.", "error");
         return;
-
     }
-
-
-    if (!selectedDoctor) {
-
-        showMessage(
-            "Doctor information is unavailable.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    const hospitalName =
-        selectedHospital.name;
-
-
-    const doctorName =
-        selectedDoctor.name;
-
-
-    if (!hospitalName) {
-
-        showMessage(
-            "Hospital name is missing.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    if (!doctorName) {
-
-        showMessage(
-            "Doctor name is missing.",
-            "error"
-        );
-
-        return;
-
-    }
-
-
-    // ---------------------------------------------------------
-    // CLEAR OLD TOKEN
-    // ---------------------------------------------------------
 
     clearOldBookingData();
 
-
-    // ---------------------------------------------------------
-    // LOCK BUTTON
-    // ---------------------------------------------------------
-
     paymentInProgress = true;
-
     updatePaymentButton();
 
-
     try {
+        const response = await fetch(`${API}/api/create-order`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("patientToken") || ""}`
+            },
+            body: JSON.stringify({
+                patient_name: patientName,
+                hospital: hospitalName,
+                department: department,
+                doctor: doctorName
+            })
+        });
 
-        /*
-            IMPORTANT:
-
-            Do NOT send token_fee from frontend.
-
-            FastAPI must get the hospital's
-            token_fee directly from MySQL.
-        */
-
-        const response =
-            await fetch(
-                `${API}/api/create-order`,
-                {
-
-                    method: "POST",
-
-                    headers: {
-
-    "Content-Type":
-        "application/json",
-
-    "Authorization":
-        `Bearer ${localStorage.getItem("patientToken") || ""}`
-
-},
-
-                   body :
-                        JSON.stringify({
-
-                            patient_name:
-                                patientName,
-
-                            hospital:
-                                hospitalName,
-
-                            department:
-                                department,
-
-                            doctor:
-                                doctorName
-
-                        })
-
-                }
-            );
-
-
-        const order =
-            await readResponse(
-                response
-            );
-
-
-        console.log(
-            "Create order response:",
-            order
-        );
-
+        const order = await readResponse(response);
 
         if (!response.ok) {
-
             throw new Error(
-                getErrorMessage(
-                order,
-                "Unable to create payment order."
-                )
+                getErrorMessage(order, "Unable to create Cashfree order.")
             );
-
         }
 
-
-        if (
-            !order.order_id ||
-            !order.key_id ||
-            !order.amount
-        ) {
-
-            throw new Error(
-                "Invalid payment order received from FastAPI."
-            );
-
+        if (!order.order_id || !order.payment_session_id) {
+            throw new Error("Cashfree did not return a valid payment session.");
         }
 
+        localStorage.setItem("selectedHospitalId", String(hospitalId));
+        localStorage.setItem("selectedHospitalName", hospitalName);
+        localStorage.setItem("selectedDoctorId", String(doctorId));
+        localStorage.setItem("selectedDoctorName", doctorName);
+        localStorage.setItem("selectedDepartment", department);
+        localStorage.setItem("selectedTokenFee", String(order.token_fee));
+        localStorage.setItem("selectedPlatformFee", String(order.platform_fee));
+        localStorage.setItem("selectedTotalAmount", String(order.total_amount));
 
-        // -----------------------------------------------------
-        // SAVE BOOKING INFORMATION
-        // -----------------------------------------------------
+        // Keep the order ID for the verification step after checkout.
+        localStorage.setItem("cashfreeOrderId", order.order_id);
 
-        localStorage.setItem(
-            "selectedHospitalId",
-            String(hospitalId)
-        );
+        const cashfree = Cashfree({
+            mode: "sandbox"
+        });
 
+        const result = await cashfree.checkout({
+            paymentSessionId: order.payment_session_id,
+            redirectTarget: "_self"
+        });
 
-        localStorage.setItem(
-            "selectedHospitalName",
-            hospitalName
-        );
+        // If checkout reports an immediate error, allow another attempt.
+        if (result && result.error) {
+            throw new Error(
+                result.error.message || "Unable to open Cashfree checkout."
+            );
+        }
 
-
-        localStorage.setItem(
-            "selectedDoctorId",
-            String(doctorId)
-        );
-
-
-        localStorage.setItem(
-            "selectedDoctorName",
-            doctorName
-        );
-
-
-        localStorage.setItem(
-            "selectedDepartment",
-            department
-        );
-
-
-        localStorage.setItem(
-            "selectedTokenFee",
-            String(
-                order.token_fee ??
-                getTokenFee()
-            )
-        );
-
-
-        localStorage.setItem(
-            "selectedPlatformFee",
-            String(
-                order.platform_fee ??
-                getPlatformFee()
-            )
-        );
-
-
-        localStorage.setItem(
-            "selectedTotalAmount",
-            String(
-                order.total_amount ??
-                Number(order.amount) / 100
-            )
-        );
-
-
-        openRazorpay(
-            order,
-            hospitalName,
-            department,
-            doctorName,
-            patientName
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Payment creation error:",
-            error
-        );
-
+        } catch (error) {
+        console.error("Cashfree verification error:", error);
 
         showMessage(
-            error.message ||
-            "Payment could not be started.",
+            error.message || "Unable to verify payment or create token.",
             "error"
         );
 
-
         resetPaymentButton();
 
-    }
-
+         }
 }
 
 
-// =========================================================
-// OPEN RAZORPAY
-// =========================================================
-
+// Compatibility name retained temporarily; this function now opens Cashfree.
 function openRazorpay(
     order,
     hospitalName,
@@ -1592,557 +1319,134 @@ function openRazorpay(
     doctorName,
     patientName
 ) {
-
-    if (
-        typeof Razorpay ===
-        "undefined"
-    ) {
-
-        showMessage(
-            "Razorpay SDK is not loaded.",
-            "error"
-        );
-
-
+    if (typeof Cashfree === "undefined") {
+        showMessage("Cashfree SDK is not loaded.", "error");
         resetPaymentButton();
-
         return;
-
     }
 
-
-    const tokenFee =
-        Number(
-            order.token_fee ??
-            getTokenFee()
-        );
-
-
-    const platformFee =
-        Number(
-            order.platform_fee ??
-            getPlatformFee()
-        );
-
-
-    const totalAmount =
-        Number(
-            order.total_amount ??
-            Number(order.amount) / 100
-        );
-
-
-    /*
-        Optional frontend consistency check.
-
-        Backend remains the final authority.
-    */
-
-    if (
-        tokenFee +
-        platformFee !==
-        totalAmount
-    ) {
-
-        console.warn(
-            "Payment amount information is inconsistent.",
-            {
-                tokenFee,
-                platformFee,
-                totalAmount
-            }
-        );
-
+    if (!order || !order.payment_session_id) {
+        showMessage("Cashfree payment session is missing.", "error");
+        resetPaymentButton();
+        return;
     }
-
-
-    const options = {
-
-        key:
-            order.key_id,
-
-        amount:
-            order.amount,
-
-        currency:
-            order.currency ||
-            "INR",
-
-        name:
-            "CarePath",
-
-        description:
-            `Hospital Token ₹${tokenFee} + Platform Fee ₹${platformFee}`,
-
-        order_id:
-            order.order_id,
-
-
-        prefill: {
-
-            name:
-                patientName,
-
-            email:
-                localStorage.getItem(
-                    "patientEmail"
-                ) || "",
-
-            contact:
-                localStorage.getItem(
-                    "patientPhone"
-                ) || ""
-
-        },
-
-
-        theme: {
-
-            color:
-                "#1769aa"
-
-        },
-
-
-        handler:
-            async function (
-                paymentResponse
-            ) {
-
-                console.log(
-                    "Razorpay payment response:",
-                    paymentResponse
-                );
-
-
-                if (
-                    !paymentResponse ||
-                    !paymentResponse.razorpay_order_id ||
-                    !paymentResponse.razorpay_payment_id ||
-                    !paymentResponse.razorpay_signature
-                ) {
-
-                    showMessage(
-                        "Invalid payment response received.",
-                        "error"
-                    );
-
-
-                    resetPaymentButton();
-
-                    return;
-
-                }
-
-
-                await createTokenAfterPayment(
-
-                    paymentResponse,
-
-                    hospitalName,
-
-                    department,
-
-                    doctorName,
-
-                    patientName
-
-                );
-
-            },
-
-
-        modal: {
-
-            ondismiss:
-                function () {
-
-                    console.log(
-                        "Razorpay window closed."
-                    );
-
-
-                    resetPaymentButton();
-
-
-                    showMessage(
-                        "Payment window closed.",
-                        "error"
-                    );
-
-                }
-
-        }
-
-    };
-
 
     try {
+        const cashfree = Cashfree({
+            mode: "sandbox"
+        });
 
-        const razorpay =
-            new Razorpay(
-                options
-            );
-
-
-        razorpay.on(
-            "payment.failed",
-            function (response) {
-
-                console.error(
-                    "Payment failed:",
-                    response
-                );
-
-
-                const message =
-                    response &&
-                    response.error &&
-                    response.error.description
-                        ? response.error.description
-                        : "Payment failed.";
-
-
-                showMessage(
-                    message,
-                    "error"
-                );
-
-
-                resetPaymentButton();
-
-            }
-        );
-
-
-        razorpay.open();
-
-
+        cashfree.checkout({
+            paymentSessionId: order.payment_session_id,
+            redirectTarget: "_self"
+        }).catch(function (error) {
+            console.error("Cashfree checkout error:", error);
+            showMessage("Unable to open Cashfree checkout.", "error");
+            resetPaymentButton();
+        });
     } catch (error) {
-
-        console.error(
-            "Razorpay error:",
-            error
-        );
-
-
-        showMessage(
-            "Unable to open Razorpay.",
-            "error"
-        );
-
-
+        console.error("Cashfree initialization error:", error);
+        showMessage("Unable to initialize Cashfree checkout.", "error");
         resetPaymentButton();
-
     }
-
 }
-
-
 // =========================================================
 // CREATE TOKEN AFTER PAYMENT
 // =========================================================
 
+
 async function createTokenAfterPayment(
-
-    paymentResponse,
-
+    cashfreeOrderId,
     hospitalName,
-
     department,
-
     doctorName,
-
     patientName
-
 ) {
+    const button = document.getElementById("continueBtn");
 
-    const button =
-        document.getElementById(
-            "continueBtn"
-        );
-
-
-    if (!button) {
-        return;
-    }
-
+    if (!button) return;
 
     button.disabled = true;
-
-    button.textContent =
-        "Creating Token...";
-
+    button.textContent = "Verifying Cashfree Payment...";
 
     try {
+        const response = await fetch(`${API}/payments/verify`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("patientToken") || ""}`
+            },
+            body: JSON.stringify({
+                patient_name: patientName,
+                hospital: hospitalName,
+                department: department,
+                doctor: doctorName,
+                cashfree_order_id: cashfreeOrderId
+            })
+        });
 
-        const response =
-            await fetch(
-                `${API}/tokens`,
-                {
-
-                    method: "POST",
-
-                   headers: {
-    "Content-Type":
-        "application/json",
-
-    "Authorization":
-        `Bearer ${localStorage.getItem("patientToken") || ""}`
-},
-
-                    body:
-                        JSON.stringify({
-
-                            patient_name:
-                                patientName,
-
-                            hospital:
-                                hospitalName,
-
-                            department:
-                                department,
-
-                            doctor:
-                                doctorName,
-
-                            razorpay_order_id:
-                                paymentResponse
-                                    .razorpay_order_id,
-
-                            razorpay_payment_id:
-                                paymentResponse
-                                    .razorpay_payment_id,
-
-                            razorpay_signature:
-                                paymentResponse
-                                    .razorpay_signature
-
-                        })
-
-                }
-            );
-
-
-        const data =
-            await readResponse(
-                response
-            );
-
-
-        console.log(
-            "Token response:",
-            data
-        );
-
+        const data = await readResponse(response);
 
         if (!response.ok) {
-
             throw new Error(
-                getErrorMessage(
-                data,
-                "Token creation failed."
-                )
+                getErrorMessage(data, "Cashfree payment verification failed.")
             );
-
         }
 
+        const token = data.token || data;
 
-        const token =
-            data.token ||
-            data;
-
-
-        if (
-            !token ||
-            token.token_number ===
-            undefined
-        ) {
-
-            throw new Error(
-                "FastAPI did not return token information."
-            );
-
+        if (!token || token.token_number === undefined) {
+            throw new Error("The server did not return token information.");
         }
 
-
-        // =====================================================
-        // SAVE TOKEN INFORMATION
-        // =====================================================
+        const paymentId =
+            token.cashfree_payment_id ||
+            data.cashfree_payment_id ||
+            "";
 
         if (token.id) {
-
-            localStorage.setItem(
-                "tokenId",
-                String(token.id)
-            );
-
+            localStorage.setItem("tokenId", String(token.id));
         }
 
+        localStorage.setItem("tokenNumber", String(token.token_number));
+        localStorage.setItem("token", String(token.token_number));
+        localStorage.setItem("tokenHospital", token.hospital || hospitalName);
+        localStorage.setItem("hospital", token.hospital || hospitalName);
+        localStorage.setItem("tokenDepartment", token.department || department);
+        localStorage.setItem("department", token.department || department);
+        localStorage.setItem("tokenDoctor", token.doctor || doctorName);
+        localStorage.setItem("doctor", token.doctor || doctorName);
+        localStorage.setItem("tokenStatus", token.status || "waiting");
+        localStorage.setItem("tokenFee", String(token.token_fee ?? 0));
+        localStorage.setItem("platformFee", String(token.platform_fee ?? 10));
+        localStorage.setItem("totalAmount", String(token.total_amount ?? 0));
+        localStorage.setItem("paymentStatus", "Paid");
+        localStorage.setItem("cashfreeOrderId", cashfreeOrderId);
 
-        localStorage.setItem(
-            "tokenNumber",
-            String(
-                token.token_number
-            )
-        );
-
-
-        localStorage.setItem(
-            "tokenHospital",
-            token.hospital ||
-            hospitalName
-        );
-
-
-        localStorage.setItem(
-            "tokenDepartment",
-            token.department ||
-            department
-        );
-
-
-        localStorage.setItem(
-            "tokenDoctor",
-            token.doctor ||
-            doctorName
-        );
-
-
-        localStorage.setItem(
-            "tokenStatus",
-            token.status ||
-            "waiting"
-        );
-
-
-        localStorage.setItem(
-            "tokenFee",
-            String(
-                token.token_fee ??
-                getTokenFee()
-            )
-        );
-
-
-        localStorage.setItem(
-            "platformFee",
-            String(
-                token.platform_fee ??
-                getPlatformFee()
-            )
-        );
-
-
-        localStorage.setItem(
-            "totalAmount",
-            String(
-                token.total_amount ??
-                (
-                    Number(
-                        token.token_fee ??
-                        getTokenFee()
-                    ) +
-                    Number(
-                        token.platform_fee ??
-                        getPlatformFee()
-                    )
-                )
-            )
-        );
-
-
-        // Compatibility with older token.html
-
-        localStorage.setItem(
-            "token",
-            String(
-                token.token_number
-            )
-        );
-
-
-        localStorage.setItem(
-            "hospital",
-            token.hospital ||
-            hospitalName
-        );
-
-
-        localStorage.setItem(
-            "department",
-            token.department ||
-            department
-        );
-
-
-        localStorage.setItem(
-            "doctor",
-            token.doctor ||
-            doctorName
-        );
-
-
-        localStorage.setItem(
-            "paymentStatus",
-            "Paid"
-        );
-
-
-        localStorage.setItem(
-            "tokenStatus",
-            token.status ||
-            "waiting"
-        );
-
-
-        // =====================================================
-        // SUCCESS
-        // =====================================================
+        if (paymentId) {
+            localStorage.setItem("paymentId", String(paymentId));
+        }
 
         showMessage(
-            `Payment successful! Your token number is ${token.token_number}.`,
+            `Payment verified! Your token number is ${token.token_number}.`,
             "success"
         );
 
+        button.textContent = "Token Created ✓";
 
-        button.textContent =
-            "Token Created ✓";
-
-
-        setTimeout(
-            function () {
-
-                window.location.href =
-                    "token.html";
-
-            },
-            1000
-        );
-
+        setTimeout(() => {
+            window.location.href = "token.html";
+        }, 1000);
 
     } catch (error) {
-
-        console.error(
-            "Token creation error:",
-            error
-        );
-
-
+        console.error("Cashfree verification error:", error);
         showMessage(
-            error.message ||
-            "Unable to create token.",
+            error.message || "Unable to verify payment or create token.",
             "error"
         );
-
-
         resetPaymentButton();
-
     }
-
 }
-
-
 // =========================================================
 // CLEAR OLD BOOKING DATA
 // =========================================================
