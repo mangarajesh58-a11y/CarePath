@@ -1339,6 +1339,8 @@ class CreateOrderRequest(BaseModel):
 
     doctor: str
 
+    appointment_date: Optional[date] = None
+
 
 class PaymentAccountRequest(BaseModel):
 
@@ -1443,65 +1445,30 @@ def doctor_to_dict(doctor):
 # HELPER - TOKEN RESPONSE
 # ============================================================
 
-def token_to_dict(
-    token
-):
 
+def token_to_dict(token):
     return {
-
-        "id":
-            token.id,
-
-        "patient_name":
-            token.patient_name,
-
-        "hospital":
-            token.hospital,
-
-        "hospital_id":
-            token.hospital_id,
-
-        "department":
-            token.department,
-
-        "doctor":
-            token.doctor,
-
-        "token_number":
-            token.token_number,
-
-        "platform":
-            token.platform or PLATFORM_NAME,
-
-        "token_fee":
-            token.token_fee,
-
-        "platform_fee":
-            token.platform_fee,
-
-        "total_amount":
-            token.total_amount,
-
-        "payment_status":
-            token.payment_status,
-
-        "razorpay_order_id":
-            token.razorpay_order_id,
-
-        "razorpay_payment_id":
-            token.razorpay_payment_id,
-
-        "status":
-            token.status,
-
-        "created_at":
-            (
-                token.created_at.isoformat()
-                if token.created_at
-                else None
-            ),
+        "id": token.id,
+        "patient_name": token.patient_name,
+        "hospital": token.hospital,
+        "hospital_id": token.hospital_id,
+        "department": token.department,
+        "doctor": token.doctor,
+        "token_number": token.token_number,
+        "platform": token.platform or PLATFORM_NAME,
+        "token_fee": token.token_fee,
+        "platform_fee": token.platform_fee,
+        "total_amount": token.total_amount,
+        "payment_status": token.payment_status,
+        "cashfree_order_id": token.cashfree_order_id,
+        "cashfree_payment_id": token.cashfree_payment_id,
+        "status": token.status,
+        "created_at": (
+            token.created_at.isoformat()
+            if token.created_at
+            else None
+        ),
     }
-
 
 # ============================================================
 # GOOGLE VERIFICATION
@@ -3377,10 +3344,12 @@ def create_cashfree_order(
         },
         "order_meta": {
             
+
 "return_url": (
     "https://carepath-patient-mx5v.vercel.app/"
     "dashboard.html?cashfree_order_id={order_id}"
 )
+
         },
         "order_note": "CarePath hospital token booking",
     }

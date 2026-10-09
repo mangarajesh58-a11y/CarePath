@@ -516,43 +516,21 @@
     </section>
 </div>
 
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
 
 <script>
 "use strict";
 
-/*
- * Local development backend.
- * When deployed, replace this with your deployed HTTPS backend URL.
- */
 const API = "https://carepath-3q9q.onrender.com";
-const PLATFORM_FEE = 10;
 
-const hospitalNameElement = document.getElementById("hospitalName");
-const departmentElement = document.getElementById("department");
-const doctorElement = document.getElementById("doctor");
-const tokenFeeElement = document.getElementById("tokenFee");
-const platformFeeElement = document.getElementById("platformFee");
-const totalAmountElement = document.getElementById("totalAmount");
-const payButton = document.getElementById("payButton");
-const messageElement = document.getElementById("message");
-
-const hospitalId =
-    localStorage.getItem("selectedHospitalId") ||
-    localStorage.getItem("hospital_id") ||
-    localStorage.getItem("hospitalId");
-
-const doctor = localStorage.getItem("selectedDoctor");
-const doctorId = localStorage.getItem("selectedDoctorId");
-const department = localStorage.getItem("selectedDepartment");
-
-let hospital = null;
-let hospitalTokenFee = null;
-let currentOrder = null;
-let currentPaymentId = null;
-let currentTokenId = null;
-let isProcessingPayment = false;
-let tokenPollingTimer = null;
+function getStoredValue(keys, fallback = "Not available") {
+    for (const key of keys) {
+        const value = localStorage.getItem(key);
+        if (value && value.trim()) return value.trim();
+    }
+    return fallback;
+}
 
 function formatINR(amount) {
     return new Intl.NumberFormat("en-IN", {
@@ -563,680 +541,170 @@ function formatINR(amount) {
     }).format(amount);
 }
 
-function getStoredValue(keys, fallback = "Not available") {
-    for (const key of keys) {
-        const value = localStorage.getItem(key);
-
-        if (value !== null && value.trim() !== "") {
-            return value.trim();
-        }
-    }
-
-    return fallback;
-}
-
-function showMessage(text, type = "info") {
-    messageElement.textContent = text;
-    messageElement.className = "message " + type;
-}
-
-function clearMessage() {
-    messageElement.textContent = "";
-    messageElement.className = "message";
-}
-// Set the earliest appointment date to today.
-const appointmentDateInput = document.getElementById("appointmentDate");
-
-if (appointmentDateInput) {
-    const today = new Date();
-    const localToday = [
-        today.getFullYear(),
-        String(today.getMonth() + 1).padStart(2, "0"),
-        String(today.getDate()).padStart(2, "0")
-    ].join("-");
-
-    appointmentDateInput.min = localToday;
-    appointmentDateInput.value = localToday;
-}
-
-async function loadBookingData() {
-    payButton.disabled = true;
-
-    if (!hospitalId) {
-        showMessage(
-            "Hospital was not selected. Please return and select a hospital again.",
-            "error"
-        );
-        return;
-    }
-
-    if (!doctor) {
-        showMessage(
-            "Doctor was not selected. Please select a doctor again.",
-            "error"
-        );
-        return;
-    }
-
-    if (!department) {
-        showMessage(
-            "Department was not selected. Please select a department again.",
-            "error"
-        );
-        return;
-    }
-
-    showMessage("Loading hospital details and token fee...", "info");
-
-    try {
-        const response = await fetch(
-            `${API}/hospitals/${encodeURIComponent(hospitalId)}`
-        );
-
-        if (!response.ok) {
-            throw new Error(
-                `Unable to load hospital information (HTTP ${response.status}).`
-            );
-        }
-
-        const data = await response.json();
-
-        if (!data || data.id == null || !data.name) {
-            throw new Error(
-                "The backend did not return valid hospital information."
-            );
-        }
-
-        if (
-            data.token_fee === null ||
-            data.token_fee === undefined ||
-            data.token_fee === ""
-        ) {
-            throw new Error(
-                "This hospital has not configured a token fee."
-            );
-        }
-
-        const fee = Number(data.token_fee);
-
-        if (!Number.isFinite(fee) || fee < 0) {
-            throw new Error("The hospital token fee is invalid.");
-        }
-
-        hospital = data;
-        hospitalTokenFee = fee;
-
-        const displayedTotal = hospitalTokenFee + PLATFORM_FEE;
-
-        hospitalNameElement.textContent = hospital.name;
-        departmentElement.textContent = department;
-        doctorElement.textContent = doctor;
-
-        tokenFeeElement.textContent = formatINR(hospitalTokenFee);
-        platformFeeElement.textContent = formatINR(PLATFORM_FEE);
-        totalAmountElement.textContent = formatINR(displayedTotal);
-
-        localStorage.setItem(
-            "selectedHospitalTokenFee",
-            String(hospitalTokenFee)
-        );
-
-        clearMessage();
-        payButton.disabled = false;
-
-        console.log("Booking information loaded:", {
-            hospitalId: hospital.id,
-            hospitalName: hospital.name,
-            tokenFee: hospitalTokenFee,
-            platformFee: PLATFORM_FEE,
-            displayedTotal
-        });
-
-    } catch (error) {
-        console.error("Booking data error:", error);
-
-        tokenFeeElement.textContent = "Unavailable";
-        platformFeeElement.textContent = formatINR(PLATFORM_FEE);
-        totalAmountElement.textContent = "Unavailable";
-        payButton.disabled = true;
-
-        showMessage(
-            error.message || "Could not load the hospital fee.",
-            "error"
-        );
-    }
-}
-
-/* Create Razorpay order through the backend. */
-async function createOrder() {
-    if (!hospital || hospitalTokenFee === null) {
-        throw new Error("Hospital details and fee have not loaded.");
-    }
-
-    if (!hospitalId || !doctor || !department) {
-        throw new Error(
-            "Hospital, department, or doctor information is missing."
-        );
-    }
-
-    const patientName = getStoredValue(
-        ["patientName", "patient_name", "fullName", "patientFullName"],
-        ""
-    );
-
-    if (!patientName) {
-        throw new Error(
-            "Patient name is missing. Please log in again and retry."
-        );
-    }
-
-    const response = await fetch(`${API}/payments/create-order`, {
-        method: "POST",
-       headers: {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${localStorage.getItem("patientToken") || ""}`
-},
-        body: JSON.stringify({
-            patient_name: patientName,
-            hospital: hospital.name,
-            department: department,
-            doctor: doctor
-        })
-    });
-
-    let data;
-
-    try {
-        data = await response.json();
-    } catch {
-        throw new Error(
-            "The backend returned an invalid response. Check the backend logs."
-        );
-    }
-
-    if (!response.ok) {
-        console.error("Create order validation error:", data);
-
-        const detail = data.detail;
-
-        const errorMessage = Array.isArray(detail)
-            ? detail.map(item => {
-                const location = item.loc
-                    ? item.loc.join(" → ") + ": "
-                    : "";
-
-                return location + (item.msg || JSON.stringify(item));
-            }).join("\n")
-            : typeof detail === "string"
-                ? detail
-                : detail
-                    ? JSON.stringify(detail)
-                    : `HTTP ${response.status}`;
-
-        throw new Error(
-            errorMessage || "Unable to create payment order."
-        );
-    }
-
-    return data;
-}
-
-/* Start payment. */
-async function startPayment() {
-    if (isProcessingPayment) return;
-
-    if (!window.Razorpay) {
-        showMessage(
-            "Razorpay Checkout did not load. Refresh the page and try again.",
-            "error"
-        );
-        return;
-    }
-
-    if (!hospital || hospitalTokenFee === null) {
-        showMessage(
-            "Hospital fee is not available. Please reload the page.",
-            "error"
-        );
-        return;
-    }
-
-    isProcessingPayment = true;
-    payButton.disabled = true;
-    payButton.textContent = "Creating Payment...";
-    showMessage("Creating your payment order...", "info");
-
-    try {
-        const order = await createOrder();
-        currentOrder = order;
-
-        console.log("Razorpay order response:", order);
-
-        const orderId = order.order_id || order.id;
-        const amount = Number(order.amount);
-        const currency = order.currency || "INR";
-        const keyId =
-            order.key_id ||
-            order.razorpay_key_id ||
-            order.key;
-
-        if (!orderId) {
-            throw new Error(
-                "The backend did not return a Razorpay order ID."
-            );
-        }
-
-        if (!Number.isFinite(amount) || amount <= 0) {
-            throw new Error(
-                "The backend did not return a valid payment amount."
-            );
-        }
-
-        if (!keyId) {
-            throw new Error(
-                "The backend did not return the Razorpay Key ID."
-            );
-        }
-
-        const options = {
-            key: keyId,
-            amount: amount,
-            currency: currency,
-            name: "CarePath",
-            description: `Hospital token - ${hospital.name}`,
-            order_id: orderId,
-
-            handler: async function(paymentResponse) {
-                await verifyPayment(paymentResponse);
-            },
-
-            prefill: {
-                name: getStoredValue(
-                    ["patientName", "patient_name", "fullName", "patientFullName"],
-                    ""
-                ),
-                email: getStoredValue(
-                    ["patientEmail", "patient_email", "email"],
-                    ""
-                ),
-                contact: getStoredValue(
-                    ["patientPhone", "patient_phone", "phone"],
-                    ""
-                )
-            },
-
-            theme: {
-                color: "#2563eb"
-            },
-
-            modal: {
-                ondismiss: function() {
-                    isProcessingPayment = false;
-                    payButton.disabled = false;
-                    payButton.textContent = "💳 Continue & Pay";
-
-                    showMessage(
-                        "Payment window was closed. If you completed a payment, check its status before trying again.",
-                        "info"
-                    );
-                }
-            }
-        };
-
-        const razorpay = new Razorpay(options);
-
-        razorpay.on("payment.failed", function(event) {
-            console.error("Razorpay payment failed:", event.error);
-
-            isProcessingPayment = false;
-            payButton.disabled = false;
-            payButton.textContent = "💳 Try Payment Again";
-
-            showMessage(
-                event.error && event.error.description
-                    ? event.error.description
-                    : "Payment failed. Please try again.",
-                "error"
-            );
-        });
-
-        razorpay.open();
-
-    } catch (error) {
-        console.error("Payment start error:", error);
-
-        isProcessingPayment = false;
-        payButton.disabled = false;
-        payButton.textContent = "💳 Continue & Pay";
-
-        showMessage(
-            error.message || "Could not start the payment.",
-            "error"
-        );
-    }
-}
-
-/* Verify payment on the backend before displaying a token. */
-async function verifyPayment(paymentResponse) {
-    showMessage("Payment received. Verifying payment...", "info");
-
-    try {
-        const response = await fetch(`${API}/payments/verify`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-           body: JSON.stringify({
-    patient_name: getStoredValue(
-        ["patientName", "patient_name", "fullName", "patientFullName"],
-        ""
-    ),
-    hospital: hospital.name,
-    department: department,
-    doctor: doctor,
-    appointment_date: document.getElementById("appointmentDate").value,
-    razorpay_order_id: paymentResponse.razorpay_order_id,
-    razorpay_payment_id: paymentResponse.razorpay_payment_id,
-    razorpay_signature: paymentResponse.razorpay_signature
-})
-        });
-
-        let data;
-
-        try {
-            data = await response.json();
-        } catch {
-            throw new Error(
-                "The payment verification endpoint returned an invalid response."
-            );
-        }
-
-        if (!response.ok) {
-            const detail = data.detail;
-            const errorMessage = typeof detail === "string"
-                ? detail
-                : detail
-                    ? JSON.stringify(detail)
-                    : "Payment verification failed.";
-
-            throw new Error(errorMessage);
-        }
-
-        console.log("Payment verification response:", data);
-
-        const token = data.token ?? data.token_number;
-
-        if (token === null || token === undefined || token === "") {
-            throw new Error(
-                "Payment verification returned no token number. Do not pay again yet. Check the payment status with the hospital or support."
-            );
-        }
-
-        currentPaymentId = paymentResponse.razorpay_payment_id || "";
-        currentTokenId = data.id ?? data.token_id ?? null;
-
-        localStorage.setItem("token", String(token));
-        localStorage.setItem(
-            "tokenId",
-            currentTokenId == null ? "" : String(currentTokenId)
-        );
-        localStorage.setItem("hospital", hospital.name);
-        localStorage.setItem("department", department);
-        localStorage.setItem("doctor", doctor);
-        localStorage.setItem("paymentStatus", "Paid");
-        localStorage.setItem("tokenStatus", data.status || "waiting");
-        localStorage.setItem("paymentId", currentPaymentId);
-
-        showTokenResult(token, data.status || "waiting", data);
-
-        isProcessingPayment = false;
-        payButton.disabled = true;
-
-        showMessage(
-            "Payment verified and token generated successfully.",
-            "success"
-        );
-
-        if (
-            currentTokenId !== null &&
-            String(currentTokenId).trim() !== ""
-        ) {
-            checkPatientToken();
-        }
-
-    } catch (error) {
-        console.error("Payment verification error:", error);
-
-        isProcessingPayment = false;
-        payButton.disabled = true;
-        payButton.textContent = "Payment Verification Pending";
-
-        showMessage(
-            (error.message || "Unable to verify payment.") +
-            " Please check your payment status before making another payment.",
-            "error"
-        );
-    }
-}
-
-/* Populate the receipt. */
-function populateReceipt(token, status, data = {}) {
-    const patientName = getStoredValue(
-        ["patientName", "patient_name", "fullName", "patientFullName"]
-    );
-
-    const patientEmail = getStoredValue(
-        ["patientEmail", "patient_email", "email"]
-    );
-
-    const patientPhone = getStoredValue(
-        ["patientPhone", "patient_phone", "phone"]
-    );
-
-    const patientAge = getStoredValue(["patientAge", "age"]);
-    const patientGender = getStoredValue(["patientGender", "gender"]);
-
-    const address =
-        hospital.address ||
-        hospital.full_address ||
-        hospital.location ||
-        "Not available";
-
-    const city = hospital.city || "Not available";
-    const hospitalPhone = hospital.phone || "Not available";
-    const hospitalEmail = hospital.email || "Not available";
-
-    const paymentId =
-        currentPaymentId ||
-        localStorage.getItem("paymentId") ||
-        "Not available";
-
-    const tokenId =
-        currentTokenId ??
-        data.id ??
-        data.token_id ??
-        "Not returned by backend";
-
-    const receiptDate = new Date().toLocaleString("en-IN", {
-        dateStyle: "medium",
-        timeStyle: "short"
-    });
-
-    document.getElementById("receiptDate").textContent = receiptDate;
-    document.getElementById("receiptToken").textContent = String(token);
-    document.getElementById("receiptTokenId").textContent = String(tokenId);
-    document.getElementById("receiptPaymentId").textContent = paymentId;
-
-    document.getElementById("receiptPatientName").textContent = patientName;
-    document.getElementById("receiptPatientEmail").textContent = patientEmail;
-    document.getElementById("receiptPatientPhone").textContent = patientPhone;
-    document.getElementById("receiptPatientAge").textContent = patientAge;
-    document.getElementById("receiptPatientGender").textContent = patientGender;
-
-    document.getElementById("receiptHospital").textContent = hospital.name;
-    document.getElementById("receiptAddress").textContent = address;
-    document.getElementById("receiptCity").textContent = city;
-    document.getElementById("receiptHospitalPhone").textContent = hospitalPhone;
-    document.getElementById("receiptHospitalEmail").textContent = hospitalEmail;
-    document.getElementById("receiptDepartment").textContent = department;
-    document.getElementById("receiptDoctor").textContent = doctor;
-
-    /*
-     * Use the backend's fee values when supplied.
-     * Otherwise display the values loaded for this booking.
-     */
-    const backendHospitalFee = data.token_fee;
-    const backendPlatformFee = data.platform_fee;
-    const backendTotal = data.total_amount;
-
-    const receiptTokenFee =
-        backendHospitalFee !== undefined && backendHospitalFee !== null
-            ? Number(backendHospitalFee)
-            : hospitalTokenFee;
-
-    const receiptPlatformFee =
-        backendPlatformFee !== undefined && backendPlatformFee !== null
-            ? Number(backendPlatformFee)
-            : PLATFORM_FEE;
-
-    const receiptTotal =
-        backendTotal !== undefined && backendTotal !== null
-            ? Number(backendTotal)
-            : receiptTokenFee + receiptPlatformFee;
-
-    document.getElementById("receiptTokenFee").textContent =
-        Number.isFinite(receiptTokenFee)
-            ? formatINR(receiptTokenFee)
-            : "Not available";
-
-    document.getElementById("receiptPlatformFee").textContent =
-        Number.isFinite(receiptPlatformFee)
-            ? formatINR(receiptPlatformFee)
-            : "Not available";
-
-    document.getElementById("receiptTotal").textContent =
-        Number.isFinite(receiptTotal)
-            ? formatINR(receiptTotal)
-            : "Not available";
-
-    document.getElementById("resultStatus").textContent = status;
-}
-
-/* Display the confirmed token. */
-function showTokenResult(token, status, data = {}) {
-    document.getElementById("bookingSection").style.display = "none";
-    document.getElementById("tokenResult").style.display = "block";
-
-    document.getElementById("tokenNumber").textContent = String(token);
-    document.getElementById("resultHospital").textContent = hospital.name;
-    document.getElementById("resultDepartment").textContent = department;
-    document.getElementById("resultDoctor").textContent = doctor;
-    document.getElementById("resultPayment").textContent = "Paid";
-    document.getElementById("resultStatus").textContent = status;
-
-    populateReceipt(token, status, data);
-    updateCallMessage(status);
-}
-
-/* Refresh token status from the backend. */
-async function checkPatientToken() {
-    const tokenId = currentTokenId ?? localStorage.getItem("tokenId");
-
-    if (
-        tokenId === null ||
-        tokenId === undefined ||
-        String(tokenId).trim() === ""
-    ) {
-        return;
-    }
-
-    try {
-        const response = await fetch(
-            `${API}/patient-token/${encodeURIComponent(tokenId)}`
-        );
-
-        if (!response.ok) return;
-
-        const data = await response.json();
-
-        if (data.success === false) return;
-
-        const status = data.status || "waiting";
-        const tokenValue = data.token ?? data.token_number;
-
-        document.getElementById("resultStatus").textContent = status;
-
-        if (tokenValue !== undefined && tokenValue !== null) {
-            document.getElementById("tokenNumber").textContent =
-                String(tokenValue);
-
-            document.getElementById("receiptToken").textContent =
-                String(tokenValue);
-
-            localStorage.setItem("token", String(tokenValue));
-        }
-
-        localStorage.setItem("tokenStatus", status);
-        updateCallMessage(status);
-
-    } catch (error) {
-        console.error("Token status error:", error);
-    }
-}
-
-/* Update the instructions shown to the patient. */
 function updateCallMessage(status) {
     const message = document.getElementById("callMessage");
-    const normalizedStatus = String(status).toLowerCase();
+    const normalized = String(status || "waiting").toLowerCase();
 
-    if (normalizedStatus === "serving" || normalizedStatus === "called") {
+    if (normalized === "serving" || normalized === "called") {
         message.textContent =
             "🔔 Your token is called! Please go to the consultation room.";
-        message.style.background = "#dcfce7";
-        message.style.color = "#15803d";
-
-    } else if (normalizedStatus === "completed") {
+    } else if (normalized === "completed") {
         message.textContent = "✅ Your consultation is completed.";
-        message.style.background = "#f3f4f6";
-        message.style.color = "#374151";
-
-    } else if (normalizedStatus === "cancelled") {
+    } else if (normalized === "cancelled") {
         message.textContent =
             "Your token is cancelled. Please contact the hospital.";
-        message.style.background = "#fee2e2";
-        message.style.color = "#b91c1c";
-
     } else {
         message.textContent = "⏳ Please wait for your turn.";
-        message.style.background = "#e3f2fd";
-        message.style.color = "#1976d2";
     }
-}
-
-/* Navigation. */
-function goBack() {
-    window.location.href = "dashboard.html";
 }
 
 function goDashboard() {
     window.location.href = "dashboard.html";
 }
 
-/* Button handlers. */
-payButton.addEventListener("click", startPayment);
+async function loadReceipt() {
+    const params = new URLSearchParams(window.location.search);
+    const token = getStoredValue(["token", "tokenNumber"], "");
+    const tokenId = getStoredValue(["tokenId", "token_id"], "");
+    const paymentId = getStoredValue(["paymentId", "cashfreePaymentId"], "");
+    const hospitalName = getStoredValue(
+        ["hospital", "selectedHospitalName"], ""
+    );
+    const department = getStoredValue(["department", "selectedDepartment"], "");
+    const doctor = getStoredValue(
+    ["tokenDoctor", "doctor", "selectedDoctorName", "selectedDoctor"],
+    ""
+);
+    const status = getStoredValue(["tokenStatus"], "waiting");
 
-document.getElementById("backButton").addEventListener("click", goBack);
+    // This page must not start another payment.
+    document.getElementById("bookingSection").style.display = "none";
+
+    if (!token || !hospitalName || !department || !doctor) {
+        document.getElementById("tokenResult").style.display = "block";
+        document.getElementById("tokenNumber").textContent = "—";
+        document.getElementById("resultHospital").textContent =
+            hospitalName || "Not available";
+        document.getElementById("resultDepartment").textContent =
+            department || "Not available";
+        document.getElementById("resultDoctor").textContent =
+            doctor || "Not available";
+        document.getElementById("callMessage").textContent =
+            "No saved token details were found. Return to your dashboard to check your booking.";
+        document.getElementById("receipt").style.display = "none";
+        document.getElementById("printButton").style.display = "none";
+        return;
+    }
+
+    document.getElementById("tokenResult").style.display = "block";
+    document.getElementById("tokenNumber").textContent = token;
+    document.getElementById("resultHospital").textContent = hospitalName;
+    document.getElementById("resultDepartment").textContent = department;
+    document.getElementById("resultDoctor").textContent = doctor;
+    document.getElementById("resultPayment").textContent =
+    getStoredValue(["paymentStatus"], "Status unavailable");
+    document.getElementById("resultStatus").textContent = status;
+    updateCallMessage(status);
+
+    document.getElementById("receiptDate").textContent =
+        new Date().toLocaleString("en-IN");
+    document.getElementById("receiptToken").textContent = token;
+    document.getElementById("receiptTokenId").textContent =
+        tokenId || "Not available";
+    document.getElementById("receiptPaymentId").textContent =
+        paymentId || "Not available";
+
+    document.getElementById("receiptPatientName").textContent =
+        getStoredValue(["patientName", "patient_name", "fullName"]);
+    document.getElementById("receiptPatientEmail").textContent =
+        getStoredValue(["patientEmail", "patient_email", "email"]);
+    document.getElementById("receiptPatientPhone").textContent =
+        getStoredValue(["patientPhone", "patient_phone", "phone"]);
+    document.getElementById("receiptPatientAge").textContent =
+        getStoredValue(["patientAge", "age"]);
+    document.getElementById("receiptPatientGender").textContent =
+        getStoredValue(["patientGender", "gender"]);
+
+    document.getElementById("receiptHospital").textContent = hospitalName;
+    document.getElementById("receiptDepartment").textContent = department;
+    document.getElementById("receiptDoctor").textContent = doctor;
+
+   const fee = Number(
+    localStorage.getItem("tokenFee") ??
+    localStorage.getItem("selectedHospitalTokenFee") ??
+    0
+); 
+    const platformFee = Number(
+    localStorage.getItem("platformFee") ?? 10
+);
+
+const totalAmount = Number(
+    localStorage.getItem("totalAmount") ?? fee + platformFee
+);
+
+document.getElementById("receiptTokenFee").textContent =
+    Number.isFinite(fee) ? formatINR(fee) : "Not available";
+
+document.getElementById("receiptPlatformFee").textContent =
+    Number.isFinite(platformFee) ? formatINR(platformFee) : "Not available";
+
+document.getElementById("receiptTotal").textContent =
+    Number.isFinite(totalAmount) && totalAmount > 0
+        ? formatINR(totalAmount)
+        : "Not available";
+    // Fetch hospital information for the receipt and token status.
+    const hospitalId = getStoredValue(
+        ["selectedHospitalId", "hospital_id", "hospitalId"], ""
+    );
+
+    if (hospitalId) {
+        try {
+            const response = await fetch(
+                `${API}/hospitals/${encodeURIComponent(hospitalId)}`
+            );
+            if (response.ok) {
+                const hospital = await response.json();
+                document.getElementById("receiptAddress").textContent =
+                    hospital.address || hospital.full_address || hospital.location || "Not available";
+                document.getElementById("receiptCity").textContent =
+                    hospital.city || "Not available";
+                document.getElementById("receiptHospitalPhone").textContent =
+                    hospital.phone || "Not available";
+                document.getElementById("receiptHospitalEmail").textContent =
+                    hospital.email || "Not available";
+            }
+        } catch (error) {
+            console.error("Could not load hospital receipt details:", error);
+        }
+    }
+
+    // Refresh token status only when a token record ID is available.
+    if (tokenId) {
+        try {
+            const response = await fetch(
+                `${API}/patient-token/${encodeURIComponent(tokenId)}`
+            );
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success !== false) {
+                    const currentStatus = data.status || status;
+                    document.getElementById("resultStatus").textContent =
+                        currentStatus;
+                    updateCallMessage(currentStatus);
+                    localStorage.setItem("tokenStatus", currentStatus);
+                }
+            }
+        } catch (error) {
+            console.error("Could not refresh token status:", error);
+        }
+    }
+}
+
+document.getElementById("backButton").addEventListener("click", goDashboard);
 document.getElementById("dashboardButton").addEventListener("click", goDashboard);
+document.getElementById("printButton").addEventListener("click", () => window.print());
 
-document.getElementById("printButton").addEventListener("click", function() {
-    window.print();
-});
-
-/* Start page. */
-loadBookingData();
-
-/* Poll token status every three seconds. */
-tokenPollingTimer = setInterval(checkPatientToken, 3000);
+loadReceipt();
 </script>
 </body>
 </html>

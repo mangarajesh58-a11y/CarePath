@@ -1250,11 +1250,13 @@ async function continueAndGetToken() {
                 "Authorization": `Bearer ${localStorage.getItem("patientToken") || ""}`
             },
             body: JSON.stringify({
-                patient_name: patientName,
-                hospital: hospitalName,
-                department: department,
-                doctor: doctorName
-            })
+    patient_name: patientName,
+    hospital: hospitalName,
+    department: department,
+    doctor: doctorName,
+    appointment_date:
+        document.getElementById("appointmentDate")?.value || null
+})
         });
 
         const order = await readResponse(response);
@@ -1419,7 +1421,10 @@ async function createTokenAfterPayment(
         localStorage.setItem("tokenStatus", token.status || "waiting");
         localStorage.setItem("tokenFee", String(token.token_fee ?? 0));
         localStorage.setItem("platformFee", String(token.platform_fee ?? 10));
-        localStorage.setItem("totalAmount", String(token.total_amount ?? 0));
+        llocalStorage.setItem(
+    "totalAmount",
+    String(token.total_amount ?? data.total_amount ?? 0)
+);
         localStorage.setItem("paymentStatus", "Paid");
         localStorage.setItem("cashfreeOrderId", cashfreeOrderId);
 
