@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CarePath - Book Token</title>
+    <meta name="theme-color" content="#071329">
+    <title>CarePath - Book Appointment</title>
 
     <style>
         * { box-sizing: border-box; }
@@ -13,230 +14,137 @@
             margin: 0;
             min-height: 100vh;
             padding: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #e3f2fd, #fff);
+            background: linear-gradient(135deg, #e3f2fd, #f8fafc);
+            color: #172033;
         }
 
-        .token-container {
+        .container {
             width: 100%;
-            max-width: 650px;
-            padding: 30px;
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,.12);
+            max-width: 680px;
+            margin: 20px auto;
+            padding: 28px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 8px 28px rgba(0,0,0,.1);
         }
 
-        .hospital-title {
-            margin-bottom: 8px;
-            color: #1976d2;
-            font-size: 28px;
-            text-align: center;
-        }
+        h1, .subtitle { text-align: center; }
+        h1 { color: #1976d2; margin-bottom: 8px; }
+        .subtitle { color: #64748b; margin-bottom: 25px; }
 
-        .subtitle {
-            margin-bottom: 25px;
-            color: #666;
-            text-align: center;
-        }
-
-        .info-card {
-            margin-bottom: 20px;
+        .card {
+            margin-bottom: 18px;
             padding: 18px;
-            border-radius: 15px;
+            border-radius: 12px;
             background: #f8fafc;
         }
 
-        .info-row, .fee-row {
+        .row {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
             gap: 15px;
             padding: 12px 0;
             border-bottom: 1px solid #e5e7eb;
         }
 
-        .info-row:last-child { border-bottom: none; }
-
-        .info-label {
-            flex: 1;
-            color: #555;
-        }
-
-        .info-value {
-            flex: 1;
-            color: #111827;
+        .row:last-child { border-bottom: none; }
+        .label { color: #64748b; }
+        .value {
             font-weight: 700;
             text-align: right;
             overflow-wrap: anywhere;
-            white-space: pre-line;
         }
 
-        .fee-card {
-            margin-bottom: 20px;
-            padding: 18px;
-            border: 1px solid #dbeafe;
-            border-radius: 15px;
-            background: #eff6ff;
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 10px;
         }
 
-        .fee-row {
-            align-items: center;
-            color: #374151;
-            border-bottom: none;
-        }
-
-        .fee-row strong {
-            color: #111827;
+        input[type="date"] {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
             font-size: 16px;
         }
 
-        .total-row {
-            margin-top: 8px;
-            padding-top: 16px;
-            border-top: 1px solid #bfdbfe;
+        .fees {
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
         }
 
-        .total-row strong { font-size: 19px; }
+        .total {
+            border-top: 1px solid #bfdbfe;
+            margin-top: 8px;
+            padding-top: 16px;
+            font-size: 18px;
+        }
 
         button {
             width: 100%;
             padding: 14px;
-            border-radius: 10px;
+            margin-top: 10px;
+            border: 0;
+            border-radius: 9px;
             font-size: 16px;
+            font-weight: 700;
             cursor: pointer;
         }
 
-        .pay-button {
-            border: none;
-            background: #2563eb;
-            color: #fff;
-            font-weight: 700;
-        }
-
-        .pay-button:hover:not(:disabled) { background: #1d4ed8; }
-
-        .pay-button:disabled {
-            background: #9ca3af;
+        button:disabled {
+            opacity: .6;
             cursor: not-allowed;
         }
 
-        .back-button {
-            margin-top: 12px;
-            border: 1px solid #2563eb;
-            background: #fff;
+        .primary { background: #2563eb; color: white; }
+        .secondary {
+            background: white;
             color: #2563eb;
+            border: 1px solid #2563eb;
         }
+        .print { background: #15803d; color: white; }
 
-        .print-button {
-            margin-top: 12px;
-            border: none;
-            background: #15803d;
-            color: #fff;
-            font-weight: 700;
-        }
-
-        .message {
+        #message {
             display: none;
-            margin-bottom: 18px;
-            padding: 12px;
+            padding: 13px;
+            margin-bottom: 16px;
             border-radius: 8px;
-            text-align: center;
             overflow-wrap: anywhere;
             white-space: pre-line;
         }
 
-        .message.error, .message.success, .message.info { display: block; }
-        .message.error { background: #fee2e2; color: #b91c1c; }
-        .message.success { background: #dcfce7; color: #15803d; }
-        .message.info { background: #e0f2fe; color: #0369a1; }
+        #message.info { display: block; background: #e0f2fe; color: #075985; }
+        #message.error { display: block; background: #fee2e2; color: #991b1b; }
+        #message.success { display: block; background: #dcfce7; color: #166534; }
 
-        #tokenResult { display: none; }
-
-        .token-label {
-            margin-bottom: 10px;
-            color: #555;
-            font-size: 17px;
-            text-align: center;
-        }
+        #receiptSection { display: none; }
 
         .token-number {
+            width: 125px;
+            height: 125px;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 140px;
-            height: 140px;
-            margin: 0 auto 20px;
+            margin: 20px auto;
             border-radius: 50%;
-            background: linear-gradient(135deg, #1976d2, #42a5f5);
-            color: #fff;
-            font-size: 48px;
+            background: #1976d2;
+            color: white;
+            font-size: 42px;
             font-weight: 700;
-            box-shadow: 0 8px 20px rgba(25,118,210,.3);
             overflow-wrap: anywhere;
-        }
-
-        .call-message {
-            margin-bottom: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            background: #e3f2fd;
-            color: #1976d2;
-            font-weight: 700;
-            text-align: center;
         }
 
         .receipt {
             margin-top: 22px;
-            padding: 20px;
+            padding: 18px;
             border: 1px dashed #94a3b8;
-            border-radius: 12px;
-            background: #fff;
+            border-radius: 10px;
         }
 
-        .receipt-heading {
-            margin: 0 0 5px;
-            color: #166534;
-            text-align: center;
-        }
-
-        .receipt-subtitle {
-            margin: 0 0 18px;
-            color: #64748b;
-            font-size: 13px;
-            text-align: center;
-        }
-
-        .receipt-section-title {
-            margin: 20px 0 8px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid #e5e7eb;
-            color: #1d4ed8;
-            font-size: 15px;
-        }
-
-        .receipt .info-card {
-            margin: 0;
-            padding: 0;
-            background: transparent;
-        }
-
-        .receipt .info-row { padding: 9px 0; }
-
-        .receipt .info-label, .receipt .info-value { font-size: 13px; }
-
-        .receipt .fee-card {
-            margin: 10px 0 0;
-            padding: 12px;
-        }
-
-        .receipt .fee-row { padding: 8px 0; font-size: 13px; }
-        .receipt .fee-row strong { font-size: 13px; }
-
-        .receipt-note {
-            margin-top: 18px;
+        .receipt h2 { text-align: center; color: #166534; }
+        .note {
             color: #64748b;
             font-size: 12px;
             line-height: 1.5;
@@ -244,467 +152,437 @@
         }
 
         @media (max-width: 500px) {
-            .token-container { padding: 22px 16px; }
-            .info-row, .fee-row { gap: 8px; }
-            .info-label, .info-value { font-size: 13px; }
-            .token-number {
-                width: 120px;
-                height: 120px;
-                font-size: 40px;
-            }
+            .container { padding: 20px 15px; }
+            .row { gap: 8px; }
         }
 
         @media print {
-            @page { size: A4; margin: 12mm; }
-
-            body {
-                display: block;
-                min-height: auto;
-                padding: 0;
-                background: #fff;
-            }
-
-            .token-container {
-                width: 100%;
-                max-width: none;
-                padding: 0;
-                border-radius: 0;
-                box-shadow: none;
-            }
-
-            #bookingSection, .print-button, #dashboardButton,
-            #backButton, #message, #callMessage {
-                display: none !important;
-            }
-
-            #tokenResult { display: block !important; }
-
-            .receipt {
-                border: 1px solid #94a3b8;
-                break-inside: avoid;
-            }
-
-            .hospital-title { font-size: 23px; }
-
-            .token-number {
-                width: 90px;
-                height: 90px;
-                font-size: 30px;
-                box-shadow: none;
-                border: 1px solid #1976d2;
-                color: #1976d2;
-                background: #fff;
-            }
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; margin: 0; max-width: none; }
+            #bookingSection, .no-print, #message { display: none !important; }
+            #receiptSection { display: block !important; }
         }
     </style>
 </head>
 
 <body>
-<div class="token-container">
-
+<main class="container">
     <section id="bookingSection">
-        <h1 class="hospital-title">🏥 CarePath</h1>
-        <p class="subtitle">Confirm Your Hospital Token</p>
+        <h1>🏥 CarePath</h1>
+        <p class="subtitle">Confirm your hospital appointment</p>
 
-        <div class="info-card">
-            <div class="info-row">
-                <span class="info-label">Hospital</span>
-                <span class="info-value" id="hospitalName">Loading...</span>
+        <div class="card">
+            <div class="row">
+                <span class="label">Hospital</span>
+                <span class="value" id="hospitalName">Loading...</span>
             </div>
-            <div class="info-row">
-                <span class="info-label">Department</span>
-                <span class="info-value" id="department">Loading...</span>
+            <div class="row">
+                <span class="label">Department</span>
+                <span class="value" id="department">Loading...</span>
             </div>
-            <div class="info-row">
-                <span class="info-label">Doctor</span>
-                <span class="info-value" id="doctor">Loading...</span>
-            </div>
-        </div>
-
-<!-- Appointment Date -->
-<div class="info-card">
-    <label for="appointmentDate">
-        <strong>Select Appointment Date</strong>
-    </label>
-
-    <input
-        type="date"
-        id="appointmentDate"
-        required
-        style="
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            box-sizing: border-box;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-        "
-    />
-</div>
-
-<div class="fee-card">
-    <div class="fee-row">
-        <span>Hospital Token Fee</span>
-                <strong id="tokenFee">Loading...</strong>
-            </div>
-            <div class="fee-row">
-                <span>Platform Fee</span>
-                <strong id="platformFee">₹10.00</strong>
-            </div>
-            <div class="fee-row total-row">
-                <strong>Total Amount</strong>
-                <strong id="totalAmount">Loading...</strong>
+            <div class="row">
+                <span class="label">Doctor</span>
+                <span class="value" id="doctor">Loading...</span>
             </div>
         </div>
 
-        <div id="message" class="message" role="status" aria-live="polite"></div>
+        <div class="card">
+            <label for="appointmentDate">Select appointment date</label>
+            <input type="date" id="appointmentDate" required>
+        </div>
 
-        <button type="button" id="payButton" class="pay-button" disabled>
-            💳 Continue &amp; Pay
+        <div class="card fees">
+            <div class="row">
+                <span class="label">Hospital token fee</span>
+                <span class="value" id="tokenFee">Loading...</span>
+            </div>
+            <div class="row">
+                <span class="label">CarePath platform fee</span>
+                <span class="value" id="platformFee">₹10.00</span>
+            </div>
+            <div class="row total">
+                <span>Total to pay</span>
+                <span class="value" id="totalAmount">Loading...</span>
+            </div>
+        </div>
+
+        <div id="message" role="status" aria-live="polite"></div>
+
+        <button type="button" class="primary" id="payButton" disabled>
+            Continue to Payment
         </button>
-
-        <button type="button" class="back-button" id="backButton">
-            ← Back
+        <button type="button" class="secondary no-print" id="backButton">
+            ← Back to Doctors
         </button>
     </section>
 
-    <section id="tokenResult">
-        <h1 class="hospital-title">🏥 CarePath</h1>
-        <p class="subtitle">Your Appointment Token</p>
+    <section id="receiptSection">
+        <h1>🏥 CarePath</h1>
+        <p class="subtitle">Appointment confirmation</p>
 
-        <p class="token-label">Your Token Number</p>
-        <div class="token-number" id="tokenNumber">-</div>
+        <p style="text-align:center">Your token number</p>
+        <div class="token-number" id="tokenNumber">—</div>
 
-        <div class="call-message" id="callMessage">
-            ⏳ Please wait for your turn.
+        <div class="card">
+            <div class="row"><span class="label">Payment</span><span class="value" id="resultPayment">—</span></div>
+            <div class="row"><span class="label">Token status</span><span class="value" id="resultStatus">Waiting</span></div>
+            <div class="row"><span class="label">Appointment date</span><span class="value" id="resultDate">—</span></div>
+            <div class="row"><span class="label">Hospital</span><span class="value" id="resultHospital">—</span></div>
+            <div class="row"><span class="label">Department</span><span class="value" id="resultDepartment">—</span></div>
+            <div class="row"><span class="label">Doctor</span><span class="value" id="resultDoctor">—</span></div>
         </div>
 
-        <div class="info-card">
-            <div class="info-row">
-                <span class="info-label">Hospital</span>
-                <span class="info-value" id="resultHospital">-</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Department</span>
-                <span class="info-value" id="resultDepartment">-</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Doctor</span>
-                <span class="info-value" id="resultDoctor">-</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Payment</span>
-                <span class="info-value" id="resultPayment">Paid</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Status</span>
-                <span class="info-value" id="resultStatus">Waiting</span>
-            </div>
+        <div class="receipt">
+            <h2>Payment Receipt</h2>
+            <p class="subtitle">CarePath - Hospital Token Booking</p>
+
+            <div class="row"><span class="label">Token record ID</span><span class="value" id="receiptTokenId">—</span></div>
+            <div class="row"><span class="label">Cashfree order ID</span><span class="value" id="receiptOrderId">—</span></div>
+            <div class="row"><span class="label">Payment ID</span><span class="value" id="receiptPaymentId">—</span></div>
+            <div class="row"><span class="label">Patient</span><span class="value" id="receiptPatient">—</span></div>
+            <div class="row"><span class="label">Hospital token fee</span><span class="value" id="receiptFee">—</span></div>
+            <div class="row"><span class="label">Platform fee</span><span class="value" id="receiptPlatformFee">—</span></div>
+            <div class="row total"><span>Total paid</span><span class="value" id="receiptTotal">—</span></div>
+
+            <p class="note">Keep this receipt for your records. The hospital manages the consultation queue and token status.</p>
         </div>
 
-        <div class="receipt" id="receipt">
-            <h2 class="receipt-heading">Payment Receipt</h2>
-            <p class="receipt-subtitle">CarePath - Hospital Token Booking</p>
-
-            <div class="info-card">
-                <div class="info-row">
-                    <span class="info-label">Receipt Date</span>
-                    <span class="info-value" id="receiptDate">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Token Number</span>
-                    <span class="info-value" id="receiptToken">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Token Record ID</span>
-                    <span class="info-value" id="receiptTokenId">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Payment ID</span>
-                    <span class="info-value" id="receiptPaymentId">-</span>
-                </div>
-            </div>
-
-            <h3 class="receipt-section-title">Patient Details</h3>
-            <div class="info-card">
-                <div class="info-row">
-                    <span class="info-label">Patient Name</span>
-                    <span class="info-value" id="receiptPatientName">Not available</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Email</span>
-                    <span class="info-value" id="receiptPatientEmail">Not available</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Phone</span>
-                    <span class="info-value" id="receiptPatientPhone">Not available</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Age</span>
-                    <span class="info-value" id="receiptPatientAge">Not available</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Gender</span>
-                    <span class="info-value" id="receiptPatientGender">Not available</span>
-                </div>
-            </div>
-
-            <h3 class="receipt-section-title">Hospital &amp; Appointment</h3>
-            <div class="info-card">
-                <div class="info-row">
-                    <span class="info-label">Hospital Name</span>
-                    <span class="info-value" id="receiptHospital">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Address</span>
-                    <span class="info-value" id="receiptAddress">Not available</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">City</span>
-                    <span class="info-value" id="receiptCity">Not available</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Hospital Phone</span>
-                    <span class="info-value" id="receiptHospitalPhone">Not available</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Hospital Email</span>
-                    <span class="info-value" id="receiptHospitalEmail">Not available</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Department</span>
-                    <span class="info-value" id="receiptDepartment">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Doctor</span>
-                    <span class="info-value" id="receiptDoctor">-</span>
-                </div>
-            </div>
-
-            <h3 class="receipt-section-title">Payment Breakdown</h3>
-            <div class="fee-card">
-                <div class="fee-row">
-                    <span>Hospital Token Fee</span>
-                    <strong id="receiptTokenFee">-</strong>
-                </div>
-                <div class="fee-row">
-                    <span>Platform Fee</span>
-                    <strong id="receiptPlatformFee">-</strong>
-                </div>
-                <div class="fee-row total-row">
-                    <strong>Total Paid</strong>
-                    <strong id="receiptTotal">-</strong>
-                </div>
-            </div>
-
-            <p class="receipt-note">
-                Please keep this receipt for your records.
-                The hospital manages the consultation queue and token status.
-                This receipt confirms the booking information returned by CarePath.
-            </p>
-        </div>
-
-        <button type="button" class="print-button" id="printButton">
-            🖨️ Print / Save Receipt as PDF
-        </button>
-
-        <button type="button" class="back-button" id="dashboardButton">
-            ← Back to Dashboard
-        </button>
+        <button type="button" class="print no-print" id="printButton">Print / Save Receipt as PDF</button>
+        <button type="button" class="secondary no-print" id="dashboardButton">Back to Dashboard</button>
     </section>
-</div>
+</main>
 
 <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
-
-
 <script>
 "use strict";
 
 const API = "https://carepath-3q9q.onrender.com";
+const PLATFORM_FEE = 10;
 
-function getStoredValue(keys, fallback = "Not available") {
+const byId = id => document.getElementById(id);
+const stored = (...keys) => {
     for (const key of keys) {
         const value = localStorage.getItem(key);
         if (value && value.trim()) return value.trim();
     }
-    return fallback;
+    return "";
+};
+
+function showMessage(text, type = "info") {
+    const element = byId("message");
+    element.textContent = text;
+    element.className = type;
 }
 
-function formatINR(amount) {
+function money(value) {
     return new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(amount);
+        minimumFractionDigits: 2
+    }).format(value);
 }
 
-function updateCallMessage(status) {
-    const message = document.getElementById("callMessage");
-    const normalized = String(status || "waiting").toLowerCase();
-
-    if (normalized === "serving" || normalized === "called") {
-        message.textContent =
-            "🔔 Your token is called! Please go to the consultation room.";
-    } else if (normalized === "completed") {
-        message.textContent = "✅ Your consultation is completed.";
-    } else if (normalized === "cancelled") {
-        message.textContent =
-            "Your token is cancelled. Please contact the hospital.";
-    } else {
-        message.textContent = "⏳ Please wait for your turn.";
-    }
+function getPatientToken() {
+    return stored("patientToken", "patient_token");
 }
 
-function goDashboard() {
-    window.location.href = "dashboard.html";
+function getSelectedHospitalName() {
+    return stored("selectedHospitalName", "tokenHospital", "hospital");
 }
 
-async function loadReceipt() {
-    const params = new URLSearchParams(window.location.search);
-    const token = getStoredValue(["token", "tokenNumber"], "");
-    const tokenId = getStoredValue(["tokenId", "token_id"], "");
-    const paymentId = getStoredValue(["paymentId", "cashfreePaymentId"], "");
-    const hospitalName = getStoredValue(
-        ["hospital", "selectedHospitalName"], ""
+function getSelectedDepartment() {
+    return stored("selectedDepartment", "tokenDepartment", "department");
+}
+
+function getSelectedDoctor() {
+    return stored("selectedDoctor", "selectedDoctorName", "tokenDoctor", "doctor");
+}
+
+let hospitalFee = Number(stored("selectedHospitalTokenFee", "tokenFee") || 0);
+let hospitalId = stored("selectedHospitalId", "hospital_id", "hospitalId");
+let isBusy = false;
+
+function setBusy(busy, label) {
+    isBusy = busy;
+    byId("payButton").disabled = busy || !isBookingReady();
+    byId("payButton").textContent = label || "Continue to Payment";
+}
+
+function isBookingReady() {
+    return Boolean(
+        getPatientToken() &&
+        hospitalId &&
+        getSelectedHospitalName() &&
+        getSelectedDepartment() &&
+        getSelectedDoctor() &&
+        byId("appointmentDate").value &&
+        Number.isFinite(hospitalFee) &&
+        hospitalFee >= 0
     );
-    const department = getStoredValue(["department", "selectedDepartment"], "");
-    const doctor = getStoredValue(
-    ["tokenDoctor", "doctor", "selectedDoctorName", "selectedDoctor"],
-    ""
-);
-    const status = getStoredValue(["tokenStatus"], "waiting");
+}
 
-    // This page must not start another payment.
-    document.getElementById("bookingSection").style.display = "none";
+function refreshButton() {
+    byId("payButton").disabled = isBusy || !isBookingReady();
+}
 
-    if (!token || !hospitalName || !department || !doctor) {
-        document.getElementById("tokenResult").style.display = "block";
-        document.getElementById("tokenNumber").textContent = "—";
-        document.getElementById("resultHospital").textContent =
-            hospitalName || "Not available";
-        document.getElementById("resultDepartment").textContent =
-            department || "Not available";
-        document.getElementById("resultDoctor").textContent =
-            doctor || "Not available";
-        document.getElementById("callMessage").textContent =
-            "No saved token details were found. Return to your dashboard to check your booking.";
-        document.getElementById("receipt").style.display = "none";
-        document.getElementById("printButton").style.display = "none";
+function displayBooking() {
+    byId("hospitalName").textContent = getSelectedHospitalName() || "Not selected";
+    byId("department").textContent = getSelectedDepartment() || "Not selected";
+    byId("doctor").textContent = getSelectedDoctor() || "Not selected";
+    byId("tokenFee").textContent = money(hospitalFee);
+    byId("platformFee").textContent = money(PLATFORM_FEE);
+    byId("totalAmount").textContent = money(hospitalFee + PLATFORM_FEE);
+
+    const today = new Date();
+    const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+        .toISOString().slice(0, 10);
+    byId("appointmentDate").min = localToday;
+
+    const savedDate = stored("selectedAppointmentDate", "appointmentDate");
+    if (savedDate && savedDate >= localToday) {
+        byId("appointmentDate").value = savedDate;
+    }
+
+    refreshButton();
+}
+
+async function loadHospitalFee() {
+    if (!hospitalId) {
+        showMessage("No hospital selected. Return to the dashboard and select a hospital.", "error");
         return;
     }
 
-    document.getElementById("tokenResult").style.display = "block";
-    document.getElementById("tokenNumber").textContent = token;
-    document.getElementById("resultHospital").textContent = hospitalName;
-    document.getElementById("resultDepartment").textContent = department;
-    document.getElementById("resultDoctor").textContent = doctor;
-    document.getElementById("resultPayment").textContent =
-    getStoredValue(["paymentStatus"], "Status unavailable");
-    document.getElementById("resultStatus").textContent = status;
-    updateCallMessage(status);
+    try {
+        const response = await fetch(`${API}/hospitals/${encodeURIComponent(hospitalId)}`);
+        if (!response.ok) throw new Error("Could not load hospital details.");
 
-    document.getElementById("receiptDate").textContent =
-        new Date().toLocaleString("en-IN");
-    document.getElementById("receiptToken").textContent = token;
-    document.getElementById("receiptTokenId").textContent =
-        tokenId || "Not available";
-    document.getElementById("receiptPaymentId").textContent =
-        paymentId || "Not available";
+        const hospital = await response.json();
+        hospitalFee = Number(hospital.token_fee ?? hospital.tokenFee ?? 0);
 
-    document.getElementById("receiptPatientName").textContent =
-        getStoredValue(["patientName", "patient_name", "fullName"]);
-    document.getElementById("receiptPatientEmail").textContent =
-        getStoredValue(["patientEmail", "patient_email", "email"]);
-    document.getElementById("receiptPatientPhone").textContent =
-        getStoredValue(["patientPhone", "patient_phone", "phone"]);
-    document.getElementById("receiptPatientAge").textContent =
-        getStoredValue(["patientAge", "age"]);
-    document.getElementById("receiptPatientGender").textContent =
-        getStoredValue(["patientGender", "gender"]);
-
-    document.getElementById("receiptHospital").textContent = hospitalName;
-    document.getElementById("receiptDepartment").textContent = department;
-    document.getElementById("receiptDoctor").textContent = doctor;
-
-   const fee = Number(
-    localStorage.getItem("tokenFee") ??
-    localStorage.getItem("selectedHospitalTokenFee") ??
-    0
-); 
-    const platformFee = Number(
-    localStorage.getItem("platformFee") ?? 10
-);
-
-const totalAmount = Number(
-    localStorage.getItem("totalAmount") ?? fee + platformFee
-);
-
-document.getElementById("receiptTokenFee").textContent =
-    Number.isFinite(fee) ? formatINR(fee) : "Not available";
-
-document.getElementById("receiptPlatformFee").textContent =
-    Number.isFinite(platformFee) ? formatINR(platformFee) : "Not available";
-
-document.getElementById("receiptTotal").textContent =
-    Number.isFinite(totalAmount) && totalAmount > 0
-        ? formatINR(totalAmount)
-        : "Not available";
-    // Fetch hospital information for the receipt and token status.
-    const hospitalId = getStoredValue(
-        ["selectedHospitalId", "hospital_id", "hospitalId"], ""
-    );
-
-    if (hospitalId) {
-        try {
-            const response = await fetch(
-                `${API}/hospitals/${encodeURIComponent(hospitalId)}`
-            );
-            if (response.ok) {
-                const hospital = await response.json();
-                document.getElementById("receiptAddress").textContent =
-                    hospital.address || hospital.full_address || hospital.location || "Not available";
-                document.getElementById("receiptCity").textContent =
-                    hospital.city || "Not available";
-                document.getElementById("receiptHospitalPhone").textContent =
-                    hospital.phone || "Not available";
-                document.getElementById("receiptHospitalEmail").textContent =
-                    hospital.email || "Not available";
-            }
-        } catch (error) {
-            console.error("Could not load hospital receipt details:", error);
+        if (!Number.isFinite(hospitalFee) || hospitalFee < 0) {
+            throw new Error("The hospital token fee is invalid.");
         }
-    }
 
-    // Refresh token status only when a token record ID is available.
-    if (tokenId) {
-        try {
-            const response = await fetch(
-                `${API}/patient-token/${encodeURIComponent(tokenId)}`
-            );
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success !== false) {
-                    const currentStatus = data.status || status;
-                    document.getElementById("resultStatus").textContent =
-                        currentStatus;
-                    updateCallMessage(currentStatus);
-                    localStorage.setItem("tokenStatus", currentStatus);
-                }
-            }
-        } catch (error) {
-            console.error("Could not refresh token status:", error);
+        hospitalId = String(hospital.id ?? hospital.hospital_id ?? hospitalId);
+        localStorage.setItem("selectedHospitalId", hospitalId);
+        localStorage.setItem("selectedHospitalTokenFee", String(hospitalFee));
+
+        if (hospital.name || hospital.hospital_name) {
+            localStorage.setItem("selectedHospitalName", hospital.name || hospital.hospital_name);
+            byId("hospitalName").textContent = hospital.name || hospital.hospital_name;
         }
+
+        displayBooking();
+    } catch (error) {
+        console.error(error);
+        showMessage(error.message || "Unable to load hospital details.", "error");
     }
 }
 
-document.getElementById("backButton").addEventListener("click", goDashboard);
-document.getElementById("dashboardButton").addEventListener("click", goDashboard);
-document.getElementById("printButton").addEventListener("click", () => window.print());
+async function createCashfreeOrder() {
+    if (!getPatientToken()) {
+        throw new Error("Your session has expired. Please sign in again.");
+    }
 
-loadReceipt();
+    const appointmentDate = byId("appointmentDate").value;
+    if (!appointmentDate) {
+        throw new Error("Please select an appointment date.");
+    }
+
+    const payload = {
+        patient_name: stored("patientName", "patient_name", "full_name"),
+        hospital: getSelectedHospitalName(),
+        department: getSelectedDepartment(),
+        doctor: getSelectedDoctor(),
+        appointment_date: appointmentDate
+    };
+
+    const response = await fetch(`${API}/payments/create-order`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${getPatientToken()}`
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.detail || data.message || "Unable to create a Cashfree order.");
+    }
+
+    const orderId = data.order_id || data.cf_order_id;
+    const paymentSessionId = data.payment_session_id;
+
+    if (!orderId || !paymentSessionId) {
+        throw new Error("The backend did not return the Cashfree order ID and payment session.");
+    }
+
+    localStorage.setItem("pendingCashfreeOrderId", String(orderId));
+    localStorage.setItem("selectedAppointmentDate", appointmentDate);
+
+    return { orderId, paymentSessionId };
+}
+
+async function startPayment() {
+    if (isBusy) return;
+
+    if (!isBookingReady()) {
+        showMessage("Please select a valid appointment date and make sure your hospital, department, doctor, and login are selected.", "error");
+        return;
+    }
+
+    setBusy(true, "Preparing secure checkout...");
+    showMessage("Creating your Cashfree sandbox order...", "info");
+
+    try {
+        const { orderId, paymentSessionId } = await createCashfreeOrder();
+
+        if (typeof Cashfree !== "function") {
+            throw new Error("Cashfree checkout could not be loaded. Please refresh and try again.");
+        }
+
+        const cashfree = Cashfree({ mode: "sandbox" });
+        showMessage("Opening Cashfree sandbox checkout. Complete payment there to receive your token.", "info");
+
+        await cashfree.checkout({
+            paymentSessionId,
+            redirectTarget: "_self"
+        });
+    } catch (error) {
+        console.error("Cashfree checkout error:", error);
+        showMessage(error.message || "Unable to start payment. Please try again.", "error");
+        setBusy(false);
+    }
+}
+
+/*
+ * Cashfree must return to this page with ?cashfree_order_id={order_id}
+ * for this handler to verify payment and request token creation.
+ */
+async function verifyPaymentAndCreateToken(orderId) {
+    if (!orderId) return;
+
+    if (!getPatientToken()) {
+        showMessage("Please sign in again before checking your payment.", "error");
+        return;
+    }
+
+    byId("bookingSection").style.display = "block";
+    byId("payButton").disabled = true;
+    showMessage("Payment return received. Verifying payment with CarePath...", "info");
+
+    try {
+        const appointmentDate = stored("selectedAppointmentDate", "appointmentDate");
+
+        const response = await fetch(`${API}/payments/verify`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${getPatientToken()}`
+            },
+            body: JSON.stringify({
+                patient_name: stored("patientName", "patient_name", "full_name"),
+                hospital: getSelectedHospitalName(),
+                department: getSelectedDepartment(),
+                doctor: getSelectedDoctor(),
+                cashfree_order_id: orderId,
+                appointment_date: appointmentDate || null
+            })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false) {
+            throw new Error(data.detail || data.message || "Payment could not be verified. No token has been displayed.");
+        }
+
+        const token = data.token || data;
+        if (token.token_number === undefined || token.token_number === null || token.token_number === "") {
+            throw new Error("Payment verification returned no token number. Contact CarePath support before retrying payment.");
+        }
+
+        const verifiedOrderId = token.cashfree_order_id || orderId;
+        const paymentId = token.cashfree_payment_id || data.cashfree_payment_id || "";
+
+        localStorage.setItem("tokenId", String(token.id || ""));
+        localStorage.setItem("tokenNumber", String(token.token_number));
+        localStorage.setItem("token", String(token.token_number));
+        localStorage.setItem("tokenHospital", token.hospital || getSelectedHospitalName());
+        localStorage.setItem("hospital", token.hospital || getSelectedHospitalName());
+        localStorage.setItem("tokenDepartment", token.department || getSelectedDepartment());
+        localStorage.setItem("department", token.department || getSelectedDepartment());
+        localStorage.setItem("tokenDoctor", token.doctor || getSelectedDoctor());
+        localStorage.setItem("doctor", token.doctor || getSelectedDoctor());
+        localStorage.setItem("tokenStatus", token.status || "waiting");
+        localStorage.setItem("tokenFee", String(token.token_fee ?? hospitalFee));
+        localStorage.setItem("platformFee", String(token.platform_fee ?? PLATFORM_FEE));
+        localStorage.setItem("totalAmount", String(token.total_amount ?? hospitalFee + PLATFORM_FEE));
+        localStorage.setItem("paymentStatus", "Paid");
+        localStorage.setItem("cashfreeOrderId", String(verifiedOrderId));
+        if (paymentId) localStorage.setItem("paymentId", String(paymentId));
+
+        displayReceipt(token, verifiedOrderId, paymentId, appointmentDate);
+
+        // Remove order ID from the URL after successful verification.
+        history.replaceState({}, document.title, window.location.pathname);
+    } catch (error) {
+        console.error("Payment verification failed:", error);
+        showMessage(error.message || "Payment verification failed.", "error");
+        byId("payButton").disabled = true;
+    }
+}
+
+function displayReceipt(token, orderId, paymentId, appointmentDate) {
+    byId("bookingSection").style.display = "none";
+    byId("receiptSection").style.display = "block";
+
+    const hospital = token.hospital || getSelectedHospitalName();
+    const department = token.department || getSelectedDepartment();
+    const doctor = token.doctor || getSelectedDoctor();
+    const fee = Number(token.token_fee ?? hospitalFee);
+    const platformFee = Number(token.platform_fee ?? PLATFORM_FEE);
+    const total = Number(token.total_amount ?? fee + platformFee);
+
+    byId("tokenNumber").textContent = String(token.token_number);
+    byId("resultPayment").textContent = "Paid — verified by CarePath";
+    byId("resultStatus").textContent = token.status || "waiting";
+    byId("resultDate").textContent = appointmentDate || "Not provided";
+    byId("resultHospital").textContent = hospital;
+    byId("resultDepartment").textContent = department;
+    byId("resultDoctor").textContent = doctor;
+
+    byId("receiptTokenId").textContent = token.id ?? "Not available";
+    byId("receiptOrderId").textContent = orderId || "Not available";
+    byId("receiptPaymentId").textContent = paymentId || "Not available";
+    byId("receiptPatient").textContent = stored("patientName", "patient_name", "full_name") || "Not available";
+    byId("receiptFee").textContent = money(fee);
+    byId("receiptPlatformFee").textContent = money(platformFee);
+    byId("receiptTotal").textContent = money(total);
+}
+
+byId("appointmentDate").addEventListener("change", function () {
+    localStorage.setItem("selectedAppointmentDate", this.value);
+    refreshButton();
+});
+
+byId("payButton").addEventListener("click", startPayment);
+byId("backButton").addEventListener("click", () => {
+    window.location.href = "doctor.html";
+});
+byId("dashboardButton").addEventListener("click", () => {
+    window.location.href = "dashboard.html";
+});
+byId("printButton").addEventListener("click", () => window.print());
+
+displayBooking();
+loadHospitalFee();
+
+const params = new URLSearchParams(window.location.search);
+const returnedOrderId = params.get("cashfree_order_id");
+
+if (returnedOrderId) {
+    verifyPaymentAndCreateToken(returnedOrderId);
+}
 </script>
 </body>
 </html>

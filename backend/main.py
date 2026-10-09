@@ -3347,7 +3347,7 @@ def create_cashfree_order(
 
 "return_url": (
     "https://carepath-patient-mx5v.vercel.app/"
-    "dashboard.html?cashfree_order_id={order_id}"
+    "token.html?cashfree_order_id={order_id}"
 )
 
         },
