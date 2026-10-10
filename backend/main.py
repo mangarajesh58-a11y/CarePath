@@ -129,7 +129,7 @@ def create_cashfree_vendor(
         "schedule_option": 1,
         "kyc_details": {
             "account_type": "BUSINESS",
-            "business_type": "PROPRIETORSHIP",
+            "business_type": "Healthcare",
         },
     }
 
