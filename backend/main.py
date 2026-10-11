@@ -25,6 +25,8 @@ import jwt
 
 from dotenv import load_dotenv
 
+load_dotenv(override=False)
+
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
@@ -438,13 +440,17 @@ def send_otp_email(receiver_email: str, otp: str):
     import logging
     from email.message import EmailMessage
 
-    sender_email = os.getenv("mangarajesh58@gmail.com")
-    app_password = os.getenv("ueeoljlkrockrwsq")
+    sender_email = os.getenv("SMTP_EMAIL")
+    app_password = os.getenv("SMTP_APP_PASSWORD")
 
     if not sender_email or not app_password:
-        raise RuntimeError(
-            "SMTP_EMAIL or SMTP_APP_PASSWORD is missing."
+        logging.error(
+            "SMTP configuration check: SMTP_EMAIL=%s, SMTP_APP_PASSWORD=%s",
+            "SET" if sender_email else "MISSING",
+            "SET" if app_password else "MISSING",
         )
+        raise RuntimeError("SMTP_EMAIL or SMTP_APP_PASSWORD is missing.")
+
 
     message = EmailMessage()
     message["Subject"] = "CarePath Registration OTP"
