@@ -20,6 +20,7 @@ import requests
 from database import Base, engine, SessionLocal
 
 from google import genai
+import time
 
 import jwt
 
@@ -1033,10 +1034,15 @@ Privacy:
 - Do not mention internal implementation details.
 """
 
+   
     try:
-        response = gemini_client.models.generate_content(
-            model="gemini-3.8-flash",
-            contents=f"""
+        response = None
+
+        for attempt in range(3):
+            try:
+                response = gemini_client.models.generate_content(
+                    model="gemini-3.8-flash",
+                    contents=f"""
 Patient message:
 {message}
 
@@ -1047,15 +1053,33 @@ Respond to the patient's actual question. Correctly interpret reasonable
 spelling and grammar mistakes. Use only the supplied database information
 for CarePath-specific facts. Do not guess missing hospital information.
 """,
-            config={
-                "system_instruction": system_instruction,
-            },
-        )
+                    config={
+                        "system_instruction": system_instruction,
+                    },
+                )
+                break
+
+            except Exception as error:
+                error_text = str(error)
+
+                is_temporary_error = (
+                    "503" in error_text
+                    or "UNAVAILABLE" in error_text
+                    or "429" in error_text
+                    or "RESOURCE_EXHAUSTED" in error_text
+                )
+
+                if not is_temporary_error or attempt == 2:
+                    raise
+
+                time.sleep(1 + attempt)
 
         reply = response.text
 
         if not reply:
-            raise RuntimeError("CarePath AI returned an empty response.")
+            raise RuntimeError(
+                "CarePath AI returned an empty response."
+            )
 
         return {
             "success": True,
@@ -1066,7 +1090,12 @@ for CarePath-specific facts. Do not guess missing hospital information.
         error_text = str(e)
         print("CarePath AI error:", error_text)
 
-        if "503" in error_text or "UNAVAILABLE" in error_text:
+        if (
+            "503" in error_text
+            or "UNAVAILABLE" in error_text
+            or "429" in error_text
+            or "RESOURCE_EXHAUSTED" in error_text
+        ):
             return {
                 "success": True,
                 "reply": get_carepath_ai_fallback(message),
@@ -1077,6 +1106,7 @@ for CarePath-specific facts. Do not guess missing hospital information.
             status_code=500,
             detail="CarePath AI is temporarily unavailable.",
         )
+
 @app.post("/registration/request-otp")
 def request_registration_otp(
     data: RegistrationOTPRequest,
