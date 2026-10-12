@@ -127,6 +127,12 @@ class Token(Base):
     # Platform
     platform = Column(String(100), default="CarePath")
 
+    booking_type = Column(
+    String(20),
+    default="ONLINE",
+    nullable=False,
+)
+
     # Payment amounts in rupees
     token_fee = Column(Integer, default=0, nullable=False)
     platform_fee = Column(Integer, default=10, nullable=False)

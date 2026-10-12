@@ -1401,6 +1401,11 @@ class AdminActionRequest(BaseModel):
     reason: Optional[str] = ""
 
 
+class WalkInTokenRequest(BaseModel):
+    patient_name: str
+    department: str
+    doctor: str
+
 # ============================================================
 # HELPER - HOSPITAL RESPONSE
 # ============================================================
@@ -1482,6 +1487,7 @@ def doctor_to_dict(doctor):
 # ============================================================
 
 
+
 def token_to_dict(token):
     return {
         "id": token.id,
@@ -1492,6 +1498,7 @@ def token_to_dict(token):
         "doctor": token.doctor,
         "token_number": token.token_number,
         "platform": token.platform or PLATFORM_NAME,
+        "booking_type": token.booking_type or "ONLINE",
         "token_fee": token.token_fee,
         "platform_fee": token.platform_fee,
         "total_amount": token.total_amount,
@@ -1505,6 +1512,67 @@ def token_to_dict(token):
             else None
         ),
     }
+
+
+def allocate_token_number(
+    db,
+    hospital_id: int,
+    department: str,
+    doctor: str,
+    appointment_date: date,
+) -> int:
+    result = db.execute(
+        text("""
+            INSERT INTO token_sequences (
+                hospital_id,
+                department,
+                doctor,
+                appointment_date,
+                last_token_number
+            )
+            VALUES (
+                :hospital_id,
+                :department,
+                :doctor,
+                :appointment_date,
+                (
+                    SELECT COALESCE(MAX(token_number), 0) + 1
+                    FROM tokens
+                    WHERE hospital_id = :hospital_id
+                      AND department = :department
+                      AND doctor = :doctor
+                      AND appointment_date = :appointment_date
+                )
+            )
+            ON CONFLICT (
+                hospital_id,
+                department,
+                doctor,
+                appointment_date
+            )
+            DO UPDATE SET
+                last_token_number = GREATEST(
+                    token_sequences.last_token_number,
+                    (
+                        SELECT COALESCE(MAX(token_number), 0)
+                        FROM tokens
+                        WHERE hospital_id = :hospital_id
+                          AND department = :department
+                          AND doctor = :doctor
+                          AND appointment_date = :appointment_date
+                    )
+                ) + 1
+            RETURNING last_token_number
+        """),
+        {
+            "hospital_id": hospital_id,
+            "department": department,
+            "doctor": doctor,
+            "appointment_date": appointment_date,
+        },
+    )
+
+    return result.scalar_one()
 
 # ============================================================
 # GOOGLE VERIFICATION
@@ -3350,6 +3418,7 @@ def create_cashfree_order(
             Doctor.hospital_id == hospital.id,
             Doctor.department == department_name,
             Doctor.name == doctor_name,
+            Doctor.is_available == True,
         )
         .first()
     )
@@ -3639,7 +3708,17 @@ def create_token(
         .first()
     )
 
-    next_token_number = latest_token.token_number + 1 if latest_token else 1
+    
+
+    
+    next_token_number = allocate_token_number(
+        db=db,
+        hospital_id=hospital.id,
+        department=data.department.strip(),
+        doctor=data.doctor.strip(),
+        appointment_date=appointment_date,
+    )
+
 
     token = Token(
         patient_id=patient.id,
@@ -3651,6 +3730,7 @@ def create_token(
         token_number=next_token_number,
         appointment_date=appointment_date,
         platform=PLATFORM_NAME,
+        booking_type="ONLINE",
         token_fee=token_fee,
         platform_fee=platform_fee,
         total_amount=total_amount,
@@ -3704,6 +3784,106 @@ def get_hospital_tokens(
 # NEXT PATIENT - HOSPITAL AUTHENTICATION REQUIRED
 # ============================================================
 
+@app.post("/hospital/walk-in-tokens")
+def create_walk_in_token(
+    data: WalkInTokenRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    authenticated_hospital_id = current_user["user_id"]
+
+    hospital = (
+        db.query(Hospital)
+        .filter(Hospital.id == authenticated_hospital_id)
+        .first()
+    )
+
+    if not hospital:
+        raise HTTPException(
+            status_code=401,
+            detail="Hospital account not found",
+        )
+
+    patient_name = data.patient_name.strip()
+    department = data.department.strip()
+    doctor_name = data.doctor.strip()
+
+    if not patient_name or not department or not doctor_name:
+        raise HTTPException(
+            status_code=400,
+            detail="Patient name, department, and doctor are required",
+        )
+
+    doctor = (
+        db.query(Doctor)
+        .filter(
+            Doctor.hospital_id == authenticated_hospital_id,
+            Doctor.department == department,
+            Doctor.name == doctor_name,
+        )
+        .first()
+    )
+
+    if not doctor:
+        raise HTTPException(
+            status_code=404,
+            detail="Doctor not found in this hospital and department",
+        )
+
+    appointment_date = date.today()
+
+    try:
+        next_token_number = allocate_token_number(
+            db=db,
+            hospital_id=authenticated_hospital_id,
+            department=department,
+            doctor=doctor_name,
+            appointment_date=appointment_date,
+        )
+
+        token = Token(
+            patient_id=None,
+            patient_name=patient_name,
+            hospital=hospital.name,
+            hospital_id=authenticated_hospital_id,
+            department=department,
+            doctor=doctor_name,
+            token_number=next_token_number,
+            appointment_date=appointment_date,
+            platform=PLATFORM_NAME,
+            booking_type="WALK_IN",
+            token_fee=0,
+            platform_fee=0,
+            total_amount=0,
+            payment_status="not_required",
+            status="waiting",
+        )
+
+        db.add(token)
+        db.commit()
+        db.refresh(token)
+
+        return {
+            "success": True,
+            "message": "Walk-in token created successfully",
+            "token": token_to_dict(token),
+        }
+
+    
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except Exception as error:
+        db.rollback()
+        print("Walk-in token creation error:", str(error))
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to create walk-in token",
+        )
+
+
+
 @app.post("/next-patient")
 def next_patient(
     hospital: Optional[str] = None,
@@ -3713,14 +3893,11 @@ def next_patient(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
 ):
-    # Always identify the hospital using the verified JWT.
     authenticated_hospital_id = current_user["user_id"]
 
     hospital_object = (
         db.query(Hospital)
-        .filter(
-            Hospital.id == authenticated_hospital_id
-        )
+        .filter(Hospital.id == authenticated_hospital_id)
         .first()
     )
 
@@ -3730,7 +3907,6 @@ def next_patient(
             detail="Hospital account not found",
         )
 
-    # Reject attempts to operate on another hospital.
     if (
         hospital_id is not None
         and hospital_id != authenticated_hospital_id
@@ -3746,25 +3922,21 @@ def next_patient(
             detail="Hospital does not match your account",
         )
 
-    if not department:
+    if not department or not doctor:
         raise HTTPException(
             status_code=400,
-            detail="Department is required",
+            detail="Department and doctor are required",
         )
 
-    if not doctor:
-        raise HTTPException(
-            status_code=400,
-            detail="Doctor is required",
-        )
+    today = date.today()
 
-    # Find the currently serving token at this hospital.
     current = (
         db.query(Token)
         .filter(
             Token.hospital_id == authenticated_hospital_id,
             Token.department == department,
             Token.doctor == doctor,
+            Token.appointment_date == today,
             Token.status == "serving",
         )
         .first()
@@ -3773,19 +3945,16 @@ def next_patient(
     if current:
         current.status = "completed"
 
-    # Find the next paid waiting token at this hospital.
     next_token = (
         db.query(Token)
         .filter(
             Token.hospital_id == authenticated_hospital_id,
             Token.department == department,
             Token.doctor == doctor,
+            Token.appointment_date == today,
             Token.status == "waiting",
-            Token.payment_status == "paid",
         )
-        .order_by(
-            Token.token_number.asc()
-        )
+        .order_by(Token.token_number.asc())
         .first()
     )
 
@@ -3793,7 +3962,7 @@ def next_patient(
         db.commit()
         raise HTTPException(
             status_code=404,
-            detail="No waiting patients",
+            detail="No waiting patients for today",
         )
 
     next_token.status = "serving"
@@ -3814,6 +3983,7 @@ def next_patient(
             "doctor": next_token.doctor,
             "department": next_token.department,
             "status": next_token.status,
+            "booking_type": next_token.booking_type,
         },
     }
 
