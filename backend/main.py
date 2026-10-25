@@ -870,7 +870,7 @@ def get_carepath_ai_context(db: Session, message: str):
 
     This function does not store the patient's message
     or conversation.
-    
+
     """
 
     hospitals = (
@@ -1034,7 +1034,7 @@ Privacy:
 - Do not mention internal implementation details.
 """
 
-   
+
     try:
         response = None
 
@@ -1405,7 +1405,7 @@ class WalkInTokenRequest(BaseModel):
     patient_name: str
     department: str
     doctor: str
-
+    token_number: Optional[int] = None
 # ============================================================
 # HELPER - HOSPITAL RESPONSE
 # ============================================================
@@ -3448,7 +3448,7 @@ def create_cashfree_order(
             ),
         },
         "order_meta": {
-            
+
 
 "return_url": (
     "https://carepath-patient-mx5v.vercel.app/"
@@ -3708,9 +3708,9 @@ def create_token(
         .first()
     )
 
-    
 
-    
+
+
     next_token_number = allocate_token_number(
         db=db,
         hospital_id=hospital.id,
@@ -3831,15 +3831,100 @@ def create_walk_in_token(
         )
 
     appointment_date = date.today()
+    manual_token_number = data.token_number
+
+    if manual_token_number is not None and manual_token_number <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Token number must be a positive integer",
+        )
 
     try:
-        next_token_number = allocate_token_number(
-            db=db,
-            hospital_id=authenticated_hospital_id,
-            department=department,
-            doctor=doctor_name,
-            appointment_date=appointment_date,
-        )
+        if manual_token_number is None:
+            next_token_number = allocate_token_number(
+                db=db,
+                hospital_id=authenticated_hospital_id,
+                department=department,
+                doctor=doctor_name,
+                appointment_date=appointment_date,
+            )
+        else:
+            # Lock/update the shared sequence row before checking duplicates.
+            db.execute(
+                text("""
+                    INSERT INTO token_sequences (
+                        hospital_id,
+                        department,
+                        doctor,
+                        appointment_date,
+                        last_token_number
+                    )
+                    VALUES (
+                        :hospital_id,
+                        :department,
+                        :doctor,
+                        :appointment_date,
+                        0
+                    )
+                    ON CONFLICT (
+                        hospital_id,
+                        department,
+                        doctor,
+                        appointment_date
+                    )
+                    DO UPDATE SET
+                        last_token_number =
+                            token_sequences.last_token_number
+                    RETURNING last_token_number
+                """),
+                {
+                    "hospital_id": authenticated_hospital_id,
+                    "department": department,
+                    "doctor": doctor_name,
+                    "appointment_date": appointment_date,
+                },
+            )
+
+            duplicate_token = (
+                db.query(Token)
+                .filter(
+                    Token.hospital_id == authenticated_hospital_id,
+                    Token.department == department,
+                    Token.doctor == doctor_name,
+                    Token.appointment_date == appointment_date,
+                    Token.token_number == manual_token_number,
+                )
+                .first()
+            )
+
+            if duplicate_token:
+                raise HTTPException(
+                    status_code=409,
+                    detail="This token number is already assigned for this doctor today",
+                )
+
+            next_token_number = manual_token_number
+
+            db.execute(
+                text("""
+                    UPDATE token_sequences
+                    SET last_token_number = GREATEST(
+                        last_token_number,
+                        :manual_token_number
+                    )
+                    WHERE hospital_id = :hospital_id
+                      AND department = :department
+                      AND doctor = :doctor
+                      AND appointment_date = :appointment_date
+                """),
+                {
+                    "hospital_id": authenticated_hospital_id,
+                    "department": department,
+                    "doctor": doctor_name,
+                    "appointment_date": appointment_date,
+                    "manual_token_number": manual_token_number,
+                },
+            )
 
         token = Token(
             patient_id=None,
@@ -3869,7 +3954,6 @@ def create_walk_in_token(
             "token": token_to_dict(token),
         }
 
-    
     except HTTPException:
         db.rollback()
         raise
@@ -3881,8 +3965,6 @@ def create_walk_in_token(
             status_code=500,
             detail="Unable to create walk-in token",
         )
-
-
 
 @app.post("/next-patient")
 def next_patient(
@@ -4341,11 +4423,11 @@ def get_hospital_certificate(
         path=certificate_path,
         media_type=allowed_types[extension],
         content_disposition_type="inline",
-    )    
-  
+    )
+
 # ============================================================
 # ADMIN - APPROVE HOSPITAL
-# 
+#
 
 @app.put("/admin/hospitals/{hospital_id}/approve")
 def approve_hospital(
