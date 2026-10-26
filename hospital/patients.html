@@ -1,4 +1,4 @@
-
+﻿
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,7 +13,7 @@
 
     <header>
         <div>
-            <h1>🏥 CarePath</h1>
+            <h1>ðŸ¥ CarePath</h1>
             <p>Patient Token Queue</p>
         </div>
         <button type="button" class="logout" onclick="hospitalLogout()">
@@ -27,7 +27,7 @@
     </div>
 
     <div class="form-card">
-        <h2>📋 Select Queue</h2>
+        <h2>ðŸ“‹ Select Queue</h2>
 
         <label for="queueDepartment">Department</label>
         <select id="queueDepartment" onchange="loadQueueDoctors()">
@@ -41,21 +41,21 @@
 
         <div id="currentPatient"
              style="display:none;margin-top:20px;padding:18px;border-radius:12px;background:#eef6ff;border:1px solid #bfdbfe;">
-            <h3 style="margin-top:0;">📢 Current Patient</h3>
+            <h3 style="margin-top:0;">ðŸ“¢ Current Patient</h3>
             <p id="currentPatientText"></p>
         </div>
 
         <button type="button" id="nextPatientButton"
                 onclick="callNextPatient()" style="margin-top:15px;">
-            📢 Call Next Patient
+            ðŸ“¢ Call Next Patient
         </button>
     </div>
 
     <div class="list-card">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-            <h2>🎫 Patient Tokens</h2>
+            <h2>ðŸŽ« Patient Tokens</h2>
             <button type="button" id="refreshQueueButton" onclick="loadPatients()">
-                🔄 Refresh
+                ðŸ”„ Refresh
             </button>
         </div>
 
@@ -87,7 +87,7 @@
     </div>
 
     <button type="button" class="back-button" onclick="goDashboard()">
-        ← Back to Dashboard
+        â† Back to Dashboard
     </button>
 </div>
 
@@ -323,14 +323,27 @@ async function loadPatients(silent = false) {
             const row = document.createElement("tr");
             const status = String(token.status || "").toLowerCase();
 
-            const completeButtonHtml =
-                !["completed", "cancelled"].includes(status)
-                    ? `<button
-                        onclick="completePatientToken(${Number(token.id)})"
-                        style="background:#16a34a;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">
-                        Complete
-                       </button>`
-                    : "—";
+
+const editTokenButtonHtml =
+    ["waiting", "serving"].includes(status)
+        ? `<button
+            type="button"
+            onclick="editPatientTokenNumber(${Number(token.id)}, ${Number(token.token_number)})"
+            style="background:#2563eb;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-right:6px;">
+            Edit Token
+           </button>`
+        : "";
+
+const completeButtonHtml =
+    !["completed", "cancelled"].includes(status)
+        ? `<button
+            type="button"
+            onclick="completePatientToken(${Number(token.id)})"
+            style="background:#16a34a;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">
+            Complete
+           </button>`
+        : "â€”";
+
 
             row.innerHTML = `
                 <td style="padding:12px;"><strong>${escapeHTML(token.token_number)}</strong></td>
@@ -338,7 +351,10 @@ async function loadPatients(silent = false) {
                 <td style="padding:12px;">${escapeHTML(token.department)}</td>
                 <td style="padding:12px;">${escapeHTML(token.doctor)}</td>
                 <td style="padding:12px;">${getStatusText(token.status)}</td>
-                <td style="padding:12px;">${completeButtonHtml}</td>
+                <td style="padding:12px;white-space:nowrap;">
+    ${editTokenButtonHtml}
+    ${completeButtonHtml}
+</td>
             `;
 
             fragment.appendChild(row);
@@ -411,7 +427,7 @@ async function callNextPatient() {
             showCurrentPatient(data.token_number, patientName);
 
             alert(
-                "📢 Patient Called\n\nToken: " + data.token_number +
+                "ðŸ“¢ Patient Called\n\nToken: " + data.token_number +
                 "\nPatient: " + patientName
             );
         } else if (data.token !== undefined && data.token !== null) {
@@ -419,7 +435,7 @@ async function callNextPatient() {
             showCurrentPatient(data.token, patientName);
 
             alert(
-                "📢 Patient Called\n\nToken: " + data.token +
+                "ðŸ“¢ Patient Called\n\nToken: " + data.token +
                 "\nPatient: " + patientName
             );
         } else {
@@ -432,9 +448,74 @@ async function callNextPatient() {
         alert(error.message || "Unable to call next patient.");
     } finally {
         button.disabled = false;
-        button.textContent = "📢 Call Next Patient";
+        button.textContent = "ðŸ“¢ Call Next Patient";
     }
 }
+
+/* Edit patient token number */
+async function editPatientTokenNumber(tokenId, currentTokenNumber) {
+    if (!tokenId || !Number.isFinite(Number(tokenId))) {
+        alert("Invalid token ID.");
+        return;
+    }
+
+    const input = prompt(
+        "Enter the new token number:",
+        String(currentTokenNumber)
+    );
+
+    if (input === null) return;
+
+    const newTokenNumber = input.trim();
+
+    if (!/^[1-9]\d*$/.test(newTokenNumber)) {
+        alert("Enter a valid positive whole-number token.");
+        return;
+    }
+
+    if (Number(newTokenNumber) === Number(currentTokenNumber)) {
+        alert("The token number has not changed.");
+        return;
+    }
+
+    if (!confirm(
+        `Change token number ${currentTokenNumber} to ${newTokenNumber}?`
+    )) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${API}/tokens/${Number(tokenId)}/number`,
+            {
+                method: "PUT",
+                headers: getHospitalAuthHeaders(true),
+                body: JSON.stringify({
+                    token_number: Number(newTokenNumber)
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail || "Unable to update token number."
+            );
+        }
+
+        showQueueMessage(
+            `Token number updated to ${newTokenNumber}.`,
+            true
+        );
+
+        await loadPatients();
+    } catch (error) {
+        console.error("Edit token error:", error);
+        showQueueMessage(error.message, false);
+    }
+}
+
 
 /* Complete patient token */
 async function completePatientToken(tokenId) {
@@ -498,10 +579,10 @@ function clearPatients() {
 function getStatusText(status) {
     const normalized = String(status || "").toLowerCase();
 
-    if (normalized === "waiting") return "🟡 Waiting";
-    if (normalized === "serving") return "🟢 Serving";
-    if (normalized === "completed") return "✅ Completed";
-    if (normalized === "cancelled") return "🔴 Cancelled";
+    if (normalized === "waiting") return "ðŸŸ¡ Waiting";
+    if (normalized === "serving") return "ðŸŸ¢ Serving";
+    if (normalized === "completed") return "âœ… Completed";
+    if (normalized === "cancelled") return "ðŸ”´ Cancelled";
 
     return escapeHTML(status || "Unknown");
 }
