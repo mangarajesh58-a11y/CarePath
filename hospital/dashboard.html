@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -434,7 +434,7 @@
         <div class="dashboard-card">
 
             <div class="card-icon">
-                👨‍⚕️
+                🧑‍⚕️
             </div>
 
             <h3>
@@ -1106,7 +1106,7 @@ document
     .getElementById("queueButton")
     .addEventListener(
         "click",
-        openPatients
+        function() { window.location.href = "token-queue.html"; }
     );
 
 
@@ -1278,7 +1278,7 @@ async function callNextPatient() {
         button.disabled = false;
 
         button.textContent =
-            "📢 Call Next Patient";
+            "ðŸ“¢ Call Next Patient";
 
     }
 

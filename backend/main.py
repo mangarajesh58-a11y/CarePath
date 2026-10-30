@@ -4073,6 +4073,113 @@ def next_patient(
 # ============================================================
 # COMPLETE TOKEN - HOSPITAL AUTHENTICATION REQUIRED
 # ============================================================
+class UpdateTokenNumberRequest(BaseModel):
+    token_number: int
+
+
+@app.put("/tokens/{token_id}/number")
+def update_token_number(
+    token_id: int,
+    data: UpdateTokenNumberRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    hospital_id = current_user["user_id"]
+
+    if data.token_number <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Token number must be a positive integer",
+        )
+
+    token = (
+        db.query(Token)
+        .filter(
+            Token.id == token_id,
+            Token.hospital_id == hospital_id,
+        )
+        .first()
+    )
+
+    if not token:
+        raise HTTPException(
+            status_code=404,
+            detail="Token not found",
+        )
+
+    if token.status not in ("waiting", "serving"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only waiting or serving tokens can be changed",
+        )
+
+    duplicate = (
+        db.query(Token)
+        .filter(
+            Token.hospital_id == hospital_id,
+            Token.department == token.department,
+            Token.doctor == token.doctor,
+            Token.appointment_date == token.appointment_date,
+            Token.token_number == data.token_number,
+            Token.id != token.id,
+        )
+        .first()
+    )
+
+    if duplicate:
+        raise HTTPException(
+            status_code=409,
+            detail="This token number is already assigned for this doctor on this date",
+        )
+
+    token.token_number = data.token_number
+
+# Keep the shared online/offline token sequence updated.
+    db.execute(
+        text("""
+            INSERT INTO token_sequences (
+                hospital_id,
+                department,
+                doctor,
+                appointment_date,
+                last_token_number
+            )
+            VALUES (
+                :hospital_id,
+                :department,
+                :doctor,
+                :appointment_date,
+                :token_number
+            )
+            ON CONFLICT (
+                hospital_id,
+                department,
+                doctor,
+                appointment_date
+            )
+            DO UPDATE SET
+                last_token_number = GREATEST(
+                    token_sequences.last_token_number,
+                    EXCLUDED.last_token_number
+                )
+        """),
+        {
+            "hospital_id": hospital_id,
+            "department": token.department,
+            "doctor": token.doctor,
+            "appointment_date": token.appointment_date,
+            "token_number": data.token_number,
+        },
+    )
+
+    db.commit()
+    db.refresh(token)
+
+    return {
+        "success": True,
+        "message": "Token number updated successfully",
+        "token": token_to_dict(token),
+    }
 
 @app.put("/tokens/{token_id}/complete")
 def complete_token(

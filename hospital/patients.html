@@ -1,11 +1,225 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Queue - CarePath</title>
     <link rel="stylesheet" href="style.css">
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --dark: #172554;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 14px 40px rgba(15,23,42,.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: #172033;
+            background:
+                radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32%),
+                linear-gradient(135deg, #f8fbff, #eef4ff);
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+
+        .page-container {
+            width: min(1180px, calc(100% - 32px));
+            margin: 28px auto 48px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 22px 26px;
+            color: white;
+            border-radius: 22px;
+            background: linear-gradient(120deg, #102a66, #2563eb 65%, #38bdf8);
+            box-shadow: 0 18px 40px rgba(37,99,235,.2);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 27px;
+            letter-spacing: -.7px;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            color: #dbeafe;
+            font-size: 14px;
+        }
+
+        button, select { font: inherit; }
+
+        button {
+            border: 0;
+            border-radius: 11px;
+            padding: 11px 16px;
+            font-weight: 700;
+            color: white;
+            background: var(--primary);
+            cursor: pointer;
+            transition: .18s ease;
+            box-shadow: 0 5px 12px rgba(37,99,235,.14);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(.97);
+        }
+
+        button:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .logout {
+            color: #1e3a8a;
+            background: white;
+            box-shadow: none;
+        }
+
+        .welcome { padding: 28px 4px 18px; }
+
+        .welcome h2 {
+            margin: 0 0 7px;
+            color: var(--dark);
+            font-size: clamp(24px, 4vw, 32px);
+            letter-spacing: -.8px;
+        }
+
+        .welcome p { margin: 0; color: var(--muted); }
+
+        .form-card, .list-card {
+            background: rgba(255,255,255,.94);
+            border: 1px solid rgba(226,232,240,.9);
+            border-radius: 20px;
+            padding: 24px;
+            margin: 18px 0;
+            box-shadow: var(--shadow);
+        }
+
+        .form-card h2, .list-card h2 {
+            margin: 0 0 20px;
+            color: var(--dark);
+            font-size: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 7px;
+            color: #334155;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        select {
+            width: 100%;
+            min-height: 46px;
+            padding: 11px 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 11px;
+            background: white;
+            color: #0f172a;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 4px #dbeafe;
+        }
+
+        #nextPatientButton {
+            margin-top: 18px !important;
+            padding: 13px 20px;
+        }
+
+        #currentPatient {
+            background: linear-gradient(120deg, #eff6ff, #f0f9ff) !important;
+            border: 1px solid #bfdbfe !important;
+        }
+
+        #currentPatient h3 { color: #1d4ed8; }
+
+        #currentPatientText {
+            color: #1e3a8a;
+            font-size: 17px;
+            line-height: 1.7;
+        }
+
+        #refreshQueueButton {
+            background: #eff6ff;
+            color: #1d4ed8;
+            box-shadow: none;
+            border: 1px solid #bfdbfe;
+        }
+
+        #queueMessage {
+            border: 1px solid transparent;
+            font-weight: 600;
+        }
+
+        table {
+            border-collapse: separate !important;
+            border-spacing: 0;
+            overflow: hidden;
+        }
+
+        thead th {
+            background: #eff4ff;
+            color: #334155;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody td {
+            background: white;
+            color: #334155;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        tbody tr:hover td { background: #f8fbff; }
+        tbody tr:last-child td { border-bottom: 0; }
+
+        .back-button {
+            margin-top: 8px;
+            background: #e2e8f0;
+            color: #334155;
+            box-shadow: none;
+        }
+
+        @media(max-width: 640px) {
+            .page-container {
+                width: calc(100% - 20px);
+                margin: 10px auto 28px;
+            }
+
+            header { padding: 18px; border-radius: 17px; }
+            header h1 { font-size: 23px; }
+
+            .form-card, .list-card {
+                padding: 17px;
+                border-radius: 16px;
+            }
+
+            .welcome { padding: 22px 3px 12px; }
+            #nextPatientButton { width: 100%; }
+        }
+
+        @media(prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition: none !important; }
+        }
+    </style>
 </head>
 
 <body>
@@ -13,9 +227,10 @@
 
     <header>
         <div>
-            <h1> CarePath</h1>
-            <p>Patient Token Queue</p>
+            <h1>CarePath</h1>
+            <p>Hospital Token Queue</p>
         </div>
+
         <button type="button" class="logout" onclick="hospitalLogout()">
             Logout
         </button>
@@ -27,7 +242,7 @@
     </div>
 
     <div class="form-card">
-        <h2>>Select Queue</h2>
+        <h2>Select Queue</h2>
 
         <label for="queueDepartment">Department</label>
         <select id="queueDepartment" onchange="loadQueueDoctors()">
@@ -40,20 +255,19 @@
         </select>
 
         <div id="currentPatient"
-             style="display:none;margin-top:20px;padding:18px;border-radius:12px;background:#eef6ff;border:1px solid #bfdbfe;">
-            <h3 style="margin-top:0;">ðŸ“¢ Current Patient</h3>
+             style="display:none;margin-top:20px;padding:18px;border-radius:12px;">
+            <h3 style="margin-top:0;">📢 Current Patient</h3>
             <p id="currentPatientText"></p>
         </div>
 
-        <button type="button" id="nextPatientButton"
-                onclick="callNextPatient()" style="margin-top:15px;">
-            Call Next Patient
+        <button type="button" id="nextPatientButton" onclick="callNextPatient">
+            📢 Call Next Patient
         </button>
     </div>
 
     <div class="list-card">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-            <h2> Patient Tokens</h2>
+            <h2>Patient Tokens</h2>
             <button type="button" id="refreshQueueButton" onclick="loadPatients()">
                 🔄 Refresh
             </button>
@@ -87,17 +301,16 @@
     </div>
 
     <button type="button" class="back-button" onclick="goDashboard()">
-         Back to Dashboard
+        Back to Dashboard
     </button>
+
 </div>
 
 <script>
 "use strict";
 
-/* API */
 const API = "https://carepath-3q9q.onrender.com";
 
-/* Hospital authentication */
 const hospitalId = localStorage.getItem("hospital_id");
 const hospitalToken = localStorage.getItem("hospitalToken");
 
@@ -106,7 +319,6 @@ if (!hospitalId || !hospitalToken) {
     window.location.replace("index.html");
 }
 
-/* Authorization header */
 function getHospitalAuthHeaders(includeJson = false) {
     const headers = {
         "Authorization": `Bearer ${hospitalToken}`
@@ -119,7 +331,6 @@ function getHospitalAuthHeaders(includeJson = false) {
     return headers;
 }
 
-/* Prevent overlapping patient queue requests */
 let isLoadingPatients = false;
 
 async function getCurrentHospital() {
@@ -135,7 +346,7 @@ async function getCurrentHospital() {
 
     return data;
 }
-/* Load departments */
+
 async function loadQueueDepartments() {
     const departmentSelect = document.getElementById("queueDepartment");
     const doctorSelect = document.getElementById("queueDoctor");
@@ -145,19 +356,19 @@ async function loadQueueDepartments() {
     doctorSelect.disabled = true;
 
     try {
-    const response = await fetch(`${API}/hospitals/${hospitalId}/departments`, {
-        headers: getHospitalAuthHeaders()
-    });
+        const response = await fetch(`${API}/hospitals/${hospitalId}/departments`, {
+            headers: getHospitalAuthHeaders()
+        });
 
-    const data = await response.json();
+        const data = await response.json();
 
-    if (!response.ok) {
-        throw new Error(data.detail || "Unable to load departments.");
-    }
+        if (!response.ok) {
+            throw new Error(data.detail || "Unable to load departments.");
+        }
 
-    const departments = Array.isArray(data)
-        ? data
-        : (data.departments || []);
+        const departments = Array.isArray(data)
+            ? data
+            : (data.departments || []);
 
         departmentSelect.innerHTML = `<option value="">Select Department</option>`;
 
@@ -179,7 +390,6 @@ async function loadQueueDepartments() {
     }
 }
 
-/* Load doctors */
 async function loadQueueDoctors() {
     const department = document.getElementById("queueDepartment").value;
     const doctorSelect = document.getElementById("queueDoctor");
@@ -204,6 +414,7 @@ async function loadQueueDoctors() {
         const doctors = Array.isArray(data)
             ? data
             : (data.doctors || []);
+
         const filteredDoctors = doctors.filter(function(doctor) {
             return doctor.department === department;
         });
@@ -229,7 +440,6 @@ async function loadQueueDoctors() {
     }
 }
 
-/* Get selected doctor name */
 function getSelectedDoctorName() {
     const doctorSelect = document.getElementById("queueDoctor");
     const selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
@@ -239,11 +449,6 @@ function getSelectedDoctorName() {
     return selectedOption.dataset.name || selectedOption.textContent || "";
 }
 
-/*
- * Load patients.
- * silent=true is used for automatic refresh.
- * Automatic refresh does not replace the table with a loading message.
- */
 async function loadPatients(silent = false) {
     const department = document.getElementById("queueDepartment").value;
     const doctor = getSelectedDoctorName();
@@ -254,12 +459,9 @@ async function loadPatients(silent = false) {
         return;
     }
 
-    /* Do not start another request while one is already running. */
     if (isLoadingPatients) return;
-
     isLoadingPatients = true;
 
-    /* Show the loading message only for manual/initial loads. */
     if (!silent) {
         tableBody.innerHTML = `
             <tr>
@@ -272,8 +474,9 @@ async function loadPatients(silent = false) {
 
     try {
         const response = await fetch(`${API}/hospitals/${hospitalId}/tokens`, {
-    headers: getHospitalAuthHeaders()
-});
+            headers: getHospitalAuthHeaders()
+        });
+
         const data = await response.json();
 
         if (!response.ok) {
@@ -283,7 +486,6 @@ async function loadPatients(silent = false) {
         const tokens = Array.isArray(data) ? data : (data.tokens || []);
         const hospital = await getCurrentHospital();
 
-        /* Keep only this hospital's active tokens for the selected doctor. */
         const hospitalTokens = tokens.filter(function(token) {
             const correctHospital =
                 token.hospital_id !== undefined && token.hospital_id !== null
@@ -300,7 +502,6 @@ async function loadPatients(silent = false) {
             );
         });
 
-        /* Sort by token number. */
         hospitalTokens.sort(function(a, b) {
             return Number(a.token_number || 0) - Number(b.token_number || 0);
         });
@@ -316,34 +517,29 @@ async function loadPatients(silent = false) {
             return;
         }
 
-        /* Build the updated table only after the data is ready. */
         const fragment = document.createDocumentFragment();
 
         hospitalTokens.forEach(function(token) {
             const row = document.createElement("tr");
             const status = String(token.status || "").toLowerCase();
 
+            const editTokenButtonHtml =
+                ["waiting", "serving"].includes(status)
+                    ? `<button type="button"
+                        onclick="editPatientTokenNumber(${Number(token.id)}, ${Number(token.token_number)})"
+                        style="background:#2563eb;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-right:6px;">
+                        Edit Token
+                       </button>`
+                    : "";
 
-const editTokenButtonHtml =
-    ["waiting", "serving"].includes(status)
-        ? `<button
-            type="button"
-            onclick="editPatientTokenNumber(${Number(token.id)}, ${Number(token.token_number)})"
-            style="background:#2563eb;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-right:6px;">
-            Edit Token
-           </button>`
-        : "";
-
-const completeButtonHtml =
-    !["completed", "cancelled"].includes(status)
-        ? `<button
-            type="button"
-            onclick="completePatientToken(${Number(token.id)})"
-            style="background:#16a34a;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">
-            Complete
-           </button>`
-        : "â€”";
-
+            const completeButtonHtml =
+                !["completed", "cancelled"].includes(status)
+                    ? `<button type="button"
+                        onclick="completePatientToken(${Number(token.id)})"
+                        style="background:#16a34a;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">
+                        Complete
+                       </button>`
+                    : "—";
 
             row.innerHTML = `
                 <td style="padding:12px;"><strong>${escapeHTML(token.token_number)}</strong></td>
@@ -352,9 +548,9 @@ const completeButtonHtml =
                 <td style="padding:12px;">${escapeHTML(token.doctor)}</td>
                 <td style="padding:12px;">${getStatusText(token.status)}</td>
                 <td style="padding:12px;white-space:nowrap;">
-    ${editTokenButtonHtml}
-    ${completeButtonHtml}
-</td>
+                    ${editTokenButtonHtml}
+                    ${completeButtonHtml}
+                </td>
             `;
 
             fragment.appendChild(row);
@@ -364,10 +560,6 @@ const completeButtonHtml =
     } catch (error) {
         console.error("Patient queue error:", error);
 
-        /*
-         * Keep existing rows during automatic refresh failures.
-         * Show the error in the table for a manual refresh.
-         */
         if (!silent) {
             tableBody.innerHTML = `
                 <tr>
@@ -383,7 +575,6 @@ const completeButtonHtml =
     }
 }
 
-/* Call next patient */
 async function callNextPatient() {
     const department = document.getElementById("queueDepartment").value;
     const doctor = getSelectedDoctorName();
@@ -427,7 +618,7 @@ async function callNextPatient() {
             showCurrentPatient(data.token_number, patientName);
 
             alert(
-                "ðŸ“¢ Patient Called\n\nToken: " + data.token_number +
+                "📢 Patient Called\n\nToken: " + data.token_number +
                 "\nPatient: " + patientName
             );
         } else if (data.token !== undefined && data.token !== null) {
@@ -435,7 +626,7 @@ async function callNextPatient() {
             showCurrentPatient(data.token, patientName);
 
             alert(
-                "ðŸ“¢ Patient Called\n\nToken: " + data.token +
+                "📢 Patient Called\n\nToken: " + data.token +
                 "\nPatient: " + patientName
             );
         } else {
@@ -448,11 +639,10 @@ async function callNextPatient() {
         alert(error.message || "Unable to call next patient.");
     } finally {
         button.disabled = false;
-        button.textContent = "ðŸ“¢ Call Next Patient";
+        button.textContent = "📢 Call Next Patient";
     }
 }
 
-/* Edit patient token number */
 async function editPatientTokenNumber(tokenId, currentTokenNumber) {
     if (!tokenId || !Number.isFinite(Number(tokenId))) {
         alert("Invalid token ID.");
@@ -516,8 +706,6 @@ async function editPatientTokenNumber(tokenId, currentTokenNumber) {
     }
 }
 
-
-/* Complete patient token */
 async function completePatientToken(tokenId) {
     if (!tokenId || !Number.isFinite(Number(tokenId))) {
         alert("Invalid token ID.");
@@ -546,7 +734,6 @@ async function completePatientToken(tokenId) {
     }
 }
 
-/* Current patient display */
 function showCurrentPatient(token, patient) {
     const box = document.getElementById("currentPatient");
     const text = document.getElementById("currentPatientText");
@@ -560,7 +747,6 @@ function showCurrentPatient(token, patient) {
     box.style.display = "block";
 }
 
-/* Clear patient list */
 function clearPatients() {
     const tableBody = document.getElementById("patientTableBody");
 
@@ -575,19 +761,17 @@ function clearPatients() {
     document.getElementById("currentPatient").style.display = "none";
 }
 
-/* Status labels */
 function getStatusText(status) {
     const normalized = String(status || "").toLowerCase();
 
-    if (normalized === "waiting") return "ðŸŸ¡ Waiting";
-    if (normalized === "serving") return "ðŸŸ¢ Serving";
-    if (normalized === "completed") return "âœ… Completed";
-    if (normalized === "cancelled") return "ðŸ”´ Cancelled";
+    if (normalized === "waiting") return "🟡 Waiting";
+    if (normalized === "serving") return "🟢 Serving";
+    if (normalized === "completed") return "✅ Completed";
+    if (normalized === "cancelled") return "🔴 Cancelled";
 
     return escapeHTML(status || "Unknown");
 }
 
-/* Escape HTML */
 function escapeHTML(value) {
     if (value === null || value === undefined) return "";
 
@@ -599,7 +783,6 @@ function escapeHTML(value) {
         .replace(/'/g, "&#039;");
 }
 
-/* Queue message */
 function showQueueMessage(message, success) {
     const element = document.getElementById("queueMessage");
 
@@ -609,12 +792,10 @@ function showQueueMessage(message, success) {
     element.style.color = success ? "#166534" : "#991b1b";
 }
 
-/* Dashboard */
 function goDashboard() {
     window.location.href = "dashboard.html";
 }
 
-/* Hospital logout */
 function hospitalLogout() {
     [
         "hospital_id",
@@ -634,13 +815,8 @@ function hospitalLogout() {
     window.location.href = "index.html";
 }
 
-/* Initial load */
 loadQueueDepartments();
 
-/*
- * Automatic refresh every 5 seconds.
- * Silent mode keeps the current table visible while updating.
- */
 setInterval(function() {
     const department = document.getElementById("queueDepartment").value;
     const doctor = getSelectedDoctorName();
