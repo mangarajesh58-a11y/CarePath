@@ -300,20 +300,13 @@
                     required
                     maxlength="150">
 
-                <input
-                    type="text"
-                    id="walkInDepartment"
-                    placeholder="Department"
-                    required
-                    maxlength="150">
+               <select id="walkInDepartment" required>
+    <option value="">Loading departments...</option>
+</select>
 
-                <input
-                    type="text"
-                    id="walkInDoctor"
-                    placeholder="Doctor name"
-                    required
-                    maxlength="150">
-
+<select id="walkInDoctor" required disabled>
+    <option value="">Select a department first</option>
+</select>
                 <button type="submit" id="walkInSubmit">
                     Register Walk-in Patient
                 </button>
@@ -570,7 +563,148 @@ function displayDate(value) {
         : date.toLocaleString();
 
 }
+// =========================================================
+// LOAD HOSPITAL DEPARTMENTS
+// =========================================================
 
+async function loadWalkInDepartments() {
+
+    const departmentSelect =
+        document.getElementById("walkInDepartment");
+
+    const doctorSelect =
+        document.getElementById("walkInDoctor");
+
+    departmentSelect.innerHTML =
+        '<option value="">Loading departments...</option>';
+
+    doctorSelect.innerHTML =
+        '<option value="">Select a department first</option>';
+
+    doctorSelect.disabled = true;
+
+    if (!hospitalId) {
+        departmentSelect.innerHTML =
+            '<option value="">Hospital ID not found</option>';
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `${API}/hospitals/${encodeURIComponent(hospitalId)}/departments`
+        );
+
+        const departments = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(
+                departments.detail || "Unable to load departments."
+            );
+        }
+
+        if (!Array.isArray(departments) || departments.length === 0) {
+            departmentSelect.innerHTML =
+                '<option value="">No departments registered</option>';
+            return;
+        }
+
+        departmentSelect.innerHTML =
+            '<option value="">Select Department</option>';
+
+        departments.forEach(department => {
+
+            const option = document.createElement("option");
+            option.value = department;
+            option.textContent = department;
+
+            departmentSelect.appendChild(option);
+
+        });
+
+    } catch (error) {
+
+        console.error("Department loading error:", error);
+
+        departmentSelect.innerHTML =
+            '<option value="">Unable to load departments</option>';
+
+        showMessage(error.message, true);
+    }
+}
+
+
+// =========================================================
+// LOAD DOCTORS BY DEPARTMENT
+// =========================================================
+
+async function loadWalkInDoctors() {
+
+    const departmentSelect =
+        document.getElementById("walkInDepartment");
+
+    const doctorSelect =
+        document.getElementById("walkInDoctor");
+
+    const department = departmentSelect.value;
+
+    doctorSelect.innerHTML =
+        '<option value="">Loading doctors...</option>';
+
+    doctorSelect.disabled = true;
+
+    if (!department || !hospitalId) {
+        doctorSelect.innerHTML =
+            '<option value="">Select a department first</option>';
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `${API}/hospitals/${encodeURIComponent(hospitalId)}/doctors?department=${encodeURIComponent(department)}`
+        );
+
+        const doctors = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(
+                doctors.detail || "Unable to load doctors."
+            );
+        }
+
+        if (!Array.isArray(doctors) || doctors.length === 0) {
+            doctorSelect.innerHTML =
+                '<option value="">No doctors in this department</option>';
+            return;
+        }
+
+        doctorSelect.innerHTML =
+            '<option value="">Select Doctor</option>';
+
+        doctors.forEach(doctor => {
+
+            const option = document.createElement("option");
+
+            option.value = doctor.name;
+            option.textContent = doctor.name;
+
+            doctorSelect.appendChild(option);
+
+        });
+
+        doctorSelect.disabled = false;
+
+    } catch (error) {
+
+        console.error("Doctor loading error:", error);
+
+        doctorSelect.innerHTML =
+            '<option value="">Unable to load doctors</option>';
+
+        showMessage(error.message, true);
+    }
+}
 
 // =========================================================
 // WALK-IN REGISTRATION
@@ -1463,6 +1597,14 @@ document.addEventListener(
                 "submit",
                 registerWalkIn
             );
+
+            // Load hospital-specific departments and doctors
+
+document
+    .getElementById("walkInDepartment")
+    .addEventListener("change", loadWalkInDoctors);
+
+loadWalkInDepartments();
 
 
         // Filters
