@@ -1,0 +1,1515 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Queue - CarePath</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .queue-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 14px;
+            margin: 20px 0;
+        }
+
+        .metric {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .metric h3 {
+            margin: 0 0 10px;
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .metric strong {
+            font-size: 28px;
+            color: #0f172a;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 18px 0;
+        }
+
+        .filters select,
+        .filters input {
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 850px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f1f5f9;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .online {
+            background: #dbeafe;
+        }
+
+        .offline {
+            background: #dcfce7;
+        }
+
+        .message {
+            padding: 12px;
+            margin: 12px 0;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .chart {
+            display: flex;
+            align-items: end;
+            gap: 18px;
+            height: 170px;
+            padding: 15px 8px 0;
+        }
+
+        .bar-group {
+            flex: 1;
+            text-align: center;
+            min-width: 45px;
+        }
+
+        .bar {
+            min-height: 3px;
+            background: #2563eb;
+            border-radius: 6px 6px 0 0;
+            width: 100%;
+        }
+
+        .bar.offline-bar {
+            background: #16a34a;
+        }
+
+        .bar-value {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .bar-label {
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .edit-token-button {
+            padding: 8px 12px;
+            border: 1px solid #16a34a;
+            border-radius: 7px;
+            background: #dcfce7;
+            color: #166534;
+            font-weight: 600;
+        }
+
+        .edit-token-button:hover {
+            background: #bbf7d0;
+        }
+
+        /* Walk-in registration result */
+
+        .walk-in-result {
+            display: none;
+            margin-top: 20px;
+            padding: 24px;
+            background: #ecfdf5;
+            border: 2px solid #86efac;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .walk-in-result h3 {
+            color: #166534;
+            margin: 0 0 12px;
+        }
+
+        .walk-in-token-label {
+            color: #475569;
+            margin: 8px 0;
+        }
+
+        .walk-in-token-number {
+            font-size: 64px;
+            font-weight: 800;
+            line-height: 1.2;
+            color: #15803d;
+            margin: 10px 0;
+        }
+
+        .walk-in-patient-name {
+            color: #334155;
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .walk-in-success-message {
+            color: #166534;
+            margin-top: 10px;
+        }
+
+        #walkInResult {
+            white-space: pre-line;
+        }
+
+        @media (max-width: 600px) {
+            .walk-in-token-number {
+                font-size: 48px;
+            }
+
+            .filters input,
+            .filters select,
+            .filters button {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="page-container">
+
+    <header>
+        <div>
+            <h1>CarePath</h1>
+            <p>Hospital Token Queue</p>
+        </div>
+
+        <button type="button" class="logout" onclick="hospitalLogout()">
+            Logout
+        </button>
+    </header>
+
+    <div class="welcome">
+        <h2>Token Queue Management</h2>
+        <p>View online bookings and offline walk-in tokens together.</p>
+    </div>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <!-- QUEUE METRICS -->
+
+    <section class="queue-grid">
+
+        <div class="metric">
+            <h3>Total Tokens</h3>
+            <strong id="totalCount">0</strong>
+        </div>
+
+        <div class="metric">
+            <h3>Waiting</h3>
+            <strong id="waitingCount">0</strong>
+        </div>
+
+        <div class="metric">
+            <h3>Serving</h3>
+            <strong id="servingCount">0</strong>
+        </div>
+
+        <div class="metric">
+            <h3>Completed</h3>
+            <strong id="completedCount">0</strong>
+        </div>
+
+        <div class="metric">
+            <h3>Online</h3>
+            <strong id="onlineCount">0</strong>
+        </div>
+
+        <div class="metric">
+            <h3>Walk-ins</h3>
+            <strong id="offlineCount">0</strong>
+        </div>
+
+    </section>
+
+    <!-- BOOKING BREAKDOWN -->
+
+    <section class="list-card">
+
+        <h2>Booking Breakdown</h2>
+
+        <div
+            class="chart"
+            id="chart"
+            aria-label="Online and offline token count graph">
+        </div>
+
+        <p>
+            <span style="color:#2563eb">■</span> Online bookings
+            &nbsp;
+            <span style="color:#16a34a">■</span> Offline walk-ins
+        </p>
+
+    </section>
+
+    <!-- ADD WALK-IN PATIENT -->
+
+    <section class="list-card" style="margin-top:20px">
+
+        <h2>➕ Add Offline Walk-in Patient</h2>
+
+        <p>Register a patient who visits the hospital directly.</p>
+
+        <form id="walkInForm">
+
+            <div class="filters">
+
+                <input
+                    type="text"
+                    id="walkInPatientName"
+                    placeholder="Patient name"
+                    required
+                    maxlength="150">
+
+                <input
+                    type="text"
+                    id="walkInDepartment"
+                    placeholder="Department"
+                    required
+                    maxlength="150">
+
+                <input
+                    type="text"
+                    id="walkInDoctor"
+                    placeholder="Doctor name"
+                    required
+                    maxlength="150">
+
+                <button type="submit" id="walkInSubmit">
+                    Register Walk-in Patient
+                </button>
+
+            </div>
+
+        </form>
+
+        <p id="walkInResult" role="status" aria-live="polite"></p>
+
+        <!-- ASSIGNED TOKEN DISPLAY -->
+
+        <div
+            id="walkInTokenDisplay"
+            class="walk-in-result"
+            role="status"
+            aria-live="polite">
+
+            <h3>Walk-in Registration Successful!</h3>
+
+            <p class="walk-in-token-label">
+                Assigned Token Number
+            </p>
+
+            <div
+                id="assignedWalkInToken"
+                class="walk-in-token-number">
+                --
+            </div>
+
+            <p
+                id="walkInPatientDisplay"
+                class="walk-in-patient-name">
+            </p>
+
+            <p class="walk-in-success-message">
+                Please ask the patient to wait for their turn.
+            </p>
+
+        </div>
+
+    </section>
+
+    <!-- ALL TOKENS -->
+
+    <section class="list-card" style="margin-top:20px">
+
+        <h2>All Hospital Tokens</h2>
+
+        <div class="filters">
+
+            <select id="departmentFilter" aria-label="Filter by department">
+                <option value="">All departments</option>
+            </select>
+
+            <select id="doctorFilter" aria-label="Filter by doctor">
+                <option value="">All doctors</option>
+            </select>
+
+            <select id="typeFilter" aria-label="Filter by booking type">
+                <option value="">Online and offline</option>
+                <option value="ONLINE">Online</option>
+                <option value="WALK_IN">Offline walk-ins</option>
+            </select>
+
+            <select id="statusFilter" aria-label="Filter by status">
+                <option value="">All statuses</option>
+                <option value="waiting">Waiting</option>
+                <option value="serving">Serving</option>
+                <option value="completed">Completed</option>
+            </select>
+
+            <input
+                id="searchFilter"
+                type="search"
+                placeholder="Search patient or token"
+                aria-label="Search patient or token">
+
+            <button type="button" onclick="loadTokens()">
+                Refresh
+            </button>
+
+        </div>
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Token</th>
+                        <th>Patient</th>
+                        <th>Department</th>
+                        <th>Doctor</th>
+                        <th>Booking Type</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tokenRows">
+                    <tr>
+                        <td colspan="8">Loading tokens...</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+    <button
+        type="button"
+        class="back-button"
+        onclick="location.href='dashboard.html'">
+
+        Back to Dashboard
+
+    </button>
+
+</div>
+
+<script>
+"use strict";
+
+// =========================================================
+// CONFIGURATION
+// =========================================================
+
+const API = "https://carepath-3q9q.onrender.com";
+
+const hospitalId =
+    localStorage.getItem("hospital_id") ||
+    localStorage.getItem("hospitalId");
+
+const hospitalToken =
+    localStorage.getItem("hospitalToken");
+
+let allTokens = [];
+
+
+// =========================================================
+// AUTHENTICATION HEADERS
+// =========================================================
+
+function authHeaders(json = false) {
+
+    const headers = {};
+
+    if (hospitalToken) {
+        headers.Authorization =
+            `Bearer ${hospitalToken}`;
+    }
+
+    if (json) {
+        headers["Content-Type"] =
+            "application/json";
+    }
+
+    return headers;
+}
+
+
+// =========================================================
+// READ API RESPONSE
+// =========================================================
+
+async function readResponse(response) {
+
+    const text = await response.text();
+
+    if (!text) {
+        return {};
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch {
+        return {
+            detail: text
+        };
+    }
+}
+
+
+// =========================================================
+// SHOW MESSAGE
+// =========================================================
+
+function showMessage(message, error = false) {
+
+    const box =
+        document.getElementById("message");
+
+    box.textContent = message;
+
+    box.style.display = "block";
+
+    box.style.background =
+        error ? "#fee2e2" : "#dcfce7";
+
+    box.style.color =
+        error ? "#991b1b" : "#166534";
+}
+
+
+// =========================================================
+// HTML ESCAPE
+// =========================================================
+
+function escapeHTML(value) {
+
+    return String(value ?? "").replace(
+        /[&<>"']/g,
+        char => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[char]
+    );
+
+}
+
+
+// =========================================================
+// NORMALIZE STATUS
+// =========================================================
+
+function normalStatus(value) {
+
+    return String(value || "").toLowerCase();
+
+}
+
+
+// =========================================================
+// DISPLAY DATE
+// =========================================================
+
+function displayDate(value) {
+
+    if (!value) {
+        return "—";
+    }
+
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime())
+        ? "—"
+        : date.toLocaleString();
+
+}
+
+
+// =========================================================
+// WALK-IN REGISTRATION
+// =========================================================
+
+async function registerWalkIn(event) {
+
+    event.preventDefault();
+
+    const patientName =
+        document.getElementById(
+            "walkInPatientName"
+        ).value.trim();
+
+    const department =
+        document.getElementById(
+            "walkInDepartment"
+        ).value.trim();
+
+    const doctor =
+        document.getElementById(
+            "walkInDoctor"
+        ).value.trim();
+
+    const submitButton =
+        document.getElementById(
+            "walkInSubmit"
+        );
+
+    const result =
+        document.getElementById(
+            "walkInResult"
+        );
+
+    const tokenDisplay =
+        document.getElementById(
+            "walkInTokenDisplay"
+        );
+
+
+    // Validate fields
+
+    if (!patientName || !department || !doctor) {
+
+        result.textContent =
+            "Please enter all patient details.";
+
+        result.style.color = "#991b1b";
+
+        return;
+
+    }
+
+
+    // Hide previous registration result
+
+    tokenDisplay.style.display = "none";
+
+    result.textContent = "";
+
+    submitButton.disabled = true;
+
+    submitButton.textContent = "Registering...";
+
+
+    try {
+
+        const response = await fetch(
+            `${API}/hospital/walk-in-tokens`,
+            {
+                method: "POST",
+
+                headers: authHeaders(true),
+
+                body: JSON.stringify({
+                    patient_name: patientName,
+                    department: department,
+                    doctor: doctor
+                })
+            }
+        );
+
+
+        const data = await readResponse(response);
+
+
+        if (!response.ok) {
+
+            if (
+                response.status === 401 ||
+                response.status === 403
+            ) {
+
+                throw new Error(
+                    "Your hospital session has expired. Please log in again."
+                );
+
+            }
+
+            throw new Error(
+                typeof data.detail === "string"
+                    ? data.detail
+                    : data.message ||
+                      "Unable to register walk-in patient."
+            );
+
+        }
+
+
+        // Backend returns:
+        // data.token.token_number
+
+        const assignedToken =
+            data.token?.token_number;
+
+
+        if (
+            assignedToken === undefined ||
+            assignedToken === null
+        ) {
+
+            throw new Error(
+                "Registration response did not contain an assigned token number. Please check the queue before trying again."
+            );
+
+        }
+
+
+        // Display assigned token
+
+        document.getElementById(
+            "assignedWalkInToken"
+        ).textContent = assignedToken;
+
+
+        document.getElementById(
+            "walkInPatientDisplay"
+        ).textContent =
+            `Patient: ${patientName}`;
+
+
+        tokenDisplay.style.display = "block";
+
+
+        result.textContent =
+            "Patient registered successfully.";
+
+        result.style.color = "#166534";
+
+
+        // Clear form
+
+        document.getElementById(
+            "walkInForm"
+        ).reset();
+
+
+        // Refresh shared queue
+
+        await loadTokens();
+
+
+        // Keep the assigned token visible
+
+        tokenDisplay.style.display = "block";
+
+
+    } catch (error) {
+
+        result.textContent =
+            error.message ||
+            "Walk-in registration failed.";
+
+        result.style.color = "#991b1b";
+
+        if (
+            error.message &&
+            error.message.includes("session has expired")
+        ) {
+
+            showMessage(error.message, true);
+
+        }
+
+    } finally {
+
+        submitButton.disabled = false;
+
+        submitButton.textContent =
+            "Register Walk-in Patient";
+
+    }
+
+}
+
+
+// =========================================================
+// LOAD HOSPITAL TOKENS
+// =========================================================
+
+async function loadTokens() {
+
+    if (!hospitalId || !hospitalToken) {
+
+        showMessage(
+            "Hospital login is missing. Please log in again.",
+            true
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const response = await fetch(
+            `${API}/hospitals/${encodeURIComponent(hospitalId)}/tokens`,
+            {
+                headers: authHeaders()
+            }
+        );
+
+
+        const data = await readResponse(response);
+
+
+        if (!response.ok) {
+
+            if (
+                response.status === 401 ||
+                response.status === 403
+            ) {
+
+                showMessage(
+                    "Your hospital session has expired. Please log in again.",
+                    true
+                );
+
+                return;
+
+            }
+
+            throw new Error(
+                typeof data.detail === "string"
+                    ? data.detail
+                    : "Unable to load hospital tokens."
+            );
+
+        }
+
+
+        if (!Array.isArray(data)) {
+
+            throw new Error(
+                "Unexpected token response from the server."
+            );
+
+        }
+
+
+        allTokens = data;
+
+
+        console.log(
+            "Total tokens:",
+            allTokens.length
+        );
+
+
+        console.log(
+            "Booking type counts:",
+            allTokens.reduce((counts, token) => {
+
+                const type =
+                    String(token.booking_type || "ONLINE")
+                        .toUpperCase();
+
+                counts[type] =
+                    (counts[type] || 0) + 1;
+
+                return counts;
+
+            }, {})
+        );
+
+
+        updateMetrics();
+
+        populateFilters();
+
+        renderTokens();
+
+
+        document.getElementById(
+            "message"
+        ).style.display = "none";
+
+
+    } catch (error) {
+
+        showMessage(
+            error.message ||
+            "Could not connect to CarePath API.",
+            true
+        );
+
+    }
+
+}
+
+
+// =========================================================
+// UPDATE QUEUE METRICS
+// =========================================================
+
+function updateMetrics() {
+
+    const count = predicate =>
+        allTokens.filter(predicate).length;
+
+
+    document.getElementById(
+        "totalCount"
+    ).textContent = allTokens.length;
+
+
+    document.getElementById(
+        "waitingCount"
+    ).textContent =
+        count(t => normalStatus(t.status) === "waiting");
+
+
+    document.getElementById(
+        "servingCount"
+    ).textContent =
+        count(t => normalStatus(t.status) === "serving");
+
+
+    document.getElementById(
+        "completedCount"
+    ).textContent =
+        count(t => normalStatus(t.status) === "completed");
+
+
+    const isOnline = t =>
+        String(t.booking_type || "ONLINE")
+            .toUpperCase() === "ONLINE";
+
+
+    const isWalkIn = t =>
+        String(t.booking_type || "")
+            .toUpperCase() === "WALK_IN";
+
+
+    const online = count(isOnline);
+
+    const offline = count(isWalkIn);
+
+    const max = Math.max(online, offline, 1);
+
+
+    document.getElementById(
+        "onlineCount"
+    ).textContent = online;
+
+
+    document.getElementById(
+        "offlineCount"
+    ).textContent = offline;
+
+
+    document.getElementById(
+        "chart"
+    ).innerHTML = `
+
+        <div class="bar-group">
+
+            <div class="bar-value">
+                ${online}
+            </div>
+
+            <div
+                class="bar"
+                style="height:${Math.max(3, online / max * 120)}px">
+            </div>
+
+            <div class="bar-label">
+                Online
+            </div>
+
+        </div>
+
+
+        <div class="bar-group">
+
+            <div class="bar-value">
+                ${offline}
+            </div>
+
+            <div
+                class="bar offline-bar"
+                style="height:${Math.max(3, offline / max * 120)}px">
+            </div>
+
+            <div class="bar-label">
+                Walk-ins
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+// =========================================================
+// POPULATE FILTERS
+// =========================================================
+
+function populateFilters() {
+
+    const dept =
+        document.getElementById(
+            "departmentFilter"
+        );
+
+    const doctor =
+        document.getElementById(
+            "doctorFilter"
+        );
+
+
+    const oldDept = dept.value;
+
+    const oldDoctor = doctor.value;
+
+
+    const departments = [
+        ...new Set(
+            allTokens
+                .map(t => t.department)
+                .filter(Boolean)
+        )
+    ].sort();
+
+
+    const doctors = [
+        ...new Set(
+            allTokens
+                .map(t => t.doctor)
+                .filter(Boolean)
+        )
+    ].sort();
+
+
+    dept.innerHTML =
+        '<option value="">All departments</option>' +
+        departments.map(value =>
+
+            `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`
+
+        ).join("");
+
+
+    doctor.innerHTML =
+        '<option value="">All doctors</option>' +
+        doctors.map(value =>
+
+            `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`
+
+        ).join("");
+
+
+    dept.value =
+        departments.includes(oldDept)
+            ? oldDept
+            : "";
+
+
+    doctor.value =
+        doctors.includes(oldDoctor)
+            ? oldDoctor
+            : "";
+
+}
+
+
+// =========================================================
+// RENDER TOKEN TABLE
+// =========================================================
+
+function renderTokens() {
+
+    const department =
+        document.getElementById(
+            "departmentFilter"
+        ).value;
+
+
+    const doctor =
+        document.getElementById(
+            "doctorFilter"
+        ).value;
+
+
+    const type =
+        document.getElementById(
+            "typeFilter"
+        ).value;
+
+
+    const status =
+        document.getElementById(
+            "statusFilter"
+        ).value;
+
+
+    const search =
+        document.getElementById(
+            "searchFilter"
+        ).value.trim().toLowerCase();
+
+
+    const filtered = allTokens.filter(token => {
+
+        const bookingType =
+            String(token.booking_type || "ONLINE")
+                .toUpperCase();
+
+
+        const matchesSearch =
+
+            String(token.patient_name || "")
+                .toLowerCase()
+                .includes(search) ||
+
+            String(token.token_number ?? "")
+                .includes(search);
+
+
+        return (
+
+            (!department || token.department === department) &&
+
+            (!doctor || token.doctor === doctor) &&
+
+            (!type || bookingType === type) &&
+
+            (!status || normalStatus(token.status) === status) &&
+
+            matchesSearch
+
+        );
+
+    }).sort((a, b) =>
+
+        Number(a.token_number || 0) -
+        Number(b.token_number || 0)
+
+    );
+
+
+    const rows =
+        document.getElementById(
+            "tokenRows"
+        );
+
+
+    if (!filtered.length) {
+
+        rows.innerHTML =
+            '<tr><td colspan="8">No tokens match these filters.</td></tr>';
+
+        return;
+
+    }
+
+
+    rows.innerHTML = filtered.map(token => {
+
+        const bookingType =
+            String(token.booking_type || "ONLINE")
+                .toUpperCase();
+
+
+        const isWalkIn =
+            bookingType === "WALK_IN";
+
+
+        const statusText =
+            normalStatus(token.status) || "unknown";
+
+
+        const canEdit =
+
+            isWalkIn &&
+            ["waiting", "serving"].includes(statusText);
+
+
+        const action = canEdit
+
+            ? `<button
+                   type="button"
+                   class="edit-token-button"
+                   data-edit-id="${Number(token.id)}"
+                   data-token-number="${Number(token.token_number)}">
+                   Edit Offline Token
+               </button>`
+
+            : "—";
+
+
+        return `
+
+            <tr>
+
+                <td>
+                    <strong>
+                        ${escapeHTML(token.token_number)}
+                    </strong>
+                </td>
+
+                <td>
+                    ${escapeHTML(token.patient_name)}
+                </td>
+
+                <td>
+                    ${escapeHTML(token.department)}
+                </td>
+
+                <td>
+                    ${escapeHTML(token.doctor)}
+                </td>
+
+                <td>
+
+                    <span class="badge ${isWalkIn ? "offline" : "online"}">
+
+                        ${isWalkIn ? "Offline Walk-in" : "Online"}
+
+                    </span>
+
+                </td>
+
+                <td>
+                    ${escapeHTML(statusText)}
+                </td>
+
+                <td>
+                    ${escapeHTML(displayDate(token.created_at))}
+                </td>
+
+                <td>
+                    ${action}
+                </td>
+
+            </tr>
+
+        `;
+
+    }).join("");
+
+
+    rows.querySelectorAll("[data-edit-id]").forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            editOfflineToken(
+
+                Number(button.dataset.editId),
+
+                Number(button.dataset.tokenNumber)
+
+            );
+
+        });
+
+    });
+
+}
+
+
+// =========================================================
+// EDIT OFFLINE TOKEN NUMBER
+// =========================================================
+
+async function editOfflineToken(
+    tokenId,
+    currentNumber
+) {
+
+    const token = allTokens.find(
+        item => Number(item.id) === tokenId
+    );
+
+
+    if (
+
+        !token ||
+
+        String(token.booking_type || "")
+            .toUpperCase() !== "WALK_IN"
+
+    ) {
+
+        showMessage(
+            "Only offline walk-in tokens can be edited here.",
+            true
+        );
+
+        return;
+
+    }
+
+
+    const input = prompt(
+
+        `Patient: ${token.patient_name || "Walk-in patient"}\n` +
+
+        `Department: ${token.department || "—"}\n` +
+
+        `Doctor: ${token.doctor || "—"}\n\n` +
+
+        "Enter the new offline token number:",
+
+        String(currentNumber)
+
+    );
+
+
+    if (input === null) {
+        return;
+    }
+
+
+    const newNumber = Number(input.trim());
+
+
+    if (
+        !Number.isInteger(newNumber) ||
+        newNumber <= 0
+    ) {
+
+        showMessage(
+            "Enter a positive whole-number token.",
+            true
+        );
+
+        return;
+
+    }
+
+
+    if (newNumber === currentNumber) {
+
+        showMessage(
+            "The token number is unchanged."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const response = await fetch(
+
+            `${API}/tokens/${tokenId}/number`,
+
+            {
+
+                method: "PUT",
+
+                headers: authHeaders(true),
+
+                body: JSON.stringify({
+
+                    token_number: newNumber
+
+                })
+
+            }
+
+        );
+
+
+        const data = await readResponse(response);
+
+
+        if (!response.ok) {
+
+            throw new Error(
+
+                typeof data.detail === "string"
+
+                    ? data.detail
+
+                    : "Token number could not be updated."
+
+            );
+
+        }
+
+
+        showMessage(
+
+            `Offline token updated to ${newNumber}. Refreshing the queue.`
+
+        );
+
+
+        await loadTokens();
+
+
+    } catch (error) {
+
+        showMessage(
+
+            error.message ||
+            "Could not update the token.",
+
+            true
+
+        );
+
+    }
+
+}
+
+
+// =========================================================
+// LOGOUT
+// =========================================================
+
+function hospitalLogout() {
+
+    [
+
+        "hospital",
+
+        "hospital_id",
+
+        "hospitalId",
+
+        "hospital_name",
+
+        "hospital_email",
+
+        "hospital_phone",
+
+        "hospital_city",
+
+        "hospital_token_fee",
+
+        "hospital_approval_status",
+
+        "hospital_is_published",
+
+        "hospital_logged_in",
+
+        "hospitalToken"
+
+    ].forEach(key =>
+
+        localStorage.removeItem(key)
+
+    );
+
+
+    location.href = "index.html";
+
+}
+
+
+// =========================================================
+// PAGE INITIALIZATION
+// =========================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        // Walk-in form
+
+        document
+            .getElementById("walkInForm")
+            .addEventListener(
+                "submit",
+                registerWalkIn
+            );
+
+
+        // Filters
+
+        [
+
+            "departmentFilter",
+
+            "doctorFilter",
+
+            "typeFilter",
+
+            "statusFilter",
+
+            "searchFilter"
+
+        ].forEach(id => {
+
+            document
+                .getElementById(id)
+                .addEventListener(
+                    "input",
+                    renderTokens
+                );
+
+        });
+
+
+        // Authentication check
+
+        if (!hospitalId || !hospitalToken) {
+
+            location.replace("index.html");
+
+            return;
+
+        }
+
+
+        // Initial queue loading
+
+        loadTokens();
+
+    }
+);
+
+</script>
+
+</body>
+</html>
