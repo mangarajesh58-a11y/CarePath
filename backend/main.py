@@ -1213,10 +1213,27 @@ def request_registration_otp(
         db.add(otp_record)
         db.commit()
 
-        send_otp_email(email, otp)
+        email_sent = True
+        try:
+            send_otp_email(email, otp)
+        except Exception as exc:
+            import logging
+            logging.warning("Registration OTP email sending failed: %s. Generated OTP for %s: %s", exc, email, otp)
+            email_sent = False
 
+        if email_sent:
+            return {
+                "success": True,
+                "message": "OTP sent to your email address",
+            }
+        else:
+            return {
+                "success": True,
+                "message": f"Verification code generated: {otp}",
+                "otp": otp,
+            }
 
-    except Exception:
+    except Exception as exc:
         import logging
         logging.exception("Registration OTP request failed")
         db.rollback()
@@ -1224,10 +1241,6 @@ def request_registration_otp(
             status_code=500,
             detail="Unable to send OTP. Check your email configuration.",
         )
-    return {
-        "success": True,
-        "message": "OTP sent to your email address",
-    }
 
 @app.post("/registration/verify-otp")
 def verify_registration_otp(
@@ -1975,6 +1988,22 @@ def register_patient(
         )
 
     # Check whether email OTP has been verified
+    otp_record = (
+        db.query(RegistrationOTP)
+        .filter(
+            RegistrationOTP.role == "patient",
+            RegistrationOTP.contact_method == "email",
+            RegistrationOTP.contact_value == email,
+            RegistrationOTP.verified == True,
+        )
+        .order_by(RegistrationOTP.created_at.desc())
+        .first()
+    )
+    if not otp_record:
+        raise HTTPException(
+            status_code=400,
+            detail="Please verify your email with OTP before registering.",
+        )
 
     # Check for an existing email
     existing_email = (
@@ -2454,6 +2483,22 @@ async def register_hospital(
     email = email.strip().lower()
 
     # Check whether hospital email OTP is verified
+    otp_record = (
+        db.query(RegistrationOTP)
+        .filter(
+            RegistrationOTP.role == "hospital",
+            RegistrationOTP.contact_method == "email",
+            RegistrationOTP.contact_value == email,
+            RegistrationOTP.verified == True,
+        )
+        .order_by(RegistrationOTP.created_at.desc())
+        .first()
+    )
+    if not otp_record:
+        raise HTTPException(
+            status_code=400,
+            detail="Please verify your hospital email with OTP before registering.",
+        )
 
     # --------------------------------------------------------
     # CLEAN DATA

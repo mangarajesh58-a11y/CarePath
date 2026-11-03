@@ -30,6 +30,7 @@ jobs:
           npm ci || npm install
           npx cap sync android
           cd android
+          sed -i 's/\r$//' ./gradlew
           chmod +x ./gradlew
           ./gradlew assembleDebug --stacktrace
 
@@ -39,6 +40,7 @@ jobs:
           npm ci || npm install
           npx cap sync android
           cd android
+          sed -i 's/\r$//' ./gradlew
           chmod +x ./gradlew
           ./gradlew assembleDebug --stacktrace
 
@@ -48,6 +50,7 @@ jobs:
           npm ci || npm install
           npx cap sync android
           cd android
+          sed -i 's/\r$//' ./gradlew
           chmod +x ./gradlew
           ./gradlew assembleDebug --stacktrace
 

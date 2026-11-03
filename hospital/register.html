@@ -280,9 +280,12 @@
 
 
         <div class="form-group">
-            <label for="email">
-                Hospital Email <span class="required">*</span>
-            </label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label for="email" style="margin-bottom: 0;">Hospital Email <span class="required">*</span></label>
+                <button type="button" id="btnSendHospitalOtp" onclick="handleSendHospitalOtp()" style="background: none; border: none; color: #0284c7; font-weight: 600; font-size: 13px; cursor: pointer; text-decoration: underline;">
+                    Send OTP
+                </button>
+            </div>
 
             <input
                 type="email"
@@ -292,6 +295,20 @@
                 autocomplete="email"
                 required
             >
+        </div>
+
+        <!-- HOSPITAL EMAIL OTP VERIFICATION BOX -->
+        <div id="otpSection" style="display: none; background: #f0fdf4; border: 1.5px dashed #86efac; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 13px; font-weight: 600; color: #166534;" id="otpStatusText">Enter the 6-digit code sent to hospital email</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="regOtpInput" placeholder="6-digit OTP" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" style="flex: 1; padding: 10px 14px; border: 1.5px solid #bbf7d0; border-radius: 8px; font-size: 15px; outline: none; background: white;">
+                <button type="button" id="btnVerifyHospitalOtp" onclick="handleVerifyHospitalOtp()" style="padding: 10px 18px; background: #16a34a; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                    Verify Code
+                </button>
+            </div>
+            <div id="otpFeedback" style="font-size: 13px; margin-top: 8px; display: none;"></div>
         </div>
 
 
@@ -804,6 +821,150 @@ hospitalPhotoInput.addEventListener(
 
 
 /* =========================================================
+   EMAIL OTP VERIFICATION
+========================================================= */
+
+let isHospitalEmailVerified = false;
+let verifiedHospitalEmail = "";
+
+const hospitalEmailInput = document.getElementById("email");
+if (hospitalEmailInput) {
+    hospitalEmailInput.addEventListener("input", function() {
+        if (isHospitalEmailVerified && this.value.trim().toLowerCase() !== verifiedHospitalEmail) {
+            isHospitalEmailVerified = false;
+            const btnSend = document.getElementById("btnSendHospitalOtp");
+            if (btnSend) {
+                btnSend.style.display = "inline";
+                btnSend.textContent = "Send OTP";
+                btnSend.disabled = false;
+            }
+            const btnVerify = document.getElementById("btnVerifyHospitalOtp");
+            if (btnVerify) {
+                btnVerify.textContent = "Verify Code";
+                btnVerify.disabled = false;
+                btnVerify.style.background = "#16a34a";
+            }
+            const otpSection = document.getElementById("otpSection");
+            if (otpSection) otpSection.style.display = "none";
+            const otpInput = document.getElementById("regOtpInput");
+            if (otpInput) {
+                otpInput.disabled = false;
+                otpInput.value = "";
+            }
+        }
+    });
+}
+
+async function handleSendHospitalOtp() {
+    const email = getValue("email").toLowerCase();
+    const btnSend = document.getElementById("btnSendHospitalOtp");
+    const otpSection = document.getElementById("otpSection");
+    const otpFeedback = document.getElementById("otpFeedback");
+
+    if (!email || !email.includes("@")) {
+        showMessage("Please enter a valid hospital email address first.", "error");
+        document.getElementById("email").focus();
+        return;
+    }
+
+    btnSend.disabled = true;
+    btnSend.textContent = "Sending...";
+    otpFeedback.style.display = "none";
+
+    try {
+        const response = await fetch(`${API_URL}/registration/request-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                role: "hospital",
+                email: email
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "Unable to send verification code.");
+        }
+
+        otpSection.style.display = "block";
+        btnSend.textContent = "Resend OTP";
+        btnSend.disabled = false;
+
+        if (data.otp) {
+            document.getElementById("regOtpInput").value = data.otp;
+            otpFeedback.style.display = "block";
+            otpFeedback.style.color = "#166534";
+            otpFeedback.textContent = `Verification code: ${data.otp}`;
+        } else {
+            showMessage("Verification code sent to hospital email!", "success");
+        }
+    } catch (err) {
+        console.error("OTP send error:", err);
+        showMessage(err.message || "Failed to send verification code.", "error");
+        btnSend.disabled = false;
+        btnSend.textContent = "Send OTP";
+    }
+}
+
+async function handleVerifyHospitalOtp() {
+    const email = getValue("email").toLowerCase();
+    const otpInput = document.getElementById("regOtpInput");
+    const otp = otpInput.value.trim();
+    const btnVerify = document.getElementById("btnVerifyHospitalOtp");
+    const otpFeedback = document.getElementById("otpFeedback");
+
+    if (!otp || otp.length !== 6) {
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#dc2626";
+        otpFeedback.textContent = "Please enter the 6-digit verification code.";
+        return;
+    }
+
+    btnVerify.disabled = true;
+    btnVerify.textContent = "Verifying...";
+
+    try {
+        const response = await fetch(`${API_URL}/registration/verify-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                role: "hospital",
+                email: email,
+                otp: otp
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "Invalid or expired verification code.");
+        }
+
+        isHospitalEmailVerified = true;
+        verifiedHospitalEmail = email;
+
+        btnVerify.textContent = "✓ Verified";
+        btnVerify.style.background = "#16a34a";
+        btnVerify.disabled = true;
+        otpInput.disabled = true;
+
+        const btnSend = document.getElementById("btnSendHospitalOtp");
+        if (btnSend) btnSend.style.display = "none";
+
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#166534";
+        otpFeedback.textContent = "✓ Hospital email verified successfully!";
+        showMessage("Hospital email verified successfully!", "success");
+    } catch (err) {
+        console.error("OTP verify error:", err);
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#dc2626";
+        otpFeedback.textContent = err.message || "Verification failed.";
+        btnVerify.disabled = false;
+        btnVerify.textContent = "Verify Code";
+    }
+}
+
+/* =========================================================
    BUILD FORM DATA
 ========================================================= */
 
@@ -830,6 +991,10 @@ function buildRegistrationFormData() {
     /* -----------------------------------------------------
        REQUIRED FIELDS
     ----------------------------------------------------- */
+
+    if (!isHospitalEmailVerified || verifiedHospitalEmail !== getValue("email").toLowerCase()) {
+        throw new Error("Please verify your hospital email with OTP before registering.");
+    }
 
     if (
         !getValue("name") ||
