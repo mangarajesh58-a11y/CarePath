@@ -32,32 +32,53 @@ jobs:
       - name: Build Patient Android APK
         working-directory: ./android-patient
         run: |
-          npm install
-          npx cap sync android
+          set +e
+          echo "### Patient Build Output" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          npm install 2>&1 | tee -a /tmp/patient.log
+          npx cap sync android 2>&1 | tee -a /tmp/patient.log
           cd android
           sed -i 's/\r$//' ./gradlew
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee -a /tmp/patient.log
+          EXIT_CODE=$?
+          cat /tmp/patient.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit $EXIT_CODE
 
       - name: Build Hospital Android APK
         working-directory: ./android-hospital
         run: |
-          npm install
-          npx cap sync android
+          set +e
+          echo "### Hospital Build Output" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          npm install 2>&1 | tee -a /tmp/hospital.log
+          npx cap sync android 2>&1 | tee -a /tmp/hospital.log
           cd android
           sed -i 's/\r$//' ./gradlew
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee -a /tmp/hospital.log
+          EXIT_CODE=$?
+          cat /tmp/hospital.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit $EXIT_CODE
 
       - name: Build Admin Android APK
         working-directory: ./android-admin
         run: |
-          npm install
-          npx cap sync android
+          set +e
+          echo "### Admin Build Output" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          npm install 2>&1 | tee -a /tmp/admin.log
+          npx cap sync android 2>&1 | tee -a /tmp/admin.log
           cd android
           sed -i 's/\r$//' ./gradlew
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee -a /tmp/admin.log
+          EXIT_CODE=$?
+          cat /tmp/admin.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit $EXIT_CODE
 
       - name: Upload Android APKs
         uses: actions/upload-artifact@v4
@@ -83,8 +104,11 @@ jobs:
       - name: Build Patient iOS App
         working-directory: ./android-patient
         run: |
-          npm install
-          npx cap sync ios
+          set +e
+          echo "### iOS Build Output" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          npm install 2>&1 | tee -a /tmp/ios.log
+          npx cap sync ios 2>&1 | tee -a /tmp/ios.log
           cd ios/App
           xcodebuild clean build \
             -project App.xcodeproj \
@@ -93,19 +117,8 @@ jobs:
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
-
-      - name: Build Hospital iOS App
-        working-directory: ./android-hospital
-        run: |
-          npm install
-          npx cap sync ios
-          cd ios/App
-          xcodebuild clean build \
-            -project App.xcodeproj \
-            -target App \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" 2>&1 | tee -a /tmp/ios.log
+          EXIT_CODE=$?
+          cat /tmp/ios.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit $EXIT_CODE
