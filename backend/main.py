@@ -448,64 +448,85 @@ def send_otp_email(receiver_email: str, otp: str, purpose: str = "registration")
     import logging
     from email.message import EmailMessage
 
-    sender_email = os.getenv("SMTP_EMAIL")
-    app_password = os.getenv("SMTP_APP_PASSWORD")
-
-    if not sender_email or not app_password:
-        logging.error(
-            "SMTP configuration check: SMTP_EMAIL=%s, SMTP_APP_PASSWORD=%s",
-            "SET" if sender_email else "MISSING",
-            "SET" if app_password else "MISSING",
-        )
-        raise RuntimeError("SMTP_EMAIL or SMTP_APP_PASSWORD is missing.")
-
-
     subject = "CarePath Password Reset OTP" if purpose == "reset" else "CarePath Registration OTP"
     headline = "Your CarePath password reset verification code is:" if purpose == "reset" else "Your CarePath registration verification code is:"
-
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = sender_email
-    message["To"] = receiver_email
-
-    message.set_content(
-        f"""Hello,
+    body_text = f"""Hello,
 
 {headline} {otp}
 
-This code expires in 5 minutes.
+This code expires in 10 minutes.
 
 If you did not request this code, please ignore this email.
 
 CarePath Team
 """
-    )
 
-    # 1. Try port 465 (SSL)
+    # --- 1. Cloud-Reliable Method: Resend HTTPS API (Port 443, NEVER blocked by Render) ---
+    resend_api_key = os.getenv("RESEND_API_KEY")
+    if resend_api_key:
+        try:
+            import json
+            import urllib.request
+            payload = json.dumps({
+                "from": os.getenv("RESEND_FROM", "CarePath <onboarding@resend.dev>"),
+                "to": [receiver_email],
+                "subject": subject,
+                "text": body_text,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "https://api.resend.com/emails",
+                data=payload,
+                headers={
+                    "Authorization": f"Bearer {resend_api_key}",
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 201):
+                    logging.info("OTP email delivered successfully via Resend HTTPS API to %s", receiver_email)
+                    return True
+        except Exception as resend_err:
+            logging.warning("Resend HTTPS API failed: %s. Trying direct SMTP...", resend_err)
+
+    # --- 2. Direct Gmail SMTP (Works on local machine & unblocked hosts) ---
+    sender_email = os.getenv("SMTP_EMAIL")
+    app_password = os.getenv("SMTP_APP_PASSWORD")
+
+    if not sender_email or not app_password:
+        logging.warning("SMTP configuration check: SMTP_EMAIL or SMTP_APP_PASSWORD missing.")
+        raise RuntimeError("SMTP_EMAIL or SMTP_APP_PASSWORD is missing.")
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = sender_email
+    message["To"] = receiver_email
+    message.set_content(body_text)
+
+    # Try port 465 (SSL)
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=8) as server:
             server.login(sender_email, app_password)
             server.send_message(message)
+            logging.info("OTP email delivered successfully via Gmail SMTP (SSL 465) to %s", receiver_email)
             return True
     except Exception as e_ssl:
         logging.warning("SMTP_SSL port 465 failed: %s. Trying port 587...", e_ssl)
 
-    # 2. Try port 587 (STARTTLS)
+    # Try port 587 (TLS)
     try:
-        with smtplib.SMTP(
-            "smtp.gmail.com", 587, timeout=10
-        ) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=8) as server:
             server.ehlo()
             server.starttls()
             server.ehlo()
             server.login(sender_email, app_password)
             server.send_message(message)
+            logging.info("OTP email delivered successfully via Gmail SMTP (TLS 587) to %s", receiver_email)
             return True
     except Exception as exc:
-        logging.exception("Gmail SMTP email sending failed")
-        raise RuntimeError(
-            f"Unable to send OTP email: {exc}"
-        ) from exc
+        logging.warning("Gmail SMTP email sending failed: %s", exc)
+        raise RuntimeError(f"Unable to send OTP email: {exc}") from exc
+
 # ============================================================
 # DATABASE SESSION
 # ============================================================
