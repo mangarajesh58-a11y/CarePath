@@ -3,7 +3,8 @@ name: Build CarePath Mobile Apps
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [ '**' ]
+
 
 jobs:
   build-android:
