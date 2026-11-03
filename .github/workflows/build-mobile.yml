@@ -24,35 +24,40 @@ jobs:
         with:
           node-version: 20
 
+      - name: Setup Android SDK & Licenses
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
+
       - name: Build Patient Android APK
         working-directory: ./android-patient
         run: |
-          npm ci || npm install
+          npm install
           npx cap sync android
           cd android
           sed -i 's/\r$//' ./gradlew
           chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Build Hospital Android APK
         working-directory: ./android-hospital
         run: |
-          npm ci || npm install
+          npm install
           npx cap sync android
           cd android
           sed -i 's/\r$//' ./gradlew
           chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Build Admin Android APK
         working-directory: ./android-admin
         run: |
-          npm ci || npm install
+          npm install
           npx cap sync android
           cd android
           sed -i 's/\r$//' ./gradlew
           chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload Android APKs
         uses: actions/upload-artifact@v4
@@ -78,33 +83,29 @@ jobs:
       - name: Build Patient iOS App
         working-directory: ./android-patient
         run: |
-          npm ci || npm install
+          npm install
           npx cap sync ios
           cd ios/App
           xcodebuild clean build \
             -project App.xcodeproj \
-            -scheme App \
+            -target App \
+            -sdk iphonesimulator \
             -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
 
       - name: Build Hospital iOS App
         working-directory: ./android-hospital
         run: |
-          npm ci || npm install
+          npm install
           npx cap sync ios
           cd ios/App
           xcodebuild clean build \
             -project App.xcodeproj \
-            -scheme App \
+            -target App \
+            -sdk iphonesimulator \
             -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Upload iOS App Products
-        uses: actions/upload-artifact@v4
-        with:
-          name: carepath-ios-builds
-          path: |
-            android-patient/ios/App/build
-            android-hospital/ios/App/build
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
