@@ -1755,6 +1755,11 @@ def token_to_dict(token):
         "cashfree_order_id": token.cashfree_order_id,
         "cashfree_payment_id": token.cashfree_payment_id,
         "status": token.status,
+        "appointment_date": (
+            str(token.appointment_date)
+            if getattr(token, "appointment_date", None)
+            else None
+        ),
         "created_at": (
             token.created_at.isoformat()
             if token.created_at
@@ -4035,6 +4040,56 @@ def create_token(
         "message": "Hospital token created successfully",
         "token": token_to_dict(token),
     }
+# ============================================================
+# PATIENT - TOKEN HISTORY
+# ============================================================
+
+@app.get("/patient/tokens")
+@app.get("/patient/token-history")
+def get_patient_token_history(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("patient")),
+):
+    tokens = (
+        db.query(Token)
+        .filter(Token.patient_id == current_user["user_id"])
+        .order_by(
+            Token.appointment_date.desc(),
+            Token.created_at.desc()
+        )
+        .all()
+    )
+
+    return [
+        token_to_dict(token)
+        for token in tokens
+    ]
+
+
+@app.get("/patient/tokens/{token_id}")
+def get_patient_single_token(
+    token_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("patient")),
+):
+    token = (
+        db.query(Token)
+        .filter(
+            Token.id == token_id,
+            Token.patient_id == current_user["user_id"],
+        )
+        .first()
+    )
+
+    if not token:
+        raise HTTPException(
+            status_code=404,
+            detail="Token record not found.",
+        )
+
+    return token_to_dict(token)
+
+
 # ============================================================
 # HOSPITAL - OWN TOKENS
 # ============================================================
