@@ -5,7 +5,6 @@ on:
   push:
     branches: [ '**' ]
 
-
 jobs:
   build-android:
     name: Build Android APKs
@@ -30,21 +29,27 @@ jobs:
         run: |
           npm ci || npm install
           npx cap sync android
-          cd android && ./gradlew assembleDebug
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace
 
       - name: Build Hospital Android APK
         working-directory: ./android-hospital
         run: |
           npm ci || npm install
           npx cap sync android
-          cd android && ./gradlew assembleDebug
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace
 
       - name: Build Admin Android APK
         working-directory: ./android-admin
         run: |
           npm ci || npm install
           npx cap sync android
-          cd android && ./gradlew assembleDebug
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload Android APKs
         uses: actions/upload-artifact@v4
@@ -77,10 +82,8 @@ jobs:
             -project App.xcodeproj \
             -scheme App \
             -configuration Debug \
-            -destination 'generic/platform=iOS' \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Build Hospital iOS App
         working-directory: ./android-hospital
@@ -92,15 +95,13 @@ jobs:
             -project App.xcodeproj \
             -scheme App \
             -configuration Debug \
-            -destination 'generic/platform=iOS' \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Upload iOS App Products
         uses: actions/upload-artifact@v4
         with:
           name: carepath-ios-builds
           path: |
-            android-patient/ios/App/build/Release-iphoneos
-            android-hospital/ios/App/build/Release-iphoneos
+            android-patient/ios/App/build
+            android-hospital/ios/App/build
