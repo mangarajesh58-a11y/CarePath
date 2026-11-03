@@ -262,3 +262,17 @@ class RegistrationOTP(Base):
     verified = Column(Boolean, default=False, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PlatformContact(Base):
+    __tablename__ = "platform_contacts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    business_name = Column(String(255), default="CarePath Healthcare Technologies")
+    support_email = Column(String(255), default="mangarajesh58@gmail.com")
+    support_phone = Column(String(50), default="+91 98765 43210")
+    operating_address = Column(Text, default="Bhubaneswar / Cuttack, Odisha, India - 751024")
+    grievance_officer = Column(String(255), default="Rajesh Mangaraj")
+    grievance_email = Column(String(255), default="mangarajesh58@gmail.com")
+    working_hours = Column(String(100), default="Mon - Sat: 9:00 AM - 7:00 PM IST")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

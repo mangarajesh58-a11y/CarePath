@@ -4549,6 +4549,99 @@ def complete_token(
         "token": token_to_dict(token),
     }
 # ============================================================
+# PLATFORM CONTACT & SETTINGS
+# ============================================================
+
+class PlatformContactUpdateRequest(BaseModel):
+    business_name: str | None = None
+    support_email: str | None = None
+    support_phone: str | None = None
+    operating_address: str | None = None
+    grievance_officer: str | None = None
+    grievance_email: str | None = None
+    working_hours: str | None = None
+
+
+def get_or_create_contact_settings(db: Session) -> PlatformContact:
+    contact = db.query(PlatformContact).first()
+    if not contact:
+        contact = PlatformContact(
+            business_name="CarePath Healthcare Technologies",
+            support_email="mangarajesh58@gmail.com",
+            support_phone="+91 98765 43210",
+            operating_address="Bhubaneswar / Cuttack, Odisha, India - 751024",
+            grievance_officer="Rajesh Mangaraj",
+            grievance_email="mangarajesh58@gmail.com",
+            working_hours="Mon - Sat: 9:00 AM - 7:00 PM IST",
+        )
+        db.add(contact)
+        db.commit()
+        db.refresh(contact)
+    return contact
+
+
+@app.get("/platform/contact")
+@app.get("/admin/contact")
+def get_platform_contact(db: Session = Depends(get_db)):
+    contact = get_or_create_contact_settings(db)
+    return {
+        "success": True,
+        "business_name": contact.business_name,
+        "support_email": contact.support_email,
+        "support_phone": contact.support_phone,
+        "operating_address": contact.operating_address,
+        "grievance_officer": contact.grievance_officer,
+        "grievance_email": contact.grievance_email,
+        "working_hours": contact.working_hours,
+        "updated_at": contact.updated_at.isoformat() if contact.updated_at else None,
+    }
+
+
+@app.post("/admin/contact")
+@app.put("/admin/contact")
+def update_platform_contact(
+    data: PlatformContactUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    contact = get_or_create_contact_settings(db)
+
+    if data.business_name is not None:
+        contact.business_name = data.business_name.strip()
+    if data.support_email is not None:
+        contact.support_email = data.support_email.strip()
+    if data.support_phone is not None:
+        contact.support_phone = data.support_phone.strip()
+    if data.operating_address is not None:
+        contact.operating_address = data.operating_address.strip()
+    if data.grievance_officer is not None:
+        contact.grievance_officer = data.grievance_officer.strip()
+    if data.grievance_email is not None:
+        contact.grievance_email = data.grievance_email.strip()
+    if data.working_hours is not None:
+        contact.working_hours = data.working_hours.strip()
+
+    contact.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(contact)
+
+    return {
+        "success": True,
+        "message": "Platform contact details updated successfully.",
+        "contact": {
+            "business_name": contact.business_name,
+            "support_email": contact.support_email,
+            "support_phone": contact.support_phone,
+            "operating_address": contact.operating_address,
+            "grievance_officer": contact.grievance_officer,
+            "grievance_email": contact.grievance_email,
+            "working_hours": contact.working_hours,
+            "updated_at": contact.updated_at.isoformat() if contact.updated_at else None,
+        },
+    }
+
+
+# ============================================================
 # ADMIN LOGIN
 # ============================================================
 
