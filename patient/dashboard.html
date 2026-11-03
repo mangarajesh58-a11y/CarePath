@@ -209,10 +209,11 @@
 <button
   type="button"
   id="carepathAIButton"
-  aria-label="Open CarePath AI"
-  title="CarePath AI"
+  aria-label="Open CarePath AI Assistant"
+  title="CarePath AI Assistant"
+  style="padding: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: transparent; border: none; box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);"
 >
-  <span style="font-size: 32px;">💙</span>
+  <img src="carepath-ai.png" alt="CarePath AI" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
 </button>
 
 
@@ -220,9 +221,15 @@
 <div id="carepathAIChat" class="carepath-ai-chat" hidden>
 
   <div class="carepath-ai-header">
-    <div>
-      <strong>CarePath AI</strong>
-      <span>Your healthcare assistant</span>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <img src="carepath-ai.png" alt="AI Avatar" style="width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.45); box-shadow: 0 2px 8px rgba(0,0,0,0.25);" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+      <div>
+        <strong style="display: flex; align-items: center; gap: 6px;">
+          CarePath AI
+          <span style="display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 6px #22c55e;"></span>
+        </strong>
+        <span>24/7 Healthcare Assistant</span>
+      </div>
     </div>
 
     <button
@@ -235,8 +242,11 @@
   </div>
 
   <div id="carepathAIMessages" class="carepath-ai-messages">
-    <div class="carepath-ai-message">
-      Hi! 💙 How can I help you today?
+    <div class="carepath-ai-message" style="display: flex; gap: 10px; align-items: flex-start;">
+      <img src="carepath-ai.png" alt="Bot" style="width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+      <div>
+        Hi! I'm your AI Healthcare Assistant. Ask me about doctors, booking OPD tokens, queue status, or hospital facilities!
+      </div>
     </div>
   </div>
 
