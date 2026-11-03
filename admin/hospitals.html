@@ -148,6 +148,13 @@
                 src=""
                 style="display:none; width:100%; max-width:720px; max-height:360px; object-fit:cover; border-radius:10px; border:1px solid #ddd; background:#f5f5f5;"
             >
+            <!-- ADMIN PHOTO UPLOAD -->
+            <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input type="file" id="adminPhotoFileInput" accept="image/jpeg,image/png,image/webp" style="font-size: 13px;">
+                <button type="button" class="view-btn" onclick="adminUploadHospitalPhoto()" style="padding: 6px 12px; font-size: 13px;">
+                    📷 Upload / Change Photo
+                </button>
+            </div>
 
             <hr>
 
@@ -175,6 +182,13 @@
                     background: #f5f5f5;
                 "
             ></iframe>
+            <!-- ADMIN CERTIFICATE UPLOAD -->
+            <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input type="file" id="adminCertificateFileInput" accept="application/pdf,image/jpeg,image/png" style="font-size: 13px;">
+                <button type="button" class="view-btn" onclick="adminUploadHospitalCertificate()" style="padding: 6px 12px; font-size: 13px;">
+                    📄 Upload / Replace Certificate
+                </button>
+            </div>
 
             <!-- CERTIFICATE STATUS MESSAGE -->
             <p

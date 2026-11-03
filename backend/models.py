@@ -53,6 +53,8 @@ class Hospital(Base):
         String(30), default="PENDING", nullable=False
     )
     license_id = Column(String(255), nullable=True)
+    certificate_base64 = Column(Text, nullable=True)
+    photo_base64 = Column(Text, nullable=True)
 
     # Login
     password = Column(String(255), nullable=False)

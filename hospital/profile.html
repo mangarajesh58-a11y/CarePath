@@ -141,6 +141,49 @@
 
 
 
+        
+        <!-- ==============================
+             HOSPITAL CERTIFICATE
+        =============================== -->
+        <div
+            class="hospital-photo-upload-card"
+            style="
+                margin-bottom: 24px;
+                padding: 20px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            "
+        >
+            <h3 style="margin:0 0 10px;">
+                📄 Hospital Registration Certificate
+            </h3>
+            <p
+                id="certificateStatusText"
+                style="margin:0 0 10px; color:#555; font-size:14px;"
+            >
+                Upload your official hospital establishment license or registration certificate (PDF, JPG, or PNG, max 10 MB).
+            </p>
+            <input
+                type="file"
+                id="hospitalCertificateFile"
+                accept="application/pdf,image/jpeg,image/png"
+                style="margin-bottom:10px; display:block;"
+            >
+            <button
+                type="button"
+                onclick="uploadHospitalCertificate()"
+                style="margin-top:4px;"
+            >
+                📄 Upload / Update Certificate
+            </button>
+            <p
+                id="hospitalCertificateMessage"
+                role="status"
+                style="margin-top:10px; font-size:14px;"
+            ></p>
+        </div>
+
         <!-- ==============================
              BASIC INFORMATION
         =============================== -->
@@ -1529,6 +1572,64 @@ async function uploadHospitalPhoto() {
 }
 
 
+
+
+/* ==================================
+   UPLOAD HOSPITAL CERTIFICATE
+================================== */
+async function uploadHospitalCertificate() {
+    const fileInput = document.getElementById("hospitalCertificateFile");
+    const message = document.getElementById("hospitalCertificateMessage");
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+        if (message) {
+            message.textContent = "Please choose a certificate file first.";
+            message.style.color = "#dc2626";
+        }
+        return;
+    }
+
+    const hospital = getHospitalSession();
+    const hospitalId = hospital ? (hospital.id || hospital.hospital_id) : null;
+    if (!hospitalId) {
+        if (message) {
+            message.textContent = "Hospital session expired. Please log in again.";
+            message.style.color = "#dc2626";
+        }
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("certificate", fileInput.files[0]);
+
+    if (message) {
+        message.textContent = "Uploading certificate...";
+        message.style.color = "#0284c7";
+    }
+
+    try {
+        const token = localStorage.getItem("hospitalToken");
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/certificate`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || "Unable to upload certificate.");
+        }
+        if (message) {
+            message.textContent = "✓ Certificate uploaded successfully! It is now securely saved and ready for admin verification.";
+            message.style.color = "#16a34a";
+        }
+    } catch (err) {
+        if (message) {
+            message.textContent = err.message || "Unable to upload certificate.";
+            message.style.color = "#dc2626";
+        }
+    }
+}
 
 /* ==================================
    LOGOUT

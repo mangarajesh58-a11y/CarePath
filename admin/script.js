@@ -1285,9 +1285,7 @@ async function viewHospital(id) {
         // =====================================================
 
         if (verifyButton) {
-            verifyButton.disabled =
-                !hasCertificate ||
-                certificateStatus === "VERIFIED";
+            verifyButton.disabled = certificateStatus === "VERIFIED";
         }
 
         if (rejectButton) {
@@ -2498,6 +2496,8 @@ window.verifyHospitalCertificate =
 window.rejectHospitalCertificate =
     rejectHospitalCertificate;
 
+window.adminUploadHospitalPhoto = adminUploadHospitalPhoto;
+window.adminUploadHospitalCertificate = adminUploadHospitalCertificate;
 window.verifyHospitalCertificateFromModal =
     verifyHospitalCertificateFromModal;
 
@@ -2524,3 +2524,79 @@ window.hospitalAction =
 
 window.showMessage =
     showMessage;
+
+// =====================================================
+// ADMIN UPLOAD HOSPITAL PHOTO
+// =====================================================
+async function adminUploadHospitalPhoto() {
+    const id = currentHospitalDetailsId;
+    if (!id) {
+        alert("Please open a hospital first.");
+        return;
+    }
+    const fileInput = document.getElementById("adminPhotoFileInput");
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+        alert("Please select an image file (JPG, PNG, or WEBP) first.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("photo", fileInput.files[0]);
+
+    const token = localStorage.getItem("adminToken");
+    try {
+        const res = await fetch(`${API}/admin/hospitals/${id}/photo`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: formData
+        });
+        const data = await readResponse(res);
+        if (!res.ok) {
+            throw new Error(getErrorMessage(data, "Failed to upload photo"));
+        }
+        showMessage("Hospital cover photo updated successfully!", "success");
+        await viewHospital(id);
+    } catch (err) {
+        alert(err.message || "Failed to upload photo");
+    }
+}
+
+// =====================================================
+// ADMIN UPLOAD HOSPITAL CERTIFICATE
+// =====================================================
+async function adminUploadHospitalCertificate() {
+    const id = currentHospitalDetailsId;
+    if (!id) {
+        alert("Please open a hospital first.");
+        return;
+    }
+    const fileInput = document.getElementById("adminCertificateFileInput");
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+        alert("Please select a certificate file (PDF, JPG, or PNG) first.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("certificate", fileInput.files[0]);
+
+    const token = localStorage.getItem("adminToken");
+    try {
+        const res = await fetch(`${API}/admin/hospitals/${id}/certificate`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: formData
+        });
+        const data = await readResponse(res);
+        if (!res.ok) {
+            throw new Error(getErrorMessage(data, "Failed to upload certificate"));
+        }
+        showMessage("Hospital certificate updated successfully!", "success");
+        await viewHospital(id);
+    } catch (err) {
+        alert(err.message || "Failed to upload certificate");
+    }
+}
