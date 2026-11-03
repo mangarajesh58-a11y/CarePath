@@ -21,6 +21,10 @@ yarn-error.log*
 **/android/local.properties
 **/android/*.apk
 **/android/*.aab
+APKs/
+*.apk
+*.aab
+
 
 # iOS
 **/ios/App/build/

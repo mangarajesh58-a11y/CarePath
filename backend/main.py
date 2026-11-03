@@ -437,10 +437,12 @@ app.add_middleware(
     ],
     allow_credentials=True,
     allow_methods=["*"],
+
+    
     allow_headers=["*"],
 )
 
-def send_otp_email(receiver_email: str, otp: str):
+def send_otp_email(receiver_email: str, otp: str, purpose: str = "registration"):
     import os
     import smtplib
     import logging
@@ -458,15 +460,18 @@ def send_otp_email(receiver_email: str, otp: str):
         raise RuntimeError("SMTP_EMAIL or SMTP_APP_PASSWORD is missing.")
 
 
+    subject = "CarePath Password Reset OTP" if purpose == "reset" else "CarePath Registration OTP"
+    headline = "Your CarePath password reset verification code is:" if purpose == "reset" else "Your CarePath registration verification code is:"
+
     message = EmailMessage()
-    message["Subject"] = "CarePath Registration OTP"
+    message["Subject"] = subject
     message["From"] = sender_email
     message["To"] = receiver_email
 
     message.set_content(
         f"""Hello,
 
-Your CarePath registration verification code is: {otp}
+{headline} {otp}
 
 This code expires in 5 minutes.
 
@@ -1268,6 +1273,185 @@ def verify_registration_otp(
         "success": True,
         "message": "Email verified successfully",
     }
+
+
+# ============================================================
+# FORGOT PASSWORD MODELS & ENDPOINTS
+# ============================================================
+
+class ForgotPasswordRequest(BaseModel):
+    role: str = "patient"
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    role: str = "patient"
+    email: str
+    otp: str
+    new_password: str
+
+@app.post("/auth/forgot-password/request-otp")
+def request_forgot_password_otp(
+    data: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    role = data.role.strip().lower()
+    email = data.email.strip().lower()
+
+    if role not in ["patient", "hospital"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Role must be patient or hospital",
+        )
+
+    if not email or "@" not in email:
+        raise HTTPException(
+            status_code=400,
+            detail="Please provide a valid email address",
+        )
+
+    if role == "patient":
+        user = db.query(Patient).filter(Patient.email == email).first()
+    else:
+        user = db.query(Hospital).filter(Hospital.email == email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="No account found with this email address.",
+        )
+
+    otp = f"{secrets.randbelow(1000000):06d}"
+    otp_hash = hashlib.sha256(otp.encode()).hexdigest()
+
+    try:
+        db.query(RegistrationOTP).filter(
+            RegistrationOTP.role == f"reset_{role}",
+            RegistrationOTP.contact_method == "email",
+            RegistrationOTP.contact_value == email,
+        ).delete(synchronize_session=False)
+
+        otp_record = RegistrationOTP(
+            role=f"reset_{role}",
+            contact_method="email",
+            contact_value=email,
+            otp_hash=otp_hash,
+            expires_at=datetime.utcnow() + timedelta(minutes=10),
+            attempts=0,
+            verified=False,
+        )
+
+        db.add(otp_record)
+        db.commit()
+
+        send_otp_email(email, otp, purpose="reset")
+
+    except Exception as exc:
+        import logging
+        logging.exception("Forgot password OTP request failed")
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to send OTP. Please verify your email configuration.",
+        )
+
+    return {
+        "success": True,
+        "message": "Password reset OTP sent to your email address",
+    }
+
+
+@app.post("/auth/forgot-password/reset")
+def reset_password(
+    data: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    role = data.role.strip().lower()
+    email = data.email.strip().lower()
+    otp = data.otp.strip()
+    new_password = data.new_password.strip()
+
+    if role not in ["patient", "hospital"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Role must be patient or hospital",
+        )
+
+    if len(otp) != 6 or not otp.isdigit():
+        raise HTTPException(
+            status_code=400,
+            detail="Enter a valid 6-digit OTP",
+        )
+
+    if len(new_password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters long",
+        )
+
+    otp_record = (
+        db.query(RegistrationOTP)
+        .filter(
+            RegistrationOTP.role == f"reset_{role}",
+            RegistrationOTP.contact_method == "email",
+            RegistrationOTP.contact_value == email,
+            RegistrationOTP.verified == False,
+        )
+        .order_by(RegistrationOTP.created_at.desc())
+        .first()
+    )
+
+    if not otp_record:
+        raise HTTPException(
+            status_code=400,
+            detail="OTP not found or expired. Please request a new OTP.",
+        )
+
+    if otp_record.expires_at <= datetime.utcnow():
+        db.delete(otp_record)
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail="OTP expired. Please request a new OTP.",
+        )
+
+    if otp_record.attempts >= 5:
+        db.delete(otp_record)
+        db.commit()
+        raise HTTPException(
+            status_code=429,
+            detail="Too many attempts. Please request a new OTP.",
+        )
+
+    otp_record.attempts += 1
+    submitted_hash = hashlib.sha256(otp.encode()).hexdigest()
+
+    if not hmac.compare_digest(submitted_hash, otp_record.otp_hash):
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail="Incorrect OTP. Please try again.",
+        )
+
+    if role == "patient":
+        user = db.query(Patient).filter(Patient.email == email).first()
+    else:
+        user = db.query(Hospital).filter(Hospital.email == email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Account not found",
+        )
+
+    user.password = hash_password(new_password)
+    db.delete(otp_record)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Password reset successfully! You can now log in with your new password.",
+    }
+
 
 class PatientLogin(BaseModel):
 
