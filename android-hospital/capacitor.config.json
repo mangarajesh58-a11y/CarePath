@@ -1,0 +1,10 @@
+
+{
+  "appId": "com.carepath.hospital",
+  "appName": "CarePath Hospital",
+  "webDir": "www",
+  "server": {
+    "url": "https://carepath-hospital-ten.vercel.app",
+    "cleartext": false
+  }
+}

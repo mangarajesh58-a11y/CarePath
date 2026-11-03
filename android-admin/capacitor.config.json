@@ -1,0 +1,9 @@
+{
+  "appId": "com.carepath.admin",
+  "appName": "CarePath Admin",
+  "webDir": "www",
+  "server": {
+    "url": "https://carepath-admin.vercel.app",
+    "cleartext": false
+  }
+}

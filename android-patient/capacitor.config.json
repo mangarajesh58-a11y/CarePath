@@ -1,0 +1,10 @@
+
+{
+  "appId": "com.carepath.patient",
+  "appName": "CarePath",
+  "webDir": "www",
+  "server": {
+    "url": "https://carepath-patient-mx5v.vercel.app",
+    "cleartext": false
+  }
+}

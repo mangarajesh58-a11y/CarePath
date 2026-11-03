@@ -1,0 +1,105 @@
+name: Build CarePath Mobile Apps
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-android:
+    name: Build Android APKs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Patient Android APK
+        working-directory: ./android-patient
+        run: |
+          npm ci || npm install
+          npx cap sync android
+          cd android && ./gradlew assembleDebug
+
+      - name: Build Hospital Android APK
+        working-directory: ./android-hospital
+        run: |
+          npm ci || npm install
+          npx cap sync android
+          cd android && ./gradlew assembleDebug
+
+      - name: Build Admin Android APK
+        working-directory: ./android-admin
+        run: |
+          npm ci || npm install
+          npx cap sync android
+          cd android && ./gradlew assembleDebug
+
+      - name: Upload Android APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: carepath-android-apks
+          path: |
+            android-patient/android/app/build/outputs/apk/debug/app-debug.apk
+            android-hospital/android/app/build/outputs/apk/debug/app-debug.apk
+            android-admin/android/app/build/outputs/apk/debug/app-debug.apk
+
+  build-ios:
+    name: Build iOS Apps
+    runs-on: macos-14
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Patient iOS App
+        working-directory: ./android-patient
+        run: |
+          npm ci || npm install
+          npx cap sync ios
+          cd ios/App
+          xcodebuild clean build \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Build Hospital iOS App
+        working-directory: ./android-hospital
+        run: |
+          npm ci || npm install
+          npx cap sync ios
+          cd ios/App
+          xcodebuild clean build \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Upload iOS App Products
+        uses: actions/upload-artifact@v4
+        with:
+          name: carepath-ios-builds
+          path: |
+            android-patient/ios/App/build/Release-iphoneos
+            android-hospital/ios/App/build/Release-iphoneos

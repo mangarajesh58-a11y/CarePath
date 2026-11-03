@@ -70,6 +70,8 @@ from models import (
     Patient,
     Hospital,
     Doctor,
+    DoctorWeeklySchedule,
+    DoctorScheduleException,
     Token,
     Admin,
     RegistrationOTP,
@@ -425,6 +427,10 @@ app.add_middleware(
     allow_origins=[
         "http://127.0.0.1:5500",
         "http://localhost:5500",
+        "http://localhost",               # Android local Capacitor
+        "https://localhost",              # Android HTTPS Capacitor
+        "capacitor://localhost",          # iOS Capacitor native origin
+        "ionic://localhost",              # Fallback iOS origin
         "https://carepath-patient-mx5v.vercel.app",
         "https://carepath-hospital-ten.vercel.app",
         "https://carepath-admin.vercel.app",
@@ -433,7 +439,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 def send_otp_email(receiver_email: str, otp: str):
     import os
@@ -736,6 +741,9 @@ def run_database_migration():
 
     "patient_id":
         "INT NULL",
+
+    "doctor_id":
+    "INT NULL",
 
     "platform":
         "VARCHAR(100) NULL",

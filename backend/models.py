@@ -1,5 +1,4 @@
 
-from datetime import datetime
 from datetime import datetime, date
 
 from sqlalchemy import (
@@ -10,6 +9,7 @@ from sqlalchemy import (
     Boolean,
     Date,
     DateTime,
+    UniqueConstraint,
 )
 
 from database import Base
@@ -65,7 +65,6 @@ class Hospital(Base):
     # Token fee (Indian rupees)
     token_fee = Column(Integer, default=0, nullable=False)
 
-
     # Approval and publishing
     approval_status = Column(
         String(30), default="PENDING", nullable=False
@@ -86,7 +85,9 @@ class Hospital(Base):
     razorpay_account_id = Column(String(255), nullable=True)
 
     # Cashfree Easy Split vendor
-    cashfree_vendor_id = Column(String(255), nullable=True, unique=True)
+    cashfree_vendor_id = Column(
+        String(255), nullable=True, unique=True
+    )
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -102,11 +103,81 @@ class Doctor(Base):
     specialization = Column(String(255), nullable=True)
     experience = Column(String(100), nullable=True)
 
-    # Doctor availability
+    # Legacy doctor availability fields
+    # Retained for backward compatibility.
     available_days = Column(String(255), nullable=True)
     start_time = Column(String(10), nullable=True)
     end_time = Column(String(10), nullable=True)
     is_available = Column(Boolean, default=True, nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class DoctorWeeklySchedule(Base):
+    __tablename__ = "doctor_weekly_schedules"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "doctor_id",
+            "weekday",
+            name="uq_doctor_weekly_schedule_day",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    doctor_id = Column(Integer, nullable=False, index=True)
+
+    # Monday = 0, Tuesday = 1 ... Sunday = 6
+    weekday = Column(Integer, nullable=False)
+
+    start_time = Column(String(10), nullable=True)
+    end_time = Column(String(10), nullable=True)
+
+    # One daily break
+    break_start = Column(String(10), nullable=True)
+    break_end = Column(String(10), nullable=True)
+
+    # Consultation duration in minutes
+    consultation_minutes = Column(
+        Integer, default=7, nullable=False
+    )
+
+    is_working = Column(Boolean, default=True, nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class DoctorScheduleException(Base):
+    __tablename__ = "doctor_schedule_exceptions"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "doctor_id",
+            "exception_date",
+            name="uq_doctor_schedule_exception_date",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    doctor_id = Column(Integer, nullable=False, index=True)
+
+    exception_date = Column(Date, nullable=False, index=True)
+
+    # True means doctor is unavailable for the entire date.
+    is_closed = Column(Boolean, default=False, nullable=False)
+
+    # Temporary working hours
+    start_time = Column(String(10), nullable=True)
+    end_time = Column(String(10), nullable=True)
+
+    # Temporary break
+    break_start = Column(String(10), nullable=True)
+    break_end = Column(String(10), nullable=True)
+
+    # Optional temporary consultation duration
+    consultation_minutes = Column(Integer, nullable=True)
+
+    reason = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -119,6 +190,10 @@ class Token(Base):
     patient_name = Column(String(255), nullable=False)
     hospital = Column(String(255), nullable=False, index=True)
     hospital_id = Column(Integer, nullable=True, index=True)
+
+    # Nullable to preserve compatibility with existing tokens.
+    doctor_id = Column(Integer, nullable=True, index=True)
+
     department = Column(String(255), nullable=False)
     doctor = Column(String(255), nullable=False)
     token_number = Column(Integer, nullable=False)
@@ -128,10 +203,10 @@ class Token(Base):
     platform = Column(String(100), default="CarePath")
 
     booking_type = Column(
-    String(20),
-    default="ONLINE",
-    nullable=False,
-)
+        String(20),
+        default="ONLINE",
+        nullable=False,
+    )
 
     # Payment amounts in rupees
     token_fee = Column(Integer, default=0, nullable=False)
@@ -144,9 +219,13 @@ class Token(Base):
     razorpay_payment_id = Column(String(255), nullable=True)
     razorpay_signature = Column(String(500), nullable=True)
 
-        # Cashfree
-    cashfree_order_id = Column(String(255), nullable=True, unique=True)
-    cashfree_payment_id = Column(String(255), nullable=True, unique=True)
+    # Cashfree
+    cashfree_order_id = Column(
+        String(255), nullable=True, unique=True
+    )
+    cashfree_payment_id = Column(
+        String(255), nullable=True, unique=True
+    )
 
     # Token status
     status = Column(String(50), default="waiting")
