@@ -235,6 +235,13 @@ class Token(Base):
     status = Column(String(50), default="waiting")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # High-impact queue & prescription tracking
+    called_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    diagnosis = Column(String(500), nullable=True)
+    prescription = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+
 
 class Admin(Base):
     __tablename__ = "admins"

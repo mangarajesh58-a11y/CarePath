@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarePath • Waiting Room Queue Display</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-elevated: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #0284c7;
+            --accent-glow: rgba(2, 132, 199, 0.4);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.3);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Bar */
+        header {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 2px solid var(--border);
+            padding: 16px 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand-wrap {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        .brand-info h1 {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+        }
+
+        .brand-info p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .header-center {
+            text-align: center;
+        }
+
+        .live-clock {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #38bdf8;
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        .live-date {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 2px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-ctrl {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-ctrl:hover {
+            background: var(--bg-elevated);
+            border-color: var(--accent);
+        }
+
+        .btn-ctrl.active {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--success);
+            color: #34d399;
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            padding: 32px 36px;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 32px;
+        }
+
+        /* Left: Currently Serving Panel */
+        .serving-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pulse-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 12px var(--success);
+            animation: pulse 1.6s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.5; }
+        }
+
+        .hero-serving-card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 2px solid #0284c7;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 12px 36px rgba(2, 132, 199, 0.2);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 380px;
+        }
+
+        .hero-serving-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #38bdf8, #10b981, #38bdf8);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .serving-label {
+            font-size: 20px;
+            font-weight: 800;
+            color: #38bdf8;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .giant-token-number {
+            font-size: 110px;
+            font-weight: 900;
+            line-height: 1;
+            color: #ffffff;
+            margin: 16px 0;
+            text-shadow: 0 4px 24px var(--accent-glow);
+            letter-spacing: -2px;
+        }
+
+        .serving-patient-name {
+            font-size: 32px;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 12px;
+        }
+
+        .serving-meta-wrap {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-top: 12px;
+            padding: 12px 24px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .meta-pill {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .meta-pill span {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .meta-pill strong {
+            font-size: 18px;
+            color: #38bdf8;
+            font-weight: 700;
+        }
+
+        /* Multiple Doctors Serving Grid */
+        .serving-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        .serving-sub-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .sub-card-token {
+            font-size: 48px;
+            font-weight: 900;
+            color: #38bdf8;
+        }
+
+        .sub-card-patient {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 6px 0;
+            color: #ffffff;
+        }
+
+        .sub-card-doc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Right Panel: Upcoming Queue */
+        .queue-sidebar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+
+        .queue-list {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            max-height: calc(100vh - 280px);
+            padding-right: 4px;
+        }
+
+        .queue-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.2s ease;
+        }
+
+        .queue-item:hover {
+            transform: translateX(4px);
+            border-color: var(--accent);
+        }
+
+        .queue-item-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .token-circle-badge {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            background: rgba(2, 132, 199, 0.15);
+            border: 1.5px solid #0284c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            color: #38bdf8;
+        }
+
+        .queue-patient-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .queue-patient-doc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .queue-item-right {
+            text-align: right;
+        }
+
+        .queue-eta-badge {
+            font-size: 12px;
+            font-weight: 700;
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.12);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Bottom Ticker Stats */
+        footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 16px 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .stats-ticker {
+            display: flex;
+            gap: 28px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-item strong {
+            color: #ffffff;
+            font-size: 16px;
+        }
+
+        /* Empty state */
+        .empty-serving {
+            color: var(--text-secondary);
+            font-size: 20px;
+            font-weight: 600;
+            padding: 60px 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+            .giant-token-number {
+                font-size: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-wrap">
+            <div class="brand-logo">🏥</div>
+            <div class="brand-info">
+                <h1 id="hospitalNameDisplay">CarePath Hospital</h1>
+                <p id="hospitalSubDisplay">Waiting Room Live Display</p>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <div class="live-clock" id="clock">--:--:-- --</div>
+            <div class="live-date" id="dateDisplay">Loading date...</div>
+        </div>
+
+        <div class="header-controls">
+            <button class="btn-ctrl active" id="btnAudio" title="Toggle audio announcements">
+                <span id="audioIcon">🔊</span> Audio Alert
+            </button>
+            <button class="btn-ctrl" id="btnFullscreen" title="Toggle full screen">
+                <span>⛶</span> Fullscreen
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- LEFT: Currently Serving Hero -->
+        <section class="serving-container">
+            <div class="section-title">
+                <div class="pulse-dot"></div>
+                Currently Calling / Inside Consultation
+            </div>
+
+            <div id="heroServingSection">
+                <div class="hero-serving-card">
+                    <div class="serving-label">Now Calling Token</div>
+                    <div class="giant-token-number" id="heroTokenNumber">--</div>
+                    <div class="serving-patient-name" id="heroPatientName">Waiting for consultation...</div>
+                    <div class="serving-meta-wrap">
+                        <div class="meta-pill">
+                            <span>Doctor</span>
+                            <strong id="heroDoctor">--</strong>
+                        </div>
+                        <div class="meta-pill">
+                            <span>Department</span>
+                            <strong id="heroDepartment">--</strong>
+                        </div>
+                        <div class="meta-pill">
+                            <span>Room</span>
+                            <strong id="heroRoom">OPD Room</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Doctors Serving Grid (if multi-doctor) -->
+            <div id="multiDoctorSection" style="display: none;">
+                <div class="section-title" style="margin-top: 8px;">
+                    Other Active Consultation Rooms
+                </div>
+                <div class="serving-grid" id="servingGrid"></div>
+            </div>
+        </section>
+
+        <!-- RIGHT: Upcoming Queue Ticker -->
+        <aside class="queue-sidebar">
+            <div class="section-title" style="justify-content: space-between;">
+                <span>Upcoming Patients</span>
+                <span id="waitingCountBadge" style="font-size: 13px; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 10px; border-radius: 20px;">0 waiting</span>
+            </div>
+
+            <div class="queue-list" id="queueList">
+                <div style="text-align: center; color: var(--text-secondary); padding: 40px 0;">
+                    No patients currently in queue.
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <footer>
+        <div class="stats-ticker">
+            <div class="stat-item">Today's Completed: <strong id="statCompleted">0</strong></div>
+            <div class="stat-item">Currently Serving: <strong id="statServing">0</strong></div>
+            <div class="stat-item">Waiting in Lobby: <strong id="statWaiting">0</strong></div>
+        </div>
+        <div>
+            CarePath Live Queue System • Updated real-time
+        </div>
+    </footer>
+
+    <script>
+        const API = "https://carepath-3q9q.onrender.com";
+        const hospitalId = localStorage.getItem("hospital_id") || "15";
+        let lastAnnouncedToken = null;
+        let audioEnabled = true;
+
+        // 1. Digital Clock
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+            const dateStr = now.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" });
+            document.getElementById("clock").textContent = timeStr;
+            document.getElementById("dateDisplay").textContent = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 2. Fullscreen Toggle
+        document.getElementById("btnFullscreen").addEventListener("click", () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        });
+
+        // 3. Audio Chime (Web Audio API Synthesizer - 0 external files)
+        function playChime() {
+            if (!audioEnabled) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = ctx.currentTime;
+
+                // High tone (523Hz - C5)
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = "sine";
+                osc1.frequency.setValueAtTime(523.25, now);
+                gain1.gain.setValueAtTime(0.3, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.6);
+
+                // Pleasant lower tone (659Hz - E5)
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = "sine";
+                osc2.frequency.setValueAtTime(659.25, now + 0.2);
+                gain2.gain.setValueAtTime(0.35, now + 0.2);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.2);
+                osc2.stop(now + 0.9);
+            } catch (e) {
+                console.warn("Audio chime error:", e);
+            }
+        }
+
+        // 4. Voice Speech Synthesis Announcement
+        function announceToken(tokenNumber, patientName, doctor) {
+            if (!audioEnabled) return;
+            playChime();
+            setTimeout(() => {
+                if ("speechSynthesis" in window) {
+                    window.speechSynthesis.cancel();
+                    const text = `Attention please: Token number ${tokenNumber}, ${patientName || "patient"}, please proceed to doctor ${doctor || "consultation"}.`;
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.0;
+                    utterance.lang = "en-IN";
+                    window.speechSynthesis.speak(utterance);
+                }
+            }, 700);
+        }
+
+        // Audio toggle button
+        document.getElementById("btnAudio").addEventListener("click", function() {
+            audioEnabled = !audioEnabled;
+            this.classList.toggle("active", audioEnabled);
+            document.getElementById("audioIcon").textContent = audioEnabled ? "🔊" : "🔇";
+        });
+
+        // 5. Fetch and Render Live Queue
+        async function fetchQueue() {
+            try {
+                const res = await fetch(`${API}/hospitals/${encodeURIComponent(hospitalId)}/live-queue`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                if (data.hospital_name) {
+                    document.getElementById("hospitalNameDisplay").textContent = data.hospital_name;
+                    document.getElementById("hospitalSubDisplay").textContent = `${data.hospital_city || "OPD Clinic"} • Waiting Room Live Queue`;
+                }
+
+                // Stats
+                const stats = data.stats || {};
+                document.getElementById("statCompleted").textContent = stats.completed || 0;
+                document.getElementById("statServing").textContent = stats.serving || 0;
+                document.getElementById("statWaiting").textContent = stats.waiting || 0;
+                document.getElementById("waitingCountBadge").textContent = `${stats.waiting || 0} waiting`;
+
+                // Currently Serving
+                const serving = data.currently_serving || [];
+                const heroSection = document.getElementById("heroServingSection");
+                const multiSection = document.getElementById("multiDoctorSection");
+                const servingGrid = document.getElementById("servingGrid");
+
+                if (serving.length === 0) {
+                    heroSection.innerHTML = `
+                        <div class="hero-serving-card">
+                            <div class="empty-serving">
+                                <p style="font-size: 32px; margin-bottom: 8px;">⏳</p>
+                                No patients currently inside consultation.
+                                <p style="font-size: 15px; color: #64748b; margin-top: 6px;">Next token will be announced here shortly.</p>
+                            </div>
+                        </div>
+                    `;
+                    multiSection.style.display = "none";
+                } else {
+                    const primary = serving[0];
+                    heroSection.innerHTML = `
+                        <div class="hero-serving-card">
+                            <div class="serving-label">Now Calling Token</div>
+                            <div class="giant-token-number">#${primary.token_number}</div>
+                            <div class="serving-patient-name">${primary.patient_name || "Patient"}</div>
+                            <div class="serving-meta-wrap">
+                                <div class="meta-pill">
+                                    <span>Doctor</span>
+                                    <strong>${primary.doctor || "Consultant"}</strong>
+                                </div>
+                                <div class="meta-pill">
+                                    <span>Department</span>
+                                    <strong>${primary.department || "General"}</strong>
+                                </div>
+                                <div class="meta-pill">
+                                    <span>Status</span>
+                                    <strong style="color: #10b981;">🟢 In Consultation</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Check if new token should be announced
+                    if (lastAnnouncedToken !== primary.id) {
+                        lastAnnouncedToken = primary.id;
+                        announceToken(primary.token_number, primary.patient_name, primary.doctor);
+                    }
+
+                    // Multi-doctor sub-cards
+                    if (serving.length > 1) {
+                        multiSection.style.display = "block";
+                        servingGrid.innerHTML = serving.slice(1).map(s => `
+                            <div class="serving-sub-card">
+                                <div class="sub-card-token">#${s.token_number}</div>
+                                <div class="sub-card-patient">${s.patient_name || "Patient"}</div>
+                                <div class="sub-card-doc">${s.doctor} • ${s.department}</div>
+                            </div>
+                        `).join("");
+                    } else {
+                        multiSection.style.display = "none";
+                    }
+                }
+
+                // Upcoming Waiting List
+                const waiting = data.upcoming_waiting || [];
+                const queueList = document.getElementById("queueList");
+
+                if (waiting.length === 0) {
+                    queueList.innerHTML = `
+                        <div style="text-align: center; color: var(--text-secondary); padding: 40px 0;">
+                            ✨ All booked patients have been attended to!
+                        </div>
+                    `;
+                } else {
+                    queueList.innerHTML = waiting.map((t, idx) => `
+                        <div class="queue-item">
+                            <div class="queue-item-left">
+                                <div class="token-circle-badge">#${t.token_number}</div>
+                                <div>
+                                    <div class="queue-patient-name">${t.patient_name || "Patient"}</div>
+                                    <div class="queue-patient-doc">${t.doctor || "Doctor"} • ${t.department}</div>
+                                </div>
+                            </div>
+                            <div class="queue-item-right">
+                                <span class="queue-eta-badge">~${(idx + 1) * 10} min wait</span>
+                            </div>
+                        </div>
+                    `).join("");
+                }
+
+            } catch (err) {
+                console.warn("Queue fetch error:", err);
+            }
+        }
+
+        // Poll every 3 seconds for real-time responsiveness
+        setInterval(fetchQueue, 3000);
+        fetchQueue();
+    </script>
+</body>
+</html>

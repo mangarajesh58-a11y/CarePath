@@ -588,7 +588,11 @@ CarePath Team
                     return True
         except Exception as resend_err:
             logging.warning("Resend HTTPS API delivery failed: %s", resend_err)
-            delivery_errors.append(f"Resend API: {resend_err}")
+            err_msg = str(resend_err)
+            if "403" in err_msg:
+                delivery_errors.append("Resend API: Domain not verified (free tier can only send to account owner mangarajesh58@gmail.com). Verify your domain at resend.com or use Google Apps Script Webhook.")
+            else:
+                delivery_errors.append(f"Resend API: {resend_err}")
 
     # --- 4. Direct Gmail SMTP (Ports 465 SSL & 587 TLS) ---
     sender_email = (os.getenv("SMTP_EMAIL") or "mangarajesh58@gmail.com").strip()
@@ -921,6 +925,21 @@ def run_database_migration():
 
         "status":
             "VARCHAR(50) DEFAULT 'waiting'",
+
+        "called_at":
+            "DATETIME NULL",
+
+        "completed_at":
+            "DATETIME NULL",
+
+        "diagnosis":
+            "VARCHAR(500) NULL",
+
+        "prescription":
+            "TEXT NULL",
+
+        "notes":
+            "TEXT NULL",
 
         "created_at":
             "DATETIME NULL",
@@ -1894,6 +1913,19 @@ def token_to_dict(token):
             if token.created_at
             else None
         ),
+        "called_at": (
+            token.called_at.isoformat()
+            if getattr(token, "called_at", None)
+            else None
+        ),
+        "completed_at": (
+            token.completed_at.isoformat()
+            if getattr(token, "completed_at", None)
+            else None
+        ),
+        "diagnosis": getattr(token, "diagnosis", None),
+        "prescription": getattr(token, "prescription", None),
+        "notes": getattr(token, "notes", None),
     }
 
 
@@ -4235,10 +4267,14 @@ def get_patient_token_history(
         .all()
     )
 
-    return [
-        token_to_dict(token)
-        for token in tokens
-    ]
+    results = []
+    for token in tokens:
+        d = token_to_dict(token)
+        if token.status in ("waiting", "serving"):
+            d.update(get_queue_status_for_token(db, token))
+        results.append(d)
+
+    return results
 
 
 @app.get("/patient/tokens/{token_id}")
@@ -4692,8 +4728,68 @@ def update_token_number(
         "token": token_to_dict(token),
     }
 
-@app.put("/tokens/{token_id}/complete")
-def complete_token(
+
+class CompleteTokenRequest(BaseModel):
+    diagnosis: Optional[str] = None
+    prescription: Optional[str] = None
+    notes: Optional[str] = None
+
+
+def get_queue_status_for_token(db: Session, token: Token) -> dict:
+    """Calculates real-time live queue ETA and waiting position for an active token."""
+    if not token or not getattr(token, "appointment_date", None) or not getattr(token, "hospital_id", None):
+        return {}
+
+    try:
+        # Base query for today's tokens for this doctor/hospital
+        query = db.query(Token).filter(
+            Token.hospital_id == token.hospital_id,
+            Token.appointment_date == token.appointment_date,
+        )
+        if token.doctor:
+            query = query.filter(Token.doctor == token.doctor)
+        elif token.department:
+            query = query.filter(Token.department == token.department)
+
+        # Token currently in 'serving' status
+        serving = query.filter(Token.status == "serving").order_by(Token.token_number.desc()).first()
+        serving_number = serving.token_number if serving else None
+
+        # Tokens waiting ahead of this token
+        tokens_ahead = query.filter(
+            Token.status == "waiting",
+            Token.token_number < token.token_number
+        ).count()
+
+        # Average consultation: 10 mins
+        wait_mins = tokens_ahead * 10
+        now = datetime.utcnow()
+        est_time_dt = now + timedelta(minutes=wait_mins + (5 if serving_number else 0))
+        # Indian Standard Time (+5:30)
+        ist_time = est_time_dt + timedelta(hours=5, minutes=30)
+        est_time_12h = ist_time.strftime("%I:%M %p").lstrip("0")
+
+        return {
+            "currently_serving_token": serving_number,
+            "tokens_ahead": tokens_ahead,
+            "estimated_wait_minutes": wait_mins,
+            "estimated_time_12h": est_time_12h,
+            "is_your_turn": token.status == "serving",
+        }
+    except Exception as err:
+        import logging
+        logging.warning("Error calculating queue status: %s", err)
+        return {
+            "currently_serving_token": None,
+            "tokens_ahead": 0,
+            "estimated_wait_minutes": 0,
+            "estimated_time_12h": None,
+            "is_your_turn": token.status == "serving",
+        }
+
+
+@app.put("/tokens/{token_id}/call")
+def call_token(
     token_id: int,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
@@ -4713,7 +4809,111 @@ def complete_token(
             detail="Token not found",
         )
 
+    token.status = "serving"
+    token.called_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(token)
+
+    return {
+        "success": True,
+        "message": f"Token #{token.token_number} called into consultation",
+        "token": token_to_dict(token),
+    }
+
+
+@app.get("/tokens/{token_id}/live-status")
+def get_token_live_status(
+    token_id: int,
+    db: Session = Depends(get_db),
+):
+    token = db.query(Token).filter(Token.id == token_id).first()
+    if not token:
+        raise HTTPException(status_code=404, detail="Token not found")
+
+    d = token_to_dict(token)
+    if token.status in ("waiting", "serving"):
+        d.update(get_queue_status_for_token(db, token))
+    return d
+
+
+@app.get("/hospitals/{hospital_id}/live-queue")
+def get_hospital_live_queue(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+):
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+
+    # Local today's date in IST (+5:30)
+    today = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+
+    today_tokens = (
+        db.query(Token)
+        .filter(
+            Token.hospital_id == hospital_id,
+            Token.appointment_date == today,
+        )
+        .order_by(Token.token_number.asc())
+        .all()
+    )
+
+    serving_tokens = [
+        token_to_dict(t) for t in today_tokens if t.status == "serving"
+    ]
+    waiting_tokens = [
+        token_to_dict(t) for t in today_tokens if t.status == "waiting"
+    ]
+    completed_count = sum(1 for t in today_tokens if t.status == "completed")
+
+    return {
+        "success": True,
+        "hospital_id": hospital.id,
+        "hospital_name": hospital.name,
+        "hospital_city": hospital.city,
+        "appointment_date": str(today),
+        "stats": {
+            "total_today": len(today_tokens),
+            "completed": completed_count,
+            "serving": len(serving_tokens),
+            "waiting": len(waiting_tokens),
+        },
+        "currently_serving": serving_tokens,
+        "upcoming_waiting": waiting_tokens[:20],
+    }
+@app.put("/tokens/{token_id}/complete")
+def complete_token(
+    token_id: int,
+    data: Optional[CompleteTokenRequest] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    token = (
+        db.query(Token)
+        .filter(
+            Token.id == token_id,
+            Token.hospital_id == current_user["user_id"],
+        )
+        .first()
+    )
+
+    if not token:
+        raise HTTPException(
+            status_code=404,
+            detail="Token not found",
+        )
+
     token.status = "completed"
+    token.completed_at = datetime.utcnow()
+
+    if data:
+        if data.diagnosis:
+            token.diagnosis = data.diagnosis.strip()
+        if data.prescription:
+            token.prescription = data.prescription.strip()
+        if data.notes:
+            token.notes = data.notes.strip()
 
     db.commit()
     db.refresh(token)

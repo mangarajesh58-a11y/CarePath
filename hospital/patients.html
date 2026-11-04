@@ -231,9 +231,14 @@
             <p>Hospital Token Queue</p>
         </div>
 
-        <button type="button" class="logout" onclick="hospitalLogout()">
-            Logout
-        </button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" onclick="window.open('display.html', '_blank')" style="background: #0284c7; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                📺 Open TV Display
+            </button>
+            <button type="button" class="logout" onclick="hospitalLogout()">
+                Logout
+            </button>
+        </div>
     </header>
 
     <div class="welcome">
@@ -532,14 +537,22 @@ async function loadPatients(silent = false) {
                        </button>`
                     : "";
 
+            const callButtonHtml = status === "waiting"
+                ? `<button type="button"
+                    onclick="callPatientToken(${Number(token.id)})"
+                    style="background:#0284c7;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-right:6px;font-weight:600;">
+                    📢 Call In
+                   </button>`
+                : (status === "serving" ? `<span style="background:#dcfce7;color:#15803d;padding:6px 10px;border-radius:6px;font-weight:700;font-size:12px;margin-right:6px;display:inline-block;">🔔 In Room</span>` : "");
+
             const completeButtonHtml =
                 !["completed", "cancelled"].includes(status)
                     ? `<button type="button"
-                        onclick="completePatientToken(${Number(token.id)})"
-                        style="background:#16a34a;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;">
-                        Complete
+                        onclick="openPrescriptionModal(${Number(token.id)}, '${escapeHTML(token.patient_name || '')}', '${escapeHTML(token.doctor || '')}', ${Number(token.token_number)})"
+                        style="background:#16a34a;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600;">
+                        ✅ Complete
                        </button>`
-                    : "—";
+                    : (token.prescription ? `<button type="button" onclick="viewPrescriptionDetail('${escapeHTML(token.patient_name || '')}', '${escapeHTML(token.diagnosis || '-')}', '${escapeHTML(token.prescription || '')}', '${escapeHTML(token.notes || '')}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">📋 View Rx</button>` : "-");
 
             row.innerHTML = `
                 <td style="padding:12px;"><strong>${escapeHTML(token.token_number)}</strong></td>
@@ -549,7 +562,7 @@ async function loadPatients(silent = false) {
                 <td style="padding:12px;">${getStatusText(token.status)}</td>
                 <td style="padding:12px;white-space:nowrap;">
                     ${editTokenButtonHtml}
-                    ${completeButtonHtml}
+                    ${callButtonHtml}${completeButtonHtml}
                 </td>
             `;
 
@@ -827,5 +840,145 @@ setInterval(function() {
 }, 5000);
 
 </script>
+
+    <!-- Prescription & Completion Modal -->
+    <div id="prescriptionModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+        <div style="background:white; border-radius:16px; max-width:540px; width:100%; padding:28px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); position:relative; max-height:90vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:16px; margin-bottom:20px;">
+                <div>
+                    <h3 style="margin:0; font-size:18px; color:#0f172a;" id="rxModalTitle">Complete Consultation & Prescription</h3>
+                    <p style="margin:4px 0 0; font-size:13px; color:#64748b;" id="rxModalSubtitle">Token #-- | Patient: --</p>
+                </div>
+                <button type="button" onclick="closePrescriptionModal()" style="background:none; border:none; font-size:24px; color:#94a3b8; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <form id="rxForm" onsubmit="submitPrescription(event)">
+                <input type="hidden" id="rxTokenId" value="" />
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:13px; font-weight:600; color:#334155; margin-bottom:6px;">Diagnosis / Primary Finding</label>
+                    <input type="text" id="rxDiagnosis" placeholder="e.g. Acute Viral Pharyngitis, Type 2 Diabetes" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;" />
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block; font-size:13px; font-weight:600; color:#334155; margin-bottom:6px;">Prescription / Medications (Rx)</label>
+                    <textarea id="rxMedicines" rows="4" placeholder="e.g.&#10;1. Tab Paracetamol 650mg - 1 TID x 3 days&#10;2. Tab Cetirizine 10mg - 1 HS x 5 days" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box; font-family:inherit;"></textarea>
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:13px; font-weight:600; color:#334155; margin-bottom:6px;">Doctor's Advice / Follow-up Notes</label>
+                    <textarea id="rxNotes" rows="2" placeholder="e.g. Drink warm fluids, follow up after 5 days if fever persists" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box; font-family:inherit;"></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" onclick="quickCompleteWithoutRx()" style="background:#f1f5f9; color:#475569; border:none; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer;">
+                        Quick Complete (No Rx)
+                    </button>
+                    <button type="submit" id="btnSaveRx" style="background:#16a34a; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:600; cursor:pointer;">
+                        Save & Complete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rx Viewer Modal -->
+    <div id="rxViewModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+        <div style="background:white; border-radius:16px; max-width:500px; width:100%; padding:24px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); position:relative;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;">
+                <h3 style="margin:0; font-size:17px; color:#0f172a;" id="viewRxTitle">Prescription</h3>
+                <button type="button" onclick="closeRxViewModal()" style="background:none; border:none; font-size:24px; color:#94a3b8; cursor:pointer;">&times;</button>
+            </div>
+            <div id="viewRxContent" style="font-size:14px; line-height:1.6; color:#334155;"></div>
+            <div style="text-align:right; margin-top:20px;">
+                <button type="button" onclick="closeRxViewModal()" style="background:#0284c7; color:white; border:none; padding:8px 18px; border-radius:8px; font-weight:600; cursor:pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+    
+<script>
+    async function callPatientToken(tokenId) {
+        const token = getToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API}/tokens/${tokenId}/call`, {
+                method: "PUT",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || "Unable to call token");
+            showToast("Token called! Waiting room display announced.");
+            fetchPatients();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    function openPrescriptionModal(tokenId, patientName, doctorName, tokenNum) {
+        document.getElementById("rxTokenId").value = tokenId;
+        document.getElementById("rxModalTitle").textContent = `Complete Consultation & Prescription`;
+        document.getElementById("rxModalSubtitle").textContent = `Token #${tokenNum} | Patient: ${patientName} | Dr. ${doctorName}`;
+        document.getElementById("rxDiagnosis").value = "";
+        document.getElementById("rxMedicines").value = "";
+        document.getElementById("rxNotes").value = "";
+        const modal = document.getElementById("prescriptionModal");
+        modal.style.display = "flex";
+    }
+
+    function closePrescriptionModal() {
+        document.getElementById("prescriptionModal").style.display = "none";
+    }
+
+    async function quickCompleteWithoutRx() {
+        const tokenId = document.getElementById("rxTokenId").value;
+        closePrescriptionModal();
+        completePatientToken(tokenId);
+    }
+
+    async function submitPrescription(e) {
+        e.preventDefault();
+        const tokenId = document.getElementById("rxTokenId").value;
+        const diagnosis = document.getElementById("rxDiagnosis").value.trim();
+        const prescription = document.getElementById("rxMedicines").value.trim();
+        const notes = document.getElementById("rxNotes").value.trim();
+
+        const token = getToken();
+        if (!token) return;
+
+        const btn = document.getElementById("btnSaveRx");
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+
+        try {
+            const res = await fetch(`${API}/tokens/${tokenId}/complete`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ diagnosis, prescription, notes })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || "Unable to complete token");
+            closePrescriptionModal();
+            showToast("Consultation completed and prescription saved!");
+            fetchPatients();
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Save & Complete";
+        }
+    }
+
+    function viewPrescriptionDetail(patientName, diagnosis, rx, notes) {
+        document.getElementById("viewRxTitle").textContent = `Prescription for ${patientName}`;
+        document.getElementById("viewRxContent").innerHTML = `
+            <div style="margin-bottom:12px;"><strong>Diagnosis:</strong> ${diagnosis || "-"}</div>
+            <div style="margin-bottom:12px;"><strong>Rx / Medications:</strong><pre style="background:#f8fafc; padding:10px; border-radius:6px; font-family:monospace; margin-top:4px; white-space:pre-wrap;">${rx || "None prescribed"}</pre></div>
+            <div><strong>Advice / Follow-up:</strong><p style="margin:4px 0 0; color:#475569;">${notes || "-"}</p></div>
+        `;
+        document.getElementById("rxViewModal").style.display = "flex";
+    }
+
+    function closeRxViewModal() {
+        document.getElementById("rxViewModal").style.display = "none";
+    }
+    </script>
 </body>
 </html>
