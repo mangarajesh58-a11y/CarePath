@@ -346,6 +346,22 @@ ALLOWED_HOSPITAL_PHOTO_TYPES = {
 }
 MAX_HOSPITAL_PHOTO_SIZE = 5 * 1024 * 1024  # 5 MB
 
+# Public doctor photos used on patient browsing cards.
+DOCTOR_PHOTO_DIR = os.path.join(
+    os.path.dirname(__file__),
+    "uploads",
+    "doctor_photos",
+)
+os.makedirs(DOCTOR_PHOTO_DIR, exist_ok=True)
+
+ALLOWED_DOCTOR_PHOTO_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
+MAX_DOCTOR_PHOTO_SIZE = 5 * 1024 * 1024  # 5 MB
+
+
 
 # ============================================================
 # PASSWORD HASHING
@@ -828,6 +844,12 @@ def run_database_migration():
 
         "experience":
             "VARCHAR(100) NULL",
+
+        "image_url":
+            "VARCHAR(500) NULL",
+
+        "photo_base64":
+            "TEXT NULL",
 
         "created_at":
             "DATETIME NULL",
@@ -1683,6 +1705,7 @@ class HospitalDoctorCreate(BaseModel):
     start_time: Optional[str] = None
     end_time: Optional[str] = None
     is_available: bool = True
+    image_url: Optional[str] = None
 
 
 class TokenRequest(BaseModel):
@@ -1802,6 +1825,7 @@ def doctor_to_dict(doctor):
         "department": doctor.department,
         "specialization": doctor.specialization,
         "experience": doctor.experience,
+        "image_url": doctor.image_url,
 
         # Doctor availability details
         "available_days": doctor.available_days,
@@ -5983,3 +6007,119 @@ async def hospital_upload_certificate(
         "message": "Certificate uploaded successfully.",
         "hospital": hospital_to_dict(hospital),
     }
+
+
+# ============================================================
+# DOCTOR PHOTO UPLOAD & SERVING
+# ============================================================
+
+@app.post("/doctors/{doctor_id}/photo")
+async def upload_doctor_photo(
+    doctor_id: int,
+    photo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Upload a doctor photo for patient browsing cards."""
+    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    if doctor.hospital_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot upload a photo for another hospital's doctor",
+        )
+
+    content_type = (photo.content_type or "").lower()
+    if content_type not in ALLOWED_DOCTOR_PHOTO_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Please upload a JPG, PNG, or WEBP image.",
+        )
+
+    content = await photo.read(MAX_DOCTOR_PHOTO_SIZE + 1)
+    if not content:
+        raise HTTPException(status_code=400, detail="The photo is empty.")
+    if len(content) > MAX_DOCTOR_PHOTO_SIZE:
+        raise HTTPException(status_code=413, detail="Photo must be 5 MB or smaller.")
+
+    extension = ALLOWED_DOCTOR_PHOTO_TYPES[content_type]
+    filename = f"doctor_{doctor_id}_{uuid.uuid4().hex}{extension}"
+    destination = os.path.join(DOCTOR_PHOTO_DIR, filename)
+
+    with open(destination, "wb") as output_file:
+        output_file.write(content)
+
+    old_url = doctor.image_url
+    doctor.image_url = f"/doctor-photos/{filename}"
+    doctor.photo_base64 = base64.b64encode(content).decode("utf-8")
+    db.commit()
+    db.refresh(doctor)
+
+    # Clean up old file if exists
+    if old_url and old_url.startswith("/doctor-photos/"):
+        old_name = os.path.basename(old_url)
+        old_path = os.path.join(DOCTOR_PHOTO_DIR, old_name)
+        if os.path.isfile(old_path) and old_name != filename:
+            try:
+                os.remove(old_path)
+            except OSError:
+                pass
+
+    return {
+        "success": True,
+        "message": "Doctor photo uploaded successfully.",
+        "doctor": doctor_to_dict(doctor),
+    }
+
+
+@app.get("/doctor-photos/{filename}")
+def get_doctor_photo(filename: str, db: Session = Depends(get_db)):
+    """Serve doctor photo with persistent database fallback and SVG medical avatar."""
+    safe_name = os.path.basename(filename)
+    file_path = os.path.join(DOCTOR_PHOTO_DIR, safe_name)
+
+    # 1. Check local disk
+    if os.path.isfile(file_path):
+        media_type = mimetypes.guess_type(file_path)[0] or "image/jpeg"
+        return FileResponse(file_path, media_type=media_type)
+
+    # 2. Check persistent database photo_base64
+    doctor = db.query(Doctor).filter(Doctor.image_url.like(f"%{safe_name}")).first()
+    if not doctor and safe_name.startswith("doctor_"):
+        parts = safe_name.split("_")
+        if len(parts) >= 2 and parts[1].isdigit():
+            doctor = db.query(Doctor).filter(Doctor.id == int(parts[1])).first()
+
+    if doctor and doctor.photo_base64:
+        try:
+            photo_bytes = base64.b64decode(doctor.photo_base64)
+            try:
+                with open(file_path, "wb") as f:
+                    f.write(photo_bytes)
+            except Exception:
+                pass
+            media_type = mimetypes.guess_type(safe_name)[0] or "image/jpeg"
+            return Response(content=photo_bytes, media_type=media_type)
+        except Exception:
+            pass
+
+    # 3. Clean SVG Doctor Avatar Placeholder (Never 404s!)
+    d_name = (doctor.name if doctor else "Doctor").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <defs>
+    <linearGradient id="docBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0f2fe"/>
+      <stop offset="100%" stop-color="#bae6fd"/>
+    </linearGradient>
+  </defs>
+  <circle cx="150" cy="150" r="145" fill="url(#docBg)" stroke="#0284c7" stroke-width="6"/>
+  <g fill="#0284c7">
+    <circle cx="150" cy="110" r="45"/>
+    <path d="M75 235 c0 -45 35 -75 75 -75 s75 30 75 75 z"/>
+  </g>
+  <circle cx="150" cy="150" r="14" fill="#ffffff"/>
+  <path d="M145 150 h10 M150 145 v10" stroke="#0284c7" stroke-width="3" stroke-linecap="round"/>
+</svg>"""
+    return Response(content=svg, media_type="image/svg+xml")

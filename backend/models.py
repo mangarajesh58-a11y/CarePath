@@ -104,6 +104,8 @@ class Doctor(Base):
     department = Column(String(255), nullable=False)
     specialization = Column(String(255), nullable=True)
     experience = Column(String(100), nullable=True)
+    image_url = Column(String(500), nullable=True)
+    photo_base64 = Column(Text, nullable=True)
 
     # Legacy doctor availability fields
     # Retained for backward compatibility.

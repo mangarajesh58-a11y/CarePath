@@ -714,7 +714,7 @@
         >
     </div>
 
-    <div class="form-group">
+        <div class="form-group">
         <label for="doctorExperience">Experience</label>
         <input
             type="text"
@@ -722,6 +722,20 @@
             placeholder="Example: 8 years"
             autocomplete="off"
         >
+    </div>
+
+    <div class="form-group">
+        <label for="doctorPhotoFile">Doctor Photo (Displayed on Patient App)</label>
+        <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px;">
+            <div id="doctorPhotoPreviewContainer" style="width: 72px; height: 72px; border-radius: 50%; overflow: hidden; background: #e0f2fe; border: 2.5px solid #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);">
+                <img id="doctorPhotoPreviewImg" src="" alt="Doctor Preview" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                <span id="doctorPhotoPreviewEmoji" style="font-size: 32px;">👨‍⚕️</span>
+            </div>
+            <div style="flex: 1;">
+                <input type="file" id="doctorPhotoFile" accept="image/jpeg,image/png,image/webp" onchange="previewDoctorPhoto(event)">
+                <small style="color: #64748b; display: block; margin-top: 4px;">Upload doctor profile picture (JPG, PNG, or WEBP, max 5 MB).</small>
+            </div>
+        </div>
     </div>
 
     <div class="form-group">
@@ -821,6 +835,24 @@
 
 <script src="script.js"></script>
 
+
+
+<script>
+function previewDoctorPhoto(event) {
+    const file = event.target.files[0];
+    const img = document.getElementById("doctorPhotoPreviewImg");
+    const emoji = document.getElementById("doctorPhotoPreviewEmoji");
+    if (file && img && emoji) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            img.style.display = "block";
+            emoji.style.display = "none";
+        };
+        reader.readAsDataURL(file);
+    }
+}
+</script>
 
 </body>
 

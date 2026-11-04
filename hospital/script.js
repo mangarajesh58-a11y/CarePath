@@ -2537,14 +2537,26 @@ async function loadDoctors() {
                         : "doctor-unavailable";
 
 
-                card.innerHTML = `
+                const docPhotoUrl = doctor.image_url
+                    ? (doctor.image_url.startsWith("http") ? doctor.image_url : `${API}${doctor.image_url.startsWith("/") ? "" : "/"}${doctor.image_url}`)
+                    : "";
 
-                    <h3>
-                        ${escapeHtml(
-                            doctor.name ||
-                            "Doctor"
-                        )}
-                    </h3>
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+                        <div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; background: #e0f2fe; border: 2.5px solid #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 3px 8px rgba(2, 132, 199, 0.15);">
+                            ${docPhotoUrl 
+                                ? `<img src="${docPhotoUrl}" alt="${escapeHtml(doctor.name || "Doctor")}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><span style="display: none; font-size: 28px;">👨‍⚕️</span>`
+                                : `<span style="font-size: 28px;">👨‍⚕️</span>`}
+                        </div>
+                        <div>
+                            <h3 style="margin: 0; font-size: 18px; color: #0f172a;">
+                                ${escapeHtml(doctor.name || "Doctor")}
+                            </h3>
+                            <span style="font-size: 13px; color: #64748b; font-weight: 500;">
+                                ${escapeHtml(doctor.specialization || doctor.department || "General")}
+                            </span>
+                        </div>
+                    </div>
 
                     <p>
                         <strong>
@@ -2964,6 +2976,32 @@ async function addDoctor() {
         }
 
 
+        // Upload doctor photo if selected
+        const newDoctor = data.doctor;
+        const photoInput = document.getElementById("doctorPhotoFile");
+        if (newDoctor && newDoctor.id && photoInput && photoInput.files && photoInput.files[0]) {
+            try {
+                const photoData = new FormData();
+                photoData.append("photo", photoInput.files[0]);
+                const photoToken = localStorage.getItem("hospitalToken");
+                await fetch(`${API}/doctors/${newDoctor.id}/photo`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${photoToken}`
+                    },
+                    body: photoData
+                });
+            } catch (pErr) {
+                console.warn("Doctor photo upload error:", pErr);
+            }
+        }
+
+        if (photoInput) photoInput.value = "";
+        const prevImg = document.getElementById("doctorPhotoPreviewImg");
+        const prevEmoji = document.getElementById("doctorPhotoPreviewEmoji");
+        if (prevImg) prevImg.style.display = "none";
+        if (prevEmoji) prevEmoji.style.display = "block";
+
         alert(
             "Doctor added successfully."
         );
@@ -3148,3 +3186,34 @@ document.addEventListener(
 
     }
 );
+
+// =========================================================
+// UPLOAD DOCTOR PHOTO FROM CARD
+// =========================================================
+async function uploadDoctorPhotoFromCard(event, doctorId) {
+    const file = event.target.files[0];
+    if (!file || !doctorId) return;
+
+    const formData = new FormData();
+    formData.append("photo", file);
+
+    try {
+        const token = localStorage.getItem("hospitalToken");
+        const res = await fetch(`${API}/doctors/${doctorId}/photo`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: formData
+        });
+        const data = await readJsonResponse(res);
+        if (!res.ok) {
+            throw new Error(getErrorMessage(data, "Failed to upload photo"));
+        }
+        alert("Doctor photo updated successfully!");
+        loadDoctors();
+    } catch (err) {
+        alert(err.message || "Unable to upload doctor photo.");
+    }
+}
+window.uploadDoctorPhotoFromCard = uploadDoctorPhotoFromCard;

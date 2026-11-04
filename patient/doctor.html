@@ -722,16 +722,26 @@ filteredDoctors.forEach(
                             "doctor-card";
 
 
-                        const icon =
-                            document.createElement("div");
+                        const avatarContainer = document.createElement("div");
+                        avatarContainer.className = "doctor-avatar-container";
+                        avatarContainer.style.cssText = "width: 82px; height: 82px; border-radius: 50%; overflow: hidden; margin: 0 auto 16px; border: 3px solid #0284c7; background: #e0f2fe; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2); flex-shrink: 0;";
 
-
-                        icon.className =
-                            "doctor-icon";
-
-
-                        icon.textContent =
-                            "👨‍⚕️";
+                        if (doctor.image_url) {
+                            const pUrl = doctor.image_url.startsWith("http")
+                                ? doctor.image_url
+                                : `${API}${doctor.image_url.startsWith("/") ? "" : "/"}${doctor.image_url}`;
+                            const img = document.createElement("img");
+                            img.src = pUrl;
+                            img.alt = doctor.name || "Doctor";
+                            img.style.cssText = "width: 100%; height: 100%; object-fit: cover; display: block;";
+                            img.onerror = function() {
+                                img.style.display = "none";
+                                avatarContainer.innerHTML = '<span style="font-size: 38px;">👨‍⚕️</span>';
+                            };
+                            avatarContainer.appendChild(img);
+                        } else {
+                            avatarContainer.innerHTML = '<span style="font-size: 38px;">👨‍⚕️</span>';
+                        }
 
 
                         const name =
@@ -892,7 +902,7 @@ if (!isDoctorAvailable) {
                             }
                         );
 
-                        card.appendChild(icon);
+                        card.appendChild(avatarContainer);
                         card.appendChild(name);
                         card.appendChild(department);
 card.appendChild(specialization);
@@ -950,6 +960,11 @@ card.appendChild(doctorStatus);
             localStorage.setItem(
                 "selectedDoctor",
                 doctor.name || ""
+            );
+
+            localStorage.setItem(
+                "selectedDoctorPhoto",
+                doctor.image_url || ""
             );
 
 

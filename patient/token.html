@@ -180,9 +180,12 @@
                 <span class="label">Department</span>
                 <span class="value" id="department">Loading...</span>
             </div>
-            <div class="row">
+            <div class="row" style="align-items: center;">
                 <span class="label">Doctor</span>
-                <span class="value" id="doctor">Loading...</span>
+                <span class="value" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <img id="doctorThumbnail" src="" alt="Doctor" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; display: none; border: 1.5px solid #0284c7;">
+                    <span id="doctor">Loading...</span>
+                </span>
             </div>
         </div>
 
@@ -330,6 +333,14 @@ function displayBooking() {
     byId("hospitalName").textContent = getSelectedHospitalName() || "Not selected";
     byId("department").textContent = getSelectedDepartment() || "Not selected";
     byId("doctor").textContent = getSelectedDoctor() || "Not selected";
+
+    const docPhoto = stored("selectedDoctorPhoto");
+    const thumb = byId("doctorThumbnail");
+    if (docPhoto && thumb) {
+        thumb.src = docPhoto.startsWith("http") ? docPhoto : `${API}${docPhoto.startsWith("/") ? "" : "/"}${docPhoto}`;
+        thumb.style.display = "inline-block";
+        thumb.onerror = () => { thumb.style.display = "none"; };
+    }
     byId("tokenFee").textContent = money(hospitalFee);
     byId("platformFee").textContent = money(PLATFORM_FEE);
     byId("totalAmount").textContent = money(hospitalFee + PLATFORM_FEE);
