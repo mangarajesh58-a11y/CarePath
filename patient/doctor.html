@@ -548,6 +548,22 @@ let allDoctors = [];
            LOAD DOCTORS
         ========================================== */
 
+                function formatTime12Hour(timeStr) {
+            if (!timeStr || typeof timeStr !== "string" || !timeStr.includes(":")) return timeStr || "";
+            const parts = timeStr.trim().split(":");
+            let hours = parseInt(parts[0], 10);
+            const minutes = parts[1].slice(0, 2);
+            if (isNaN(hours)) return timeStr;
+            const period = hours >= 12 ? "PM" : "AM";
+            hours = hours % 12 || 12;
+            return `${hours}:${minutes} ${period}`;
+        }
+
+        function formatConsultationHours(start, end) {
+            if (!start || !end) return "Not specified";
+            return `${formatTime12Hour(start)} - ${formatTime12Hour(end)}`;
+        }
+
         async function loadDoctors() {
 
 
@@ -844,9 +860,7 @@ consultationHours.innerHTML = "<strong>Consultation Hours:</strong> ";
 
 consultationHours.appendChild(
     document.createTextNode(
-        doctor.start_time && doctor.end_time
-            ? `${doctor.start_time} - ${doctor.end_time}`
-            : "Not specified"
+        doctor.consultation_hours_12h || formatConsultationHours(doctor.start_time, doctor.end_time)
     )
 );
 
@@ -965,6 +979,11 @@ card.appendChild(doctorStatus);
             localStorage.setItem(
                 "selectedDoctorPhoto",
                 doctor.image_url || ""
+            );
+
+            localStorage.setItem(
+                "selectedDoctorHours",
+                doctor.consultation_hours_12h || formatConsultationHours(doctor.start_time, doctor.end_time)
             );
 
 

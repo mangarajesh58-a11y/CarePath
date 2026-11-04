@@ -540,19 +540,15 @@
         const statusClass = t.status === "completed" ? "status-completed" : (t.status === "cancelled" ? "status-cancelled" : "status-waiting");
         const statusText = t.status === "completed" ? "✓ Completed" : (t.status === "cancelled" ? "✖ Cancelled" : "⏳ Waiting");
         
-        let formattedDate = t.appointment_date || "—";
-        if (t.appointment_date) {
-          try {
-            const d = new Date(t.appointment_date + "T00:00:00");
-            formattedDate = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-          } catch(e) {}
-        }
+        let formattedDate = formatApptDate(t.appointment_date);
 
-        let bookedOn = "—";
+        let bookedOn = "-";
         if (t.created_at) {
           try {
             const cd = new Date(t.created_at);
-            bookedOn = cd.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " at " + cd.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+            bookedOn = cd.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " at " + cd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+          } catch(e) {}
+        }
           } catch(e) {}
         }
 
@@ -629,7 +625,7 @@
           <div class="receipt-row"><span style="color:#64748b;">Hospital</span><strong>${t.hospital || "—"}</strong></div>
           <div class="receipt-row"><span style="color:#64748b;">Department</span><strong>${t.department || "—"}</strong></div>
           <div class="receipt-row"><span style="color:#64748b;">Doctor</span><strong>${t.doctor || "—"}</strong></div>
-          <div class="receipt-row"><span style="color:#64748b;">Appointment Date</span><strong>${t.appointment_date || "—"}</strong></div>
+          <div class="receipt-row"><span style="color:#64748b;">Appointment Date</span><strong>${formatApptDate(t.appointment_date)}</strong></div>
           <div class="receipt-row"><span style="color:#64748b;">Token Status</span><strong>${t.status || "Waiting"}</strong></div>
           <div class="receipt-row"><span style="color:#64748b;">Hospital Token Fee</span><span>₹${(t.token_fee || 0).toFixed(2)}</span></div>
           <div class="receipt-row"><span style="color:#64748b;">Platform Convenience Fee</span><span>₹${(t.platform_fee || 0).toFixed(2)}</span></div>

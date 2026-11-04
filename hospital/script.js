@@ -1,3 +1,14 @@
+function formatTime12Hour(timeStr) {
+    if (!timeStr || typeof timeStr !== "string" || !timeStr.includes(":")) return timeStr || "";
+    const parts = timeStr.trim().split(":");
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1].slice(0, 2);
+    if (isNaN(hours)) return timeStr;
+    const period = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${period}`;
+}
+
 // =========================================================
 // CarePath - HOSPITAL APP SCRIPT
 // =========================================================
@@ -2516,7 +2527,7 @@ async function loadDoctors() {
                 const consultationHours =
                     startTime &&
                     endTime
-                        ? `${startTime} - ${endTime}`
+                        ? `${formatTime12Hour(startTime)} - ${formatTime12Hour(endTime)}`
                         : "Not specified";
 
 

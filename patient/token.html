@@ -187,6 +187,10 @@
                     <span id="doctor">Loading...</span>
                 </span>
             </div>
+            <div class="row">
+                <span class="label">Consultation Hours</span>
+                <span class="value" id="consultationHours">-</span>
+            </div>
         </div>
 
         <div class="card">
@@ -341,6 +345,11 @@ function displayBooking() {
         thumb.style.display = "inline-block";
         thumb.onerror = () => { thumb.style.display = "none"; };
     }
+    const docHours = stored("selectedDoctorHours");
+    if (byId("consultationHours")) {
+        byId("consultationHours").textContent = docHours || "Not specified";
+    }
+
     byId("tokenFee").textContent = money(hospitalFee);
     byId("platformFee").textContent = money(PLATFORM_FEE);
     byId("totalAmount").textContent = money(hospitalFee + PLATFORM_FEE);
@@ -353,6 +362,9 @@ function displayBooking() {
     const savedDate = stored("selectedAppointmentDate", "appointmentDate");
     if (savedDate && savedDate >= localToday) {
         byId("appointmentDate").value = savedDate;
+    } else {
+        byId("appointmentDate").value = localToday;
+        localStorage.setItem("selectedAppointmentDate", localToday);
     }
 
     refreshButton();
@@ -544,6 +556,18 @@ async function verifyPaymentAndCreateToken(orderId) {
     }
 }
 
+function formatDatePretty(dateStr) {
+    if (!dateStr) return "Today";
+    try {
+        const parts = dateStr.split("-");
+        if (parts.length === 3) {
+            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+        }
+    } catch(e) {}
+    return dateStr;
+}
+
 function displayReceipt(token, orderId, paymentId, appointmentDate) {
     byId("bookingSection").style.display = "none";
     byId("receiptSection").style.display = "block";
@@ -556,9 +580,9 @@ function displayReceipt(token, orderId, paymentId, appointmentDate) {
     const total = Number(token.total_amount ?? fee + platformFee);
 
     byId("tokenNumber").textContent = String(token.token_number);
-    byId("resultPayment").textContent = "Paid — verified by CarePath";
+        byId("resultPayment").textContent = "Paid • Verified by CarePath";
     byId("resultStatus").textContent = token.status || "waiting";
-    byId("resultDate").textContent = appointmentDate || "Not provided";
+    byId("resultDate").textContent = formatDatePretty(appointmentDate);
     byId("resultHospital").textContent = hospital;
     byId("resultDepartment").textContent = department;
     byId("resultDoctor").textContent = doctor;
