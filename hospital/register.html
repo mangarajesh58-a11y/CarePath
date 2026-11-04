@@ -890,14 +890,11 @@ async function handleSendHospitalOtp() {
         btnSend.textContent = "Resend OTP";
         btnSend.disabled = false;
 
-        if (data.otp) {
-            document.getElementById("regOtpInput").value = data.otp;
-            otpFeedback.style.display = "block";
-            otpFeedback.style.color = "#166534";
-            otpFeedback.textContent = `Verification code: ${data.otp}`;
-        } else {
-            showMessage("Verification code sent to hospital email!", "success");
-        }
+        document.getElementById("regOtpInput").value = "";
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#0369a1";
+        otpFeedback.textContent = `✓ Verification code sent to ${email}. Please check your email inbox and spam folder.`;
+        showMessage("Verification code sent to your hospital email! Please check your inbox.", "success");
     } catch (err) {
         console.error("OTP send error:", err);
         showMessage(err.message || "Failed to send verification code.", "error");

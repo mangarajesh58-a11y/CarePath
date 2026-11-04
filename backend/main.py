@@ -445,8 +445,10 @@ app.add_middleware(
 
 def send_otp_email(receiver_email: str, otp: str, purpose: str = "registration"):
     import os
-    import smtplib
+    import json
+    import urllib.request
     import logging
+    import smtplib
     from email.message import EmailMessage
 
     subject = "CarePath Password Reset OTP" if purpose == "reset" else "CarePath Registration OTP"
@@ -462,16 +464,92 @@ If you did not request this code, please ignore this email.
 CarePath Team
 """
 
-    # --- 1. Cloud-Reliable Method: Resend HTTPS API (Port 443, NEVER blocked by Render) ---
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc;">
+  <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <h1 style="color: #0284c7; font-size: 24px; margin: 0;">🏥 CarePath</h1>
+      <p style="color: #64748b; font-size: 13px; margin: 4px 0 0;">{'Password Reset Request' if purpose == 'reset' else 'Hospital & Patient Registration'}</p>
+    </div>
+    <p style="color: #334155; font-size: 15px; line-height: 1.5;">Hello,</p>
+    <p style="color: #334155; font-size: 15px; line-height: 1.5;">{headline}</p>
+    <div style="background: #f0f9ff; border: 2px dashed #0284c7; border-radius: 10px; text-align: center; padding: 18px; margin: 24px 0;">
+      <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #0284c7; font-family: monospace;">{otp}</span>
+    </div>
+    <p style="color: #64748b; font-size: 13px; line-height: 1.5;">This verification code will expire in <strong>10 minutes</strong>. Do not share this code with anyone.</p>
+    <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;">
+    <p style="color: #94a3b8; font-size: 12px; margin: 0; text-align: center;">© CarePath Healthcare Technologies. If you did not request this email, please ignore it.</p>
+  </div>
+</body>
+</html>"""
+
+    delivery_errors = []
+
+    # --- 1. Cloud-Reliable Method: Google Apps Script Webhook (Port 443, Zero 3rd party accounts) ---
+    webhook_url = os.getenv("GMAIL_WEBHOOK_URL") or os.getenv("EMAIL_WEBHOOK_URL")
+    if webhook_url:
+        try:
+            payload = json.dumps({
+                "to": receiver_email,
+                "subject": subject,
+                "body": body_text,
+                "html": html_content,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                webhook_url,
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                if resp.status in (200, 201, 302):
+                    logging.info("OTP email delivered successfully via Gmail Webhook to %s", receiver_email)
+                    return True
+        except Exception as webhook_err:
+            logging.warning("Gmail Webhook delivery failed: %s", webhook_err)
+            delivery_errors.append(f"Gmail Webhook: {webhook_err}")
+
+    # --- 2. Brevo (Sendinblue) HTTPS API (Port 443, 300 free emails/day) ---
+    brevo_key = os.getenv("BREVO_API_KEY") or os.getenv("SENDINBLUE_API_KEY")
+    if brevo_key:
+        try:
+            payload = json.dumps({
+                "sender": {
+                    "name": "CarePath",
+                    "email": os.getenv("SMTP_EMAIL", "mangarajesh58@gmail.com"),
+                },
+                "to": [{"email": receiver_email}],
+                "subject": subject,
+                "htmlContent": html_content,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "https://api.brevo.com/v3/smtp/email",
+                data=payload,
+                headers={
+                    "api-key": brevo_key,
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 201, 202):
+                    logging.info("OTP email delivered successfully via Brevo HTTPS API to %s", receiver_email)
+                    return True
+        except Exception as brevo_err:
+            logging.warning("Brevo HTTPS API delivery failed: %s", brevo_err)
+            delivery_errors.append(f"Brevo API: {brevo_err}")
+
+    # --- 3. Resend HTTPS API (Port 443) ---
     resend_api_key = os.getenv("RESEND_API_KEY")
     if resend_api_key:
         try:
-            import json
-            import urllib.request
             payload = json.dumps({
                 "from": os.getenv("RESEND_FROM", "CarePath <onboarding@resend.dev>"),
                 "to": [receiver_email],
                 "subject": subject,
+                "html": html_content,
                 "text": body_text,
             }).encode("utf-8")
             req = urllib.request.Request(
@@ -488,45 +566,47 @@ CarePath Team
                     logging.info("OTP email delivered successfully via Resend HTTPS API to %s", receiver_email)
                     return True
         except Exception as resend_err:
-            logging.warning("Resend HTTPS API failed: %s. Trying direct SMTP...", resend_err)
+            logging.warning("Resend HTTPS API delivery failed: %s", resend_err)
+            delivery_errors.append(f"Resend API: {resend_err}")
 
-    # --- 2. Direct Gmail SMTP (Works on local machine & unblocked hosts) ---
-    sender_email = os.getenv("SMTP_EMAIL")
-    app_password = os.getenv("SMTP_APP_PASSWORD")
+    # --- 4. Direct Gmail SMTP (Ports 465 SSL & 587 TLS) ---
+    sender_email = os.getenv("SMTP_EMAIL", "mangarajesh58@gmail.com")
+    app_password = os.getenv("SMTP_APP_PASSWORD", "kmshkljdewqfwpxq")
 
-    if not sender_email or not app_password:
-        logging.warning("SMTP configuration check: SMTP_EMAIL or SMTP_APP_PASSWORD missing.")
-        raise RuntimeError("SMTP_EMAIL or SMTP_APP_PASSWORD is missing.")
+    if sender_email and app_password:
+        message = EmailMessage()
+        message["Subject"] = subject
+        message["From"] = sender_email
+        message["To"] = receiver_email
+        message.set_content(body_text)
+        message.add_alternative(html_content, subtype="html")
 
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = sender_email
-    message["To"] = receiver_email
-    message.set_content(body_text)
+        # Try port 465 (SSL)
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=8) as server:
+                server.login(sender_email, app_password)
+                server.send_message(message)
+                logging.info("OTP email delivered successfully via Gmail SMTP (SSL 465) to %s", receiver_email)
+                return True
+        except Exception as e_ssl:
+            delivery_errors.append(f"Gmail SMTP 465: {e_ssl}")
 
-    # Try port 465 (SSL)
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=8) as server:
-            server.login(sender_email, app_password)
-            server.send_message(message)
-            logging.info("OTP email delivered successfully via Gmail SMTP (SSL 465) to %s", receiver_email)
-            return True
-    except Exception as e_ssl:
-        logging.warning("SMTP_SSL port 465 failed: %s. Trying port 587...", e_ssl)
+        # Try port 587 (TLS)
+        try:
+            with smtplib.SMTP("smtp.gmail.com", 587, timeout=8) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(sender_email, app_password)
+                server.send_message(message)
+                logging.info("OTP email delivered successfully via Gmail SMTP (TLS 587) to %s", receiver_email)
+                return True
+        except Exception as e_tls:
+            delivery_errors.append(f"Gmail SMTP 587: {e_tls}")
 
-    # Try port 587 (TLS)
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=8) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(sender_email, app_password)
-            server.send_message(message)
-            logging.info("OTP email delivered successfully via Gmail SMTP (TLS 587) to %s", receiver_email)
-            return True
-    except Exception as exc:
-        logging.warning("Gmail SMTP email sending failed: %s", exc)
-        raise RuntimeError(f"Unable to send OTP email: {exc}") from exc
+    err_summary = "; ".join(delivery_errors) if delivery_errors else "No email credentials configured."
+    logging.error("All email delivery methods failed: %s", err_summary)
+    raise RuntimeError(f"Unable to send OTP email: {err_summary}")
 
 # ============================================================
 # DATABASE SESSION
@@ -1220,25 +1300,21 @@ def request_registration_otp(
         db.add(otp_record)
         db.commit()
 
-        email_sent = True
         try:
             send_otp_email(email, otp)
         except Exception as exc:
             import logging
-            logging.warning("Registration OTP email sending failed: %s. Generated OTP for %s: %s", exc, email, otp)
-            email_sent = False
+            logging.error("Registration OTP email sending failed to %s: %s", email, exc)
+            logging.info("Registration OTP for %s is: %s", email, otp)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Unable to send verification email: {exc}. Please check your email address or contact support.",
+            )
 
-        if email_sent:
-            return {
-                "success": True,
-                "message": "OTP sent to your email address",
-            }
-        else:
-            return {
-                "success": True,
-                "message": f"Verification code generated: {otp}",
-                "otp": otp,
-            }
+        return {
+            "success": True,
+            "message": "Verification code has been sent to your email address. Please check your inbox and spam folder.",
+        }
 
     except Exception as exc:
         import logging
@@ -1394,25 +1470,21 @@ def request_forgot_password_otp(
         db.add(otp_record)
         db.commit()
 
-        email_sent = True
         try:
             send_otp_email(email, otp, purpose="reset")
         except Exception as exc:
             import logging
-            logging.warning("Gmail SMTP delivery failed (Render outbound SMTP blocked): %s. Generated OTP for %s: %s", exc, email, otp)
-            email_sent = False
+            logging.error("Password reset OTP email sending failed to %s: %s", email, exc)
+            logging.info("Reset OTP for %s is: %s", email, otp)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Unable to send password reset email: {exc}. Please verify server email configuration.",
+            )
 
-        if email_sent:
-            return {
-                "success": True,
-                "message": "Password reset OTP sent to your email address",
-            }
-        else:
-            return {
-                "success": True,
-                "message": f"Verification code generated: {otp}",
-                "otp": otp,
-            }
+        return {
+            "success": True,
+            "message": "Password reset code has been sent to your email address. Please check your inbox and spam folder.",
+        }
 
     except Exception as exc:
         import logging
