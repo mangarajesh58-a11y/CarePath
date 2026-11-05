@@ -7153,7 +7153,7 @@ async def create_hospital_ad_order(
             "customer_phone": clean_cust_phone,
         },
         "order_meta": {
-            "return_url": "https://carepath-hospital-ten.vercel.app/dashboard.html?ad_order_id={order_id}"
+            "return_url": "https://carepath-hospital-ten.vercel.app/ads.html?ad_order_id={order_id}"
         },
         "order_note": f"CarePath 30-Day Ad Campaign for {hospital.name[:40]}",
     }
