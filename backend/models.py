@@ -3,6 +3,7 @@ from datetime import datetime, date
 from sqlalchemy import (
     Column,
     Integer,
+    Float,
     String,
     Text,
     Boolean,
@@ -299,4 +300,24 @@ class HospitalClosure(Base):
     closure_date = Column(Date, nullable=False, index=True)
     reason = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class HospitalAdvertisement(Base):
+    __tablename__ = "hospital_advertisements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hospital_id = Column(Integer, nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(String(1000), nullable=True)
+    image_url = Column(String(500), nullable=True)
+    image_base64 = Column(Text, nullable=True)
+    target_phone = Column(String(50), nullable=True)
+    target_link = Column(String(500), nullable=True)
+    amount_paid = Column(Float, default=999.0)
+    payment_status = Column(String(50), default="pending", index=True)  # pending, paid, expired
+    cashfree_order_id = Column(String(255), unique=True, index=True, nullable=True)
+    cashfree_payment_id = Column(String(255), nullable=True)
+    is_active = Column(Boolean, default=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    activated_at = Column(DateTime, nullable=True)
+    expires_at = Column(DateTime, nullable=True, index=True)
 

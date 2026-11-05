@@ -18,6 +18,7 @@
   ];
 
   let hospitalRecords = [];
+  let activeSponsoredAds = [];
   let activeFilter = "all";
   let activeQuery = "";
   let requestController = null;
@@ -180,6 +181,7 @@
 
       renderHospitalCards();
       renderRecentHospitals();
+      fetchActiveAds();
     } catch (error) {
       if (error.name === "AbortError") {
         console.error("CarePath: Hospital request timed out or was cancelled.");
@@ -291,6 +293,26 @@
     return FALLBACK_HOSPITAL_PHOTOS[
       index % FALLBACK_HOSPITAL_PHOTOS.length
     ];
+  }
+
+  
+  async function fetchActiveAds() {
+    try {
+      const response = await fetch(API_BASE + "/ads/active", {
+        headers: { Accept: "application/json" }
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        activeSponsoredAds = data;
+        console.log("CarePath: Active rotating sponsored ads:", activeSponsoredAds.length);
+        if (hospitalRecords && hospitalRecords.length > 0) {
+          renderHospitalCards();
+        }
+      }
+    } catch (err) {
+      console.warn("CarePath: Sponsored ads fetch skipped:", err);
+    }
   }
 
   function filteredHospitals() {
@@ -423,7 +445,101 @@
       actionRow.appendChild(selectButton);
       card.appendChild(actionRow);
       container.appendChild(card);
+
+      // Inject dynamic rotating sponsored ad after every 5 hospitals
+      if ((index + 1) % 5 === 0 && activeSponsoredAds && activeSponsoredAds.length > 0) {
+        const adIndex = Math.floor(index / 5) % activeSponsoredAds.length;
+        const sponsoredCard = makeSponsoredAdCard(activeSponsoredAds[adIndex]);
+        if (sponsoredCard) {
+          container.appendChild(sponsoredCard);
+        }
+      }
     });
+  }
+
+
+  function makeSponsoredAdCard(ad) {
+    if (!ad) return null;
+    const card = makeElement("article", "hospital-card sponsored-ad-card");
+
+    const cover = makeElement("div", "hospital-cover sponsored-cover");
+    const photo = makeElement("img", "hospital-photo sponsored-photo");
+
+    const rawUrl = ad.image_url || ad.hospital_image || "";
+    let finalSrc = rawUrl;
+    if (rawUrl && !rawUrl.startsWith("http") && !rawUrl.startsWith("data:")) {
+      finalSrc = API_BASE + (rawUrl.startsWith("/") ? "" : "/") + rawUrl;
+    }
+    if (!finalSrc) {
+      finalSrc = FALLBACK_HOSPITAL_PHOTOS[0];
+    }
+
+    photo.src = finalSrc;
+    photo.alt = (ad.title || ad.hospital_name || "CarePath") + " sponsored banner";
+    photo.loading = "lazy";
+    photo.onerror = function () {
+      photo.onerror = null;
+      photo.src = FALLBACK_HOSPITAL_PHOTOS[0];
+    };
+
+    cover.appendChild(photo);
+    cover.appendChild(makeElement("span", "hospital-photo-shade"));
+
+    // Sponsored badge
+    cover.appendChild(makeElement("span", "sponsored-badge", "📢 SPONSORED"));
+
+    // Hospital attribution chip
+    if (ad.hospital_name) {
+      cover.appendChild(makeElement("span", "hospital-fee", ad.hospital_name));
+    }
+
+    card.appendChild(cover);
+
+    const info = makeElement("div", "hospital-info");
+    const details = makeElement("div", "hospital-details");
+
+    details.appendChild(makeElement("h3", "sponsored-title", ad.title || "Featured Healthcare Offer"));
+
+    const locText = (ad.hospital_name || "") + (ad.hospital_city ? (" • " + ad.hospital_city) : "");
+    if (locText.trim()) {
+      details.appendChild(makeElement("p", "hospital-location", "📍 " + locText));
+    }
+
+    if (ad.description) {
+      details.appendChild(makeElement("p", "hospital-description sponsored-desc", ad.description));
+    }
+
+    info.appendChild(details);
+    card.appendChild(info);
+
+    const actionRow = makeElement("div", "card-action sponsored-action-row");
+
+    const bookBtn = makeElement("button", "select-hospital-button sponsored-btn", "Book Appointment →");
+    bookBtn.type = "button";
+    bookBtn.addEventListener("click", function () {
+      const match = (hospitalRecords || []).find(function (h) {
+        return String(hospitalId(h)) === String(ad.hospital_id);
+      });
+      selectHospital(match || { id: ad.hospital_id, name: ad.hospital_name, city: ad.hospital_city });
+    });
+    actionRow.appendChild(bookBtn);
+
+    if (ad.target_phone) {
+      const callBtn = makeElement("a", "sponsored-call-btn", "📞 Call");
+      callBtn.href = "tel:" + ad.target_phone;
+      actionRow.appendChild(callBtn);
+    }
+
+    if (ad.target_link) {
+      const linkBtn = makeElement("a", "sponsored-link-btn", "🌐 Details ↗");
+      linkBtn.href = ad.target_link;
+      linkBtn.target = "_blank";
+      linkBtn.rel = "noopener noreferrer";
+      actionRow.appendChild(linkBtn);
+    }
+
+    card.appendChild(actionRow);
+    return card;
   }
 
   function readRecentHospitals() {

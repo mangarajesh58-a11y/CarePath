@@ -359,8 +359,355 @@
 
         }
 
+
+        /* =================================================
+           HOSPITAL ADVERTISEMENTS & MODAL (INR 999 / 30 DAYS)
+        ================================================= */
+        .ad-modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .ad-modal-backdrop.active {
+            display: flex;
+        }
+
+        .ad-modal {
+            background: #ffffff;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 680px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            animation: modalFadeIn 0.25s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .ad-modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, #f8fafc, #eff6ff);
+            border-radius: 20px 20px 0 0;
+        }
+
+        .ad-modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ad-modal-close {
+            background: #f1f5f9;
+            border: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        .ad-modal-close:hover {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .ad-modal-body {
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .ad-tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .ad-tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .ad-tab-btn.active {
+            color: #7c3aed;
+        }
+
+        .ad-tab-btn.active::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #7c3aed;
+            border-radius: 2px;
+        }
+
+        .ad-plan-banner {
+            background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+            border: 1px solid #ddd6fe;
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .ad-plan-info h4 {
+            margin: 0 0 4px;
+            font-size: 16px;
+            color: #5b21b6;
+        }
+
+        .ad-plan-info p {
+            margin: 0;
+            font-size: 12px;
+            color: #6d28d9;
+            line-height: 1.4;
+        }
+
+        .ad-plan-price {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .ad-plan-price .amount {
+            font-size: 22px;
+            font-weight: 800;
+            color: #7c3aed;
+        }
+
+        .ad-plan-price .term {
+            font-size: 11px;
+            color: #6b21a8;
+            font-weight: 600;
+        }
+
+        .ad-form-group {
+            margin-bottom: 18px;
+        }
+
+        .ad-form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        .ad-form-group input[type="text"],
+        .ad-form-group input[type="tel"],
+        .ad-form-group input[type="url"],
+        .ad-form-group textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #1e293b;
+            background: #f8fafc;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .ad-form-group input:focus,
+        .ad-form-group textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+
+        .ad-dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 22px 16px;
+            text-align: center;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ad-dropzone:hover, .ad-dropzone.dragover {
+            border-color: #8b5cf6;
+            background: #f5f3ff;
+        }
+
+        .ad-preview-wrapper {
+            margin-top: 12px;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            max-height: 190px;
+            background: #000;
+        }
+
+        .ad-preview-wrapper img {
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .ad-preview-overlay {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .ad-submit-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
+            transition: all 0.2s;
+        }
+
+        .ad-submit-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        .ad-submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .ad-card-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            background: #ffffff;
+            transition: all 0.2s;
+        }
+
+        .ad-card-item:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+        }
+
+        .ad-card-thumb {
+            width: 90px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: #f1f5f9;
+        }
+
+        .ad-card-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ad-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ad-card-meta {
+            font-size: 12px;
+            color: #64748b;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge-active {
+            background: #dcfce7;
+            color: #15803d;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-expired {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-pending {
+            background: #fef3c7;
+            color: #b45309;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
     </style>
 
+  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="carepath-ai-small.png">
 </head>
@@ -512,6 +859,26 @@
             </p>
             <button onclick="window.open('display.html', '_blank')" style="background: #0284c7; font-weight: 700;">
                 Launch TV Display ↗
+            </button>
+        </div>
+
+
+        <!-- PROMOTE HOSPITAL ADS (INR 999 / 30 DAYS) -->
+        <div class="dashboard-card" style="border: 2px solid #8b5cf6; background: linear-gradient(180deg, #faf5ff, #ffffff); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 12px; right: 12px; background: #8b5cf6; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; letter-spacing: 0.5px;">
+                INR 999 / 30 DAYS
+            </div>
+            <div class="card-icon">
+                📢
+            </div>
+            <h3 style="color: #6d28d9;">
+                Promote Hospital
+            </h3>
+            <p>
+                Reach thousands of patients! Upload banner photo, pay INR 999, and feature inside the patient scrolling feed for 1 month.
+            </p>
+            <button id="openAdModalBtn" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); font-weight: 700; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);">
+                Launch Ad Campaign 📢
             </button>
         </div>
 
@@ -706,6 +1073,100 @@
 
 </div>
 
+
+
+<!-- =====================================================
+     HOSPITAL ADVERTISEMENT MODAL (INR 999 / 30 DAYS)
+===================================================== -->
+<div id="hospitalAdModal" class="ad-modal-backdrop" aria-hidden="true">
+    <div class="ad-modal" role="dialog" aria-modal="true" aria-labelledby="adModalTitle">
+        <div class="ad-modal-header">
+            <h2 id="adModalTitle">
+                📢 Hospital Advertisement Promotion
+            </h2>
+            <button type="button" class="ad-modal-close" id="closeAdModalBtn" aria-label="Close dialog">&times;</button>
+        </div>
+
+        <div class="ad-modal-body">
+            <!-- Tabs -->
+            <div class="ad-tabs">
+                <button type="button" class="ad-tab-btn active" id="tabCreateAd">🚀 Create New Campaign</button>
+                <button type="button" class="ad-tab-btn" id="tabMyAds">📋 My Ads & Validity (<span id="adActiveCount">0</span>)</button>
+            </div>
+
+            <!-- Tab 1: Create Ad -->
+            <div id="sectionCreateAd">
+                <div class="ad-plan-banner">
+                    <div class="ad-plan-info">
+                        <h4>⭐ Sponsored Feed Placement</h4>
+                        <p>Your banner appears dynamically after every 5 hospitals in the patient app feed. 100% transparent rotation for 30 full days.</p>
+                    </div>
+                    <div class="ad-plan-price">
+                        <div class="amount">₹999</div>
+                        <div class="term">for 30 Days</div>
+                    </div>
+                </div>
+
+                <form id="adCampaignForm">
+                    <div class="ad-form-group">
+                        <label for="adBannerInput">Promotional Banner Photo * (JPG, PNG, WebP - max 5MB)</label>
+                        <div class="ad-dropzone" id="adDropzone">
+                            <span style="font-size: 28px;">🖼️</span>
+                            <div style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 4px;">Click or drag & drop banner photo here</div>
+                            <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Recommended: Horizontal 16:9 or 1200×500 px</div>
+                            <input type="file" id="adBannerInput" accept="image/jpeg,image/png,image/webp" style="display: none;" required>
+                        </div>
+                        <div id="adPreviewWrapper" class="ad-preview-wrapper">
+                            <img id="adPreviewImg" src="" alt="Banner Preview">
+                            <span class="ad-preview-overlay">Live Preview</span>
+                        </div>
+                    </div>
+
+                    <div class="ad-form-group">
+                        <label for="adTitleInput">Campaign Title * (e.g. Free Cardiology Health Camp, 24/7 ICU & Trauma Care)</label>
+                        <input type="text" id="adTitleInput" placeholder="Enter headline for patients..." minlength="3" maxlength="255" required>
+                    </div>
+
+                    <div class="ad-form-group">
+                        <label for="adDescInput">Offer / Campaign Description (Optional)</label>
+                        <textarea id="adDescInput" rows="2" placeholder="e.g. Comprehensive blood tests, ECG, and physician consultation included. Walk-ins welcome." maxlength="1000"></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                        <div class="ad-form-group">
+                            <label for="adPhoneInput">Contact Phone</label>
+                            <input type="tel" id="adPhoneInput" placeholder="Hospital contact phone">
+                        </div>
+                        <div class="ad-form-group">
+                            <label for="adLinkInput">Target Link / URL (Optional)</label>
+                            <input type="url" id="adLinkInput" placeholder="https://yourhospital.com/offer">
+                        </div>
+                    </div>
+
+                    <div id="adFormAlert" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; font-weight: 600;"></div>
+
+                    <button type="submit" class="ad-submit-btn" id="submitAdBtn">
+                        💳 Pay ₹999 & Launch 30-Day Campaign
+                    </button>
+                </form>
+            </div>
+
+            <!-- Tab 2: My Ads -->
+            <div id="sectionMyAds" style="display: none;">
+                <div id="myAdsLoading" style="text-align: center; padding: 30px; color: #64748b;">
+                    <span>Loading your advertisement campaigns...</span>
+                </div>
+                <div id="myAdsList" style="display: none;"></div>
+                <div id="myAdsEmpty" style="display: none; text-align: center; padding: 40px 20px; color: #94a3b8;">
+                    <div style="font-size: 36px; margin-bottom: 8px;">📢</div>
+                    <div style="font-size: 15px; font-weight: 700; color: #475569;">No active campaigns yet</div>
+                    <p style="font-size: 13px; margin: 6px 0 16px;">Promote your hospital to reach patients actively searching for care!</p>
+                    <button type="button" class="ad-tab-btn active" onclick="document.getElementById('tabCreateAd').click()" style="background: #7c3aed; color: #fff; border-radius: 8px; padding: 8px 18px;">Create Campaign</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 
@@ -1519,6 +1980,331 @@ loadHospital()
         }
     );
 
+
+
+
+/* =====================================================
+   HOSPITAL ADVERTISEMENT CAMPAIGNS (INR 999 / 30 DAYS)
+===================================================== */
+
+const adModal = document.getElementById("hospitalAdModal");
+const openAdModalBtn = document.getElementById("openAdModalBtn");
+const closeAdModalBtn = document.getElementById("closeAdModalBtn");
+const tabCreateAd = document.getElementById("tabCreateAd");
+const tabMyAds = document.getElementById("tabMyAds");
+const sectionCreateAd = document.getElementById("sectionCreateAd");
+const sectionMyAds = document.getElementById("sectionMyAds");
+const adCampaignForm = document.getElementById("adCampaignForm");
+const adDropzone = document.getElementById("adDropzone");
+const adBannerInput = document.getElementById("adBannerInput");
+const adPreviewWrapper = document.getElementById("adPreviewWrapper");
+const adPreviewImg = document.getElementById("adPreviewImg");
+const adFormAlert = document.getElementById("adFormAlert");
+const submitAdBtn = document.getElementById("submitAdBtn");
+
+function openAdModal(defaultTab = "create") {
+    if (!adModal) return;
+    adModal.classList.add("active");
+    adModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+
+    // Pre-fill phone if available
+    const phoneInput = document.getElementById("adPhoneInput");
+    if (phoneInput && !phoneInput.value && storedHospital && storedHospital.phone) {
+        phoneInput.value = storedHospital.phone;
+    }
+
+    if (defaultTab === "list") {
+        switchAdTab("list");
+    } else {
+        switchAdTab("create");
+    }
+}
+
+function closeAdModal() {
+    if (!adModal) return;
+    adModal.classList.remove("active");
+    adModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+}
+
+if (openAdModalBtn) openAdModalBtn.addEventListener("click", () => openAdModal("create"));
+if (closeAdModalBtn) closeAdModalBtn.addEventListener("click", closeAdModal);
+
+if (adModal) {
+    adModal.addEventListener("click", (e) => {
+        if (e.target === adModal) closeAdModal();
+    });
+}
+
+function switchAdTab(tab) {
+    if (tab === "create") {
+        tabCreateAd.classList.add("active");
+        tabMyAds.classList.remove("active");
+        sectionCreateAd.style.display = "block";
+        sectionMyAds.style.display = "none";
+    } else {
+        tabMyAds.classList.add("active");
+        tabCreateAd.classList.remove("active");
+        sectionCreateAd.style.display = "none";
+        sectionMyAds.style.display = "block";
+        loadHospitalAds();
+    }
+}
+
+if (tabCreateAd) tabCreateAd.addEventListener("click", () => switchAdTab("create"));
+if (tabMyAds) tabMyAds.addEventListener("click", () => switchAdTab("list"));
+
+// Image upload & dropzone handlers
+if (adDropzone && adBannerInput) {
+    adDropzone.addEventListener("click", () => adBannerInput.click());
+
+    adDropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        adDropzone.classList.add("dragover");
+    });
+
+    adDropzone.addEventListener("dragleave", () => {
+        adDropzone.classList.remove("dragover");
+    });
+
+    adDropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        adDropzone.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            adBannerInput.files = e.dataTransfer.files;
+            handleBannerPreview(e.dataTransfer.files[0]);
+        }
+    });
+
+    adBannerInput.addEventListener("change", () => {
+        if (adBannerInput.files && adBannerInput.files[0]) {
+            handleBannerPreview(adBannerInput.files[0]);
+        }
+    });
+}
+
+function handleBannerPreview(file) {
+    if (!file || !file.type.startsWith("image/")) {
+        showAdAlert("Please choose a valid image file (JPG, PNG, or WebP).", "error");
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        showAdAlert("Photo size must be less than 5 MB.", "error");
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        adPreviewImg.src = e.target.result;
+        adPreviewWrapper.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+}
+
+function showAdAlert(msg, type = "error") {
+    if (!adFormAlert) return;
+    adFormAlert.style.display = "block";
+    adFormAlert.textContent = msg;
+    if (type === "error") {
+        adFormAlert.style.background = "#fee2e2";
+        adFormAlert.style.color = "#b91c1c";
+        adFormAlert.style.border = "1px solid #f87171";
+    } else {
+        adFormAlert.style.background = "#dcfce7";
+        adFormAlert.style.color = "#15803d";
+        adFormAlert.style.border = "1px solid #86efac";
+    }
+}
+
+// Submit campaign & launch Cashfree checkout
+if (adCampaignForm) {
+    adCampaignForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const file = adBannerInput.files ? adBannerInput.files[0] : null;
+        const title = document.getElementById("adTitleInput").value.trim();
+        const desc = document.getElementById("adDescInput").value.trim();
+        const phone = document.getElementById("adPhoneInput").value.trim();
+        const link = document.getElementById("adLinkInput").value.trim();
+
+        if (!file) {
+            showAdAlert("Please upload a promotional banner photo.", "error");
+            return;
+        }
+        if (title.length < 3) {
+            showAdAlert("Please enter a campaign title with at least 3 characters.", "error");
+            return;
+        }
+
+        submitAdBtn.disabled = true;
+        submitAdBtn.innerHTML = "⏳ Initiating Cashfree Payment (₹999)...";
+
+        const formData = new FormData();
+        formData.append("photo", file);
+        formData.append("title", title);
+        formData.append("description", desc);
+        formData.append("target_phone", phone);
+        formData.append("target_link", link);
+
+        try {
+            const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/create-order`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${hospitalToken || ""}`
+                },
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.detail || data.message || "Failed to initiate payment session.");
+            }
+
+            console.log("CarePath: Ad order created:", data);
+
+            // Open Cashfree Checkout
+            if (typeof Cashfree !== "function") {
+                throw new Error("Cashfree checkout SDK failed to load. Please refresh the page.");
+            }
+
+            const cashfree = Cashfree({ mode: data.cashfree_mode || "sandbox" });
+            localStorage.setItem("pending_ad_order_id", data.order_id);
+            localStorage.setItem("pending_ad_id", String(data.ad_id));
+
+            await cashfree.checkout({
+                paymentSessionId: data.payment_session_id,
+                redirectTarget: "_modal",
+            });
+
+            // If modal completes without full redirect, verify immediately
+            submitAdBtn.innerHTML = "⏳ Verifying Payment with Cashfree...";
+            await verifyAdPayment(data.order_id, data.ad_id);
+
+        } catch (err) {
+            console.error("Ad launch error:", err);
+            showAdAlert(err.message || "Unable to proceed with ad payment.", "error");
+            submitAdBtn.disabled = false;
+            submitAdBtn.innerHTML = "💳 Pay ₹999 & Launch 30-Day Campaign";
+        }
+    });
+}
+
+async function verifyAdPayment(orderId, adId) {
+    try {
+        const verifyRes = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/verify-payment`, {
+            method: "POST",
+            headers: getHospitalAuthHeaders(true),
+            body: JSON.stringify({
+                cashfree_order_id: orderId,
+                ad_id: parseInt(adId, 10),
+            }),
+        });
+
+        const vData = await verifyRes.json();
+        if (!verifyRes.ok || !vData.success) {
+            throw new Error(vData.detail || "Payment verification pending or failed.");
+        }
+
+        localStorage.removeItem("pending_ad_order_id");
+        localStorage.removeItem("pending_ad_id");
+
+        showAdAlert("🎉 Success! Your advertisement is now ACTIVE in the patient app for 30 days!", "success");
+        if (adCampaignForm) adCampaignForm.reset();
+        if (adPreviewWrapper) adPreviewWrapper.style.display = "none";
+
+        setTimeout(() => {
+            switchAdTab("list");
+        }, 1500);
+
+    } catch (err) {
+        console.error("Verification error:", err);
+        showAdAlert("Payment verification check: " + err.message, "error");
+    } finally {
+        if (submitAdBtn) {
+            submitAdBtn.disabled = false;
+            submitAdBtn.innerHTML = "💳 Pay ₹999 & Launch 30-Day Campaign";
+        }
+    }
+}
+
+async function loadHospitalAds() {
+    const loading = document.getElementById("myAdsLoading");
+    const list = document.getElementById("myAdsList");
+    const empty = document.getElementById("myAdsEmpty");
+    const countBadge = document.getElementById("adActiveCount");
+
+    if (loading) loading.style.display = "block";
+    if (list) list.style.display = "none";
+    if (empty) empty.style.display = "none";
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads`, {
+            headers: getHospitalAuthHeaders(false),
+        });
+
+        if (!res.ok) throw new Error("Failed to load campaigns.");
+        const ads = await res.json();
+
+        if (loading) loading.style.display = "none";
+
+        const activeAds = (Array.isArray(ads) ? ads : []).filter(a => a.status === "ACTIVE");
+        if (countBadge) countBadge.textContent = activeAds.length;
+
+        if (!Array.isArray(ads) || ads.length === 0) {
+            if (empty) empty.style.display = "block";
+            return;
+        }
+
+        if (list) {
+            list.style.display = "block";
+            list.innerHTML = ads.map(a => {
+                let badgeClass = "badge-pending";
+                let statusLabel = "Pending";
+                if (a.status === "ACTIVE") {
+                    badgeClass = "badge-active";
+                    statusLabel = `🟢 Active (${a.days_remaining}d left)`;
+                } else if (a.status === "EXPIRED") {
+                    badgeClass = "badge-expired";
+                    statusLabel = "🔴 Expired";
+                }
+
+                const bannerSrc = a.image_url ? (a.image_url.startsWith("http") ? a.image_url : `${API_URL}${a.image_url}`) : "";
+
+                return `
+                <div class="ad-card-item">
+                    ${bannerSrc ? `<img src="${bannerSrc}" alt="Ad" class="ad-card-thumb" onerror="this.style.display='none'">` : ""}
+                    <div class="ad-card-content">
+                        <div class="ad-card-title">${a.title}</div>
+                        <div class="ad-card-meta">
+                            <span class="${badgeClass}">${statusLabel}</span>
+                            <span>Fee: ₹${a.amount_paid || 999}</span>
+                            ${a.expires_at ? `<span>Expires: ${new Date(a.expires_at).toLocaleDateString()}</span>` : ""}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join("");
+        }
+
+    } catch (err) {
+        console.error("Load ads error:", err);
+        if (loading) loading.style.display = "none";
+        if (list) {
+            list.style.display = "block";
+            list.innerHTML = `<div style="color: #ef4444; font-size: 13px; text-align: center; padding: 20px;">Failed to load campaigns: ${err.message}</div>`;
+        }
+    }
+}
+
+// Auto-check on return from Cashfree redirect URL
+(function checkAdRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    const adOrderId = params.get("ad_order_id") || params.get("cashfree_order_id");
+    const storedAdId = localStorage.getItem("pending_ad_id");
+    if (adOrderId && storedAdId) {
+        openAdModal("list");
+        verifyAdPayment(adOrderId, storedAdId);
+    }
+})();
 
 /* =====================================================
    AUTO REFRESH QUEUE

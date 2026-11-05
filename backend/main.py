@@ -78,6 +78,7 @@ from models import (
     RegistrationOTP,
     PlatformContact,
     HospitalClosure,
+    HospitalAdvertisement,
 )
 from fastapi.responses import FileResponse, Response
 
@@ -367,6 +368,16 @@ ALLOWED_DOCTOR_PHOTO_TYPES = {
     "image/webp": ".webp",
 }
 MAX_DOCTOR_PHOTO_SIZE = 5 * 1024 * 1024  # 5 MB
+
+# Public hospital advertisement banners
+HOSPITAL_AD_DIR = os.path.join(
+    os.path.dirname(__file__),
+    "uploads",
+    "hospital_ads",
+)
+os.makedirs(HOSPITAL_AD_DIR, exist_ok=True)
+HOSPITAL_AD_FEE = 999.0  # INR 999 for 30-day placement
+
 
 
 
@@ -7023,4 +7034,330 @@ def cancel_doctor_leave(
     db.delete(exc)
     db.commit()
     return {"success": True, "message": f"Doctor leave for {leave_date} cancelled successfully."}
+
+# ============================================================
+# HOSPITAL ADVERTISEMENTS (SELF-SERVE SPONSORED ADS - INR 999 / 30 DAYS)
+# ============================================================
+
+@app.get("/hospital-ads/{filename}")
+def get_hospital_ad_image(filename: str, db: Session = Depends(get_db)):
+    """Serve hospital advertisement banner image from disk cache or database base64."""
+    safe_name = os.path.basename(filename)
+    local_path = os.path.join(HOSPITAL_AD_DIR, safe_name)
+
+    if os.path.isfile(local_path):
+        guessed_type, _ = mimetypes.guess_type(local_path)
+        return FileResponse(local_path, media_type=guessed_type or "image/jpeg")
+
+    # DB fallback if local disk cache reset
+    ad = db.query(HospitalAdvertisement).filter(
+        HospitalAdvertisement.image_url.contains(safe_name)
+    ).first()
+
+    if ad and ad.image_base64:
+        try:
+            img_bytes = base64.b64decode(ad.image_base64)
+            with open(local_path, "wb") as f:
+                f.write(img_bytes)
+            return Response(content=img_bytes, media_type="image/jpeg")
+        except Exception:
+            pass
+
+    raise HTTPException(status_code=404, detail="Advertisement banner not found")
+
+
+class VerifyAdPaymentRequest(BaseModel):
+    cashfree_order_id: str
+    ad_id: int
+
+
+@app.post("/hospitals/{hospital_id}/ads/create-order")
+async def create_hospital_ad_order(
+    hospital_id: int,
+    title: str = Form(...),
+    description: str = Form(""),
+    target_phone: str = Form(""),
+    target_link: str = Form(""),
+    photo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Create a 30-day advertisement order with Cashfree payment session (INR 999)."""
+    if hospital_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Unauthorized to create ads for another hospital.")
+
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found.")
+
+    if not title or len(title.strip()) < 3:
+        raise HTTPException(status_code=400, detail="Please provide a valid campaign title.")
+
+    content = await photo.read(MAX_HOSPITAL_PHOTO_SIZE + 1)
+    if not content:
+        raise HTTPException(status_code=400, detail="Please upload a promotional banner photo.")
+    if len(content) > MAX_HOSPITAL_PHOTO_SIZE:
+        raise HTTPException(status_code=413, detail="Banner photo must be 5 MB or smaller.")
+
+    content_type = (photo.content_type or "").lower()
+    ext = ALLOWED_HOSPITAL_PHOTO_TYPES.get(content_type, ".jpg")
+    filename = f"ad_{hospital_id}_{uuid.uuid4().hex[:12]}{ext}"
+    local_path = os.path.join(HOSPITAL_AD_DIR, filename)
+
+    with open(local_path, "wb") as f:
+        f.write(content)
+
+    img_base64 = base64.b64encode(content).decode("utf-8")
+    img_url = f"/hospital-ads/{filename}"
+
+    order_id = f"ad_{hospital_id}_{secrets.token_hex(6)}"
+    amount = float(HOSPITAL_AD_FEE)
+
+    # Clean phone for Cashfree payload (needs 10 digits)
+    phone_raw = re.sub(r"\D", "", str(target_phone or hospital.phone or "9999999999"))
+    clean_cust_phone = phone_raw[-10:] if len(phone_raw) >= 10 else "9999999999"
+
+    # Create pending ad record
+    ad = HospitalAdvertisement(
+        hospital_id=hospital_id,
+        title=title.strip(),
+        description=description.strip() if description else None,
+        image_url=img_url,
+        image_base64=img_base64,
+        target_phone=target_phone.strip() if target_phone else (hospital.phone or ""),
+        target_link=target_link.strip() if target_link else "",
+        amount_paid=amount,
+        payment_status="pending",
+        cashfree_order_id=order_id,
+        is_active=False,
+    )
+    db.add(ad)
+    db.commit()
+    db.refresh(ad)
+
+    if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=500,
+            detail="Cashfree payment gateway credentials are not configured.",
+        )
+
+    # Cashfree Order creation
+    payload = {
+        "order_id": order_id,
+        "order_amount": amount,
+        "order_currency": "INR",
+        "customer_details": {
+            "customer_id": f"hospital_{hospital_id}",
+            "customer_name": hospital.name[:50],
+            "customer_email": hospital.email or "hospital@carepath.health",
+            "customer_phone": clean_cust_phone,
+        },
+        "order_meta": {
+            "return_url": "https://carepath-hospital-ten.vercel.app/dashboard.html?ad_order_id={order_id}"
+        },
+        "order_note": f"CarePath 30-Day Ad Campaign for {hospital.name[:40]}",
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "x-client-id": CASHFREE_CLIENT_ID,
+        "x-client-secret": CASHFREE_CLIENT_SECRET,
+        "x-api-version": CASHFREE_API_VERSION,
+        "x-idempotency-key": str(uuid.uuid4()),
+    }
+
+    try:
+        cf_res = requests.post(
+            f"{CASHFREE_BASE_URL}/orders",
+            json=payload,
+            headers=headers,
+            timeout=20,
+        )
+        if cf_res.status_code not in (200, 201):
+            logging.error("Cashfree ad order error: %s %s", cf_res.status_code, cf_res.text)
+            raise HTTPException(status_code=502, detail="Cashfree payment gateway could not initiate ad payment.")
+
+        order_data = cf_res.json()
+        return {
+            "success": True,
+            "ad_id": ad.id,
+            "order_id": order_data.get("order_id", order_id),
+            "payment_session_id": order_data.get("payment_session_id"),
+            "amount": amount,
+            "cashfree_mode": CASHFREE_ENV,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logging.exception("Ad order error: %s", exc)
+        raise HTTPException(status_code=502, detail=f"Unable to create ad payment: {exc}")
+
+
+@app.post("/hospitals/{hospital_id}/ads/verify-payment")
+def verify_hospital_ad_payment(
+    hospital_id: int,
+    data: VerifyAdPaymentRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Verify Cashfree payment and activate the advertisement for 30 days."""
+    if hospital_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    order_id = data.cashfree_order_id.strip()
+    ad = db.query(HospitalAdvertisement).filter(
+        HospitalAdvertisement.id == data.ad_id,
+        HospitalAdvertisement.hospital_id == hospital_id,
+    ).first()
+
+    if not ad:
+        raise HTTPException(status_code=404, detail="Advertisement record not found.")
+
+    if ad.is_active and ad.payment_status == "paid":
+        return {
+            "success": True,
+            "message": "Advertisement is already active.",
+            "expires_at": ad.expires_at.isoformat() if ad.expires_at else "",
+        }
+
+    if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
+        raise HTTPException(status_code=500, detail="Cashfree credentials not configured.")
+
+    # Verify directly with Cashfree
+    headers = {
+        "x-client-id": CASHFREE_CLIENT_ID,
+        "x-client-secret": CASHFREE_CLIENT_SECRET,
+        "x-api-version": CASHFREE_API_VERSION,
+        "Content-Type": "application/json",
+    }
+
+    try:
+        payments_res = requests.get(
+            f"{CASHFREE_BASE_URL}/orders/{order_id}/payments",
+            headers=headers,
+            timeout=20,
+        )
+        if payments_res.status_code != 200:
+            raise HTTPException(status_code=400, detail="Unable to verify ad payment with Cashfree.")
+
+        payments = payments_res.json()
+        if not isinstance(payments, list):
+            raise HTTPException(status_code=400, detail="Unexpected Cashfree payment response.")
+
+        successful_payment = next(
+            (p for p in payments if p.get("payment_status") == "SUCCESS"),
+            None,
+        )
+        if not successful_payment:
+            raise HTTPException(status_code=400, detail="No successful payment confirmed by Cashfree.")
+
+        payment_id = str(successful_payment.get("cf_payment_id") or "")
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Cashfree verification error: {exc}")
+
+    # Activate for 30 days
+    now = datetime.utcnow()
+    ad.payment_status = "paid"
+    ad.cashfree_payment_id = payment_id
+    ad.is_active = True
+    ad.activated_at = now
+    ad.expires_at = now + timedelta(days=30)
+
+    db.commit()
+    db.refresh(ad)
+
+    return {
+        "success": True,
+        "message": "Advertisement campaign successfully activated for 30 days!",
+        "ad_id": ad.id,
+        "expires_at": ad.expires_at.isoformat(),
+        "days_remaining": 30,
+    }
+
+
+@app.get("/hospitals/{hospital_id}/ads")
+def get_hospital_ads(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """List all ads created by this hospital with remaining validity days."""
+    if hospital_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    ads = db.query(HospitalAdvertisement).filter(
+        HospitalAdvertisement.hospital_id == hospital_id
+    ).order_by(HospitalAdvertisement.created_at.desc()).all()
+
+    now = datetime.utcnow()
+    results = []
+    for a in ads:
+        days_left = max(0, (a.expires_at - now).days) if (a.expires_at and a.expires_at > now) else 0
+        status = "ACTIVE" if (a.is_active and a.payment_status == "paid" and a.expires_at and a.expires_at > now) else ("EXPIRED" if a.payment_status == "paid" else "PENDING_PAYMENT")
+        results.append({
+            "id": a.id,
+            "title": a.title,
+            "description": a.description,
+            "image_url": a.image_url,
+            "target_phone": a.target_phone,
+            "target_link": a.target_link,
+            "amount_paid": a.amount_paid,
+            "payment_status": a.payment_status,
+            "is_active": a.is_active,
+            "status": status,
+            "days_remaining": days_left,
+            "activated_at": a.activated_at.isoformat() if a.activated_at else None,
+            "expires_at": a.expires_at.isoformat() if a.expires_at else None,
+            "created_at": a.created_at.isoformat(),
+        })
+
+    return results
+
+
+@app.get("/ads/active")
+def get_active_ads(db: Session = Depends(get_db)):
+    """Public endpoint for Patient app: returns currently active sponsored ads rotated dynamically."""
+    import random
+
+    now = datetime.utcnow()
+    # Auto-expire past ads
+    db.query(HospitalAdvertisement).filter(
+        HospitalAdvertisement.is_active == True,
+        HospitalAdvertisement.expires_at <= now,
+    ).update({"is_active": False}, synchronize_session=False)
+    db.commit()
+
+    rows = (
+        db.query(HospitalAdvertisement, Hospital)
+        .join(Hospital, Hospital.id == HospitalAdvertisement.hospital_id)
+        .filter(
+            HospitalAdvertisement.is_active == True,
+            HospitalAdvertisement.payment_status == "paid",
+            HospitalAdvertisement.expires_at > now,
+        )
+        .all()
+    )
+
+    ads_list = []
+    for ad, hospital in rows:
+        ads_list.append({
+            "id": ad.id,
+            "hospital_id": hospital.id,
+            "hospital_name": hospital.name,
+            "hospital_city": hospital.city or "",
+            "hospital_image": hospital.image_url or "",
+            "title": ad.title,
+            "description": ad.description or "",
+            "image_url": ad.image_url,
+            "target_phone": ad.target_phone or hospital.phone or "",
+            "target_link": ad.target_link or "",
+            "days_remaining": max(0, (ad.expires_at - now).days) if ad.expires_at else 0,
+        })
+
+    # Shuffle so view is dynamic and rotating (not fixed to one hospital)
+    random.shuffle(ads_list)
+    return ads_list
 
