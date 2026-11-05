@@ -459,21 +459,9 @@ os.makedirs(CERTIFICATE_DIR, exist_ok=True)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-        "http://localhost",               # Android local Capacitor
-        "https://localhost",              # Android HTTPS Capacitor
-        "capacitor://localhost",          # iOS Capacitor native origin
-        "ionic://localhost",              # Fallback iOS origin
-        "https://carepath-patient-mx5v.vercel.app",
-        "https://carepath-hospital-ten.vercel.app",
-        "https://carepath-admin.vercel.app",
-    ],
+    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
-
-    
     allow_headers=["*"],
 )
 

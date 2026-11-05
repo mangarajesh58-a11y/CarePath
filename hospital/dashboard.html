@@ -2145,6 +2145,14 @@ if (adCampaignForm) {
             return;
         }
 
+        const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId") || (storedHospital && storedHospital.id);
+        const activeToken = hospitalToken || localStorage.getItem("hospitalToken");
+
+        if (!activeHospId || activeHospId === "null" || activeHospId === "undefined") {
+            showAdAlert("Hospital session not found. Please log in again to publish ads.", "error");
+            return;
+        }
+
         submitAdBtn.disabled = true;
         submitAdBtn.innerHTML = "⏳ Initiating Cashfree Payment (₹999)...";
 
@@ -2156,10 +2164,10 @@ if (adCampaignForm) {
         formData.append("target_link", link);
 
         try {
-            const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/create-order`, {
+            const res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads/create-order`, {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${hospitalToken || ""}`
+                    "Authorization": `Bearer ${activeToken || ""}`
                 },
                 body: formData,
             });
