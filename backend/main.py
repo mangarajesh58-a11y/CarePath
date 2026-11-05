@@ -81,7 +81,7 @@ from models import (
     HospitalClosure,
     HospitalAdvertisement,
 )
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, JSONResponse
 
 import mimetypes
 
@@ -465,6 +465,35 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    origin = request.headers.get("origin") or "*"
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "success": False},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+@app.exception_handler(Exception)
+async def custom_general_exception_handler(request: Request, exc: Exception):
+    logging.exception("Unhandled Server Exception on %s: %s", request.url.path, exc)
+    origin = request.headers.get("origin") or "*"
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}", "success": False},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 def send_carepath_email(to_email: str, subject: str, text: str, html: str) -> bool:
     """Universal multi-tier email dispatcher with automatic failover across 4 delivery channels."""
@@ -2314,8 +2343,8 @@ def health():
 
         "success": True,
 
-        "status":
-            "healthy",
+        "status": "healthy",
+        "deploy_version": "2026-11-06-v2",
     }
 
 
