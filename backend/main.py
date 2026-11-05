@@ -466,7 +466,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def send_otp_email(receiver_email: str, otp: str, purpose: str = "registration"):
+def send_carepath_email(to_email: str, subject: str, text: str, html: str) -> bool:
+    """Universal multi-tier email dispatcher with automatic failover across 4 delivery channels."""
     import os
     import json
     import urllib.request
@@ -474,6 +475,141 @@ def send_otp_email(receiver_email: str, otp: str, purpose: str = "registration")
     import smtplib
     from email.message import EmailMessage
 
+    delivery_errors = []
+
+    # --- 1. Cloud-Reliable Method: Google Apps Script Webhook (Port 443, Zero 3rd party accounts) ---
+    webhook_url = (
+        os.getenv("GMAIL_WEBHOOK_URL")
+        or os.getenv("EMAIL_WEBHOOK_URL")
+        or "https://script.google.com/macros/s/AKfycbxYV2k-rjBmqPZgXf71sh9mwwXyrifEIR-HhbTvk4Lk1X55UFuVx4d1iToqsNO7JqZr/exec"
+    ).strip()
+    if webhook_url:
+        try:
+            payload = json.dumps({
+                "to": to_email,
+                "subject": subject,
+                "body": text,
+                "html": html,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                webhook_url,
+                data=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "User-Agent": "CarePath/1.0",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 201, 302):
+                    logging.info("CarePath email delivered successfully via Webhook to %s", to_email)
+                    return True
+        except Exception as webhook_err:
+            logging.warning("Gmail Webhook delivery failed: %s", webhook_err)
+            delivery_errors.append(f"Gmail Webhook: {webhook_err}")
+
+    # --- 2. Brevo (Sendinblue) HTTPS API (Port 443, 300 free emails/day) ---
+    brevo_key = (os.getenv("BREVO_API_KEY") or os.getenv("SENDINBLUE_API_KEY") or "").strip()
+    if brevo_key:
+        try:
+            payload = json.dumps({
+                "sender": {
+                    "name": "CarePath Healthcare",
+                    "email": (os.getenv("SMTP_EMAIL") or "mangarajesh58@gmail.com").strip(),
+                },
+                "to": [{"email": to_email}],
+                "subject": subject,
+                "htmlContent": html,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "https://api.brevo.com/v3/smtp/email",
+                data=payload,
+                headers={
+                    "api-key": brevo_key,
+                    "Content-Type": "application/json",
+                    "User-Agent": "CarePath/1.0",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 201, 202):
+                    logging.info("CarePath email delivered successfully via Brevo to %s", to_email)
+                    return True
+        except Exception as brevo_err:
+            logging.warning("Brevo API delivery failed: %s", brevo_err)
+            delivery_errors.append(f"Brevo API: {brevo_err}")
+
+    # --- 3. Resend HTTPS API (Port 443) ---
+    resend_api_key = (
+        os.getenv("RESEND_API_KEY")
+        or base64.b64decode("cmVfam5qVEVTVzFfRGZyaG9ETWdNTjVWZDZuZWVQc1Q3U200").decode("utf-8")
+    ).strip()
+    if resend_api_key:
+        try:
+            payload = json.dumps({
+                "from": (os.getenv("RESEND_FROM") or "CarePath <onboarding@resend.dev>").strip(),
+                "to": [to_email],
+                "subject": subject,
+                "html": html,
+                "text": text,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "https://api.resend.com/emails",
+                data=payload,
+                headers={
+                    "Authorization": f"Bearer {resend_api_key}",
+                    "Content-Type": "application/json",
+                    "User-Agent": "CarePath/1.0",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 201):
+                    logging.info("CarePath email delivered successfully via Resend to %s", to_email)
+                    return True
+        except Exception as resend_err:
+            logging.warning("Resend API delivery failed: %s", resend_err)
+            delivery_errors.append(f"Resend API: {resend_err}")
+
+    # --- 4. Direct Gmail SMTP (Ports 465 SSL & 587 TLS) ---
+    sender_email = (os.getenv("SMTP_EMAIL") or "mangarajesh58@gmail.com").strip()
+    app_password = (os.getenv("SMTP_APP_PASSWORD") or "kmshkljdewqfwpxq").strip()
+
+    if sender_email and app_password:
+        message = EmailMessage()
+        message["Subject"] = subject
+        message["From"] = sender_email
+        message["To"] = to_email
+        message.set_content(text)
+        message.add_alternative(html, subtype="html")
+
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=5) as server:
+                server.login(sender_email, app_password)
+                server.send_message(message)
+                logging.info("CarePath email delivered successfully via Gmail SMTP (SSL) to %s", to_email)
+                return True
+        except Exception as e_ssl:
+            delivery_errors.append(f"Gmail SMTP 465: {e_ssl}")
+
+        try:
+            with smtplib.SMTP("smtp.gmail.com", 587, timeout=5) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(sender_email, app_password)
+                server.send_message(message)
+                logging.info("CarePath email delivered successfully via Gmail SMTP (TLS) to %s", to_email)
+                return True
+        except Exception as e_tls:
+            delivery_errors.append(f"Gmail SMTP 587: {e_tls}")
+
+    err_summary = "; ".join(delivery_errors) if delivery_errors else "No email credentials configured."
+    logging.error("All email delivery methods failed: %s", err_summary)
+    return False
+
+
+def send_otp_email(receiver_email: str, otp: str, purpose: str = "registration"):
     subject = "CarePath Password Reset OTP" if purpose == "reset" else "CarePath Registration OTP"
     headline = "Your CarePath password reset verification code is:" if purpose == "reset" else "Your CarePath registration verification code is:"
     body_text = f"""Hello,
@@ -481,10 +617,9 @@ def send_otp_email(receiver_email: str, otp: str, purpose: str = "registration")
 {headline} {otp}
 
 This code expires in 10 minutes.
-
 If you did not request this code, please ignore this email.
 
-CarePath Team
+CarePath Healthcare Team
 """
 
     html_content = f"""<!DOCTYPE html>
@@ -503,142 +638,124 @@ CarePath Team
     </div>
     <p style="color: #64748b; font-size: 13px; line-height: 1.5;">This verification code will expire in <strong>10 minutes</strong>. Do not share this code with anyone.</p>
     <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;">
-    <p style="color: #94a3b8; font-size: 12px; margin: 0; text-align: center;">© CarePath Healthcare Technologies. If you did not request this email, please ignore it.</p>
+    <p style="color: #94a3b8; font-size: 12px; margin: 0; text-align: center;">&copy; CarePath Healthcare Technologies. If you did not request this email, please ignore it.</p>
   </div>
 </body>
 </html>"""
 
-    delivery_errors = []
+    success = send_carepath_email(receiver_email, subject, body_text, html_content)
+    if not success:
+        raise RuntimeError("Unable to send OTP email. Please check server email credentials.")
+    return True
 
-    # --- 1. Cloud-Reliable Method: Google Apps Script Webhook (Port 443, Zero 3rd party accounts) ---
-    webhook_url = (os.getenv("GMAIL_WEBHOOK_URL") or os.getenv("EMAIL_WEBHOOK_URL") or "https://script.google.com/macros/s/AKfycbxYV2k-rjBmqPZgXf71sh9mwwXyrifEIR-HhbTvk4Lk1X55UFuVx4d1iToqsNO7JqZr/exec").strip()
-    if webhook_url:
-        try:
-            payload = json.dumps({
-                "to": receiver_email,
-                "subject": subject,
-                "body": body_text,
-                "html": html_content,
-            }).encode("utf-8")
-            req = urllib.request.Request(
-                webhook_url,
-                data=payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "User-Agent": "CarePath/1.0",
-                },
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                if resp.status in (200, 201, 302):
-                    logging.info("OTP email delivered successfully via Gmail Webhook to %s", receiver_email)
-                    return True
-        except Exception as webhook_err:
-            logging.warning("Gmail Webhook delivery failed: %s", webhook_err)
-            delivery_errors.append(f"Gmail Webhook: {webhook_err}")
 
-    # --- 2. Brevo (Sendinblue) HTTPS API (Port 443, 300 free emails/day) ---
-    brevo_key = (os.getenv("BREVO_API_KEY") or os.getenv("SENDINBLUE_API_KEY") or "").strip()
-    if brevo_key:
-        try:
-            payload = json.dumps({
-                "sender": {
-                    "name": "CarePath",
-                    "email": (os.getenv("SMTP_EMAIL") or "mangarajesh58@gmail.com").strip(),
-                },
-                "to": [{"email": receiver_email}],
-                "subject": subject,
-                "htmlContent": html_content,
-            }).encode("utf-8")
-            req = urllib.request.Request(
-                "https://api.brevo.com/v3/smtp/email",
-                data=payload,
-                headers={
-                    "api-key": brevo_key,
-                    "Content-Type": "application/json",
-                    "User-Agent": "CarePath/1.0",
-                },
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                if resp.status in (200, 201, 202):
-                    logging.info("OTP email delivered successfully via Brevo HTTPS API to %s", receiver_email)
-                    return True
-        except Exception as brevo_err:
-            logging.warning("Brevo HTTPS API delivery failed: %s", brevo_err)
-            delivery_errors.append(f"Brevo API: {brevo_err}")
+def send_token_confirmation_email(
+    to_email: str,
+    patient_name: str,
+    hospital_name: str,
+    doctor_name: str,
+    department: str,
+    token_number: int,
+    appointment_date: str,
+    payment_id: str,
+    amount: float,
+    operating_hours: str = "09:00 AM - 09:00 PM",
+):
+    """Sends a professional branded OPD Token Booking Confirmation and Receipt to the patient."""
+    subject = f"🎟️ OPD Token #{token_number} Confirmed - {hospital_name}"
+    body_text = f"""Hello {patient_name},
 
-    # --- 3. Resend HTTPS API (Port 443) ---
-    resend_api_key = (os.getenv("RESEND_API_KEY") or base64.b64decode("cmVfam5qVEVTVzFfRGZyaG9ETWdNTjVWZDZuZWVQc1Q3U200").decode("utf-8")).strip()
-    if resend_api_key:
-        try:
-            payload = json.dumps({
-                "from": (os.getenv("RESEND_FROM") or "CarePath <onboarding@resend.dev>").strip(),
-                "to": [receiver_email],
-                "subject": subject,
-                "html": html_content,
-                "text": body_text,
-            }).encode("utf-8")
-            req = urllib.request.Request(
-                "https://api.resend.com/emails",
-                data=payload,
-                headers={
-                    "Authorization": f"Bearer {resend_api_key}",
-                    "Content-Type": "application/json",
-                    "User-Agent": "CarePath/1.0",
-                },
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                if resp.status in (200, 201):
-                    logging.info("OTP email delivered successfully via Resend HTTPS API to %s", receiver_email)
-                    return True
-        except Exception as resend_err:
-            logging.warning("Resend HTTPS API delivery failed: %s", resend_err)
-            err_msg = str(resend_err)
-            if "403" in err_msg:
-                delivery_errors.append("Resend API: Domain not verified (free tier can only send to account owner mangarajesh58@gmail.com). Verify your domain at resend.com or use Google Apps Script Webhook.")
-            else:
-                delivery_errors.append(f"Resend API: {resend_err}")
+Your hospital OPD appointment token #{token_number} at {hospital_name} has been successfully confirmed and paid!
 
-    # --- 4. Direct Gmail SMTP (Ports 465 SSL & 587 TLS) ---
-    sender_email = (os.getenv("SMTP_EMAIL") or "mangarajesh58@gmail.com").strip()
-    app_password = (os.getenv("SMTP_APP_PASSWORD") or "kmshkljdewqfwpxq").strip()
+Booking Summary:
+- Token Number: #{token_number}
+- Doctor: Dr. {doctor_name} ({department})
+- Hospital: {hospital_name}
+- Appointment Date: {appointment_date}
+- Consultation Hours: {operating_hours}
+- Amount Paid: ₹{amount:.2f}
+- Cashfree Payment Ref: {payment_id}
 
-    if sender_email and app_password:
-        message = EmailMessage()
-        message["Subject"] = subject
-        message["From"] = sender_email
-        message["To"] = receiver_email
-        message.set_content(body_text)
-        message.add_alternative(html_content, subtype="html")
+You can track your live queue position anytime in the CarePath app under 'My Tokens'.
 
-        # Try port 465 (SSL)
-        try:
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=5) as server:
-                server.login(sender_email, app_password)
-                server.send_message(message)
-                logging.info("OTP email delivered successfully via Gmail SMTP (SSL 465) to %s", receiver_email)
-                return True
-        except Exception as e_ssl:
-            delivery_errors.append(f"Gmail SMTP 465: {e_ssl}")
+Thank you for booking with CarePath!
+CarePath Healthcare Team
+"""
 
-        # Try port 587 (TLS)
-        try:
-            with smtplib.SMTP("smtp.gmail.com", 587, timeout=5) as server:
-                server.ehlo()
-                server.starttls()
-                server.ehlo()
-                server.login(sender_email, app_password)
-                server.send_message(message)
-                logging.info("OTP email delivered successfully via Gmail SMTP (TLS 587) to %s", receiver_email)
-                return True
-        except Exception as e_tls:
-            delivery_errors.append(f"Gmail SMTP 587: {e_tls}")
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9;">
+  <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06);">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #0284c7, #2563eb); padding: 28px 24px; text-align: center; color: white;">
+      <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">🏥 CarePath</h1>
+      <p style="margin: 6px 0 0; font-size: 14px; opacity: 0.95;">OPD Token Booking Confirmation</p>
+    </div>
 
-    err_summary = "; ".join(delivery_errors) if delivery_errors else "No email credentials configured."
-    logging.error("All email delivery methods failed: %s", err_summary)
-    raise RuntimeError(f"Unable to send OTP email: {err_summary}")
+    <!-- Big Token Highlight Circle -->
+    <div style="padding: 24px 28px; text-align: center; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+      <span style="font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Your OPD Token Number</span>
+      <div style="margin: 10px auto; width: 100px; height: 100px; line-height: 100px; background: #0284c7; color: white; border-radius: 50%; font-size: 38px; font-weight: 800; box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);">
+        #{token_number}
+      </div>
+      <span style="display: inline-block; background: #dcfce7; color: #15803d; font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px;">
+        ✓ CONFIRMED & PAID
+      </span>
+    </div>
+
+    <!-- Appointment Details Table -->
+    <div style="padding: 24px 28px;">
+      <h3 style="margin: 0 0 14px; font-size: 16px; color: #0f172a; font-weight: 700;">Appointment Details</h3>
+      
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Patient</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">{patient_name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Hospital</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">{hospital_name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Doctor</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">Dr. {doctor_name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Department</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">{department}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Date</td>
+          <td style="padding: 10px 0; color: #0284c7; font-weight: 700; text-align: right;">📅 {appointment_date}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Hours</td>
+          <td style="padding: 10px 0; color: #0f172a; text-align: right;">{operating_hours}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; color: #64748b;">Total Paid</td>
+          <td style="padding: 10px 0; color: #16a34a; font-weight: 700; text-align: right;">₹{amount:.2f}</td>
+        </tr>
+      </table>
+
+      <!-- Tip Callout -->
+      <div style="margin-top: 20px; background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #1e40af; line-height: 1.5;">
+        💡 <strong>Live Queue Tracking:</strong> Open the CarePath app anytime to see how many patients are ahead of you and your real-time estimated consultation time.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+      Cashfree Ref: <code style="font-size: 11px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; color: #334155;">{payment_id}</code><br>
+      &copy; 2026 CarePath Healthcare Technologies. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>"""
+
+    return send_carepath_email(to_email, subject, body_text, html_content)
+
 
 # ============================================================
 # DATABASE SESSION
@@ -4359,6 +4476,27 @@ def create_token(
         db.rollback()
         print("Token creation error:", str(error))
         raise HTTPException(status_code=500, detail="Unable to create the hospital token.")
+
+    # --- SEND AUTOMATED EMAIL BOOKING RECEIPT ---
+    try:
+        patient_obj = db.query(Patient).filter(Patient.id == patient.id).first()
+        if patient_obj and patient_obj.email:
+            op_hours = hospital.operating_hours_12h if hasattr(hospital, "operating_hours_12h") else f"{hospital.opening_time or '09:00'} - {hospital.closing_time or '21:00'}"
+            send_token_confirmation_email(
+                to_email=patient_obj.email,
+                patient_name=patient_obj.full_name or "Patient",
+                hospital_name=hospital.name,
+                doctor_name=doctor.name,
+                department=doctor.department or data.department,
+                token_number=token.token_number,
+                appointment_date=str(appointment_date),
+                payment_id=payment_id,
+                amount=total_amount,
+                operating_hours=op_hours,
+            )
+            logging.info("Token confirmation email dispatched to %s", patient_obj.email)
+    except Exception as email_err:
+        logging.warning("Booking confirmation email could not be delivered: %s", email_err)
 
     return {
         "success": True,
