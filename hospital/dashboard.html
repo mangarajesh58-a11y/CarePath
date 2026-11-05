@@ -738,12 +738,22 @@
         </div>
 
 
-        <button
-            class="logout"
-            id="logoutButton"
-        >
-            Logout
-        </button>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <button
+                type="button"
+                id="headerPromoteBtn"
+                onclick="openAdModal('create')"
+                style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35); transition: opacity 0.2s;"
+            >
+                📢 Promote Hospital (₹999)
+            </button>
+            <button
+                class="logout"
+                id="logoutButton"
+            >
+                Logout
+            </button>
+        </div>
 
     </header>
 
