@@ -1437,15 +1437,17 @@
                         // REDIRECT
                         // -------------------------------------
 
-                        setTimeout(
-                            function() {
-
-                                window.location.href =
-                                    "dashboard.html";
-
-                            },
-                            700
-                        );
+                        const redirectUrl = sessionStorage.getItem("loginRedirect");
+                        if (redirectUrl) {
+                            sessionStorage.removeItem("loginRedirect");
+                            setTimeout(function() {
+                                window.location.href = redirectUrl;
+                            }, 500);
+                        } else {
+                            setTimeout(function() {
+                                window.location.href = "dashboard.html";
+                            }, 700);
+                        }
 
 
                     }
@@ -1741,15 +1743,17 @@
 
                     // Open dashboard
 
-                    setTimeout(
-                        function() {
-
-                            window.location.href =
-                                "dashboard.html";
-
-                        },
-                        700
-                    );
+                    const redirectUrlGoogle = sessionStorage.getItem("loginRedirect");
+                    if (redirectUrlGoogle) {
+                        sessionStorage.removeItem("loginRedirect");
+                        setTimeout(function() {
+                            window.location.href = redirectUrlGoogle;
+                        }, 500);
+                    } else {
+                        setTimeout(function() {
+                            window.location.href = "dashboard.html";
+                        }, 700);
+                    }
 
                 }
 

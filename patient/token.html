@@ -189,7 +189,11 @@
             </div>
             <div class="row">
                 <span class="label">Consultation Hours</span>
-                <span class="value" id="consultationHours">-</span>
+                <span class="value" id="consultationHours">Loading...</span>
+            </div>
+            <div class="row" id="doctorDaysRow" style="display:none;">
+                <span class="label">Available Days</span>
+                <span class="value" id="doctorDays" style="color: #0284c7;">-</span>
             </div>
         </div>
 
@@ -282,6 +286,12 @@ function showMessage(text, type = "info") {
     element.className = type;
 }
 
+function clearMessage() {
+    const element = byId("message");
+    element.textContent = "";
+    element.className = "";
+}
+
 function money(value) {
     return new Intl.NumberFormat("en-IN", {
         style: "currency",
@@ -308,6 +318,7 @@ function getSelectedDoctor() {
 
 let hospitalFee = Number(stored("selectedHospitalTokenFee", "tokenFee") || 0);
 let hospitalId = stored("selectedHospitalId", "hospital_id", "hospitalId");
+let currentDoctor = null;
 let isBusy = false;
 
 function setBusy(busy, label) {
@@ -318,7 +329,6 @@ function setBusy(busy, label) {
 
 function isBookingReady() {
     return Boolean(
-        getPatientToken() &&
         hospitalId &&
         getSelectedHospitalName() &&
         getSelectedDepartment() &&
@@ -330,7 +340,33 @@ function isBookingReady() {
 }
 
 function refreshButton() {
-    byId("payButton").disabled = isBusy || !isBookingReady();
+    const token = getPatientToken();
+    const btn = byId("payButton");
+
+    if (!token) {
+        btn.disabled = false;
+        btn.textContent = "🔑 Sign In to Continue";
+        btn.style.background = "#0284c7";
+        showMessage("Please sign in to confirm and book your appointment.", "info");
+        return;
+    }
+
+    btn.style.background = "#2563eb";
+    btn.disabled = isBusy || !isBookingReady();
+    if (!isBusy) {
+        btn.textContent = "Continue to Payment";
+    }
+}
+
+function handleAuthRequired() {
+    sessionStorage.setItem("loginRedirect", "token.html");
+    localStorage.removeItem("patientToken");
+    localStorage.removeItem("patient_token");
+    showMessage("Your session has expired. Please sign in to confirm your booking.", "error");
+    const btn = byId("payButton");
+    btn.disabled = false;
+    btn.textContent = "🔑 Sign In to Continue";
+    btn.style.background = "#0284c7";
 }
 
 function displayBooking() {
@@ -345,9 +381,16 @@ function displayBooking() {
         thumb.style.display = "inline-block";
         thumb.onerror = () => { thumb.style.display = "none"; };
     }
+
     const docHours = stored("selectedDoctorHours");
     if (byId("consultationHours")) {
-        byId("consultationHours").textContent = docHours || "Not specified";
+        byId("consultationHours").textContent = docHours || "Loading schedule...";
+    }
+
+    const docDays = stored("selectedDoctorDays");
+    if (docDays && byId("doctorDays")) {
+        byId("doctorDays").textContent = docDays;
+        byId("doctorDaysRow").style.display = "flex";
     }
 
     byId("tokenFee").textContent = money(hospitalFee);
@@ -367,12 +410,71 @@ function displayBooking() {
         localStorage.setItem("selectedAppointmentDate", localToday);
     }
 
+    validateAppointmentDate();
     refreshButton();
+}
+
+async function loadDoctorSchedule() {
+    const docId = stored("selectedDoctorId");
+    const docName = getSelectedDoctor();
+    if (!hospitalId || (!docId && !docName)) return;
+
+    try {
+        const res = await fetch(`${API}/doctors?hospital_id=${encodeURIComponent(hospitalId)}`);
+        if (!res.ok) return;
+        const doctors = await res.json();
+        const doc = doctors.find(d => (docId && String(d.id) === String(docId)) || (docName && d.name === docName));
+        if (doc) {
+            currentDoctor = doc;
+            const hours = doc.consultation_hours_12h || (doc.start_time && doc.end_time ? `${doc.start_time_12h || doc.start_time} - ${doc.end_time_12h || doc.end_time}` : "Regular OPD Hours");
+            localStorage.setItem("selectedDoctorHours", hours);
+            if (byId("consultationHours")) {
+                byId("consultationHours").textContent = hours;
+            }
+
+            if (doc.available_days) {
+                localStorage.setItem("selectedDoctorDays", doc.available_days);
+                if (byId("doctorDays")) {
+                    byId("doctorDays").textContent = doc.available_days;
+                    byId("doctorDaysRow").style.display = "flex";
+                }
+            }
+
+            if (doc.image_url) {
+                localStorage.setItem("selectedDoctorPhoto", doc.image_url);
+                const thumb = byId("doctorThumbnail");
+                if (thumb) {
+                    thumb.src = doc.image_url.startsWith("http") ? doc.image_url : `${API}${doc.image_url.startsWith("/") ? "" : "/"}${doc.image_url}`;
+                    thumb.style.display = "inline-block";
+                }
+            }
+
+            validateAppointmentDate();
+        }
+    } catch (err) {
+        console.warn("Could not fetch live doctor schedule:", err);
+    }
+}
+
+function validateAppointmentDate() {
+    const dateVal = byId("appointmentDate").value;
+    if (!dateVal) return;
+
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const [y, m, d] = dateVal.split("-").map(Number);
+    const dayName = days[new Date(y, m - 1, d).getDay()];
+
+    const docDays = (currentDoctor && currentDoctor.available_days) || stored("selectedDoctorDays");
+    if (docDays && !docDays.toLowerCase().includes(dayName.toLowerCase())) {
+        showMessage(`📅 Selected ${dayName} (${dateVal}). Note: Dr. ${getSelectedDoctor()} normally consults on: ${docDays}. You can still proceed or choose an available day.`, "info");
+    } else {
+        clearMessage();
+    }
 }
 
 async function loadHospitalFee() {
     if (!hospitalId) {
-        showMessage("No hospital selected. Return to the dashboard and select a hospital.", "error");
+        showMessage("No hospital selected. Please return to the dashboard and select a hospital.", "error");
         return;
     }
 
@@ -404,8 +506,10 @@ async function loadHospitalFee() {
 }
 
 async function createCashfreeOrder() {
-    if (!getPatientToken()) {
-        throw new Error("Your session has expired. Please sign in again.");
+    const token = getPatientToken();
+    if (!token) {
+        handleAuthRequired();
+        throw new Error("Please sign in to proceed with booking.");
     }
 
     const appointmentDate = byId("appointmentDate").value;
@@ -414,7 +518,7 @@ async function createCashfreeOrder() {
     }
 
     const payload = {
-        patient_name: stored("patientName", "patient_name", "full_name"),
+        patient_name: stored("patientName", "patient_name", "full_name") || "Patient",
         hospital: getSelectedHospitalName(),
         department: getSelectedDepartment(),
         doctor: getSelectedDoctor(),
@@ -425,21 +529,26 @@ async function createCashfreeOrder() {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${getPatientToken()}`
+            "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(payload)
     });
 
     const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-        throw new Error(data.detail || data.message || "Unable to create a Cashfree order.");
+        if (response.status === 401 || (data.detail && data.detail.toLowerCase().includes("token"))) {
+            handleAuthRequired();
+            throw new Error("Your login session has expired. Please sign in to confirm your booking.");
+        }
+        throw new Error(data.detail || data.message || "Unable to create payment order.");
     }
 
     const orderId = data.order_id || data.cf_order_id;
     const paymentSessionId = data.payment_session_id;
 
     if (!orderId || !paymentSessionId) {
-        throw new Error("The backend did not return the Cashfree order ID and payment session.");
+        throw new Error("The server did not return the payment session. Please try again.");
     }
 
     localStorage.setItem("pendingCashfreeOrderId", String(orderId));
@@ -451,50 +560,55 @@ async function createCashfreeOrder() {
 async function startPayment() {
     if (isBusy) return;
 
-    if (!isBookingReady()) {
-        showMessage("Please select a valid appointment date and make sure your hospital, department, doctor, and login are selected.", "error");
+    const token = getPatientToken();
+    if (!token) {
+        sessionStorage.setItem("loginRedirect", "token.html");
+        window.location.href = "index.html#loginModal";
         return;
     }
 
-    setBusy(true, "Preparing secure checkout...");
-    showMessage("Creating your Cashfree sandbox order...", "info");
+    if (!isBookingReady()) {
+        showMessage("Please ensure your hospital, doctor, department, and appointment date are selected.", "error");
+        return;
+    }
+
+    setBusy(true, "Securing appointment...");
+    showMessage("Preparing secure checkout...", "info");
 
     try {
         const { orderId, paymentSessionId } = await createCashfreeOrder();
 
         if (typeof Cashfree !== "function") {
-            throw new Error("Cashfree checkout could not be loaded. Please refresh and try again.");
+            throw new Error("Cashfree checkout could not be loaded. Please refresh the page.");
         }
 
         const cashfree = Cashfree({ mode: "sandbox" });
-        showMessage("Opening Cashfree sandbox checkout. Complete payment there to receive your token.", "info");
+        showMessage("Opening secure checkout... Complete payment to generate your OPD token.", "info");
 
         await cashfree.checkout({
             paymentSessionId,
             redirectTarget: "_self"
         });
     } catch (error) {
-        console.error("Cashfree checkout error:", error);
-        showMessage(error.message || "Unable to start payment. Please try again.", "error");
+        console.error("Checkout error:", error);
+        showMessage(error.message || "Unable to start checkout. Please try again.", "error");
         setBusy(false);
+        refreshButton();
     }
 }
 
-/*
- * Cashfree must return to this page with ?cashfree_order_id={order_id}
- * for this handler to verify payment and request token creation.
- */
 async function verifyPaymentAndCreateToken(orderId) {
     if (!orderId) return;
 
-    if (!getPatientToken()) {
-        showMessage("Please sign in again before checking your payment.", "error");
+    const token = getPatientToken();
+    if (!token) {
+        handleAuthRequired();
         return;
     }
 
     byId("bookingSection").style.display = "block";
     byId("payButton").disabled = true;
-    showMessage("Payment return received. Verifying payment with CarePath...", "info");
+    showMessage("Verifying payment with CarePath...", "info");
 
     try {
         const appointmentDate = stored("selectedAppointmentDate", "appointmentDate");
@@ -503,94 +617,92 @@ async function verifyPaymentAndCreateToken(orderId) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${getPatientToken()}`
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify({
-                patient_name: stored("patientName", "patient_name", "full_name"),
+                patient_name: stored("patientName", "patient_name", "full_name") || "Patient",
                 hospital: getSelectedHospitalName(),
                 department: getSelectedDepartment(),
                 doctor: getSelectedDoctor(),
-                cashfree_order_id: orderId,
-                appointment_date: appointmentDate || null
+                appointment_date: appointmentDate,
+                cashfree_order_id: orderId
             })
         });
 
         const data = await response.json().catch(() => ({}));
-        if (!response.ok || data.success === false) {
-            throw new Error(data.detail || data.message || "Payment could not be verified. No token has been displayed.");
+        if (!response.ok) {
+            throw new Error(data.detail || data.message || "Payment verification failed.");
         }
 
-        const token = data.token || data;
-        if (token.token_number === undefined || token.token_number === null || token.token_number === "") {
-            throw new Error("Payment verification returned no token number. Contact CarePath support before retrying payment.");
+        const createdToken = data.token;
+        if (!createdToken || !createdToken.token_number) {
+            throw new Error("Payment was verified, but token details could not be generated.");
         }
 
-        const verifiedOrderId = token.cashfree_order_id || orderId;
-        const paymentId = token.cashfree_payment_id || data.cashfree_payment_id || "";
+        showReceipt({
+            token: createdToken,
+            appointmentDate,
+            hospital: getSelectedHospitalName(),
+            department: getSelectedDepartment(),
+            doctor: getSelectedDoctor(),
+            orderId,
+            paymentId: data.payment_id || orderId,
+            fee: hospitalFee,
+            platformFee: PLATFORM_FEE,
+            total: hospitalFee + PLATFORM_FEE
+        });
 
-        localStorage.setItem("tokenId", String(token.id || ""));
-        localStorage.setItem("tokenNumber", String(token.token_number));
-        localStorage.setItem("token", String(token.token_number));
-        localStorage.setItem("tokenHospital", token.hospital || getSelectedHospitalName());
-        localStorage.setItem("hospital", token.hospital || getSelectedHospitalName());
-        localStorage.setItem("tokenDepartment", token.department || getSelectedDepartment());
-        localStorage.setItem("department", token.department || getSelectedDepartment());
-        localStorage.setItem("tokenDoctor", token.doctor || getSelectedDoctor());
-        localStorage.setItem("doctor", token.doctor || getSelectedDoctor());
-        localStorage.setItem("tokenStatus", token.status || "waiting");
-        localStorage.setItem("tokenFee", String(token.token_fee ?? hospitalFee));
-        localStorage.setItem("platformFee", String(token.platform_fee ?? PLATFORM_FEE));
-        localStorage.setItem("totalAmount", String(token.total_amount ?? hospitalFee + PLATFORM_FEE));
-        localStorage.setItem("paymentStatus", "Paid");
-        localStorage.setItem("cashfreeOrderId", String(verifiedOrderId));
-        if (paymentId) localStorage.setItem("paymentId", String(paymentId));
-
-        displayReceipt(token, verifiedOrderId, paymentId, appointmentDate);
-
-        // Remove order ID from the URL after successful verification.
-        history.replaceState({}, document.title, window.location.pathname);
+        showMessage("Payment confirmed! Your OPD consultation token has been generated.", "success");
     } catch (error) {
-        console.error("Payment verification failed:", error);
-        showMessage(error.message || "Payment verification failed.", "error");
-        byId("payButton").disabled = true;
+        console.error(error);
+        showMessage(error.message || "Payment could not be verified. If amount was debited, contact support.", "error");
     }
 }
 
-function formatDatePretty(dateStr) {
-    if (!dateStr) return "Today";
+function formatDatePretty(isoDate) {
+    if (!isoDate) return "—";
     try {
-        const parts = dateStr.split("-");
-        if (parts.length === 3) {
-            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-            return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-        }
-    } catch(e) {}
-    return dateStr;
+        const [year, month, day] = isoDate.split("-").map(Number);
+        return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+        });
+    } catch {
+        return isoDate;
+    }
 }
 
-function displayReceipt(token, orderId, paymentId, appointmentDate) {
+function showReceipt(details) {
+    const {
+        token,
+        appointmentDate,
+        hospital,
+        department,
+        doctor,
+        orderId,
+        paymentId,
+        fee,
+        platformFee,
+        total
+    } = details;
+
     byId("bookingSection").style.display = "none";
     byId("receiptSection").style.display = "block";
 
-    const hospital = token.hospital || getSelectedHospitalName();
-    const department = token.department || getSelectedDepartment();
-    const doctor = token.doctor || getSelectedDoctor();
-    const fee = Number(token.token_fee ?? hospitalFee);
-    const platformFee = Number(token.platform_fee ?? PLATFORM_FEE);
-    const total = Number(token.total_amount ?? fee + platformFee);
-
     byId("tokenNumber").textContent = String(token.token_number);
-        byId("resultPayment").textContent = "Paid • Verified by CarePath";
+    byId("resultPayment").textContent = "Paid • Verified by CarePath";
     byId("resultStatus").textContent = token.status || "waiting";
     byId("resultDate").textContent = formatDatePretty(appointmentDate);
     byId("resultHospital").textContent = hospital;
     byId("resultDepartment").textContent = department;
     byId("resultDoctor").textContent = doctor;
 
-    byId("receiptTokenId").textContent = token.id ?? "Not available";
-    byId("receiptOrderId").textContent = orderId || "Not available";
-    byId("receiptPaymentId").textContent = paymentId || "Not available";
-    byId("receiptPatient").textContent = stored("patientName", "patient_name", "full_name") || "Not available";
+    byId("receiptTokenId").textContent = token.id ?? "—";
+    byId("receiptOrderId").textContent = orderId || "—";
+    byId("receiptPaymentId").textContent = paymentId || "—";
+    byId("receiptPatient").textContent = stored("patientName", "patient_name", "full_name") || "Patient";
     byId("receiptFee").textContent = money(fee);
     byId("receiptPlatformFee").textContent = money(platformFee);
     byId("receiptTotal").textContent = money(total);
@@ -598,6 +710,7 @@ function displayReceipt(token, orderId, paymentId, appointmentDate) {
 
 byId("appointmentDate").addEventListener("change", function () {
     localStorage.setItem("selectedAppointmentDate", this.value);
+    validateAppointmentDate();
     refreshButton();
 });
 
@@ -612,6 +725,7 @@ byId("printButton").addEventListener("click", () => window.print());
 
 displayBooking();
 loadHospitalFee();
+loadDoctorSchedule();
 
 const params = new URLSearchParams(window.location.search);
 const returnedOrderId = params.get("cashfree_order_id");

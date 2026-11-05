@@ -205,10 +205,10 @@ def create_cashfree_vendor(
             detail="Unable to connect to Cashfree.",
         )
 
-# JWT Authentication Configuration
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+# JWT Authentication Configuration (30-day persistent session)
+JWT_SECRET_KEY = (os.getenv("JWT_SECRET_KEY") or "1AD1dzdD0smBCRaHxGxy6QyAM_r4DwP7_O8SsTn2kRWF-u-nVTB1Om2IVApdOVrY").strip()
 JWT_ALGORITHM = "HS256"
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30  # 30 days
 
 
 def create_access_token(user_id: int, role: str) -> str:
@@ -1752,7 +1752,7 @@ class TokenRequest(BaseModel):
 
 class CreateOrderRequest(BaseModel):
 
-    patient_name: str
+    patient_name: Optional[str] = None
 
     hospital: str
 
