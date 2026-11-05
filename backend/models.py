@@ -1,4 +1,3 @@
-
 from datetime import datetime, date
 
 from sqlalchemy import (
@@ -90,6 +89,10 @@ class Hospital(Base):
     cashfree_vendor_id = Column(
         String(255), nullable=True, unique=True
     )
+
+    # Operating hours (default 09:00 to 21:00)
+    opening_time = Column(String(10), default="09:00", nullable=True)
+    closing_time = Column(String(10), default="21:00", nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -287,3 +290,13 @@ class PlatformContact(Base):
     grievance_email = Column(String(255), default="mangarajesh58@gmail.com")
     working_hours = Column(String(100), default="Mon - Sat: 9:00 AM - 7:00 PM IST")
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class HospitalClosure(Base):
+    __tablename__ = "hospital_closures"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hospital_id = Column(Integer, nullable=False, index=True)
+    closure_date = Column(Date, nullable=False, index=True)
+    reason = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+

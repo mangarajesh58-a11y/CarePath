@@ -77,6 +77,7 @@ from models import (
     Admin,
     RegistrationOTP,
     PlatformContact,
+    HospitalClosure,
 )
 from fastapi.responses import FileResponse, Response
 
@@ -784,6 +785,12 @@ def run_database_migration():
 
         "razorpay_account_id":
             "VARCHAR(255) NULL",
+
+        "opening_time":
+            "VARCHAR(10) DEFAULT '09:00' NULL",
+
+        "closing_time":
+            "VARCHAR(10) DEFAULT '21:00' NULL",
 
         "created_at":
             "TIMESTAMP NULL",
@@ -1687,9 +1694,19 @@ class HospitalLogin(BaseModel):
     password: str
 
 
+class HospitalClosureRequest(BaseModel):
+    closure_date: str
+    reason: Optional[str] = "Scheduled Hospital Holiday / Maintenance"
+
+class DoctorLeaveRequest(BaseModel):
+    leave_date: str
+    reason: Optional[str] = "Doctor on Personal / Medical Leave"
+
 class HospitalUpdate(BaseModel):
 
     phone: Optional[str] = None
+    opening_time: Optional[str] = None
+    closing_time: Optional[str] = None
 
     city: Optional[str] = None
 
@@ -1828,6 +1845,9 @@ def hospital_to_dict(hospital):
         "payment_account_status": (
             hospital.payment_account_status
         ),
+        "opening_time": hospital.opening_time or "09:00",
+        "closing_time": hospital.closing_time or "21:00",
+        "operating_hours_12h": f"{format_time_12h(hospital.opening_time or '09:00')} - {format_time_12h(hospital.closing_time or '21:00')}",
     }
 
 
@@ -1845,6 +1865,9 @@ def public_hospital_to_dict(hospital):
         "longitude": hospital.longitude,
         "approval_status": hospital.approval_status,
         "is_published": hospital.is_published,
+        "opening_time": hospital.opening_time or "09:00",
+        "closing_time": hospital.closing_time or "21:00",
+        "operating_hours_12h": f"{format_time_12h(hospital.opening_time or '09:00')} - {format_time_12h(hospital.closing_time or '21:00')}",
     }
 # ============================================================
 # HELPER - DOCTOR RESPONSE
@@ -3390,6 +3413,12 @@ def update_hospital(
             data.description.strip()
         )
 
+    if data.opening_time is not None:
+        hospital.opening_time = data.opening_time.strip()
+
+    if data.closing_time is not None:
+        hospital.closing_time = data.closing_time.strip()
+
     if data.token_fee is not None:
 
         if data.token_fee < 0:
@@ -3924,6 +3953,31 @@ def create_cashfree_order(
 
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
+
+    target_appt_date = data.appointment_date or (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+
+    # Block booking if hospital has scheduled a closure on this appointment date
+    closure = db.query(HospitalClosure).filter(
+        HospitalClosure.hospital_id == hospital.id,
+        HospitalClosure.closure_date == target_appt_date
+    ).first()
+    if closure:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{hospital.name} is closed on {target_appt_date} ({closure.reason or 'Scheduled Closure'}). Online token booking is unavailable for this date."
+        )
+
+    # Block booking if doctor is on leave on this appointment date
+    doc_leave = db.query(DoctorScheduleException).filter(
+        DoctorScheduleException.doctor_id == doctor.id,
+        DoctorScheduleException.exception_date == target_appt_date,
+        DoctorScheduleException.is_closed == True
+    ).first()
+    if doc_leave:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dr. {doctor.name} is on leave on {target_appt_date} ({doc_leave.reason or 'Unavailable'}). Please select another date or doctor."
+        )
 
     token_fee = int(hospital.token_fee or 0)
     platform_fee = PLATFORM_FEE
@@ -4742,45 +4796,131 @@ class CompleteTokenRequest(BaseModel):
 
 
 def get_queue_status_for_token(db: Session, token: Token) -> dict:
-    """Calculates real-time live queue ETA and waiting position for an active token."""
+    """Calculates scheduled appointment time and real-time live ETA based on hospital opening hours,
+    doctor consultation schedule, appointment date, token sequence number, and live queue status."""
     if not token or not getattr(token, "appointment_date", None) or not getattr(token, "hospital_id", None):
         return {}
 
     try:
-        # Base query for today's tokens for this doctor/hospital
+        # 1. Hospital Operating Hours
+        hospital = db.query(Hospital).filter(Hospital.id == token.hospital_id).first()
+        hosp_open = (getattr(hospital, "opening_time", None) or "09:00").strip()
+        hosp_close = (getattr(hospital, "closing_time", None) or "21:00").strip()
+        hosp_hours_12h = f"{format_time_12h(hosp_open)} - {format_time_12h(hosp_close)}"
+
+        # 2. Doctor Consultation Hours & Leave Status
+        doctor = None
+        if getattr(token, "doctor_id", None):
+            doctor = db.query(Doctor).filter(Doctor.id == token.doctor_id).first()
+        if not doctor and token.doctor and token.hospital_id:
+            doctor = db.query(Doctor).filter(Doctor.hospital_id == token.hospital_id, Doctor.name == token.doctor).first()
+
+        doc_start = None
+        doc_end = None
+        consultation_duration = 15  # standard minutes per patient
+        is_doctor_on_leave = False
+        leave_reason = None
+
+        if doctor:
+            # Check schedule exception for appointment_date
+            exc = db.query(DoctorScheduleException).filter(
+                DoctorScheduleException.doctor_id == doctor.id,
+                DoctorScheduleException.exception_date == token.appointment_date
+            ).first()
+            if exc:
+                if exc.is_closed:
+                    is_doctor_on_leave = True
+                    leave_reason = exc.reason
+                if exc.start_time:
+                    doc_start = exc.start_time
+                if exc.end_time:
+                    doc_end = exc.end_time
+                if exc.consultation_minutes:
+                    consultation_duration = exc.consultation_minutes
+
+            # Check weekly schedule
+            if not doc_start and getattr(token, "appointment_date", None):
+                weekday = token.appointment_date.weekday()
+                ws = db.query(DoctorWeeklySchedule).filter(
+                    DoctorWeeklySchedule.doctor_id == doctor.id,
+                    DoctorWeeklySchedule.weekday == weekday
+                ).first()
+                if ws and ws.is_working and ws.start_time:
+                    doc_start = ws.start_time
+                    doc_end = ws.end_time
+                    if ws.consultation_minutes:
+                        consultation_duration = ws.consultation_minutes
+
+            if not doc_start:
+                doc_start = doctor.start_time
+                doc_end = doctor.end_time
+
+        effective_start = doc_start or hosp_open or "09:00"
+        effective_end = doc_end or hosp_close or "21:00"
+        doc_hours_12h = f"{format_time_12h(effective_start)} - {format_time_12h(effective_end)}"
+
+        # 3. Base Scheduled Time: start_time + (token_number - 1) * consultation_duration
+        token_num = max(1, token.token_number or 1)
+        try:
+            sh_parts = [int(p) for p in effective_start[:5].split(":")]
+            start_h, start_m = sh_parts[0], sh_parts[1]
+        except Exception:
+            start_h, start_m = 9, 0
+
+        sched_total_mins = start_h * 60 + start_m + (token_num - 1) * consultation_duration
+        sched_h = (sched_total_mins // 60) % 24
+        sched_m = sched_total_mins % 60
+        scheduled_time_12h = datetime.strptime(f"{sched_h:02d}:{sched_m:02d}", "%H:%M").strftime("%I:%M %p").lstrip("0")
+
+        # 4. Live Queue Status
         query = db.query(Token).filter(
             Token.hospital_id == token.hospital_id,
             Token.appointment_date == token.appointment_date,
         )
-        if token.doctor:
+        if doctor:
+            query = query.filter(or_(Token.doctor_id == doctor.id, Token.doctor == doctor.name))
+        elif token.doctor:
             query = query.filter(Token.doctor == token.doctor)
         elif token.department:
             query = query.filter(Token.department == token.department)
 
-        # Token currently in 'serving' status
         serving = query.filter(Token.status == "serving").order_by(Token.token_number.desc()).first()
         serving_number = serving.token_number if serving else None
 
-        # Tokens waiting ahead of this token
         tokens_ahead = query.filter(
             Token.status == "waiting",
             Token.token_number < token.token_number
         ).count()
 
-        # Average consultation: 10 mins
-        wait_mins = tokens_ahead * 10
-        now = datetime.utcnow()
-        est_time_dt = now + timedelta(minutes=wait_mins + (5 if serving_number else 0))
-        # Indian Standard Time (+5:30)
-        ist_time = est_time_dt + timedelta(hours=5, minutes=30)
-        est_time_12h = ist_time.strftime("%I:%M %p").lstrip("0")
+        # 5. Real-Time ETA vs Scheduled Time
+        now_utc = datetime.utcnow()
+        now_ist = now_utc + timedelta(hours=5, minutes=30)
+        today_ist = now_ist.date()
+
+        if token.appointment_date == today_ist:
+            wait_mins = tokens_ahead * consultation_duration
+            curr_mins = now_ist.hour * 60 + now_ist.minute
+            start_mins = start_h * 60 + start_m
+            if curr_mins >= start_mins or serving_number:
+                live_eta_dt = now_ist + timedelta(minutes=wait_mins + (5 if serving_number else 0))
+                estimated_time_12h = live_eta_dt.strftime("%I:%M %p").lstrip("0")
+            else:
+                estimated_time_12h = scheduled_time_12h
+        else:
+            estimated_time_12h = scheduled_time_12h
+            wait_mins = tokens_ahead * consultation_duration
 
         return {
             "currently_serving_token": serving_number,
             "tokens_ahead": tokens_ahead,
             "estimated_wait_minutes": wait_mins,
-            "estimated_time_12h": est_time_12h,
+            "scheduled_time_12h": scheduled_time_12h,
+            "estimated_time_12h": estimated_time_12h,
             "is_your_turn": token.status == "serving",
+            "hospital_operating_hours": hosp_hours_12h,
+            "doctor_consultation_hours": doc_hours_12h,
+            "doctor_on_leave": is_doctor_on_leave,
+            "leave_reason": leave_reason,
         }
     except Exception as err:
         import logging
@@ -4789,8 +4929,13 @@ def get_queue_status_for_token(db: Session, token: Token) -> dict:
             "currently_serving_token": None,
             "tokens_ahead": 0,
             "estimated_wait_minutes": 0,
+            "scheduled_time_12h": None,
             "estimated_time_12h": None,
             "is_your_turn": token.status == "serving",
+            "hospital_operating_hours": "09:00 AM - 09:00 PM",
+            "doctor_consultation_hours": "09:00 AM - 05:00 PM",
+            "doctor_on_leave": False,
+            "leave_reason": None,
         }
 
 
@@ -6355,3 +6500,324 @@ def get_doctor_photo(filename: str, db: Session = Depends(get_db)):
   <path d="M145 150 h10 M150 145 v10" stroke="#0284c7" stroke-width="3" stroke-linecap="round"/>
 </svg>"""
     return Response(content=svg, media_type="image/svg+xml")
+
+# ============================================================
+# HOSPITAL PLANNED CLOSURES (3 to 10 Days Advance Rule)
+# ============================================================
+
+@app.post("/hospitals/{hospital_id}/closures")
+def schedule_hospital_closure(
+    hospital_id: int,
+    data: HospitalClosureRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Schedules a hospital closure. Must be updated minimum 3 days and maximum 10 days before.
+    Automatically cancels and refunds 100% of all active patient tokens on that date."""
+    if current_user["user_id"] != hospital_id:
+        raise HTTPException(status_code=403, detail="Unauthorized to schedule closures for another hospital.")
+
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found.")
+
+    try:
+        closure_dt = date.fromisoformat(data.closure_date.strip())
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid closure date format. Please use YYYY-MM-DD.")
+
+    today_ist = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+    days_in_advance = (closure_dt - today_ist).days
+
+    if days_in_advance < 3:
+        raise HTTPException(
+            status_code=400,
+            detail="Hospital closure must be updated at least 3 days in advance to notify booked patients."
+        )
+    if days_in_advance > 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Hospital closure can only be updated at most 10 days in advance (advance booking window)."
+        )
+
+    reason = (data.reason or "Scheduled Hospital Holiday / Maintenance").strip()
+
+    # Create or update existing closure record
+    existing = db.query(HospitalClosure).filter(
+        HospitalClosure.hospital_id == hospital_id,
+        HospitalClosure.closure_date == closure_dt,
+    ).first()
+
+    if existing:
+        existing.reason = reason
+        closure_record = existing
+    else:
+        closure_record = HospitalClosure(
+            hospital_id=hospital_id,
+            closure_date=closure_dt,
+            reason=reason,
+        )
+        db.add(closure_record)
+
+    # Cancel all active tokens on that date & refund 100%
+    affected_tokens = db.query(Token).filter(
+        Token.hospital_id == hospital_id,
+        Token.appointment_date == closure_dt,
+        Token.status.in_(["waiting", "serving"]),
+    ).all()
+
+    refund_count = 0
+    for t in affected_tokens:
+        t.status = "cancelled"
+        t.payment_status = "refunded"
+        t.notes = f"Hospital closed on {closure_dt} ({reason}). 100% Refund of ₹{t.total_amount:.2f} processed to patient account."
+        refund_count += 1
+        try:
+            if t.patient_id:
+                pat = db.query(Patient).filter(Patient.id == t.patient_id).first()
+                if pat and pat.email:
+                    send_carepath_email(
+                        to_email=pat.email,
+                        subject=f"CarePath Refund Notice: {hospital.name} is closed on {closure_dt}",
+                        text=f"Dear {pat.full_name}, {hospital.name} will be closed on {closure_dt} ({reason}). Your token #{t.token_number} has been cancelled and a 100% refund of ₹{t.total_amount:.2f} has been processed to your account.",
+                        html=f"""<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 20px;">
+                        <h2 style="color: #0284c7;">🏥 CarePath Appointment Cancellation & 100% Refund</h2>
+                        <p>Dear <strong>{pat.full_name}</strong>,</p>
+                        <p><strong>{hospital.name}</strong> has announced a scheduled closure on <strong>{closure_dt}</strong> ({reason}).</p>
+                        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                          <p style="margin: 0; color: #065f46; font-size: 16px;"><strong>Token #{t.token_number} Cancelled</strong></p>
+                          <p style="margin: 5px 0 0; color: #047857;">A full 100% refund of <strong>₹{t.total_amount:.2f}</strong> has been initiated back to your payment account.</p>
+                        </div>
+                        <p>We apologize for the inconvenience and welcome you to book another date.</p>
+                        <p>CarePath Healthcare Team</p>
+                        </body></html>"""
+                    )
+        except Exception:
+            pass
+
+    db.commit()
+    db.refresh(closure_record)
+
+    return {
+        "success": True,
+        "closure_id": closure_record.id,
+        "hospital_id": hospital_id,
+        "closure_date": str(closure_record.closure_date),
+        "reason": closure_record.reason,
+        "refunded_tokens": refund_count,
+        "message": f"Hospital closure scheduled for {closure_dt}. {refund_count} active token(s) cancelled and refunded 100%."
+    }
+
+
+@app.get("/hospitals/{hospital_id}/closures")
+def get_hospital_closures(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+):
+    """Returns upcoming closures for a hospital."""
+    today_ist = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+    closures = (
+        db.query(HospitalClosure)
+        .filter(
+            HospitalClosure.hospital_id == hospital_id,
+            HospitalClosure.closure_date >= today_ist,
+        )
+        .order_by(HospitalClosure.closure_date.asc())
+        .all()
+    )
+    return [
+        {
+            "id": c.id,
+            "hospital_id": c.hospital_id,
+            "closure_date": str(c.closure_date),
+            "reason": c.reason,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        }
+        for c in closures
+    ]
+
+
+@app.delete("/hospitals/{hospital_id}/closures/{closure_id}")
+def delete_hospital_closure(
+    hospital_id: int,
+    closure_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Deletes/cancels a scheduled hospital closure."""
+    if current_user["user_id"] != hospital_id:
+        raise HTTPException(status_code=403, detail="Unauthorized.")
+
+    closure = (
+        db.query(HospitalClosure)
+        .filter(
+            HospitalClosure.id == closure_id,
+            HospitalClosure.hospital_id == hospital_id,
+        )
+        .first()
+    )
+    if not closure:
+        raise HTTPException(status_code=404, detail="Closure not found.")
+
+    db.delete(closure)
+    db.commit()
+    return {"success": True, "message": "Hospital closure removed successfully."}
+
+
+# ============================================================
+# DOCTOR ON LEAVE & AUTOMATIC PATIENT REFUND
+# ============================================================
+
+@app.post("/hospitals/{hospital_id}/doctors/{doctor_id}/leave")
+def mark_doctor_on_leave(
+    hospital_id: int,
+    doctor_id: int,
+    data: DoctorLeaveRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Marks a doctor on leave for a given date. Automatically cancels all active tokens
+    for this doctor on that date, updates payment status to 'refunded', and logs 100% refund."""
+    if current_user["user_id"] != hospital_id:
+        raise HTTPException(status_code=403, detail="Unauthorized.")
+
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found.")
+
+    doctor = db.query(Doctor).filter(Doctor.id == doctor_id, Doctor.hospital_id == hospital_id).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found in this hospital.")
+
+    try:
+        leave_dt = date.fromisoformat(data.leave_date.strip())
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid leave date format. Please use YYYY-MM-DD.")
+
+    reason = (data.reason or "Doctor on Leave").strip()
+
+    # Record or update in DoctorScheduleException
+    exc = db.query(DoctorScheduleException).filter(
+        DoctorScheduleException.doctor_id == doctor_id,
+        DoctorScheduleException.exception_date == leave_dt,
+    ).first()
+
+    if exc:
+        exc.is_closed = True
+        exc.reason = reason
+    else:
+        exc = DoctorScheduleException(
+            doctor_id=doctor_id,
+            exception_date=leave_dt,
+            is_closed=True,
+            reason=reason,
+        )
+        db.add(exc)
+
+    # Automatically cancel all active tokens for this doctor on that date & refund 100%
+    affected_tokens = db.query(Token).filter(
+        Token.hospital_id == hospital_id,
+        or_(Token.doctor_id == doctor_id, Token.doctor == doctor.name),
+        Token.appointment_date == leave_dt,
+        Token.status.in_(["waiting", "serving"]),
+    ).all()
+
+    refund_count = 0
+    for t in affected_tokens:
+        t.status = "cancelled"
+        t.payment_status = "refunded"
+        t.notes = f"Doctor on leave ({reason}). 100% Refund (₹{t.total_amount:.2f}) processed to patient account."
+        refund_count += 1
+        try:
+            if t.patient_id:
+                pat = db.query(Patient).filter(Patient.id == t.patient_id).first()
+                if pat and pat.email:
+                    send_carepath_email(
+                        to_email=pat.email,
+                        subject=f"CarePath Refund Notice: Dr. {doctor.name} is on leave on {leave_dt}",
+                        text=f"Dear {pat.full_name}, Dr. {doctor.name} is on leave on {leave_dt} ({reason}). Your token #{t.token_number} has been cancelled and a 100% refund of ₹{t.total_amount:.2f} has been processed to your account.",
+                        html=f"""<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 20px;">
+                        <h2 style="color: #0284c7;">🏥 CarePath Appointment Cancellation & 100% Refund</h2>
+                        <p>Dear <strong>{pat.full_name}</strong>,</p>
+                        <p><strong>Dr. {doctor.name}</strong> at {hospital.name} is on leave on <strong>{leave_dt}</strong> ({reason}).</p>
+                        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                          <p style="margin: 0; color: #065f46; font-size: 16px;"><strong>Token #{t.token_number} Cancelled</strong></p>
+                          <p style="margin: 5px 0 0; color: #047857;">A full 100% refund of <strong>₹{t.total_amount:.2f}</strong> has been credited to your payment account.</p>
+                        </div>
+                        <p>We apologize for the inconvenience and welcome you to book another available date.</p>
+                        <p>CarePath Healthcare Team</p>
+                        </body></html>"""
+                    )
+        except Exception:
+            pass
+
+    db.commit()
+
+    return {
+        "success": True,
+        "doctor_id": doctor.id,
+        "doctor_name": doctor.name,
+        "leave_date": str(leave_dt),
+        "reason": reason,
+        "refunded_tokens": refund_count,
+        "message": f"Dr. {doctor.name} marked on leave for {leave_dt}. {refund_count} token(s) auto-refunded 100% to patient accounts."
+    }
+
+
+@app.get("/hospitals/{hospital_id}/doctors/{doctor_id}/exceptions")
+@app.get("/doctors/{doctor_id}/leave")
+def get_doctor_leaves(
+    doctor_id: int,
+    hospital_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    """Returns scheduled leaves/exceptions for a doctor."""
+    today_ist = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+    query = db.query(DoctorScheduleException).filter(
+        DoctorScheduleException.doctor_id == doctor_id,
+        DoctorScheduleException.exception_date >= today_ist,
+        DoctorScheduleException.is_closed == True,
+    ).order_by(DoctorScheduleException.exception_date.asc())
+
+    exceptions = query.all()
+    return [
+        {
+            "id": e.id,
+            "doctor_id": e.doctor_id,
+            "leave_date": str(e.exception_date),
+            "is_closed": e.is_closed,
+            "reason": e.reason,
+        }
+        for e in exceptions
+    ]
+
+
+@app.delete("/hospitals/{hospital_id}/doctors/{doctor_id}/leave/{leave_date}")
+def cancel_doctor_leave(
+    hospital_id: int,
+    doctor_id: int,
+    leave_date: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Cancels a doctor's leave for a specific date if doctor resumes OPD."""
+    if current_user["user_id"] != hospital_id:
+        raise HTTPException(status_code=403, detail="Unauthorized.")
+
+    try:
+        leave_dt = date.fromisoformat(leave_date.strip())
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid leave date format.")
+
+    exc = db.query(DoctorScheduleException).filter(
+        DoctorScheduleException.doctor_id == doctor_id,
+        DoctorScheduleException.exception_date == leave_dt,
+    ).first()
+
+    if not exc:
+        raise HTTPException(status_code=404, detail="No leave found for this date.")
+
+    db.delete(exc)
+    db.commit()
+    return {"success": True, "message": f"Doctor leave for {leave_date} cancelled successfully."}
+

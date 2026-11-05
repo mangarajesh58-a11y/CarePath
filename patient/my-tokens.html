@@ -549,8 +549,6 @@
             bookedOn = cd.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " at " + cd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
           } catch(e) {}
         }
-          } catch(e) {}
-        }
 
         return `
           <div class="token-card">
@@ -576,19 +574,31 @@
               </div>
             ` : ""}
 
-            ${["waiting", "serving"].includes(t.status) && t.queue_status ? `
+
+
+            ${(t.status === "cancelled" && (t.payment_status === "refunded" || (t.notes && t.notes.toLowerCase().includes("refund")))) ? `
+              <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 12px 16px; margin: 12px 16px 0; color: #065f46; display: flex; align-items: flex-start; gap: 10px;">
+                <span style="font-size: 22px;">💰</span>
+                <div style="font-size: 13px; line-height: 1.4;">
+                  <strong style="display:block; font-size: 14px; color: #047857; margin-bottom: 2px;">100% Refund Processed</strong>
+                  ${t.notes || "Doctor on leave / hospital closed. Full refund has been credited to your account."}
+                </div>
+              </div>
+            ` : ""}
+
+            ${["waiting", "serving"].includes(t.status) ? `
               <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 12px 16px; margin: 12px 16px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; text-align: center;">
                 <div style="background: white; border-radius: 8px; padding: 8px; border: 1px solid #e0f2fe;">
                   <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Now Serving</div>
-                  <div style="font-size: 18px; font-weight: 800; color: #0284c7;">#${t.queue_status.currently_serving_token || "--"}</div>
+                  <div style="font-size: 18px; font-weight: 800; color: #0284c7;">#${t.currently_serving_token ?? t.queue_status?.currently_serving_token ?? "--"}</div>
                 </div>
                 <div style="background: white; border-radius: 8px; padding: 8px; border: 1px solid #e0f2fe;">
                   <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Ahead of You</div>
-                  <div style="font-size: 18px; font-weight: 800; color: #f59e0b;">${t.queue_status.tokens_ahead ?? 0} patients</div>
+                  <div style="font-size: 18px; font-weight: 800; color: #f59e0b;">${t.tokens_ahead ?? t.queue_status?.tokens_ahead ?? 0} patients</div>
                 </div>
                 <div style="background: white; border-radius: 8px; padding: 8px; border: 1px solid #e0f2fe;">
-                  <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Estimated Wait</div>
-                  <div style="font-size: 14px; font-weight: 700; color: #16a34a; margin-top: 3px;">${t.queue_status.estimated_consultation_time ? t.queue_status.estimated_consultation_time.split(" ")[1] + " " + t.queue_status.estimated_consultation_time.split(" ")[2] : "~" + (t.queue_status.estimated_wait_minutes || 0) + "m"}</div>
+                  <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Estimated Time</div>
+                  <div style="font-size: 13px; font-weight: 700; color: #16a34a; margin-top: 3px;">${t.estimated_time_12h || t.scheduled_time_12h || (t.queue_status?.estimated_time_12h) || ("~" + (t.estimated_wait_minutes ?? 15) + "m")}</div>
                 </div>
               </div>
             ` : ""}
@@ -598,6 +608,10 @@
                 <div class="info-item">
                   <div class="info-label">Doctor</div>
                   <div class="info-value">👨‍⚕️ ${t.doctor || "Consultant Doctor"}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Estimated Time</div>
+                  <div class="info-value" style="color: #16a34a; font-weight: 700;">⏱️ ${t.estimated_time_12h || t.scheduled_time_12h || "As per queue"}</div>
                 </div>
                 <div class="info-item">
                   <div class="info-label">Appointment Date</div>
@@ -656,6 +670,8 @@
           <div class="receipt-row"><span style="color:#64748b;">Doctor</span><strong>${t.doctor || "—"}</strong></div>
           <div class="receipt-row"><span style="color:#64748b;">Appointment Date</span><strong>${formatApptDate(t.appointment_date)}</strong></div>
           <div class="receipt-row"><span style="color:#64748b;">Token Status</span><strong>${t.status || "Waiting"}</strong></div>
+          <div class="receipt-row"><span style="color:#64748b;">Estimated Consultation</span><strong style="color: #16a34a;">⏱️ ${t.estimated_time_12h || t.scheduled_time_12h || "Calculated at arrival"}</strong></div>
+          ${t.hospital_operating_hours ? `<div class="receipt-row"><span style="color:#64748b;">Hospital Hours</span><span>${t.hospital_operating_hours}</span></div>` : ""}
           <div class="receipt-row"><span style="color:#64748b;">Hospital Token Fee</span><span>₹${(t.token_fee || 0).toFixed(2)}</span></div>
           <div class="receipt-row"><span style="color:#64748b;">Platform Convenience Fee</span><span>₹${(t.platform_fee || 0).toFixed(2)}</span></div>
           <div class="receipt-row receipt-total"><span>Total Paid</span><span style="color: #0284c7;">₹${(t.total_amount || 0).toFixed(2)}</span></div>

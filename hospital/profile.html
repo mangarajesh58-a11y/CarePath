@@ -296,6 +296,54 @@
             ₹10 platform fee separately.
         </p>
 
+        <!-- ==============================
+             OPERATING HOURS
+        =============================== -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
+            <div>
+                <label for="profileOpeningTime" style="font-weight: 600; color: #334155; margin-bottom: 6px; display: block;">
+                    🏥 Hospital Opening Time
+                </label>
+                <input type="time" id="profileOpeningTime" value="09:00" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+            </div>
+            <div>
+                <label for="profileClosingTime" style="font-weight: 600; color: #334155; margin-bottom: 6px; display: block;">
+                    🏥 Hospital Closing Time
+                </label>
+                <input type="time" id="profileClosingTime" value="21:00" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+            </div>
+        </div>
+
+        <!-- ==============================
+             PLANNED CLOSURES / HOLIDAYS
+        =============================== -->
+        <div style="margin-top: 30px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+            <h3 style="margin-top: 0; color: #0284c7; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                📅 Hospital Planned Closures & Holidays
+            </h3>
+            <p style="font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 16px;">
+                <strong>Notice Rule:</strong> Planned closures must be announced between <strong>minimum 3 days</strong> and <strong>maximum 10 days</strong> in advance. Any patient tokens already booked on that date will be automatically cancelled and <strong>100% refunded</strong>.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px; align-items: end;">
+                <div>
+                    <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Closure Date</label>
+                    <input type="date" id="closureDateInput" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Reason / Occasion</label>
+                    <input type="text" id="closureReasonInput" placeholder="e.g. Annual Maintenance, National Holiday" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                </div>
+                <div>
+                    <button type="button" onclick="submitHospitalClosure()" style="background: #0284c7; color: white; border: none; padding: 9px 18px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                        + Add Closure
+                    </button>
+                </div>
+            </div>
+            <div id="closuresList" style="margin-top: 16px;">
+                <p style="font-size: 13px; color: #94a3b8;">Loading upcoming closures...</p>
+            </div>
+        </div>
+
 
         <div
             style="
@@ -782,6 +830,14 @@ async function loadProfile() {
         ).value =
             hospital.token_fee ?? 0;
 
+        if (document.getElementById("profileOpeningTime")) {
+            document.getElementById("profileOpeningTime").value = hospital.opening_time || "09:00";
+        }
+        if (document.getElementById("profileClosingTime")) {
+            document.getElementById("profileClosingTime").value = hospital.closing_time || "21:00";
+        }
+        loadHospitalClosuresList();
+
 
 
         /* ==============================
@@ -926,7 +982,13 @@ async function saveProfile() {
 
 
         token_fee:
-            tokenFee
+            tokenFee,
+
+        opening_time:
+            document.getElementById("profileOpeningTime") ? document.getElementById("profileOpeningTime").value : "09:00",
+
+        closing_time:
+            document.getElementById("profileClosingTime") ? document.getElementById("profileClosingTime").value : "21:00"
 
     };
 
@@ -1666,6 +1728,83 @@ function goDashboard() {
 ================================== */
 
 loadProfile();
+
+
+/* ==================================
+   HOSPITAL CLOSURES MANAGEMENT
+================================== */
+async function loadHospitalClosuresList() {
+    const listEl = document.getElementById("closuresList");
+    if (!listEl) return;
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/closures`, {
+            headers: getHospitalAuthHeaders()
+        });
+        if (!res.ok) return;
+        const closures = await res.json();
+        if (!closures || closures.length === 0) {
+            listEl.innerHTML = "<p style='font-size: 13px; color: #64748b; margin: 0;'>No upcoming closures scheduled. Hospital is open as per regular hours.</p>";
+            return;
+        }
+        listEl.innerHTML = closures.map(c => `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 8px;">
+                <div>
+                    <strong style="color: #0f172a; font-size: 14px;">📅 ${c.closure_date}</strong>
+                    <span style="color: #64748b; font-size: 13px; margin-left: 8px;">(${escapeHtml(c.reason || 'Closed')})</span>
+                </div>
+                <button type="button" onclick="cancelHospitalClosure(${c.id})" style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                    Remove
+                </button>
+            </div>
+        `).join("");
+    } catch(err) {
+        console.warn("Could not load closures:", err);
+    }
+}
+
+async function submitHospitalClosure() {
+    const dateInput = document.getElementById("closureDateInput");
+    const reasonInput = document.getElementById("closureReasonInput");
+    if (!dateInput || !dateInput.value) {
+        alert("Please select a closure date.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/closures`, {
+            method: "POST",
+            headers: getHospitalAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                closure_date: dateInput.value.trim(),
+                reason: (reasonInput ? reasonInput.value : "").trim() || "Hospital Holiday"
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || "Unable to schedule closure.");
+        }
+        alert("✓ " + (data.message || "Closure scheduled successfully."));
+        if (reasonInput) reasonInput.value = "";
+        loadHospitalClosuresList();
+    } catch(err) {
+        alert("⚠️ " + err.message);
+    }
+}
+
+async function cancelHospitalClosure(closureId) {
+    if (!confirm("Are you sure you want to remove this closure?")) return;
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/closures/${closureId}`, {
+            method: "DELETE",
+            headers: getHospitalAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to delete closure.");
+        alert("Closure removed.");
+        loadHospitalClosuresList();
+    } catch(err) {
+        alert(err.message);
+    }
+}
 
 </script>
 

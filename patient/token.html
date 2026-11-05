@@ -193,6 +193,10 @@
                 <span class="label">Consultation Hours</span>
                 <span class="value" id="consultationHours">Loading...</span>
             </div>
+            <div class="row" id="hospitalHoursRow">
+                <span class="label">Hospital Operating Hours</span>
+                <span class="value" id="hospitalHours">09:00 AM - 09:00 PM</span>
+            </div>
             <div class="row" id="doctorDaysRow" style="display:none;">
                 <span class="label">Available Days</span>
                 <span class="value" id="doctorDays" style="color: #0284c7;">-</span>
@@ -246,6 +250,7 @@
         <div class="card">
             <div class="row"><span class="label">Payment</span><span class="value" id="resultPayment">—</span></div>
             <div class="row"><span class="label">Token status</span><span class="value" id="resultStatus">Waiting</span></div>
+            <div class="row"><span class="label">Estimated Time</span><span class="value" id="resultEstimatedTime" style="color: #16a34a; font-weight: 700;">—</span></div>
             <div class="row"><span class="label">Appointment date</span><span class="value" id="resultDate">—</span></div>
             <div class="row"><span class="label">Hospital</span><span class="value" id="resultHospital">—</span></div>
             <div class="row"><span class="label">Department</span><span class="value" id="resultDepartment">—</span></div>
@@ -423,10 +428,33 @@ function displayBooking() {
     refreshButton();
 }
 
+let currentHospitalClosures = [];
+let currentDoctorLeaves = [];
+
 async function loadDoctorSchedule() {
     const docId = stored("selectedDoctorId");
     const docName = getSelectedDoctor();
-    if (!hospitalId || (!docId && !docName)) return;
+    if (!hospitalId) return;
+
+    // Fetch hospital operating hours & planned closures
+    try {
+        const hospRes = await fetch(`${API}/hospitals/${encodeURIComponent(hospitalId)}`);
+        if (hospRes.ok) {
+            const hData = await hospRes.json();
+            if (hData.operating_hours_12h && byId("hospitalHours")) {
+                byId("hospitalHours").textContent = hData.operating_hours_12h;
+            }
+        }
+    } catch (e) {}
+
+    try {
+        const closRes = await fetch(`${API}/hospitals/${encodeURIComponent(hospitalId)}/closures`);
+        if (closRes.ok) {
+            currentHospitalClosures = await closRes.json();
+        }
+    } catch (e) {}
+
+    if (!docId && !docName) return;
 
     try {
         const res = await fetch(`${API}/doctors?hospital_id=${encodeURIComponent(hospitalId)}`);
@@ -458,6 +486,14 @@ async function loadDoctorSchedule() {
                 }
             }
 
+            // Fetch doctor leaves
+            try {
+                const leaveRes = await fetch(`${API}/doctors/${encodeURIComponent(doc.id)}/leave`);
+                if (leaveRes.ok) {
+                    currentDoctorLeaves = await leaveRes.json();
+                }
+            } catch (e) {}
+
             validateAppointmentDate();
         }
     } catch (err) {
@@ -469,6 +505,23 @@ function validateAppointmentDate() {
     const dateVal = byId("appointmentDate").value;
     if (!dateVal) return;
 
+    // 1. Check if hospital has a scheduled closure
+    const closure = currentHospitalClosures.find(c => c.closure_date === dateVal);
+    if (closure) {
+        showMessage(`🏥 Hospital is closed on ${dateVal} (${closure.reason || "Scheduled Closure"}). Token booking is unavailable on this date. Please select another date.`, "error");
+        byId("payButton").disabled = true;
+        return;
+    }
+
+    // 2. Check if doctor is on leave
+    const leave = currentDoctorLeaves.find(l => l.leave_date === dateVal);
+    if (leave) {
+        showMessage(`👨‍⚕️ Dr. ${getSelectedDoctor()} is on leave on ${dateVal} (${leave.reason || "Doctor on Leave"}). Please select another date.`, "error");
+        byId("payButton").disabled = true;
+        return;
+    }
+
+    // 3. Regular doctor OPD days advisory
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const [y, m, d] = dateVal.split("-").map(Number);
     const dayName = days[new Date(y, m - 1, d).getDay()];
@@ -479,6 +532,7 @@ function validateAppointmentDate() {
     } else {
         clearMessage();
     }
+    refreshButton();
 }
 
 async function loadHospitalFee() {

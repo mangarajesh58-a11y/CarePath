@@ -2629,14 +2629,22 @@ async function loadDoctors() {
                         </span>
                     </p>
 
-                    <button
-                        type="button"
-                        onclick="deleteDoctor(${Number(
-                            doctor.id
-                        )})"
-                    >
-                        Delete
-                    </button>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button
+                            type="button"
+                            style="background: #f59e0b; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; flex: 1;"
+                            onclick="promptDoctorLeave(${Number(doctor.id)}, '${escapeHtml(doctor.name || 'Doctor')}')"
+                        >
+                            🏖️ Mark Leave & Refund
+                        </button>
+                        <button
+                            type="button"
+                            style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;"
+                            onclick="deleteDoctor(${Number(doctor.id)})"
+                        >
+                            Delete
+                        </button>
+                    </div>
 
                 `;
 
@@ -3228,3 +3236,33 @@ async function uploadDoctorPhotoFromCard(event, doctorId) {
     }
 }
 window.uploadDoctorPhotoFromCard = uploadDoctorPhotoFromCard;
+
+
+/* =========================================================
+   DOCTOR LEAVE & AUTOMATIC PATIENT REFUND
+========================================================= */
+async function promptDoctorLeave(doctorId, doctorName) {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const leaveDate = prompt(`Enter leave date for Dr. ${doctorName} (YYYY-MM-DD):\nAll patients booked on this date will be automatically cancelled and 100% refunded.`, todayStr);
+    if (!leaveDate || !leaveDate.trim()) return;
+
+    const reason = prompt(`Enter reason for leave (optional):`, "Personal / Medical Leave") || "Doctor on Leave";
+
+    try {
+        const hospitalId = requireHospitalLogin();
+        const res = await fetch(`${API}/hospitals/${hospitalId}/doctors/${doctorId}/leave`, {
+            method: "POST",
+            headers: getHospitalAuthHeaders(true),
+            body: JSON.stringify({ leave_date: leaveDate.trim(), reason: reason.trim() })
+        });
+        const data = await readJsonResponse(res);
+        if (!res.ok) {
+            throw new Error(getErrorMessage(data, "Failed to mark doctor on leave."));
+        }
+        alert(`✓ ${data.message || `Dr. ${doctorName} marked on leave for ${leaveDate}. Patients refunded.`}`);
+        loadDoctors();
+    } catch (err) {
+        alert("⚠️ " + (err.message || "Unable to set doctor leave."));
+    }
+}
+window.promptDoctorLeave = promptDoctorLeave;
