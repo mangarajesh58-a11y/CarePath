@@ -1,0 +1,24 @@
+{
+  "name": "CarePath - OPD Queue & Appointments",
+  "short_name": "CarePath",
+  "description": "Smart hospital OPD queue token booking and live wait time tracking",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0284c7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "carepath-ai-small.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "carepath-ai.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

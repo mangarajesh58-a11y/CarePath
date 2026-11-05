@@ -1,0 +1,24 @@
+{
+  "name": "CarePath Hospital - Clinic & OPD Queue Management",
+  "short_name": "CarePath Hospital",
+  "description": "Hospital OPD queue management, digital doctor prescriptions, and waiting room TV display",
+  "start_url": "dashboard.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0284c7",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "carepath-ai-small.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "carepath-ai.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
