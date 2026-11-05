@@ -617,7 +617,11 @@ async function createCashfreeOrder() {
     localStorage.setItem("pendingCashfreeOrderId", String(orderId));
     localStorage.setItem("selectedAppointmentDate", appointmentDate);
 
-    return { orderId, paymentSessionId };
+    return {
+        orderId,
+        paymentSessionId,
+        cashfreeMode: data.cashfree_mode || "sandbox"
+    };
 }
 
 async function startPayment() {
@@ -639,13 +643,13 @@ async function startPayment() {
     showMessage("Preparing secure checkout...", "info");
 
     try {
-        const { orderId, paymentSessionId } = await createCashfreeOrder();
+        const { orderId, paymentSessionId, cashfreeMode } = await createCashfreeOrder();
 
         if (typeof Cashfree !== "function") {
             throw new Error("Cashfree checkout could not be loaded. Please refresh the page.");
         }
 
-        const cashfree = Cashfree({ mode: "sandbox" });
+        const cashfree = Cashfree({ mode: cashfreeMode || "sandbox" });
         showMessage("Opening secure checkout... Complete payment to generate your OPD token.", "info");
 
         await cashfree.checkout({

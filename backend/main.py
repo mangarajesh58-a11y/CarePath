@@ -106,7 +106,12 @@ gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 CASHFREE_CLIENT_ID = os.getenv("CASHFREE_CLIENT_ID")
 CASHFREE_CLIENT_SECRET = os.getenv("CASHFREE_CLIENT_SECRET")
-CASHFREE_BASE_URL = "https://sandbox.cashfree.com/pg"
+CASHFREE_ENV = os.getenv("CASHFREE_ENV", "sandbox").strip().lower()
+CASHFREE_BASE_URL = (
+    "https://api.cashfree.com/pg"
+    if CASHFREE_ENV == "production"
+    else "https://sandbox.cashfree.com/pg"
+)
 
 CASHFREE_API_VERSION = "2025-01-01"
 
@@ -4065,6 +4070,7 @@ def create_cashfree_order(
             "platform_fee": platform_fee,
             "total_amount": total_amount,
             "hospital_id": hospital.id,
+            "cashfree_mode": CASHFREE_ENV,
         }
 
     except HTTPException:

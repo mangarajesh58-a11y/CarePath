@@ -1284,7 +1284,7 @@ async function continueAndGetToken() {
         localStorage.setItem("cashfreeOrderId", order.order_id);
 
         const cashfree = Cashfree({
-            mode: "sandbox"
+            mode: (order && order.cashfree_mode) || "sandbox"
         });
 
         const result = await cashfree.checkout({
@@ -1335,7 +1335,7 @@ function openRazorpay(
 
     try {
         const cashfree = Cashfree({
-            mode: "sandbox"
+            mode: (order && order.cashfree_mode) || "sandbox"
         });
 
         cashfree.checkout({
