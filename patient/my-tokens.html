@@ -524,6 +524,34 @@
       }
     }
 
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function formatApptDate(dateStr) {
+      if (!dateStr) return "-";
+      try {
+        const parts = String(dateStr).split("-");
+        if (parts.length === 3) {
+          const year = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          const d = new Date(year, month, day);
+          return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+        }
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? String(dateStr) : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+      } catch(e) {
+        return String(dateStr);
+      }
+    }
+
     function renderTokens(tokens) {
       const container = document.getElementById("tokensList");
       const emptyState = document.getElementById("emptyState");

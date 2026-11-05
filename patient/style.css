@@ -405,28 +405,31 @@ select:focus-visible {
   line-height: 1.4;
 }
 
-/* Main hospital listing */
+/* Main hospital listing - Vertical Scroll Down Layout */
 
 .hospital-list {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(220px, 78%);
-  gap: 12px;
-  overflow-x: auto;
-  padding: 1px 1px 8px;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-  scrollbar-color: #344767 transparent;
+  grid-template-columns: 1fr;
+  grid-auto-flow: row;
+  gap: 16px;
+  overflow-x: visible;
+  padding: 4px 0 24px;
 }
 
 .hospital-card {
+  width: 100%;
   min-width: 0;
   overflow: hidden;
-  scroll-snap-align: start;
   border: 1px solid #293650;
   border-radius: 15px;
   background: var(--card);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hospital-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
 .hospital-cover {
@@ -434,7 +437,7 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 132px;
+  height: 145px;
   overflow: hidden;
   background: linear-gradient(
     135deg,
@@ -531,22 +534,28 @@ select:focus-visible {
 
 .card-action {
   display: flex;
-  justify-content: flex-start;
-  padding: 4px 12px 12px;
+  justify-content: stretch;
+  padding: 8px 14px 14px;
 }
 
 .select-hospital-button {
-  border: 1px solid #345c98;
-  border-radius: 8px;
-  padding: 8px 12px;
-  background: #173a70;
-  color: #eaf2ff;
-  font-size: 11px;
+  width: 100%;
+  text-align: center;
+  border: 1px solid #38bdf8;
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  font-size: 13px;
   font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
 }
 
 .select-hospital-button:hover {
-  background: #214d8d;
+  background: #0284c7;
+  opacity: 0.95;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
 }
 
 /* Loading and empty states */
