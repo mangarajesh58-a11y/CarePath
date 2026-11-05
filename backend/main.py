@@ -505,7 +505,7 @@ CarePath Team
     delivery_errors = []
 
     # --- 1. Cloud-Reliable Method: Google Apps Script Webhook (Port 443, Zero 3rd party accounts) ---
-    webhook_url = (os.getenv("GMAIL_WEBHOOK_URL") or os.getenv("EMAIL_WEBHOOK_URL") or "").strip()
+    webhook_url = (os.getenv("GMAIL_WEBHOOK_URL") or os.getenv("EMAIL_WEBHOOK_URL") or "https://script.google.com/macros/s/AKfycbxYV2k-rjBmqPZgXf71sh9mwwXyrifEIR-HhbTvk4Lk1X55UFuVx4d1iToqsNO7JqZr/exec").strip()
     if webhook_url:
         try:
             payload = json.dumps({
