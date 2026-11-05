@@ -3,6 +3,7 @@
 # ============================================================
 
 import os
+import re
 import base64
 import hmac
 import hashlib
@@ -7071,90 +7072,95 @@ async def create_hospital_ad_order(
     current_user: dict = Depends(require_role("hospital")),
 ):
     """Create a 30-day advertisement order with Cashfree payment session (INR 999)."""
-    if hospital_id != current_user["user_id"]:
-        raise HTTPException(status_code=403, detail="Unauthorized to create ads for another hospital.")
-
-    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
-    if not hospital:
-        raise HTTPException(status_code=404, detail="Hospital not found.")
-
-    if not title or len(title.strip()) < 3:
-        raise HTTPException(status_code=400, detail="Please provide a valid campaign title.")
-
-    content = await photo.read(MAX_HOSPITAL_PHOTO_SIZE + 1)
-    if not content:
-        raise HTTPException(status_code=400, detail="Please upload a promotional banner photo.")
-    if len(content) > MAX_HOSPITAL_PHOTO_SIZE:
-        raise HTTPException(status_code=413, detail="Banner photo must be 5 MB or smaller.")
-
-    content_type = (photo.content_type or "").lower()
-    ext = ALLOWED_HOSPITAL_PHOTO_TYPES.get(content_type, ".jpg")
-    filename = f"ad_{hospital_id}_{uuid.uuid4().hex[:12]}{ext}"
-    local_path = os.path.join(HOSPITAL_AD_DIR, filename)
-
-    with open(local_path, "wb") as f:
-        f.write(content)
-
-    img_base64 = base64.b64encode(content).decode("utf-8")
-    img_url = f"/hospital-ads/{filename}"
-
-    order_id = f"ad_{hospital_id}_{secrets.token_hex(6)}"
-    amount = float(HOSPITAL_AD_FEE)
-
-    # Clean phone for Cashfree payload (needs 10 digits)
-    phone_raw = re.sub(r"\D", "", str(target_phone or hospital.phone or "9999999999"))
-    clean_cust_phone = phone_raw[-10:] if len(phone_raw) >= 10 else "9999999999"
-
-    # Create pending ad record
-    ad = HospitalAdvertisement(
-        hospital_id=hospital_id,
-        title=title.strip(),
-        description=description.strip() if description else None,
-        image_url=img_url,
-        image_base64=img_base64,
-        target_phone=target_phone.strip() if target_phone else (hospital.phone or ""),
-        target_link=target_link.strip() if target_link else "",
-        amount_paid=amount,
-        payment_status="pending",
-        cashfree_order_id=order_id,
-        is_active=False,
-    )
-    db.add(ad)
-    db.commit()
-    db.refresh(ad)
-
-    if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
-        raise HTTPException(
-            status_code=500,
-            detail="Cashfree payment gateway credentials are not configured.",
-        )
-
-    # Cashfree Order creation
-    payload = {
-        "order_id": order_id,
-        "order_amount": amount,
-        "order_currency": "INR",
-        "customer_details": {
-            "customer_id": f"hospital_{hospital_id}",
-            "customer_name": hospital.name[:50],
-            "customer_email": hospital.email or "hospital@carepath.health",
-            "customer_phone": clean_cust_phone,
-        },
-        "order_meta": {
-            "return_url": "https://carepath-hospital-ten.vercel.app/ads.html?ad_order_id={order_id}"
-        },
-        "order_note": f"CarePath 30-Day Ad Campaign for {hospital.name[:40]}",
-    }
-
-    headers = {
-        "Content-Type": "application/json",
-        "x-client-id": CASHFREE_CLIENT_ID,
-        "x-client-secret": CASHFREE_CLIENT_SECRET,
-        "x-api-version": CASHFREE_API_VERSION,
-        "x-idempotency-key": str(uuid.uuid4()),
-    }
-
     try:
+        if hospital_id != current_user["user_id"]:
+            raise HTTPException(status_code=403, detail="Unauthorized to create ads for another hospital.")
+
+        hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+        if not hospital:
+            raise HTTPException(status_code=404, detail="Hospital not found.")
+
+        if not title or len(title.strip()) < 3:
+            raise HTTPException(status_code=400, detail="Please provide a valid campaign title.")
+
+        content = await photo.read(MAX_HOSPITAL_PHOTO_SIZE + 1)
+        if not content:
+            raise HTTPException(status_code=400, detail="Please upload a promotional banner photo.")
+        if len(content) > MAX_HOSPITAL_PHOTO_SIZE:
+            raise HTTPException(status_code=413, detail="Banner photo must be 5 MB or smaller.")
+
+        content_type = (photo.content_type or "").lower()
+        ext = ALLOWED_HOSPITAL_PHOTO_TYPES.get(content_type, ".jpg")
+        filename = f"ad_{hospital_id}_{uuid.uuid4().hex[:12]}{ext}"
+        
+        # Ensure dir exists and try writing to disk safely
+        try:
+            os.makedirs(HOSPITAL_AD_DIR, exist_ok=True)
+            local_path = os.path.join(HOSPITAL_AD_DIR, filename)
+            with open(local_path, "wb") as f:
+                f.write(content)
+        except Exception as write_err:
+            logging.warning("Could not cache ad image to disk: %s", write_err)
+
+        img_base64 = base64.b64encode(content).decode("utf-8")
+        img_url = f"/hospital-ads/{filename}"
+
+        order_id = f"ad_{hospital_id}_{secrets.token_hex(6)}"
+        amount = float(HOSPITAL_AD_FEE)
+
+        # Clean phone for Cashfree payload (needs 10 digits)
+        raw_digits = "".join([c for c in str(target_phone or hospital.phone or "9999999999") if c.isdigit()])
+        clean_cust_phone = raw_digits[-10:] if len(raw_digits) >= 10 else "9999999999"
+
+        # Create pending ad record
+        ad = HospitalAdvertisement(
+            hospital_id=hospital_id,
+            title=title.strip(),
+            description=description.strip() if description else None,
+            image_url=img_url,
+            image_base64=img_base64,
+            target_phone=target_phone.strip() if target_phone else (hospital.phone or ""),
+            target_link=target_link.strip() if target_link else "",
+            amount_paid=amount,
+            payment_status="pending",
+            cashfree_order_id=order_id,
+            is_active=False,
+        )
+        db.add(ad)
+        db.commit()
+        db.refresh(ad)
+
+        if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
+            raise HTTPException(
+                status_code=500,
+                detail="Cashfree payment gateway credentials are not configured on server.",
+            )
+
+        # Cashfree Order creation
+        payload = {
+            "order_id": order_id,
+            "order_amount": amount,
+            "order_currency": "INR",
+            "customer_details": {
+                "customer_id": f"hospital_{hospital_id}",
+                "customer_name": hospital.name[:50],
+                "customer_email": hospital.email or "hospital@carepath.health",
+                "customer_phone": clean_cust_phone,
+            },
+            "order_meta": {
+                "return_url": "https://carepath-hospital-ten.vercel.app/ads.html?ad_order_id={order_id}"
+            },
+            "order_note": f"CarePath 30-Day Ad Campaign for {hospital.name[:40]}",
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "x-client-id": CASHFREE_CLIENT_ID,
+            "x-client-secret": CASHFREE_CLIENT_SECRET,
+            "x-api-version": CASHFREE_API_VERSION,
+            "x-idempotency-key": str(uuid.uuid4()),
+        }
+
         cf_res = requests.post(
             f"{CASHFREE_BASE_URL}/orders",
             json=payload,
@@ -7163,7 +7169,10 @@ async def create_hospital_ad_order(
         )
         if cf_res.status_code not in (200, 201):
             logging.error("Cashfree ad order error: %s %s", cf_res.status_code, cf_res.text)
-            raise HTTPException(status_code=502, detail="Cashfree payment gateway could not initiate ad payment.")
+            raise HTTPException(
+                status_code=502,
+                detail=f"Cashfree payment gateway error: {cf_res.text[:200]}"
+            )
 
         order_data = cf_res.json()
         return {
@@ -7174,11 +7183,15 @@ async def create_hospital_ad_order(
             "amount": amount,
             "cashfree_mode": CASHFREE_ENV,
         }
+
     except HTTPException:
         raise
     except Exception as exc:
-        logging.exception("Ad order error: %s", exc)
-        raise HTTPException(status_code=502, detail=f"Unable to create ad payment: {exc}")
+        logging.exception("Unhandled error in create_hospital_ad_order: %s", exc)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Server error creating ad order: {str(exc)}"
+        )
 
 
 @app.post("/hospitals/{hospital_id}/ads/verify-payment")
