@@ -76,6 +76,7 @@ from models import (
     Token,
     Admin,
     RegistrationOTP,
+    PlatformContact,
 )
 from fastapi.responses import FileResponse, Response
 
@@ -682,6 +683,11 @@ def add_column_if_missing(
 
         return
 
+    import re
+    col_def = column_definition
+    if engine.dialect.name == "postgresql":
+        col_def = re.sub(r'\bDATETIME\b', 'TIMESTAMP', col_def, flags=re.IGNORECASE)
+
     with engine.begin() as connection:
 
         connection.execute(
@@ -689,7 +695,7 @@ def add_column_if_missing(
                 f"""
                 ALTER TABLE {table_name}
                 ADD COLUMN {column_name}
-                {column_definition}
+                {col_def}
                 """
             )
         )
@@ -780,7 +786,7 @@ def run_database_migration():
             "VARCHAR(255) NULL",
 
         "created_at":
-            "DATETIME NULL",
+            "TIMESTAMP NULL",
     }
 
 
@@ -819,7 +825,7 @@ def run_database_migration():
             "VARCHAR(255) NULL",
 
         "created_at":
-            "DATETIME NULL",
+            "TIMESTAMP NULL",
     }
 
 
@@ -861,7 +867,7 @@ def run_database_migration():
             "TEXT NULL",
 
         "created_at":
-            "DATETIME NULL",
+            "TIMESTAMP NULL",
     }
 
 
@@ -927,10 +933,10 @@ def run_database_migration():
             "VARCHAR(50) DEFAULT 'waiting'",
 
         "called_at":
-            "DATETIME NULL",
+            "TIMESTAMP NULL",
 
         "completed_at":
-            "DATETIME NULL",
+            "TIMESTAMP NULL",
 
         "diagnosis":
             "VARCHAR(500) NULL",
@@ -942,7 +948,7 @@ def run_database_migration():
             "TEXT NULL",
 
         "created_at":
-            "DATETIME NULL",
+            "TIMESTAMP NULL",
     }
 
 
@@ -975,7 +981,7 @@ def run_database_migration():
             "VARCHAR(255) NULL",
 
         "created_at":
-            "DATETIME NULL",
+            "TIMESTAMP NULL",
     }
 
 
