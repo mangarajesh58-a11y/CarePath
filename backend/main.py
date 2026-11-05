@@ -1848,6 +1848,20 @@ def hospital_to_dict(hospital):
         "opening_time": hospital.opening_time or "09:00",
         "closing_time": hospital.closing_time or "21:00",
         "operating_hours_12h": f"{format_time_12h(hospital.opening_time or '09:00')} - {format_time_12h(hospital.closing_time or '21:00')}",
+        "certificate_uploaded": bool(
+            hospital.license_certificate
+            or hospital.certificate_uploaded_at
+            or hospital.certificate_base64
+        ),
+        "certificate_uploaded_at": (
+            hospital.certificate_uploaded_at.isoformat()
+            if hospital.certificate_uploaded_at
+            else None
+        ),
+        "certificate_original_name": hospital.certificate_original_name,
+        "certificate_verification_status": (
+            hospital.certificate_verification_status or "PENDING"
+        ),
     }
 
 
@@ -6349,6 +6363,13 @@ async def hospital_upload_certificate(
         raise HTTPException(status_code=404, detail="Hospital not found")
     if hospital.id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="You cannot upload a certificate for another hospital")
+
+    # Strictly disallow re-upload once a certificate has already been submitted
+    if hospital.license_certificate or hospital.certificate_uploaded_at or hospital.certificate_base64:
+        raise HTTPException(
+            status_code=400,
+            detail="Your hospital certificate has already been submitted and is locked for verification. Re-uploading is not permitted."
+        )
 
     content_type = (certificate.content_type or "").lower()
     if content_type not in ALLOWED_CERTIFICATE_TYPES:

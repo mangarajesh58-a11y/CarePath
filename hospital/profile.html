@@ -143,49 +143,124 @@
 
         
         <!-- ==============================
-             HOSPITAL CERTIFICATE
-        =============================== -->
-        <div
-            class="hospital-photo-upload-card"
-            style="
-                margin-bottom: 24px;
-                padding: 20px;
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 4px 14px rgba(0,0,0,0.06);
-            "
+     HOSPITAL CERTIFICATE
+=============================== -->
+<div
+    class="hospital-photo-upload-card"
+    style="
+        margin-bottom: 24px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    "
+>
+    <h3 style="margin:0 0 12px; display:flex; align-items:center; gap:8px;">
+        📄 Hospital Registration Certificate
+    </h3>
+
+    <!-- Locked Certificate Container (Shown if already submitted) -->
+    <div
+        id="certificateLockedContainer"
+        style="
+            display: none;
+            padding: 16px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 10px;
+        "
+    >
+        <div style="display:flex; align-items:flex-start; gap:12px;">
+            <div style="font-size:28px; line-height:1;">🔒</div>
+            <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+                    <strong style="color:#166534; font-size:15px;">Certificate Submitted & Locked</strong>
+                    <span id="lockedCertStatusBadge" style="font-size:11px; font-weight:700; text-transform:uppercase; background:#bbf7d0; color:#14532d; padding:2px 8px; border-radius:999px;">PENDING VERIFICATION</span>
+                </div>
+                <p id="lockedCertDetails" style="margin:4px 0 0; font-size:13px; color:#15803d;">
+                    File: <strong id="lockedCertFileName">Certificate on file</strong>
+                </p>
+                <p id="lockedCertTime" style="margin:2px 0 0; font-size:12px; color:#166534;"></p>
+            </div>
+        </div>
+        <div style="margin-top:12px; padding:10px 12px; background:#dcfce7; border-radius:8px; font-size:12px; color:#14532d; line-height:1.5;">
+            ℹ️ <strong>Re-upload Disabled:</strong> To ensure regulatory compliance and authentic verification, once a hospital certificate is submitted it cannot be altered or re-uploaded. If you need any corrections, please contact CarePath Administrator Support.
+        </div>
+    </div>
+
+    <!-- Upload Area (Shown ONLY when certificate has NOT been uploaded yet) -->
+    <div id="certificateUploadArea">
+        <p
+            id="certificateStatusText"
+            style="margin:0 0 12px; color:#555; font-size:14px; line-height:1.4;"
         >
-            <h3 style="margin:0 0 10px;">
-                📄 Hospital Registration Certificate
-            </h3>
-            <p
-                id="certificateStatusText"
-                style="margin:0 0 10px; color:#555; font-size:14px;"
-            >
-                Upload your official hospital establishment license or registration certificate (PDF, JPG, or PNG, max 10 MB).
-            </p>
-            <input
-                type="file"
-                id="hospitalCertificateFile"
-                accept="application/pdf,image/jpeg,image/png"
-                style="margin-bottom:10px; display:block;"
-            >
+            Upload your official hospital establishment license or registration certificate (PDF, JPG, or PNG, max 10 MB).
+            <br><strong style="color:#dc2626; font-size:12px;">⚠️ Note: Once submitted, your certificate is permanently locked and cannot be re-uploaded.</strong>
+        </p>
+
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
             <button
                 type="button"
-                onclick="uploadHospitalCertificate()"
-                style="margin-top:4px;"
+                onclick="openCertCameraModal('hospitalCertificateFile', 'profileCertPreviewBox')"
+                style="
+                    background: #0284c7;
+                    color: white;
+                    border: none;
+                    padding: 8px 14px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 13px;
+                    font-weight: 600;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    box-shadow: 0 2px 4px rgba(2,132,199,0.25);
+                "
             >
-                📄 Upload / Update Certificate
+                📸 Scan with Camera
             </button>
-            <p
-                id="hospitalCertificateMessage"
-                role="status"
-                style="margin-top:10px; font-size:14px;"
-            ></p>
+            <span style="font-size:12px; color:#64748b;">or select document below:</span>
         </div>
 
-        <!-- ==============================
-             BASIC INFORMATION
+        <input
+            type="file"
+            id="hospitalCertificateFile"
+            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            capture="environment"
+            style="margin-bottom:10px; display:block; width:100%;"
+        >
+
+        <!-- Scanned / selected preview indicator -->
+        <div id="profileCertPreviewBox" style="display:none; margin:10px 0; padding:10px 12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; font-size:13px; color:#166534;"></div>
+
+        <button
+            type="button"
+            id="uploadCertButton"
+            onclick="uploadHospitalCertificate()"
+            style="
+                margin-top: 4px;
+                background: #2563eb;
+                color: white;
+                border: none;
+                padding: 10px 18px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+            "
+        >
+            📄 Submit Certificate
+        </button>
+    </div>
+
+    <p
+        id="hospitalCertificateMessage"
+        role="status"
+        style="margin-top:10px; font-size:14px;"
+    ></p>
+</div>
+
+<!-- ==============================
+     BASIC INFORMATION
         =============================== -->
 
         <label for="profileName">
@@ -837,6 +912,11 @@ async function loadProfile() {
             document.getElementById("profileClosingTime").value = hospital.closing_time || "21:00";
         }
         loadHospitalClosuresList();
+
+        /* ==============================
+           CERTIFICATE STATUS & LOCK
+        ============================== */
+        updateCertificateUI(hospital);
 
 
 
@@ -1637,6 +1717,66 @@ async function uploadHospitalPhoto() {
 
 
 /* ==================================
+   CERTIFICATE UI & LOCKING
+================================== */
+function updateCertificateUI(hospital) {
+    if (!hospital) return;
+    const certUploaded = Boolean(
+        hospital.certificate_uploaded ||
+        hospital.license_certificate ||
+        hospital.certificate_uploaded_at ||
+        hospital.certificate_base64
+    );
+
+    const uploadArea = document.getElementById("certificateUploadArea");
+    const lockedContainer = document.getElementById("certificateLockedContainer");
+
+    if (certUploaded) {
+        if (uploadArea) uploadArea.style.display = "none";
+        if (lockedContainer) {
+            lockedContainer.style.display = "block";
+            const fileNameElem = document.getElementById("lockedCertFileName");
+            if (fileNameElem) {
+                fileNameElem.textContent = hospital.certificate_original_name || hospital.license_certificate || "Hospital Registration Certificate";
+            }
+            const statusBadge = document.getElementById("lockedCertStatusBadge");
+            if (statusBadge) {
+                const st = (hospital.certificate_verification_status || "PENDING").toUpperCase();
+                if (st === "VERIFIED") {
+                    statusBadge.textContent = "✓ VERIFIED";
+                    statusBadge.style.background = "#bbf7d0";
+                    statusBadge.style.color = "#14532d";
+                } else if (st === "REJECTED") {
+                    statusBadge.textContent = "✗ REJECTED";
+                    statusBadge.style.background = "#fecaca";
+                    statusBadge.style.color = "#991b1b";
+                } else {
+                    statusBadge.textContent = "⏳ PENDING VERIFICATION";
+                    statusBadge.style.background = "#fef08a";
+                    statusBadge.style.color = "#854d0e";
+                }
+            }
+            const timeElem = document.getElementById("lockedCertTime");
+            if (timeElem) {
+                if (hospital.certificate_uploaded_at) {
+                    try {
+                        const d = new Date(hospital.certificate_uploaded_at);
+                        timeElem.textContent = `Submitted on: ${d.toLocaleDateString()} at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                    } catch (e) {
+                        timeElem.textContent = "";
+                    }
+                } else {
+                    timeElem.textContent = "Submitted with hospital registration";
+                }
+            }
+        }
+    } else {
+        if (uploadArea) uploadArea.style.display = "block";
+        if (lockedContainer) lockedContainer.style.display = "none";
+    }
+}
+
+/* ==================================
    UPLOAD HOSPITAL CERTIFICATE
 ================================== */
 async function uploadHospitalCertificate() {
@@ -1644,7 +1784,7 @@ async function uploadHospitalCertificate() {
     const message = document.getElementById("hospitalCertificateMessage");
     if (!fileInput || !fileInput.files || !fileInput.files[0]) {
         if (message) {
-            message.textContent = "Please choose a certificate file first.";
+            message.textContent = "Please choose or capture a certificate file first.";
             message.style.color = "#dc2626";
         }
         return;
@@ -1660,11 +1800,18 @@ async function uploadHospitalCertificate() {
         return;
     }
 
+    const file = fileInput.files[0];
     const formData = new FormData();
-    formData.append("certificate", fileInput.files[0]);
+    formData.append("certificate", file);
+
+    const uploadBtn = document.getElementById("uploadCertButton");
+    if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = "Submitting...";
+    }
 
     if (message) {
-        message.textContent = "Uploading certificate...";
+        message.textContent = "Uploading certificate securely...";
         message.style.color = "#0284c7";
     }
 
@@ -1679,10 +1826,26 @@ async function uploadHospitalCertificate() {
         });
         const data = await res.json();
         if (!res.ok) {
+            if (res.status === 400 && data.detail && data.detail.includes("already been submitted")) {
+                updateCertificateUI({
+                    certificate_uploaded: true,
+                    certificate_original_name: file.name,
+                    certificate_verification_status: "PENDING"
+                });
+            }
             throw new Error(data.detail || "Unable to upload certificate.");
         }
+
+        // Lock UI immediately
+        updateCertificateUI({
+            certificate_uploaded: true,
+            certificate_original_name: file.name,
+            certificate_verification_status: "PENDING",
+            certificate_uploaded_at: new Date().toISOString()
+        });
+
         if (message) {
-            message.textContent = "✓ Certificate uploaded successfully! It is now securely saved and ready for admin verification.";
+            message.textContent = "✓ Certificate uploaded and locked for verification! Re-uploading is disabled.";
             message.style.color = "#16a34a";
         }
     } catch (err) {
@@ -1690,7 +1853,34 @@ async function uploadHospitalCertificate() {
             message.textContent = err.message || "Unable to upload certificate.";
             message.style.color = "#dc2626";
         }
+    } finally {
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = "📄 Submit Certificate";
+        }
     }
+}
+
+// File input change preview
+const profileCertFileInput = document.getElementById("hospitalCertificateFile");
+if (profileCertFileInput) {
+    profileCertFileInput.addEventListener("change", function () {
+        const previewElem = document.getElementById("profileCertPreviewBox");
+        if (this.files && this.files[0] && previewElem) {
+            const f = this.files[0];
+            previewElem.style.display = "block";
+            const isImg = f.type.startsWith("image/");
+            previewElem.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    ${isImg ? `<img src="${URL.createObjectURL(f)}" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid #94a3b8;">` : `<span style="font-size:24px;">📄</span>`}
+                    <div>
+                        <strong style="color:#166534; font-size:13px;">✓ Document Selected:</strong>
+                        <div style="font-size:12px; color:#475569;">${escapeHtml(f.name)} (${Math.round(f.size / 1024)} KB)</div>
+                    </div>
+                </div>
+            `;
+        }
+    });
 }
 
 /* ==================================
@@ -1786,6 +1976,11 @@ async function submitHospitalClosure() {
         alert("✓ " + (data.message || "Closure scheduled successfully."));
         if (reasonInput) reasonInput.value = "";
         loadHospitalClosuresList();
+
+        /* ==============================
+           CERTIFICATE STATUS & LOCK
+        ============================== */
+        updateCertificateUI(hospital);
     } catch(err) {
         alert("⚠️ " + err.message);
     }
@@ -1801,6 +1996,11 @@ async function cancelHospitalClosure(closureId) {
         if (!res.ok) throw new Error("Failed to delete closure.");
         alert("Closure removed.");
         loadHospitalClosuresList();
+
+        /* ==============================
+           CERTIFICATE STATUS & LOCK
+        ============================== */
+        updateCertificateUI(hospital);
     } catch(err) {
         alert(err.message);
     }
@@ -1808,6 +2008,259 @@ async function cancelHospitalClosure(closureId) {
 
 </script>
 
+
+
+<!-- =========================================================
+     CAMERA SCANNER MODAL & CONTROLLER
+========================================================= -->
+<div id="certCameraModal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#1e293b; color:#fff; border-radius:16px; width:100%; max-width:520px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.7); display:flex; flex-direction:column; position:relative;">
+        <div style="padding:14px 18px; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
+            <h4 style="margin:0; font-size:16px; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+                📸 Camera Scanner
+            </h4>
+            <button type="button" onclick="closeCertCamera()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer; line-height:1; padding:0 4px;" aria-label="Close">&times;</button>
+        </div>
+        
+        <div style="position:relative; width:100%; background:#090d16; min-height:280px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            <video id="certCameraVideo" autoplay playsinline muted style="width:100%; max-height:360px; object-fit:cover; display:block;"></video>
+            <canvas id="certCameraCanvas" style="display:none;"></canvas>
+            <img id="certCameraSnapshot" style="display:none; width:100%; max-height:360px; object-fit:contain; background:#000;" alt="Captured Certificate">
+            
+            <div id="certCameraGuide" style="position:absolute; inset:20px; border:2px dashed rgba(255,255,255,0.75); border-radius:12px; pointer-events:none; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 9999px rgba(0,0,0,0.25);">
+                <span style="background:rgba(0,0,0,0.7); color:#fff; font-size:12px; font-weight:600; padding:6px 14px; border-radius:20px; letter-spacing:0.3px;">Position certificate within frame</span>
+            </div>
+
+            <div id="certCameraStatus" style="display:none; position:absolute; inset:16px; margin:auto; max-height:180px; padding:18px; text-align:center; color:#f87171; font-size:13px; background:rgba(15,23,42,0.95); border:1px solid #ef4444; border-radius:12px; flex-direction:column; justify-content:center; align-items:center; z-index:10;"></div>
+        </div>
+
+        <div style="padding:14px 18px; background:#1e293b; display:flex; gap:10px; justify-content:flex-end; align-items:center; border-top:1px solid #334155;">
+            <button type="button" onclick="closeCertCamera()" style="padding:9px 16px; background:#334155; color:#cbd5e1; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">Cancel</button>
+            <button type="button" id="certCamCaptureBtn" onclick="captureCertSnapshot()" style="padding:9px 20px; background:#2563eb; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">📸 Capture Photo</button>
+            <button type="button" id="certCamRetakeBtn" onclick="retakeCertSnapshot()" style="display:none; padding:9px 16px; background:#475569; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">🔄 Retake</button>
+            <button type="button" id="certCamUseBtn" onclick="useCertSnapshot()" style="display:none; padding:9px 20px; background:#16a34a; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">✓ Use This Photo</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ==================================
+   CAMERA SCANNER & UTILS
+================================== */
+let certCameraStream = null;
+let activeCertInputId = null;
+let activeCertPreviewId = null;
+let capturedCertBlob = null;
+
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+async function openCertCameraModal(targetInputId, previewContainerId) {
+    activeCertInputId = targetInputId;
+    activeCertPreviewId = previewContainerId;
+    capturedCertBlob = null;
+
+    const modal = document.getElementById("certCameraModal");
+    const video = document.getElementById("certCameraVideo");
+    const canvas = document.getElementById("certCameraCanvas");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const statusBox = document.getElementById("certCameraStatus");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (!modal) return;
+
+    modal.style.display = "flex";
+    if (snapshot) snapshot.style.display = "none";
+    if (canvas) canvas.style.display = "none";
+    if (video) video.style.display = "block";
+    if (guide) guide.style.display = "flex";
+    if (captureBtn) captureBtn.style.display = "inline-flex";
+    if (retakeBtn) retakeBtn.style.display = "none";
+    if (useBtn) useBtn.style.display = "none";
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (statusBox) {
+            statusBox.style.display = "flex";
+            statusBox.innerHTML = `
+                <div style="font-size:24px; margin-bottom:6px;">⚠️</div>
+                <strong style="color:#f87171; font-size:14px;">Camera Access Not Supported</strong>
+                <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">Direct camera access requires a secure connection (HTTPS) or a supported modern browser. Please choose an image or document from your device files.</p>
+            `;
+        }
+        if (captureBtn) captureBtn.style.display = "none";
+        return;
+    }
+
+    if (statusBox) {
+        statusBox.style.display = "flex";
+        statusBox.innerHTML = `
+            <div style="font-size:24px; margin-bottom:6px;">📷</div>
+            <strong style="color:#60a5fa; font-size:14px;">Requesting Camera Permission...</strong>
+            <p style="margin:6px 0 0; color:#94a3b8; font-size:12px;">Please tap "Allow" when prompted by your browser to scan your certificate.</p>
+        `;
+    }
+
+    try {
+        certCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        });
+
+        if (video) {
+            video.srcObject = certCameraStream;
+            await video.play();
+        }
+        if (statusBox) statusBox.style.display = "none";
+    } catch (err) {
+        console.error("Camera access error:", err);
+        if (statusBox) {
+            statusBox.style.display = "flex";
+            if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">🔒</div>
+                    <strong style="color:#f87171; font-size:14px;">Camera Permission Denied</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">Camera permission was denied. Please allow camera permissions in your browser or phone site settings, or use the file picker to choose a document.</p>
+                `;
+            } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">📷</div>
+                    <strong style="color:#f87171; font-size:14px;">No Camera Found</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">No active camera was detected on this device. Please select a certificate file from your device storage.</p>
+                `;
+            } else {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">⚠️</div>
+                    <strong style="color:#f87171; font-size:14px;">Camera Error</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">${escapeHtml(err.message || err.name)}. Please select a file from your device.</p>
+                `;
+            }
+        }
+        if (captureBtn) captureBtn.style.display = "none";
+    }
+}
+
+function captureCertSnapshot() {
+    const video = document.getElementById("certCameraVideo");
+    const canvas = document.getElementById("certCameraCanvas");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (!video || !canvas || !snapshot) return;
+
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+        if (!blob) return;
+        capturedCertBlob = blob;
+        snapshot.src = URL.createObjectURL(blob);
+        snapshot.style.display = "block";
+        video.style.display = "none";
+        if (guide) guide.style.display = "none";
+        if (captureBtn) captureBtn.style.display = "none";
+        if (retakeBtn) retakeBtn.style.display = "inline-flex";
+        if (useBtn) useBtn.style.display = "inline-flex";
+    }, "image/jpeg", 0.92);
+}
+
+function retakeCertSnapshot() {
+    capturedCertBlob = null;
+    const video = document.getElementById("certCameraVideo");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (snapshot) snapshot.style.display = "none";
+    if (video) video.style.display = "block";
+    if (guide) guide.style.display = "flex";
+    if (captureBtn) captureBtn.style.display = "inline-flex";
+    if (retakeBtn) retakeBtn.style.display = "none";
+    if (useBtn) useBtn.style.display = "none";
+}
+
+function useCertSnapshot() {
+    if (!capturedCertBlob || !activeCertInputId) {
+        closeCertCamera();
+        return;
+    }
+
+    const filename = `certificate_scan_${Date.now()}.jpg`;
+    const file = new File([capturedCertBlob], filename, {
+        type: "image/jpeg",
+        lastModified: Date.now()
+    });
+
+    const fileInput = document.getElementById(activeCertInputId);
+    if (fileInput) {
+        try {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+        } catch (err) {
+            console.warn("DataTransfer not fully supported:", err);
+        }
+    }
+
+    if (activeCertPreviewId) {
+        const previewElem = document.getElementById(activeCertPreviewId);
+        if (previewElem) {
+            previewElem.style.display = "block";
+            previewElem.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="${URL.createObjectURL(file)}" style="width:52px; height:52px; object-fit:cover; border-radius:6px; border:1px solid #94a3b8;">
+                    <div>
+                        <strong style="color:#0369a1; font-size:13px; display:flex; align-items:center; gap:4px;">
+                            ✓ Certificate Captured by Camera
+                        </strong>
+                        <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                            ${filename} (${Math.round(file.size / 1024)} KB)
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    closeCertCamera();
+}
+
+function closeCertCamera() {
+    if (certCameraStream) {
+        try {
+            certCameraStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+            console.error("Error stopping tracks:", e);
+        }
+        certCameraStream = null;
+    }
+    const modal = document.getElementById("certCameraModal");
+    if (modal) modal.style.display = "none";
+    const video = document.getElementById("certCameraVideo");
+    if (video) video.srcObject = null;
+}
+</script>
 
 </body>
 
