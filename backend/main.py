@@ -1341,6 +1341,25 @@ def request_registration_otp(
             detail="This email is already registered",
         )
 
+    # Check 60-second rate limit cooldown to prevent spamming
+    recent_otp = (
+        db.query(RegistrationOTP)
+        .filter(
+            RegistrationOTP.role == role,
+            RegistrationOTP.contact_method == "email",
+            RegistrationOTP.contact_value == email,
+            RegistrationOTP.created_at > datetime.utcnow() - timedelta(seconds=60),
+        )
+        .first()
+    )
+    if recent_otp:
+        remaining_secs = int(60 - (datetime.utcnow() - recent_otp.created_at).total_seconds())
+        remaining_secs = max(1, remaining_secs)
+        raise HTTPException(
+            status_code=429,
+            detail=f"Please wait {remaining_secs} seconds before requesting a new OTP."
+        )
+
     otp = f"{secrets.randbelow(1000000):06d}"
     otp_hash = hashlib.sha256(otp.encode()).hexdigest()
 
@@ -1511,6 +1530,25 @@ def request_forgot_password_otp(
         raise HTTPException(
             status_code=404,
             detail="No account found with this email address.",
+        )
+
+    # Check 60-second rate limit cooldown to prevent spamming
+    recent_reset_otp = (
+        db.query(RegistrationOTP)
+        .filter(
+            RegistrationOTP.role == f"reset_{role}",
+            RegistrationOTP.contact_method == "email",
+            RegistrationOTP.contact_value == email,
+            RegistrationOTP.created_at > datetime.utcnow() - timedelta(seconds=60),
+        )
+        .first()
+    )
+    if recent_reset_otp:
+        remaining_secs = int(60 - (datetime.utcnow() - recent_reset_otp.created_at).total_seconds())
+        remaining_secs = max(1, remaining_secs)
+        raise HTTPException(
+            status_code=429,
+            detail=f"Please wait {remaining_secs} seconds before requesting another reset code."
         )
 
     otp = f"{secrets.randbelow(1000000):06d}"
