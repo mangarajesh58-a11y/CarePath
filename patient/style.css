@@ -304,43 +304,73 @@ select:focus-visible {
   font-size: 10px;
 }
 
-/* Recently Viewed - actual dashboard component */
+/* Recently Viewed - Horizontal Scrolling Row (Max 5) */
 
 #recentSection {
   margin-top: 4px;
   margin-bottom: 22px;
 }
 
-#recentHospitals {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
+#recentHospitals,
+.recent-horizontal-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch;
+  gap: 12px;
   width: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  padding: 4px 2px 12px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #344767 transparent;
+}
+
+#recentHospitals::-webkit-scrollbar,
+.recent-horizontal-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+#recentHospitals::-webkit-scrollbar-track,
+.recent-horizontal-row::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#recentHospitals::-webkit-scrollbar-thumb,
+.recent-horizontal-row::-webkit-scrollbar-thumb {
+  background: #344767;
+  border-radius: 4px;
 }
 
 /* Each recently viewed hospital card */
 
 .recent-hospital-card {
-  display: flex;
-  flex-direction: row;
+  flex: 0 0 210px !important;
+  width: 210px !important;
+  min-width: 190px !important;
+  max-width: 230px !important;
+  display: flex !important;
+  flex-direction: row !important;
   align-items: center;
   gap: 10px;
-  width: 100%;
-  min-width: 0;
-  min-height: 62px;
-  padding: 8px 10px;
+  min-height: 64px;
+  padding: 8px 12px;
+  scroll-snap-align: start;
   overflow: hidden;
   border: 1px solid #293451;
   border-radius: 12px;
   background: #171d33;
   color: var(--text);
   text-align: left;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
 
 .recent-hospital-card:hover {
-  border-color: #42639a;
+  border-color: #0284c7;
   background: #1b2742;
+  transform: translateY(-2px);
 }
 
 .recent-hospital-card:active {
@@ -786,9 +816,7 @@ select:focus-visible {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  #recentHospitals {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+
 }
 
 @media (max-width: 360px) {

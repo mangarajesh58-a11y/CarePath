@@ -436,7 +436,7 @@
     }
   }
 
-  function renderRecentHospitals() {
+    function renderRecentHospitals() {
     const section = byId("recentSection");
     const container = byId("recentHospitals");
 
@@ -447,18 +447,41 @@
       return;
     }
 
-    const recent = readRecentHospitals().filter(function (item) {
-      return item && typeof item === "object" && hospitalId(item) != null;
-    });
+    const rawRecent = readRecentHospitals();
+    const activeList = hospitalRecords || [];
+    let validRecent = [];
 
+    // Filter to ONLY hospitals that currently exist and are published in the app
+    if (activeList.length > 0) {
+      validRecent = rawRecent.map(function (item) {
+        if (!item || typeof item !== "object") return null;
+        const id = hospitalId(item);
+        if (!id) return null;
+        // Match with latest hospital record in the app
+        const found = activeList.find(function (h) {
+          return String(hospitalId(h)) === String(id);
+        });
+        return found || null;
+      }).filter(Boolean);
+
+      // Keep localStorage in sync with currently active hospitals only (max 5)
+      localStorage.setItem(RECENT_KEY, JSON.stringify(validRecent.slice(0, 5)));
+    } else {
+      validRecent = rawRecent.filter(function (item) {
+        return item && typeof item === "object" && hospitalId(item) != null;
+      });
+    }
+
+    const displayRecent = validRecent.slice(0, 5);
     container.replaceChildren();
 
-    // Hide the entire section when there are no recent hospitals.
-    section.hidden = recent.length === 0;
+    // Hide the entire section when there are no valid recent hospitals
+    section.hidden = displayRecent.length === 0;
 
-    recent.slice(0, 5).forEach(function (hospital, index) {
+    displayRecent.forEach(function (hospital, index) {
       const card = makeElement("button", "recent-hospital-card");
       card.type = "button";
+      card.setAttribute("aria-label", "View " + hospitalName(hospital));
 
       const image = makeElement("img", "recent-hospital-image");
       image.src = hospitalPhoto(hospital, index);
@@ -496,33 +519,41 @@
 
   function selectHospital(hospital) {
     if (!hospital || typeof hospital !== "object") {
-      alert("Unable to select this hospital. Please refresh and try again.");
       return;
     }
 
     const id = hospitalId(hospital);
-
-    if (id == null) {
-      console.error("Hospital ID is missing:", hospital);
-      alert("Hospital ID is missing. Please contact support.");
+    if (!id) {
       return;
     }
+
+    const activeList = hospitalRecords || [];
+    // Only accept hospitals that currently exist in the app
+    const fresh = activeList.find(function (h) {
+      return String(hospitalId(h)) === String(id);
+    }) || hospital;
 
     localStorage.setItem("selectedHospitalId", String(id));
     localStorage.setItem("hospital_id", String(id));
     localStorage.setItem("hospitalId", String(id));
-    localStorage.setItem("selectedHospital", JSON.stringify(hospital));
+    localStorage.setItem("selectedHospital", JSON.stringify(fresh));
 
-    // Save the selected hospital at the top, without duplicates.
-    const recent = readRecentHospitals().filter(function (item) {
-      return String(hospitalId(item)) !== String(id);
+    // Save the selected hospital at the top without duplicates, filtering out nonexistent hospitals
+    const existing = readRecentHospitals().filter(function (item) {
+      const itemId = hospitalId(item);
+      const isCurrent = String(itemId) === String(id);
+      const existsInApp = activeList.length === 0 || activeList.some(function (h) {
+        return String(hospitalId(h)) === String(itemId);
+      });
+      return !isCurrent && existsInApp;
     });
 
-    recent.unshift(hospital);
+    existing.unshift(fresh);
 
+    // Save at most 5 items in recent list
     localStorage.setItem(
       RECENT_KEY,
-      JSON.stringify(recent.slice(0, 5))
+      JSON.stringify(existing.slice(0, 5))
     );
 
     window.location.href = "./hospital-details.html";
