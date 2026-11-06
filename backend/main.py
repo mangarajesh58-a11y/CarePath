@@ -1386,46 +1386,57 @@ def carepath_ai_chat(
             "source": "instant_engine",
         }
 
-    # 2. Ultra-Fast Groq Engine (< 350ms response if GROQ_API_KEY is configured)
+    # 2. Ultra-Fast Groq Engine (< 500ms response if GROQ_API_KEY is configured)
     groq_key = os.getenv("GROQ_API_KEY")
     if groq_key:
-        try:
-            groq_res = requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {groq_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": "llama-3.1-8b-instant",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": (
-                                "You are CarePath AI, a friendly healthcare assistant. "
-                                "Keep replies concise (1-2 sentences), reassuring, and helpful. "
-                                "Never diagnose diseases or prescribe dosages. "
-                                "For severe symptoms advise seeing a doctor or emergency care."
-                            ),
-                        },
-                        {"role": "user", "content": message},
-                    ],
-                    "max_tokens": 120,
-                    "temperature": 0.3,
-                },
-                timeout=1.2,
-            )
-            if groq_res.ok:
-                groq_data = groq_res.json()
-                reply = groq_data["choices"][0]["message"]["content"].strip()
-                if reply:
-                    return {
-                        "success": True,
-                        "reply": reply,
-                        "source": "groq_fast",
-                    }
-        except Exception as groq_err:
-            logging.warning("Groq fast fallback to Gemini: %s", groq_err)
+        groq_models = [
+            "qwen/qwen3.8-27b",
+            "openai/gpt-oss-120b",
+            "llama-3.1-8b-instant",
+            "llama-3.3-70b-versatile",
+        ]
+        for g_model in groq_models:
+            try:
+                groq_res = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {groq_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": g_model,
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are CarePath AI, a friendly healthcare assistant on the CarePath platform. "
+                                    "Keep replies concise (1-2 sentences), reassuring, and helpful. "
+                                    "Never diagnose diseases or prescribe dosages. "
+                                    "For severe symptoms advise seeing a doctor or emergency care."
+                                ),
+                            },
+                            {"role": "user", "content": message},
+                        ],
+                        "max_tokens": 120,
+                        "temperature": 0.3,
+                    },
+                    timeout=2.0,
+                )
+                if groq_res.ok:
+                    groq_data = groq_res.json()
+                    choices = groq_data.get("choices", [])
+                    if choices:
+                        reply = choices[0].get("message", {}).get("content", "").strip()
+                        if reply:
+                            return {
+                                "success": True,
+                                "reply": reply,
+                                "source": "groq_fast",
+                                "model": g_model,
+                            }
+            except Exception as groq_err:
+                logging.warning("Groq fast model %s error: %s", g_model, groq_err)
+                continue
 
     if not gemini_client:
         return {
