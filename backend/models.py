@@ -321,3 +321,34 @@ class HospitalAdvertisement(Base):
     activated_at = Column(DateTime, nullable=True)
     expires_at = Column(DateTime, nullable=True, index=True)
 
+
+
+class SystemBroadcast(Base):
+    __tablename__ = "system_broadcasts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    banner_type = Column(String(50), default="warning", nullable=False)  # critical, warning, info, success
+    target_audience = Column(String(50), default="all", nullable=False)  # all, patient, hospital
+    is_active = Column(Boolean, default=True, index=True, nullable=False)
+    is_dismissible = Column(Boolean, default=True, nullable=False)
+    action_link = Column(String(500), nullable=True)
+    action_label = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+
+
+class HospitalDirectMessage(Base):
+    __tablename__ = "hospital_direct_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hospital_id = Column(Integer, nullable=False, index=True)
+    sender_role = Column(String(50), nullable=False)  # 'admin' or 'hospital'
+    sender_name = Column(String(255), nullable=True)
+    subject = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    priority = Column(String(50), default="normal", nullable=False)  # 'normal', 'urgent', 'compliance'
+    is_read = Column(Boolean, default=False, index=True, nullable=False)
+    sent_via_email = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

@@ -2,8 +2,64 @@
 // CAREPATH ADMIN JAVASCRIPT
 // =====================================================
 
-const API = "https://carepath-3q9q.onrender.com";
+const REMOTE_API = "https://carepath-3q9q.onrender.com";
+const LOCAL_API = "http://127.0.0.1:8000";
+
+function resolveApiBase() {
+    const saved = localStorage.getItem("carepath_api");
+    if (saved) return saved.replace(/\/+$/, "");
+    return REMOTE_API;
+}
+
+let API = resolveApiBase();
 const FRONTEND = "https://carepath-admin.vercel.app";
+
+// Pre-warm backend immediately on load to reduce Render cold-start lag
+try {
+    fetch(`${API}/health`).catch(() => {});
+} catch (_) {}
+
+function switchApi(newUrl) {
+    API = newUrl.replace(/\/+$/, "");
+    localStorage.setItem("carepath_api", API);
+    alert(`Backend API set to: ${API}\nReloading page...`);
+    window.location.reload();
+}
+window.switchApi = switchApi;
+
+// =====================================================
+// ROBUST FETCH WITH RETRY & AUTO-SWITCH
+// =====================================================
+
+async function fetchWithRetry(url, options = {}, retries = 1, delayMs = 2500) {
+    try {
+        return await fetch(url, options);
+    } catch (err) {
+        if (retries <= 0) throw err;
+        console.warn(`Fetch failed (${url}), retrying after ${delayMs}ms (server may be waking up):`, err);
+
+        const isLocal = window.location.hostname === "localhost" ||
+                        window.location.hostname === "127.0.0.1" ||
+                        window.location.protocol === "file:";
+
+        if (isLocal && API !== LOCAL_API) {
+            try {
+                const localTest = await fetch(`${LOCAL_API}/health`, { signal: AbortSignal.timeout(1500) });
+                if (localTest.ok) {
+                    API = LOCAL_API;
+                    localStorage.setItem("carepath_api", LOCAL_API);
+                    console.log("Auto-switched to active local FastAPI backend:", LOCAL_API);
+                    if (typeof url === "string" && url.startsWith(REMOTE_API)) {
+                        url = url.replace(REMOTE_API, LOCAL_API);
+                    }
+                }
+            } catch (_) {}
+        }
+
+        await new Promise(r => setTimeout(r, delayMs));
+        return await fetch(url, options);
+    }
+}
 
 // =====================================================
 // SAFE RESPONSE READER
@@ -461,7 +517,7 @@ async function loadDashboardHospitals() {
         );
 
     try {
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${API}/admin/hospitals`,
             {
                 headers:
@@ -653,13 +709,13 @@ async function loadHospitals() {
                 colspan="9"
                 class="loading"
             >
-                Loading hospitals...
+                Loading hospitals (connecting to backend)...
             </td>
         </tr>
     `;
 
     try {
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${API}/admin/hospitals`,
             {
                 headers:
@@ -782,6 +838,13 @@ async function loadHospitals() {
                         `
                         : "";
 
+                const rawImg = hospital.image_url || hospital.photo_url || "";
+                const thumbUrl = rawImg
+                    ? (/^https?:\/\//i.test(rawImg) || rawImg.startsWith("data:")
+                        ? rawImg
+                        : `${API}${rawImg.startsWith("/") ? "" : "/"}${rawImg}`)
+                    : `${API}/hospital-photos/hospital_${hospitalId}.jpg`;
+
                 row.innerHTML = `
                     <td>
                         ${escapeHtml(
@@ -790,11 +853,21 @@ async function loadHospitals() {
                     </td>
 
                     <td>
-                        <strong>
-                            ${escapeHtml(
-                                hospital.name || "-"
-                            )}
-                        </strong>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img
+                                src="${thumbUrl}"
+                                alt="${escapeHtml(hospital.name || 'Hospital')}"
+                                style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid #e2e8f0; background: #f8fafc; flex-shrink: 0;"
+                                onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=120&q=80';"
+                            >
+                            <div>
+                                <strong>
+                                    ${escapeHtml(
+                                        hospital.name || "-"
+                                    )}
+                                </strong>
+                            </div>
+                        </div>
                     </td>
 
                     <td>
@@ -885,18 +958,34 @@ async function loadHospitals() {
             error
         );
 
+        const otherApi = API === REMOTE_API ? LOCAL_API : REMOTE_API;
+        const otherLabel = API === REMOTE_API ? "Localhost (127.0.0.1:8000)" : "Render Cloud Server";
+
         tableBody.innerHTML = `
             <tr>
                 <td
                     colspan="9"
                     class="loading"
+                    style="padding: 24px 16px; text-align: center;"
                 >
-                    ❌ Cannot connect to FastAPI.
-                    <br><br>
-                    ${escapeHtml(
-                        error.message ||
-                        "Make sure the backend is running."
-                    )}
+                    <div style="max-width: 520px; margin: 0 auto; text-align: center;">
+                        <div style="font-size: 22px; font-weight: bold; margin-bottom: 8px;">❌ Cannot Connect to Server</div>
+                        <div style="color: #64748b; font-size: 14px; margin-bottom: 14px;">
+                            ${escapeHtml(error.message || "Failed to fetch from backend.")}
+                        </div>
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px; text-align: left; line-height: 1.5;">
+                            <strong>Active API:</strong> <code>${escapeHtml(API)}</code><br>
+                            ${API.includes("onrender.com") ? "💡 <em>Note: Render free tier services sleep after 15 minutes of inactivity and take ~30–45s to wake up on the first request.</em>" : "💡 <em>Make sure your local FastAPI backend is running via <code>uvicorn main:app --reload</code>.</em>"}
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <button type="button" onclick="loadHospitals()" style="background: #1976d2; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                🔄 Retry
+                            </button>
+                            <button type="button" onclick="switchApi('${otherApi}')" style="background: #475569; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                ⚡ Switch to ${otherLabel}
+                            </button>
+                        </div>
+                    </div>
                 </td>
             </tr>
         `;
@@ -1076,56 +1165,70 @@ async function viewHospital(id) {
         // HOSPITAL PHOTO
         // =====================================================
 
-        const imagePath =
+        let imagePath =
             hospital.image_url ||
             hospital.photo_url ||
             hospital.hospital_photo_url ||
             "";
 
+        // Direct database base64 fallback if image_url is missing
+        if (!imagePath && hospital.photo_base64 && typeof hospital.photo_base64 === "string") {
+            imagePath = hospital.photo_base64.startsWith("data:")
+                ? hospital.photo_base64
+                : `data:image/jpeg;base64,${hospital.photo_base64}`;
+        }
+
+        // Guaranteed fallback so cover photo is NEVER missing
+        if (!imagePath) {
+            imagePath = `${API}/hospital-photos/hospital_${hospital.id || id}.jpg`;
+        }
+
         if (
             hospitalPhotoPreview &&
             hospitalPhotoMessage
         ) {
-            if (imagePath) {
-                const photoUrl =
-                    /^https?:\/\//i.test(
-                        imagePath
-                    )
-                        ? imagePath
-                        : `${API}${
-                              imagePath.startsWith("/")
-                                  ? ""
-                                  : "/"
-                          }${imagePath}`;
+            const photoUrl =
+                /^https?:\/\//i.test(imagePath) || imagePath.startsWith("data:")
+                    ? imagePath
+                    : `${API}${
+                          imagePath.startsWith("/")
+                              ? ""
+                              : "/"
+                      }${imagePath}`;
 
-                hospitalPhotoPreview.onload =
-                    () => {
-                        hospitalPhotoPreview.style.display =
-                            "block";
+            hospitalPhotoPreview.onload =
+                () => {
+                    hospitalPhotoPreview.style.display =
+                        "block";
 
-                        hospitalPhotoMessage.textContent =
-                            "Hospital cover photo loaded.";
-                    };
+                    hospitalPhotoMessage.textContent =
+                        "Hospital cover photo loaded.";
+                };
 
-                hospitalPhotoPreview.onerror =
-                    () => {
-                        hospitalPhotoPreview.style.display =
-                            "none";
+            hospitalPhotoPreview.onerror =
+                () => {
+                    // 1. If file URL failed, try database base64 if available
+                    if (hospital.photo_base64 && typeof hospital.photo_base64 === "string" && !hospitalPhotoPreview.src.startsWith("data:")) {
+                        const b64Src = hospital.photo_base64.startsWith("data:")
+                            ? hospital.photo_base64
+                            : `data:image/jpeg;base64,${hospital.photo_base64}`;
+                        hospitalPhotoPreview.onerror = () => {
+                            hospitalPhotoPreview.onerror = null;
+                            hospitalPhotoPreview.src = "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=900&q=80";
+                            hospitalPhotoMessage.textContent = "Default medical cover photo loaded.";
+                        };
+                        hospitalPhotoPreview.src = b64Src;
+                        return;
+                    }
 
-                        hospitalPhotoMessage.textContent =
-                            "Photo URL exists, but the image could not be loaded.";
-                    };
+                    // 2. High quality curated fallback photo so cover is never missing
+                    hospitalPhotoPreview.onerror = null;
+                    hospitalPhotoPreview.src = "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=900&q=80";
+                    hospitalPhotoMessage.textContent = "Default medical cover photo loaded.";
+                };
 
-                hospitalPhotoPreview.src =
-                    photoUrl;
-
-            } else {
-                hospitalPhotoPreview.style.display =
-                    "none";
-
-                hospitalPhotoMessage.textContent =
-                    "No cover photo uploaded for this hospital.";
-            }
+            hospitalPhotoPreview.src =
+                photoUrl;
         }
 
         // =====================================================
@@ -1293,6 +1396,8 @@ async function viewHospital(id) {
                 !hasCertificate ||
                 certificateStatus === "REJECTED";
         }
+        { setupHospitalDirectCommunication(hospital, hospitalId);
+        }
 
     } catch (error) {
         console.error(
@@ -1409,7 +1514,7 @@ async function loadProtectedCertificate(
 // CLOSE HOSPITAL DETAILS
 // =====================================================
 
-function closeHospitalDetails() {
+function closeHospitalDetails() { resetHospitalDirectCommunication();
     const modal =
         document.getElementById(
             "hospitalDetailsModal"
@@ -2598,5 +2703,208 @@ async function adminUploadHospitalCertificate() {
         await viewHospital(id);
     } catch (err) {
         alert(err.message || "Failed to upload certificate");
+    }
+}
+
+
+// =====================================================
+// DIRECT COMMUNICATION (ADMIN <-> HOSPITAL)
+// =====================================================
+
+function setupHospitalDirectCommunication(hospital, hospitalId) {
+    resetHospitalDirectCommunication();
+
+    const rawPhone = hospital.phone || "";
+    const cleanPhone = String(rawPhone).replace(/[^0-9]/g, "");
+
+    const btnWhatsApp = document.getElementById("btnHospitalWhatsApp");
+    if (btnWhatsApp) {
+        if (cleanPhone) {
+            const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+            btnWhatsApp.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${hospital.name || "Hospital"}, this is CarePath Platform Admin.`)}`;
+            btnWhatsApp.style.display = "inline-flex";
+        } else {
+            btnWhatsApp.style.display = "none";
+        }
+    }
+
+    const btnCall = document.getElementById("btnHospitalCall");
+    if (btnCall) {
+        if (cleanPhone) {
+            btnCall.href = `tel:${cleanPhone}`;
+            btnCall.style.display = "inline-flex";
+        } else {
+            btnCall.style.display = "none";
+        }
+    }
+
+    loadHospitalMessages(hospitalId);
+}
+
+function resetHospitalDirectCommunication() {
+    const container = document.getElementById("hospitalMessagesContainer");
+    if (container) {
+        container.innerHTML = `<div style="text-align: center; color: #64748b; font-size: 13px; padding: 10px 0;">Loading conversation...</div>`;
+    }
+    const subjInput = document.getElementById("adminMsgSubject");
+    if (subjInput) subjInput.value = "";
+    const textInput = document.getElementById("adminMsgText");
+    if (textInput) textInput.value = "";
+}
+
+async function loadHospitalMessages(hospitalId) {
+    const container = document.getElementById("hospitalMessagesContainer");
+    if (!container) return;
+
+    container.innerHTML = `
+        <div style="text-align: center; color: #64748b; font-size: 13px; padding: 12px 0;">
+            💬 Loading conversation messages...
+        </div>
+    `;
+
+    try {
+        const response = await fetch(`${API}/admin/hospitals/${hospitalId}/messages`, {
+            headers: getAdminAuthHeaders()
+        });
+
+        const data = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, "Unable to load conversation"));
+        }
+
+        const messages = Array.isArray(data.messages) ? data.messages : [];
+
+        if (messages.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: #94a3b8; font-size: 13px; padding: 25px 10px; background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                    <div style="font-size: 24px; margin-bottom: 6px;">💬</div>
+                    <strong style="color: #475569;">No messages exchanged yet</strong>
+                    <div style="font-size: 12px; margin-top: 4px; color: #64748b;">
+                        Send your first direct message, inquiry, or compliance notice below.
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = messages.map(msg => {
+            const isAdmin = (msg.sender_role || "").toLowerCase() === "admin";
+            const align = isAdmin ? "flex-end" : "flex-start";
+            const bubbleBg = isAdmin ? "#2563eb" : "#ffffff";
+            const textColor = isAdmin ? "#ffffff" : "#0f172a";
+            const border = isAdmin ? "none" : "1px solid #e2e8f0";
+            const senderTag = isAdmin ? "Platform Admin (You)" : (msg.sender_name || "Hospital Staff");
+            const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleString() : "";
+            const isUrgent = msg.priority === "urgent";
+            const isCompliance = msg.priority === "compliance";
+
+            let priorityBadge = "";
+            if (isUrgent) {
+                priorityBadge = `<span style="background: ${isAdmin ? '#ef4444' : '#fee2e2'}; color: ${isAdmin ? '#fff' : '#b91c1c'}; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">🚨 URGENT</span>`;
+            } else if (isCompliance) {
+                priorityBadge = `<span style="background: ${isAdmin ? '#f59e0b' : '#fef3c7'}; color: ${isAdmin ? '#fff' : '#b45309'}; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">⚠️ COMPLIANCE</span>`;
+            }
+
+            const emailTag = msg.sent_via_email 
+                ? `<span style="font-size: 11px; opacity: 0.85; margin-left: 6px;">📧 Dispatched to email</span>` 
+                : "";
+
+            return `
+                <div style="display: flex; flex-direction: column; align-self: ${align}; max-width: 85%;">
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 3px; display: flex; gap: 6px; align-items: center; justify-content: ${isAdmin ? 'flex-end' : 'flex-start'};">
+                        <strong>${escapeHtml(senderTag)}</strong>
+                        <span>•</span>
+                        <span>${timeStr}</span>
+                        ${emailTag}
+                    </div>
+                    <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 11px 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 13px; line-height: 1.45;">
+                        ${priorityBadge ? `<div style="margin-bottom: 6px;">${priorityBadge}</div>` : ''}
+                        ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 4px; font-size: 13.5px;">${escapeHtml(msg.subject)}</div>` : ''}
+                        <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.message || '')}</div>
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        container.scrollTop = container.scrollHeight;
+    } catch (err) {
+        console.error("Load messages error:", err);
+        container.innerHTML = `
+            <div style="color: #ef4444; font-size: 13px; text-align: center; padding: 14px;">
+                Failed to load conversation: ${escapeHtml(err.message)}
+            </div>
+        `;
+    }
+}
+
+async function sendDirectMessageToHospital() {
+    if (!currentHospitalDetailsId) {
+        alert("Please open a hospital first.");
+        return;
+    }
+
+    const textInput = document.getElementById("adminMsgText");
+    const subjInput = document.getElementById("adminMsgSubject");
+    const prioSelect = document.getElementById("adminMsgPriority");
+    const emailCheck = document.getElementById("adminMsgSendEmail");
+    const btn = document.getElementById("btnAdminSendMsg");
+
+    const message = textInput ? textInput.value.trim() : "";
+    if (!message) {
+        alert("Please enter a message for the hospital.");
+        if (textInput) textInput.focus();
+        return;
+    }
+
+    const subject = subjInput ? subjInput.value.trim() : "";
+    const priority = prioSelect ? prioSelect.value : "normal";
+    const sendEmail = emailCheck ? emailCheck.checked : true;
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = "⏳ Sending...";
+    }
+
+    try {
+        const response = await fetch(`${API}/admin/hospitals/${currentHospitalDetailsId}/messages`, {
+            method: "POST",
+            headers: {
+                ...getAdminAuthHeaders(),
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                subject: subject || null,
+                message: message,
+                priority: priority,
+                send_email: sendEmail
+            })
+        });
+
+        const data = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, "Could not send direct message"));
+        }
+
+        if (textInput) textInput.value = "";
+        if (subjInput) subjInput.value = "";
+
+        showMessage(
+            data.email_dispatched 
+                ? "Message sent to hospital and email copy dispatched!" 
+                : "Message delivered to hospital dashboard!",
+            "success"
+        );
+
+        await loadHospitalMessages(currentHospitalDetailsId);
+    } catch (err) {
+        console.error("Send message error:", err);
+        alert(err.message || "Failed to send message to hospital");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = "🚀 Send Message";
+        }
     }
 }

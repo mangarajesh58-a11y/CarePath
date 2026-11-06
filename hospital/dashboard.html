@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -708,6 +708,7 @@
     </style>
 
   <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+  <script src="./broadcast-banner.js"></script>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="carepath-ai-small.png">
 </head>
@@ -746,6 +747,15 @@
                 style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35); transition: opacity 0.2s;"
             >
                 📢 Promote Hospital (₹999)
+            </button>
+            <button
+                type="button"
+                id="btnHospitalAdminMessages"
+                onclick="openAdminMessagesModal()"
+                style="background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);"
+            >
+                💬 Admin Messages
+                <span id="hospitalAdminMsgBadge" style="display: none; background: #ef4444; color: white; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 999px;">0</span>
             </button>
             <button
                 class="logout"
@@ -910,6 +920,25 @@
 
             <button id="profileButton">
                 Manage Profile
+            </button>
+        </div>
+
+        <!-- ADMIN DIRECT COMMUNICATION CARD -->
+        <div class="dashboard-card" style="border: 2px solid #2563eb; background: linear-gradient(180deg, #eff6ff, #ffffff); position: relative;">
+            <div id="cardAdminMsgBadge" style="display: none; position: absolute; top: 12px; right: 12px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px;">
+                NEW MESSAGE
+            </div>
+            <div class="card-icon">
+                💬
+            </div>
+            <h3 style="color: #1d4ed8;">
+                Admin Communication
+            </h3>
+            <p>
+                Direct messages, compliance notices, and official announcements from Platform Admin.
+            </p>
+            <button onclick="openAdminMessagesModal()" style="background: #2563eb; font-weight: 700; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
+                View Messages 💬
             </button>
 
         </div>
@@ -1178,6 +1207,53 @@
     </div>
 </div>
 
+<!-- =====================================================
+     ADMIN MESSAGES / DIRECT COMMUNICATION MODAL
+===================================================== -->
+<div id="adminMessagesModal" class="ad-modal-backdrop" aria-hidden="true" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 18px; box-sizing: border-box;">
+    <div style="background: #ffffff; width: 100%; max-width: 720px; max-height: 90vh; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden;">
+        
+        <!-- MODAL HEADER -->
+        <div style="padding: 16px 22px; background: linear-gradient(135deg, #1e40af, #2563eb); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 24px;">💬</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #ffffff;">Platform Admin Communication</h3>
+                    <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">Official notices, inquiries, and two-way messaging with CarePath Admin</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeAdminMessagesModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 22px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
+        </div>
+
+        <!-- MESSAGES THREAD -->
+        <div id="hospitalAdminMsgContainer" style="flex: 1; padding: 18px 22px; background: #f8fafc; overflow-y: auto; max-height: 380px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="text-align: center; color: #64748b; font-size: 13px; padding: 20px 0;">Loading conversation...</div>
+        </div>
+
+        <!-- REPLY FORM -->
+        <div style="padding: 16px 22px; background: #ffffff; border-top: 1px solid #e2e8f0;">
+            <div style="font-weight: 700; font-size: 13px; color: #334155; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span>✉️ Reply to Platform Admin</span>
+                <span style="font-size: 11.5px; color: #64748b; font-weight: normal;">Messages deliver directly to Admin dashboard</span>
+            </div>
+            <input type="text" id="hospitalReplySubject" placeholder="Subject (optional)" style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; margin-bottom: 8px; outline: none;">
+            <textarea id="hospitalReplyText" rows="3" placeholder="Type your reply to platform admin..." style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; margin-bottom: 10px; resize: vertical; outline: none;"></textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeAdminMessagesModal()" style="padding: 9px 18px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">Close</button>
+                <button type="button" id="btnHospitalSendReply" onclick="sendHospitalReplyToAdmin()" style="padding: 9px 20px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">🚀 Send Reply</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div style="display:none;"><div><div><div><div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 
 /* =====================================================
@@ -1185,7 +1261,9 @@
 ===================================================== */
 
 const API_URL =
-    "https://carepath-3q9q.onrender.com";
+    (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost")
+        ? "http://127.0.0.1:8000"
+        : "https://carepath-3q9q.onrender.com";
 
 
 /* =====================================================
@@ -2334,6 +2412,229 @@ async function loadHospitalAds() {
 setInterval(
     loadQueue,
     10000
+);
+
+/* =====================================================
+   DIRECT COMMUNICATION WITH ADMIN (HOSPITAL SIDE)
+===================================================== */
+
+function openAdminMessagesModal() {
+    const modal = document.getElementById("adminMessagesModal");
+    if (!modal) return;
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    loadHospitalAdminMessages();
+}
+
+function closeAdminMessagesModal() {
+    const modal = document.getElementById("adminMessagesModal");
+    if (!modal) return;
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    checkAdminMessagesUnreadCount();
+}
+
+const adminMsgModalEl = document.getElementById("adminMessagesModal");
+if (adminMsgModalEl) {
+    adminMsgModalEl.addEventListener("click", function(e) {
+        if (e.target === adminMsgModalEl) closeAdminMessagesModal();
+    });
+}
+
+async function checkAdminMessagesUnreadCount() {
+    const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId");
+    const activeToken = hospitalToken || localStorage.getItem("hospitalToken");
+    if (!activeHospId || !activeToken) return;
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${activeHospId}/messages/unread-count`, {
+            headers: {
+                "Authorization": `Bearer ${activeToken}`
+            }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const unread = data.unread_count || 0;
+
+        const headerBadge = document.getElementById("hospitalAdminMsgBadge");
+        if (headerBadge) {
+            if (unread > 0) {
+                headerBadge.textContent = unread;
+                headerBadge.style.display = "inline-block";
+            } else {
+                headerBadge.style.display = "none";
+            }
+        }
+
+        const cardBadge = document.getElementById("cardAdminMsgBadge");
+        if (cardBadge) {
+            if (unread > 0) {
+                cardBadge.textContent = `${unread} NEW MESSAGE${unread > 1 ? 'S' : ''}`;
+                cardBadge.style.display = "block";
+            } else {
+                cardBadge.style.display = "none";
+            }
+        }
+    } catch (err) {
+        console.warn("Unread check failed:", err);
+    }
+}
+
+async function loadHospitalAdminMessages() {
+    const container = document.getElementById("hospitalAdminMsgContainer");
+    if (!container) return;
+
+    const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId");
+    const activeToken = hospitalToken || localStorage.getItem("hospitalToken");
+
+    if (!activeHospId || !activeToken) {
+        container.innerHTML = `<div style="text-align: center; color: #ef4444; font-size: 13px; padding: 20px;">Hospital session not found. Please log in again.</div>`;
+        return;
+    }
+
+    container.innerHTML = `<div style="text-align: center; color: #64748b; font-size: 13px; padding: 20px;">💬 Loading conversation...</div>`;
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${activeHospId}/messages`, {
+            headers: {
+                "Authorization": `Bearer ${activeToken}`
+            }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.message || "Failed to load messages");
+
+        const messages = Array.isArray(data.messages) ? data.messages : [];
+
+        if (messages.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: #94a3b8; font-size: 13px; padding: 30px 15px; background: white; border-radius: 10px; border: 1px dashed #cbd5e1;">
+                    <div style="font-size: 28px; margin-bottom: 8px;">📬</div>
+                    <strong style="color: #475569;">No messages from Platform Admin yet</strong>
+                    <div style="font-size: 12px; margin-top: 4px; color: #64748b;">
+                        When Admin contacts your hospital regarding approvals, compliance, or operational notices, they will appear here. You can also send a message below.
+                    </div>
+                </div>
+            `;
+            checkAdminMessagesUnreadCount();
+            return;
+        }
+
+        container.innerHTML = messages.map(msg => {
+            const isAdmin = (msg.sender_role || "").toLowerCase() === "admin";
+            const align = isAdmin ? "flex-start" : "flex-end";
+            const bubbleBg = isAdmin ? "#ffffff" : "#2563eb";
+            const textColor = isAdmin ? "#0f172a" : "#ffffff";
+            const border = isAdmin ? "1.5px solid #cbd5e1" : "none";
+            const senderTag = isAdmin ? "Platform Admin" : "Your Hospital Staff (You)";
+            const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleString() : "";
+            const isUrgent = msg.priority === "urgent";
+            const isCompliance = msg.priority === "compliance";
+
+            let priorityBadge = "";
+            if (isUrgent) {
+                priorityBadge = `<span style="background: #fee2e2; color: #b91c1c; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">🚨 URGENT ACTION</span>`;
+            } else if (isCompliance) {
+                priorityBadge = `<span style="background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">⚠️ COMPLIANCE NOTICE</span>`;
+            }
+
+            return `
+                <div style="display: flex; flex-direction: column; align-self: ${align}; max-width: 85%;">
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 3px; display: flex; gap: 6px; align-items: center; justify-content: ${isAdmin ? 'flex-start' : 'flex-end'};">
+                        <strong>${senderTag}</strong>
+                        <span>•</span>
+                        <span>${timeStr}</span>
+                    </div>
+                    <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 13.5px; line-height: 1.5;">
+                        ${priorityBadge ? `<div style="margin-bottom: 6px;">${priorityBadge}</div>` : ''}
+                        ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 4px; font-size: 14px;">${escapeHtmlHospital(msg.subject)}</div>` : ''}
+                        <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtmlHospital(msg.message || '')}</div>
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        container.scrollTop = container.scrollHeight;
+        checkAdminMessagesUnreadCount();
+    } catch (err) {
+        console.error("Load admin messages error:", err);
+        container.innerHTML = `<div style="color: #ef4444; font-size: 13px; text-align: center; padding: 20px;">Failed to load messages: ${escapeHtmlHospital(err.message)}</div>`;
+    }
+}
+
+async function sendHospitalReplyToAdmin() {
+    const textInput = document.getElementById("hospitalReplyText");
+    const subjInput = document.getElementById("hospitalReplySubject");
+    const btn = document.getElementById("btnHospitalSendReply");
+
+    const message = textInput ? textInput.value.trim() : "";
+    if (!message) {
+        alert("Please enter a reply message before sending.");
+        if (textInput) textInput.focus();
+        return;
+    }
+
+    const subject = subjInput ? subjInput.value.trim() : "";
+    const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId");
+    const activeToken = hospitalToken || localStorage.getItem("hospitalToken");
+
+    if (!activeHospId || !activeToken) {
+        alert("Hospital session not found. Please log in again.");
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "⏳ Sending...";
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${activeHospId}/messages/reply`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${activeToken}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                subject: subject || null,
+                message: message
+            })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.message || "Failed to send reply");
+
+        if (textInput) textInput.value = "";
+        if (subjInput) subjInput.value = "";
+
+        await loadHospitalAdminMessages();
+    } catch (err) {
+        console.error("Send reply error:", err);
+        alert(err.message || "Failed to send reply to Admin");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "🚀 Send Reply";
+        }
+    }
+}
+
+function escapeHtmlHospital(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+checkAdminMessagesUnreadCount();
+setInterval(checkAdminMessagesUnreadCount, 30000);
+
+const __noop = (0
+
 );
 
 </script>

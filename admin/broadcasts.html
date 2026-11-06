@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Broadcasts & Platform Alerts - CarePath Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="../hospital/carepath-ai-small.png">
+    <style>
+        .page-container {
+            width: 100%;
+            max-width: 1100px;
+            margin: auto;
+            padding: 24px;
+        }
+
+        .broadcast-card {
+            background: white;
+            border-radius: 16px;
+            padding: 28px 32px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+            margin-bottom: 25px;
+        }
+
+        .card-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+
+        .card-header-row h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 18px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-field.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-field label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+
+        .form-field input, .form-field textarea, .form-field select {
+            padding: 11px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #1e293b;
+            background: white;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-field input:focus, .form-field textarea:focus, .form-field select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .field-hint {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* LIVE PREVIEW */
+        .preview-container {
+            margin-top: 24px;
+            padding: 18px 20px;
+            background: #f8fafc;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 12px;
+        }
+
+        .preview-header {
+            font-size: 13px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* BANNER STYLES */
+        .broadcast-banner {
+            padding: 14px 20px;
+            border-radius: 10px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .broadcast-banner.critical {
+            background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
+            border-left: 6px solid #7f1d1d;
+        }
+
+        .broadcast-banner.warning {
+            background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+            border-left: 6px solid #9a3412;
+        }
+
+        .broadcast-banner.info {
+            background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+            border-left: 6px solid #075985;
+        }
+
+        .broadcast-banner.success {
+            background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+            border-left: 6px solid #14532d;
+        }
+
+        .banner-content {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex: 1;
+        }
+
+        .banner-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .banner-text-title {
+            font-weight: 800;
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+
+        .banner-text-msg {
+            font-size: 13.5px;
+            opacity: 0.96;
+            line-height: 1.4;
+        }
+
+        .banner-action-btn {
+            background: rgba(255, 255, 255, 0.22);
+            color: white;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .banner-action-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .btn-publish {
+            background: #dc2626;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-publish:hover {
+            background: #b91c1c;
+        }
+
+        .btn-publish:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* BROADCAST LIST TABLE */
+        .broadcasts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .broadcasts-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .broadcasts-table td {
+            padding: 14px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13.5px;
+            color: #1e293b;
+            vertical-align: middle;
+        }
+
+        .badge-type {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-critical { background: #fee2e2; color: #991b1b; }
+        .badge-warning { background: #ffedd5; color: #c2410c; }
+        .badge-info { background: #e0f2fe; color: #0369a1; }
+        .badge-success { background: #dcfce7; color: #15803d; }
+
+        .badge-audience {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-status-active {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #16a34a;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .badge-status-inactive {
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .btn-toggle {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-toggle.active {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .btn-toggle.active:hover {
+            background: #fecaca;
+        }
+
+        .btn-toggle.inactive {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .btn-toggle.inactive:hover {
+            background: #bbf7d0;
+        }
+
+        .btn-delete {
+            background: #f1f5f9;
+            color: #dc2626;
+            border: 1px solid #e2e8f0;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-delete:hover {
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .btn-back-dash {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            color: #334155;
+            font-weight: 600;
+            font-size: 13px;
+            text-decoration: none;
+            margin-bottom: 18px;
+            transition: all 0.2s;
+        }
+
+        .btn-back-dash:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+<div class="dashboard">
+
+    <!-- HEADER -->
+    <header>
+        <div>
+            <h1>🏥 CarePath</h1>
+            <p>Platform Administration & Emergency Center</p>
+        </div>
+        <button type="button" class="logout" onclick="adminLogout()">Logout</button>
+    </header>
+
+    <div class="page-container" style="padding: 0;">
+        <a href="dashboard.html" class="btn-back-dash">← Back to Dashboard</a>
+
+        <!-- CREATION FORM -->
+        <div class="broadcast-card">
+            <div class="card-header-row">
+                <h2>📢 Push Instant Emergency Broadcast / Alert Banner</h2>
+                <span style="font-size: 13px; color: #64748b;">Instant push to all connected screens</span>
+            </div>
+
+            <form id="broadcastForm" onsubmit="handlePublishBroadcast(event)">
+                <div class="form-grid">
+                    <!-- ALERT LEVEL -->
+                    <div class="form-field">
+                        <label for="bannerType">Alert Severity Level *</label>
+                        <select id="bannerType" onchange="updateLivePreview()">
+                            <option value="critical">🚨 Critical / Emergency (Red) - Severe OPD Closure, Weather, Hazard</option>
+                            <option value="warning" selected>⚠️ Urgent Warning (Orange) - Partial OPD Delay, Timings Change</option>
+                            <option value="info">ℹ️ Informational (Blue) - Vaccination Drive, Health Advisory</option>
+                            <option value="success">✅ Operational Notice (Green) - Resumed Normal OPD Services</option>
+                        </select>
+                        <span class="field-hint">Defines color and urgency level shown to users.</span>
+                    </div>
+
+                    <!-- TARGET AUDIENCE -->
+                    <div class="form-field">
+                        <label for="targetAudience">Target Audience *</label>
+                        <select id="targetAudience" onchange="updateLivePreview()">
+                            <option value="all" selected>🌐 Everyone (All Patients & Partner Hospitals)</option>
+                            <option value="patient">👤 Patients Only (Booking & Queue Screens)</option>
+                            <option value="hospital">🏥 Hospitals Only (Staff Dashboard & TV Screen)</option>
+                        </select>
+                        <span class="field-hint">Specify who will see this alert banner.</span>
+                    </div>
+
+                    <!-- TITLE -->
+                    <div class="form-field full-width">
+                        <label for="broadcastTitle">Alert Headline / Title *</label>
+                        <input
+                            type="text"
+                            id="broadcastTitle"
+                            placeholder="e.g. National Holiday OPD Notice, Heavy Rain Advisory, or Free Health Screening"
+                            required
+                            maxlength="200"
+                            oninput="updateLivePreview()"
+                        >
+                    </div>
+
+                    <!-- MESSAGE -->
+                    <div class="form-field full-width">
+                        <label for="broadcastMessage">Detailed Message / Instructions *</label>
+                        <textarea
+                            id="broadcastMessage"
+                            placeholder="e.g. All general OPD consultation queues will remain closed tomorrow across all partner hospitals on account of Gandhi Jayanti. 24x7 Emergency and Trauma care remain operational."
+                            required
+                            rows="3"
+                            oninput="updateLivePreview()"
+                        ></textarea>
+                    </div>
+
+                    <!-- OPTIONAL LINK -->
+                    <div class="form-field">
+                        <label for="actionLabel">Action Button Label (Optional)</label>
+                        <input
+                            type="text"
+                            id="actionLabel"
+                            placeholder="e.g. View Holiday Timings, Check Details"
+                            oninput="updateLivePreview()"
+                        >
+                    </div>
+
+                    <div class="form-field">
+                        <label for="actionLink">Action URL Link (Optional)</label>
+                        <input
+                            type="url"
+                            id="actionLink"
+                            placeholder="https://carepath.health/notice or /patient/my-tokens.html"
+                            oninput="updateLivePreview()"
+                        >
+                    </div>
+
+                    <!-- EXPIRES IN -->
+                    <div class="form-field">
+                        <label for="expiresInHours">Auto-Deactivate After</label>
+                        <select id="expiresInHours">
+                            <option value="">Keep Active Until Manually Disabled</option>
+                            <option value="6">6 Hours</option>
+                            <option value="12">12 Hours</option>
+                            <option value="24" selected>24 Hours (Recommended for Daily Notices)</option>
+                            <option value="48">48 Hours</option>
+                            <option value="168">7 Days</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field" style="justify-content: center;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 18px;">
+                            <input type="checkbox" id="isDismissible" checked style="width: 18px; height: 18px;">
+                            <span style="font-size: 13.5px; font-weight: 600; color: #1e293b;">Allow users to close banner during session</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- LIVE PREVIEW BOX -->
+                <div class="preview-container">
+                    <div class="preview-header">👁️ Live Banner Preview (How Users Will See It)</div>
+                    <div id="liveBannerPreview" class="broadcast-banner warning">
+                        <div class="banner-content">
+                            <span id="previewIcon" class="banner-icon">⚠️</span>
+                            <div>
+                                <div id="previewTitle" class="banner-text-title">National Holiday OPD Notice</div>
+                                <div id="previewMessage" class="banner-text-msg">All general OPD consultation queues will remain closed tomorrow across all partner hospitals. Emergency care remains operational.</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <a id="previewActionBtn" href="#" class="banner-action-btn" style="display: none;">View Details</a>
+                            <span style="cursor: pointer; opacity: 0.8; font-size: 16px;">✕</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="submit" id="btnPublish" class="btn-publish">
+                        🚀 Publish Emergency Alert Now
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- PAST / ACTIVE BROADCASTS LIST -->
+        <div class="broadcast-card">
+            <div class="card-header-row">
+                <h2>📜 Active & Historical Platform Broadcasts</h2>
+                <button type="button" class="btn-toggle inactive" onclick="loadBroadcastsList()">🔄 Refresh</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="broadcasts-table">
+                    <thead>
+                        <tr>
+                            <th>Severity</th>
+                            <th>Audience</th>
+                            <th>Headline & Message</th>
+                            <th>Status</th>
+                            <th>Published</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="broadcastsTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 24px; color: #64748b;">
+                                Loading broadcasts...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+    const ICONS = {
+        critical: "🚨",
+        warning: "⚠️",
+        info: "ℹ️",
+        success: "✅"
+    };
+
+    function updateLivePreview() {
+        const type = document.getElementById("bannerType").value;
+        const audience = document.getElementById("targetAudience").value;
+        const title = document.getElementById("broadcastTitle").value.trim() || "Alert Title Headline";
+        const msg = document.getElementById("broadcastMessage").value.trim() || "Detailed notice and instructions for patients and partner hospitals.";
+        const actionLabel = document.getElementById("actionLabel").value.trim();
+
+        const banner = document.getElementById("liveBannerPreview");
+        banner.className = `broadcast-banner ${type}`;
+        document.getElementById("previewIcon").textContent = ICONS[type] || "📢";
+        document.getElementById("previewTitle").textContent = title;
+        document.getElementById("previewMessage").textContent = msg;
+
+        const actionBtn = document.getElementById("previewActionBtn");
+        if (actionLabel) {
+            actionBtn.style.display = "inline-block";
+            actionBtn.textContent = actionLabel;
+        } else {
+            actionBtn.style.display = "none";
+        }
+    }
+
+    async function loadBroadcastsList() {
+        const tbody = document.getElementById("broadcastsTableBody");
+        if (!tbody) return;
+
+        try {
+            const res = await fetchWithRetry(`${API}/admin/broadcasts`, {
+                headers: getAdminAuthHeaders()
+            });
+
+            const data = await readResponse(res);
+            if (!res.ok) throw new Error(getErrorMessage(data, "Failed to load broadcasts."));
+
+            const broadcasts = data.broadcasts || [];
+            if (broadcasts.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 24px; color: #64748b;">
+                            No platform broadcasts created yet. Use the form above to publish your first alert.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = broadcasts.map(b => {
+                const dateStr = b.created_at ? new Date(b.created_at).toLocaleString() : "-";
+                const badgeClass = `badge-${b.banner_type || "warning"}`;
+                const icon = ICONS[b.banner_type] || "📢";
+                const isAct = b.is_active;
+
+                return `
+                    <tr>
+                        <td>
+                            <span class="badge-type ${badgeClass}">
+                                ${icon} ${escapeHtml((b.banner_type || "info").toUpperCase())}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-audience">
+                                ${b.target_audience === "all" ? "🌐 Everyone" : (b.target_audience === "patient" ? "👤 Patients" : "🏥 Hospitals")}
+                            </span>
+                        </td>
+                        <td style="max-width: 360px;">
+                            <strong>${escapeHtml(b.title)}</strong>
+                            <div style="color: #64748b; font-size: 12.5px; margin-top: 3px; line-height: 1.35;">
+                                ${escapeHtml(b.message)}
+                            </div>
+                        </td>
+                        <td>
+                            ${isAct
+                                ? `<span class="badge-status-active">● Active</span>`
+                                : `<span class="badge-status-inactive">○ Inactive</span>`
+                            }
+                        </td>
+                        <td style="color: #64748b; font-size: 12px; white-space: nowrap;">
+                            ${dateStr}
+                        </td>
+                        <td style="white-space: nowrap;">
+                            <div style="display: flex; gap: 8px;">
+                                <button
+                                    type="button"
+                                    class="btn-toggle ${isAct ? 'active' : 'inactive'}"
+                                    onclick="toggleBroadcast(${b.id})"
+                                >
+                                    ${isAct ? 'Deactivate' : 'Activate'}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn-delete"
+                                    onclick="deleteBroadcast(${b.id})"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+
+        } catch (err) {
+            console.error("Error loading broadcasts:", err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 24px; color: #dc2626;">
+                        ❌ Failed to load broadcasts. ${escapeHtml(err.message)}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    async function handlePublishBroadcast(e) {
+        e.preventDefault();
+        const btn = document.getElementById("btnPublish");
+        btn.disabled = true;
+        btn.innerHTML = "⏳ Publishing Broadcast...";
+
+        const payload = {
+            banner_type: document.getElementById("bannerType").value,
+            target_audience: document.getElementById("targetAudience").value,
+            title: document.getElementById("broadcastTitle").value.trim(),
+            message: document.getElementById("broadcastMessage").value.trim(),
+            action_label: document.getElementById("actionLabel").value.trim() || null,
+            action_link: document.getElementById("actionLink").value.trim() || null,
+            is_dismissible: document.getElementById("isDismissible").checked,
+            expires_in_hours: document.getElementById("expiresInHours").value ? parseInt(document.getElementById("expiresInHours").value, 10) : null
+        };
+
+        try {
+            const res = await fetch(`${API}/admin/broadcasts`, {
+                method: "POST",
+                headers: {
+                    ...getAdminAuthHeaders(),
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await readResponse(res);
+            if (!res.ok) throw new Error(getErrorMessage(data, "Failed to publish broadcast."));
+
+            alert("✅ Emergency alert banner published successfully to all target screens!");
+            document.getElementById("broadcastForm").reset();
+            updateLivePreview();
+            await loadBroadcastsList();
+
+        } catch (err) {
+            console.error("Broadcast publish error:", err);
+            alert("❌ " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = "🚀 Publish Emergency Alert Now";
+        }
+    }
+
+    async function toggleBroadcast(id) {
+        try {
+            const res = await fetch(`${API}/admin/broadcasts/${id}/toggle`, {
+                method: "PUT",
+                headers: getAdminAuthHeaders()
+            });
+            const data = await readResponse(res);
+            if (!res.ok) throw new Error(getErrorMessage(data, "Failed to toggle broadcast."));
+            await loadBroadcastsList();
+        } catch (err) {
+            alert("❌ " + err.message);
+        }
+    }
+
+    async function deleteBroadcast(id) {
+        if (!confirm("Are you sure you want to permanently delete this broadcast?")) return;
+        try {
+            const res = await fetch(`${API}/admin/broadcasts/${id}`, {
+                method: "DELETE",
+                headers: getAdminAuthHeaders()
+            });
+            const data = await readResponse(res);
+            if (!res.ok) throw new Error(getErrorMessage(data, "Failed to delete broadcast."));
+            await loadBroadcastsList();
+        } catch (err) {
+            alert("❌ " + err.message);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        requireAdminLogin();
+        updateLivePreview();
+        loadBroadcastsList();
+    });
+</script>
+</body>
+</html>

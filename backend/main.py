@@ -60,6 +60,7 @@ from sqlalchemy import (
     inspect,
     text,
     func,
+    or_,
 )
 
 from sqlalchemy.orm import Session
@@ -80,6 +81,8 @@ from models import (
     PlatformContact,
     HospitalClosure,
     HospitalAdvertisement,
+    SystemBroadcast,
+    HospitalDirectMessage,
 )
 from fastapi.responses import FileResponse, Response, JSONResponse
 
@@ -1205,36 +1208,83 @@ class AIChatRequest(BaseModel):
 # CAREPATH AI - DATABASE CONTEXT
 # ==========================================
 
+_CAREPATH_CONTEXT_CACHE = {"data": None, "timestamp": 0}
+
 def get_carepath_ai_context(db: Session, message: str):
     """
-    Retrieve relevant CarePath data for the AI.
-
-    This function does not store the patient's message
-    or conversation.
-
+    Retrieve relevant CarePath data for the AI with fast in-memory caching.
     """
+    now = time.time()
+    if _CAREPATH_CONTEXT_CACHE["data"] is not None and (now - _CAREPATH_CONTEXT_CACHE["timestamp"] < 300):
+        return _CAREPATH_CONTEXT_CACHE["data"]
 
-    hospitals = (
-        db.query(Hospital)
-        .filter(
-            Hospital.is_published == True,
-            Hospital.approval_status == "APPROVED"
+    try:
+        hospitals = (
+            db.query(Hospital)
+            .filter(
+                Hospital.is_published == True,
+                Hospital.approval_status == "APPROVED"
+            )
+            .all()
         )
-        .all()
-    )
 
-    context = []
+        context = []
+        for hospital in hospitals:
+            context.append({
+                "name": hospital.name,
+                "city": hospital.city or "",
+                "phone": hospital.phone or "",
+                "fee": hospital.token_fee or 0,
+            })
 
-    for hospital in hospitals:
-        context.append({
-            "hospital_id": hospital.id,
-            "name": hospital.name,
-            "location": hospital.city or hospital.address or "Location not available",
-            "phone": hospital.phone,
-            "token_fee": hospital.token_fee,
-        })
+        _CAREPATH_CONTEXT_CACHE["data"] = context
+        _CAREPATH_CONTEXT_CACHE["timestamp"] = now
+        return context
+    except Exception as e:
+        print("Context fetch warning:", e)
+        return _CAREPATH_CONTEXT_CACHE["data"] or []
 
-    return context
+
+def check_instant_ai_response(message: str) -> Optional[str]:
+    """
+    Instant intent matcher (< 1ms latency) for common greetings,
+    platform FAQs, token guidance, and critical emergencies.
+    """
+    text = (message or "").strip().lower()
+    clean = re.sub(r"[^a-zA-Z0-9\s]", "", text)
+    tokens = set(clean.split())
+
+    # 1. Greetings (< 1ms)
+    greeting_words = {"hi", "hello", "hey", "namaste", "hola", "greetings", "hii", "hiii", "helo", "good morning", "good evening", "good afternoon"}
+    if clean in greeting_words or (len(tokens) <= 3 and tokens.intersection({"hi", "hello", "hey", "namaste", "hii"})):
+        return (
+            "Hello! 👋 I'm CarePath AI, your instant healthcare assistant. "
+            "How can I help you today? You can ask about symptoms, finding hospitals, or booking tokens."
+        )
+
+    # 2. Platform FAQ / "What is CarePath"
+    if any(phrase in text for phrase in ["what is carepath", "about carepath", "tell me about carepath", "what does carepath do"]):
+        return (
+            "CarePath 💙 is a smart healthcare platform that lets you explore verified hospitals, "
+            "check token fees, and book consultation queue tokens online to avoid long waiting times."
+        )
+
+    # 3. How to book a token
+    if any(phrase in text for phrase in ["how to book", "book token", "how can i book", "how do i book"]):
+        return (
+            "To book a token, choose any verified hospital from your dashboard, select your department or doctor, "
+            "and confirm your token. You can track your live queue number in real-time under 'My Tokens'!"
+        )
+
+    # 4. Emergency symptoms (Immediate safety warning)
+    emergency_phrases = ["chest pain", "cant breathe", "cannot breathe", "difficulty breathing", "heart attack", "unconscious", "heavy bleeding"]
+    if any(phrase in text for phrase in emergency_phrases):
+        return (
+            "🚨 CRITICAL WARNING: If you or someone nearby is experiencing severe chest pain or breathing difficulty, "
+            "please contact emergency services (112 / 108 in India) or visit the nearest trauma center immediately."
+        )
+
+    return None
 
 
 def get_carepath_ai_fallback(message: str) -> str:
@@ -1319,13 +1369,7 @@ def carepath_ai_chat(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("patient")),
 ):
-    if not gemini_client:
-        raise HTTPException(
-            status_code=503,
-            detail="CarePath AI is temporarily unavailable.",
-        )
-
-    message = data.message.strip()
+    message = (data.message or "").strip()
 
     if not message:
         raise HTTPException(
@@ -1333,120 +1377,113 @@ def carepath_ai_chat(
             detail="Message cannot be empty.",
         )
 
+    # 1. Instant Intent Engine (< 1ms response for greetings, FAQs, emergencies)
+    instant_reply = check_instant_ai_response(message)
+    if instant_reply:
+        return {
+            "success": True,
+            "reply": instant_reply,
+            "source": "instant_engine",
+        }
+
+    # 2. Ultra-Fast Groq Engine (< 350ms response if GROQ_API_KEY is configured)
+    groq_key = os.getenv("GROQ_API_KEY")
+    if groq_key:
+        try:
+            groq_res = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {groq_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are CarePath AI, a friendly healthcare assistant. "
+                                "Keep replies concise (1-2 sentences), reassuring, and helpful. "
+                                "Never diagnose diseases or prescribe dosages. "
+                                "For severe symptoms advise seeing a doctor or emergency care."
+                            ),
+                        },
+                        {"role": "user", "content": message},
+                    ],
+                    "max_tokens": 120,
+                    "temperature": 0.3,
+                },
+                timeout=1.2,
+            )
+            if groq_res.ok:
+                groq_data = groq_res.json()
+                reply = groq_data["choices"][0]["message"]["content"].strip()
+                if reply:
+                    return {
+                        "success": True,
+                        "reply": reply,
+                        "source": "groq_fast",
+                    }
+        except Exception as groq_err:
+            logging.warning("Groq fast fallback to Gemini: %s", groq_err)
+
+    if not gemini_client:
+        return {
+            "success": True,
+            "reply": get_carepath_ai_fallback(message),
+            "fallback": True,
+        }
+
     try:
         carepath_context = get_carepath_ai_context(db, message)
     except Exception:
-        print("CarePath AI context retrieval failed.")
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to retrieve CarePath information.",
-        )
+        carepath_context = []
 
-    system_instruction = """
-You are CarePath AI, the healthcare assistant for the CarePath platform.
+    compact_system_instruction = (
+        "You are CarePath AI, a helpful healthcare assistant on the CarePath platform. "
+        "Keep answers under 2 sentences, clear, warm, and simple. "
+        "Never diagnose or prescribe dosages. Advise consulting a doctor or emergency care if severe."
+    )
 
-Your goal is to communicate naturally, kindly, and clearly with patients.
+    # Fast sub-second / low-latency Gemini models
+    fast_models = [
+        "gemini-3.5-flash-lite",
+        "gemini-flash-lite-latest",
+        "gemini-3.8-flash",
+    ]
 
-Conversation:
-- Understand spelling mistakes, typing errors, abbreviations,
-  missing punctuation, and imperfect grammar.
-- Infer the intended meaning when it is reasonably clear.
-- Do not reject a message simply because it contains mistakes.
-- Respond naturally to greetings and ordinary conversation.
-- If a message is unclear, ask a short clarifying question.
-- Keep answers friendly, useful, and easy to understand.
+    for model_name in fast_models:
+        try:
+            response = gemini_client.models.generate_content(
+                model=model_name,
+                contents=f"""Patient question: {message}
 
-Healthcare safety:
-- Never claim to diagnose a disease or medical condition.
-- Provide general health information, not a diagnosis.
-- Do not prescribe medication or invent dosages.
-- You may suggest an appropriate medical department.
-- If symptoms may indicate an emergency, advise immediate emergency care.
-- Ask relevant follow-up questions when helpful.
+CarePath hospital info: {carepath_context}
 
-CarePath information:
-- Use the supplied CarePath database information for hospital questions.
-- Never invent hospital names, doctors, fees, phone numbers,
-  or availability.
-- If the supplied data does not answer a question, say you cannot verify it.
-
-Privacy:
-- Do not save or claim to remember conversations.
-- Do not mention internal implementation details.
-"""
-
-
-    try:
-        response = None
-
-        for attempt in range(3):
-            try:
-                response = gemini_client.models.generate_content(
-                    model="gemini-3.8-flash",
-                    contents=f"""
-Patient message:
-{message}
-
-CarePath hospital data from the database:
-{carepath_context}
-
-Respond to the patient's actual question. Correctly interpret reasonable
-spelling and grammar mistakes. Use only the supplied database information
-for CarePath-specific facts. Do not guess missing hospital information.
-""",
-                    config={
-                        "system_instruction": system_instruction,
-                    },
-                )
-                break
-
-            except Exception as error:
-                error_text = str(error)
-
-                is_temporary_error = (
-                    "503" in error_text
-                    or "UNAVAILABLE" in error_text
-                    or "429" in error_text
-                    or "RESOURCE_EXHAUSTED" in error_text
-                )
-
-                if not is_temporary_error or attempt == 2:
-                    raise
-
-                time.sleep(1 + attempt)
-
-        reply = response.text
-
-        if not reply:
-            raise RuntimeError(
-                "CarePath AI returned an empty response."
+Provide a direct, helpful 1-2 sentence response to the patient.""",
+                config={
+                    "system_instruction": compact_system_instruction,
+                    "max_output_tokens": 120,
+                    "temperature": 0.3,
+                },
             )
+            reply = response.text.strip() if response and response.text else None
+            if reply:
+                return {
+                    "success": True,
+                    "reply": reply,
+                    "model": model_name,
+                }
+        except Exception as model_err:
+            logging.warning("Fast AI model %s error: %s", model_name, model_err)
+            continue
 
-        return {
-            "success": True,
-            "reply": reply,
-        }
-
-    except Exception as e:
-        error_text = str(e)
-        print("CarePath AI error:", error_text)
-
-        if (
-            "503" in error_text
-            or "UNAVAILABLE" in error_text
-            or "429" in error_text
-            or "RESOURCE_EXHAUSTED" in error_text
-        ):
-            return {
-                "success": True,
-                "reply": get_carepath_ai_fallback(message),
-                "fallback": True,
-            }
-
-        raise HTTPException(
-            status_code=500,
-            detail="CarePath AI is temporarily unavailable.",
-        )
+    # Graceful instantaneous fallback if API unavailable
+    return {
+        "success": True,
+        "reply": get_carepath_ai_fallback(message),
+        "fallback": True,
+    }
 
 @app.post("/registration/request-otp")
 def request_registration_otp(
@@ -2001,6 +2038,12 @@ class WalkInTokenRequest(BaseModel):
 # HELPER - HOSPITAL RESPONSE
 # ============================================================
 
+def resolve_hospital_photo_url(hospital):
+    if hospital.image_url and str(hospital.image_url).strip():
+        return str(hospital.image_url).strip()
+    return f"/hospital-photos/hospital_{hospital.id}.jpg" 
+
+
 def hospital_to_dict(hospital):
 
     return {
@@ -2011,7 +2054,8 @@ def hospital_to_dict(hospital):
         "city": hospital.city,
         "address": hospital.address,
         "description": hospital.description,
-        "image_url": hospital.image_url,
+        "image_url": resolve_hospital_photo_url(hospital),
+        "photo_base64": bool(hospital.photo_base64),
 
         "license_id": hospital.license_id,
 
@@ -2062,7 +2106,7 @@ def public_hospital_to_dict(hospital):
         "city": hospital.city,
         "address": hospital.address,
         "description": hospital.description,
-        "image_url": hospital.image_url,
+        "image_url": resolve_hospital_photo_url(hospital),
         "token_fee": hospital.token_fee,
         "latitude": hospital.latitude,
         "longitude": hospital.longitude,
@@ -3142,11 +3186,21 @@ async def register_hospital(
     # OPTIONAL HOSPITAL PHOTO
     # --------------------------------------------------------
     photo_base64_str = None
+    photo_filename = None
+    photo_ext = ".jpg"
     if hospital_photo:
         try:
             photo_data = await hospital_photo.read()
             if photo_data and len(photo_data) <= MAX_HOSPITAL_PHOTO_SIZE:
                 photo_base64_str = base64.b64encode(photo_data).decode("utf-8")
+                photo_ct = (hospital_photo.content_type or "").lower()
+                photo_ext = ALLOWED_HOSPITAL_PHOTO_TYPES.get(photo_ct, ".jpg")
+                photo_filename = f"hospital_pending_{uuid.uuid4().hex}{photo_ext}"
+                try:
+                    with open(os.path.join(HOSPITAL_PHOTO_DIR, photo_filename), "wb") as f:
+                        f.write(photo_data)
+                except Exception as disk_err:
+                    logging.warning("Could not cache photo to disk: %s", disk_err)
         except Exception as photo_err:
             logging.warning("Could not read hospital photo on registration: %s", photo_err)
 
@@ -3220,6 +3274,12 @@ async def register_hospital(
         certificate_base64=
             base64.b64encode(certificate_data).decode("utf-8"),
 
+        image_url=(
+            f"/hospital-photos/{photo_filename}"
+            if photo_filename
+            else None
+        ),
+
         photo_base64=
             photo_base64_str,
 
@@ -3259,6 +3319,22 @@ async def register_hospital(
     db.commit()
 
     db.refresh(hospital)
+
+    if photo_filename and photo_base64_str:
+        try:
+            final_filename = f"hospital_{hospital.id}_{uuid.uuid4().hex}{photo_ext}"
+            old_p = os.path.join(HOSPITAL_PHOTO_DIR, photo_filename)
+            new_p = os.path.join(HOSPITAL_PHOTO_DIR, final_filename)
+            if os.path.exists(old_p):
+                os.rename(old_p, new_p)
+            else:
+                with open(new_p, "wb") as f:
+                    f.write(base64.b64decode(photo_base64_str))
+            hospital.image_url = f"/hospital-photos/{final_filename}"
+            db.commit()
+            db.refresh(hospital)
+        except Exception as ren_err:
+            logging.warning("Could not rename hospital photo to final filename: %s", ren_err)
 
     # Try Cashfree vendor onboarding if bank details provided
     if clean_account_number and clean_ifsc:
@@ -3487,7 +3563,8 @@ def get_hospital_photo(filename: str, db: Session = Depends(get_db)):
     # 2. Check persistent database photo_base64
     hospital = db.query(Hospital).filter(Hospital.image_url.like(f"%{safe_name}")).first()
     if not hospital and safe_name.startswith("hospital_"):
-        parts = safe_name.split("_")
+        name_no_ext = os.path.splitext(safe_name)[0]
+        parts = name_no_ext.split("_")
         if len(parts) >= 2 and parts[1].isdigit():
             hospital = db.query(Hospital).filter(Hospital.id == int(parts[1])).first()
 
@@ -5637,6 +5714,9 @@ def admin_get_hospital(
 
         "payment_upi":
             hospital.payment_upi,
+
+        "photo_base64":
+            hospital.photo_base64,
     })
 
 
@@ -7454,3 +7534,466 @@ def get_active_ads(db: Session = Depends(get_db)):
     random.shuffle(ads_list)
     return ads_list
 
+
+
+# ============================================================
+# SYSTEM BROADCASTS & EMERGENCY NOTIFICATION BANNERS
+# ============================================================
+
+class CreateBroadcastRequest(BaseModel):
+    title: str
+    message: str
+    banner_type: str = "warning"  # critical, warning, info, success
+    target_audience: str = "all"  # all, patient, hospital
+    is_dismissible: bool = True
+    action_link: Optional[str] = None
+    action_label: Optional[str] = None
+    expires_in_hours: Optional[int] = None
+
+
+@app.get("/broadcasts/active")
+def get_active_broadcasts(
+    audience: Optional[str] = "all",
+    db: Session = Depends(get_db),
+):
+    """Fetch currently active emergency banners and platform announcements."""
+    now = datetime.utcnow()
+    query = db.query(SystemBroadcast).filter(
+        SystemBroadcast.is_active == True,
+        or_(
+            SystemBroadcast.expires_at == None,
+            SystemBroadcast.expires_at > now,
+        ),
+    )
+
+    clean_aud = (audience or "all").lower().strip()
+    if clean_aud != "all":
+        query = query.filter(
+            SystemBroadcast.target_audience.in_(["all", clean_aud])
+        )
+
+    broadcasts = query.order_by(SystemBroadcast.id.desc()).all()
+
+    return {
+        "success": True,
+        "broadcasts": [
+            {
+                "id": b.id,
+                "title": b.title,
+                "message": b.message,
+                "banner_type": b.banner_type,
+                "target_audience": b.target_audience,
+                "is_dismissible": b.is_dismissible,
+                "action_link": b.action_link,
+                "action_label": b.action_label,
+                "created_at": b.created_at.isoformat() if b.created_at else None,
+            }
+            for b in broadcasts
+        ],
+    }
+
+
+@app.get("/admin/broadcasts")
+def admin_get_broadcasts(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """List all system broadcasts (active and past)."""
+    broadcasts = db.query(SystemBroadcast).order_by(SystemBroadcast.id.desc()).all()
+    now = datetime.utcnow()
+    return {
+        "success": True,
+        "broadcasts": [
+            {
+                "id": b.id,
+                "title": b.title,
+                "message": b.message,
+                "banner_type": b.banner_type,
+                "target_audience": b.target_audience,
+                "is_active": b.is_active and (b.expires_at is None or b.expires_at > now),
+                "is_dismissible": b.is_dismissible,
+                "action_link": b.action_link,
+                "action_label": b.action_label,
+                "created_at": b.created_at.isoformat() if b.created_at else None,
+                "expires_at": b.expires_at.isoformat() if b.expires_at else None,
+            }
+            for b in broadcasts
+        ],
+    }
+
+
+@app.post("/admin/broadcasts")
+def admin_create_broadcast(
+    data: CreateBroadcastRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """Publish a new system emergency broadcast / alert banner."""
+    title = (data.title or "").strip()
+    message = (data.message or "").strip()
+
+    if not title:
+        raise HTTPException(status_code=400, detail="Broadcast title cannot be empty.")
+    if not message:
+        raise HTTPException(status_code=400, detail="Broadcast message cannot be empty.")
+
+    b_type = data.banner_type.lower().strip()
+    if b_type not in ("critical", "warning", "info", "success"):
+        b_type = "warning"
+
+    audience = data.target_audience.lower().strip()
+    if audience not in ("all", "patient", "hospital"):
+        audience = "all"
+
+    expires_at = None
+    if data.expires_in_hours and data.expires_in_hours > 0:
+        expires_at = datetime.utcnow() + timedelta(hours=data.expires_in_hours)
+
+    broadcast = SystemBroadcast(
+        title=title,
+        message=message,
+        banner_type=b_type,
+        target_audience=audience,
+        is_active=True,
+        is_dismissible=bool(data.is_dismissible),
+        action_link=(data.action_link or "").strip() or None,
+        action_label=(data.action_label or "").strip() or None,
+        created_at=datetime.utcnow(),
+        expires_at=expires_at,
+    )
+    db.add(broadcast)
+    db.commit()
+    db.refresh(broadcast)
+
+    return {
+        "success": True,
+        "message": "Emergency broadcast published successfully.",
+        "broadcast": {
+            "id": broadcast.id,
+            "title": broadcast.title,
+            "message": broadcast.message,
+            "banner_type": broadcast.banner_type,
+            "target_audience": broadcast.target_audience,
+            "is_active": broadcast.is_active,
+        },
+    }
+
+
+@app.put("/admin/broadcasts/{broadcast_id}/toggle")
+def admin_toggle_broadcast(
+    broadcast_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """Activate or deactivate a system broadcast."""
+    broadcast = db.query(SystemBroadcast).filter(SystemBroadcast.id == broadcast_id).first()
+    if not broadcast:
+        raise HTTPException(status_code=404, detail="Broadcast not found.")
+
+    broadcast.is_active = not broadcast.is_active
+    db.commit()
+    db.refresh(broadcast)
+
+    return {
+        "success": True,
+        "message": f"Broadcast {'activated' if broadcast.is_active else 'deactivated'} successfully.",
+        "is_active": broadcast.is_active,
+    }
+
+
+@app.delete("/admin/broadcasts/{broadcast_id}")
+def admin_delete_broadcast(
+    broadcast_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """Delete a system broadcast."""
+    broadcast = db.query(SystemBroadcast).filter(SystemBroadcast.id == broadcast_id).first()
+    if not broadcast:
+        raise HTTPException(status_code=404, detail="Broadcast not found.")
+
+    db.delete(broadcast)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Broadcast deleted successfully.",
+    }
+
+
+# ============================================================
+# DIRECT COMMUNICATION: ADMIN <-> HOSPITAL
+# ============================================================
+
+class AdminSendMessageRequest(BaseModel):
+    subject: Optional[str] = None
+    message: str
+    priority: str = "normal"  # normal, urgent, compliance
+    send_email: bool = True
+
+
+class HospitalReplyMessageRequest(BaseModel):
+    subject: Optional[str] = None
+    message: str
+
+
+@app.get("/admin/hospitals/{hospital_id}/messages")
+def admin_get_hospital_messages(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """Admin: Retrieve full direct message history with a hospital."""
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+
+    messages = (
+        db.query(HospitalDirectMessage)
+        .filter(HospitalDirectMessage.hospital_id == hospital_id)
+        .order_by(HospitalDirectMessage.created_at.asc())
+        .all()
+    )
+
+    # Mark hospital replies as read by admin
+    for m in messages:
+        if m.sender_role == "hospital" and not m.is_read:
+            m.is_read = True
+    db.commit()
+
+    return {
+        "success": True,
+        "hospital": {
+            "id": hospital.id,
+            "name": hospital.name,
+            "email": hospital.email,
+            "phone": hospital.phone,
+            "city": hospital.city,
+        },
+        "messages": [
+            {
+                "id": m.id,
+                "sender_role": m.sender_role,
+                "sender_name": m.sender_name,
+                "subject": m.subject,
+                "message": m.message,
+                "priority": m.priority,
+                "is_read": m.is_read,
+                "sent_via_email": m.sent_via_email,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in messages
+        ],
+    }
+
+
+@app.post("/admin/hospitals/{hospital_id}/messages")
+def admin_send_hospital_message(
+    hospital_id: int,
+    data: AdminSendMessageRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """Admin: Send a direct message/official notice to a hospital."""
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+
+    subject = (data.subject or "Notice from Platform Admin").strip()
+    msg_text = (data.message or "").strip()
+    if not subject:
+        subject = "Notice from Platform Admin"
+    if not msg_text:
+        raise HTTPException(status_code=400, detail="Message content cannot be empty.")
+
+    priority = (data.priority or "normal").lower().strip()
+    if priority not in ("normal", "urgent", "compliance"):
+        priority = "normal"
+
+    sent_email_ok = False
+    if data.send_email and hospital.email:
+        email_subj = f"[CarePath Official Notice] {subject}"
+        email_body = (
+            f"Dear {hospital.name} Administration,\n\n"
+            f"You have received an official notice from CarePath Platform Admin:\n\n"
+            f"----------------------------------------\n"
+            f"Priority: {priority.upper()}\n"
+            f"Subject: {subject}\n"
+            f"----------------------------------------\n\n"
+            f"{msg_text}\n\n"
+            f"Please log in to your CarePath Hospital Dashboard to view and reply directly:\n"
+            f"https://carepath-hospital-ten.vercel.app/\n\n"
+            f"Warm regards,\n"
+            f"CarePath Platform Administration Team"
+        )
+        email_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+            <div style="background: linear-gradient(135deg, #1976d2, #0d47a1); padding: 16px 20px; border-radius: 8px; color: white; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px;">🏥 CarePath Platform Admin Notice</h2>
+                <p style="margin: 4px 0 0; opacity: 0.9; font-size: 13px;">Official Direct Communication to {hospital.name}</p>
+            </div>
+            <div style="background: #f8fafc; border-left: 4px solid {'#dc2626' if priority == 'urgent' else ('#ea580c' if priority == 'compliance' else '#2563eb')}; padding: 12px 16px; margin-bottom: 20px; border-radius: 4px;">
+                <div style="font-size: 12px; font-weight: bold; text-transform: uppercase; color: #64748b;">Priority Level: {priority.upper()}</div>
+                <div style="font-size: 16px; font-weight: bold; color: #1e293b; margin-top: 4px;">{subject}</div>
+            </div>
+            <div style="font-size: 14.5px; line-height: 1.6; color: #334155; margin-bottom: 24px; white-space: pre-line;">
+                {msg_text}
+            </div>
+            <div style="text-align: center; margin: 25px 0;">
+                <a href="https://carepath-hospital-ten.vercel.app/" style="background: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">Open Hospital Dashboard & Reply</a>
+            </div>
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 14px; font-size: 12px; color: #94a3b8; text-align: center;">
+                CarePath Healthcare Technologies • Automated Official Communication System
+            </div>
+        </div>
+        """
+        try:
+            sent_email_ok = send_carepath_email(
+                to_email=hospital.email,
+                subject=email_subj,
+                text=email_body,
+                html=email_html
+            )
+        except Exception as err:
+            logging.warning("Could not dispatch direct message email to hospital: %s", err)
+
+    msg = HospitalDirectMessage(
+        hospital_id=hospital_id,
+        sender_role="admin",
+        sender_name="CarePath Platform Admin",
+        subject=subject,
+        message=msg_text,
+        priority=priority,
+        is_read=False,
+        sent_via_email=sent_email_ok,
+        created_at=datetime.utcnow(),
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+
+    return {
+        "success": True,
+        "message": "Message delivered to hospital successfully.",
+        "email_dispatched": sent_email_ok,
+        "direct_message": {
+            "id": msg.id,
+            "subject": msg.subject,
+            "message": msg.message,
+            "priority": msg.priority,
+            "sent_via_email": msg.sent_via_email,
+            "created_at": msg.created_at.isoformat() if msg.created_at else None,
+        },
+    }
+
+
+@app.get("/hospitals/{hospital_id}/messages")
+def hospital_get_direct_messages(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Hospital: Retrieve conversation history with Admin."""
+    if hospital_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    messages = (
+        db.query(HospitalDirectMessage)
+        .filter(HospitalDirectMessage.hospital_id == hospital_id)
+        .order_by(HospitalDirectMessage.created_at.asc())
+        .all()
+    )
+
+    # Mark incoming admin messages as read
+    for m in messages:
+        if m.sender_role == "admin" and not m.is_read:
+            m.is_read = True
+    db.commit()
+
+    return {
+        "success": True,
+        "messages": [
+            {
+                "id": m.id,
+                "sender_role": m.sender_role,
+                "sender_name": m.sender_name,
+                "subject": m.subject,
+                "message": m.message,
+                "priority": m.priority,
+                "is_read": m.is_read,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in messages
+        ],
+    }
+
+
+@app.get("/hospitals/{hospital_id}/messages/unread-count")
+def hospital_get_unread_message_count(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Hospital: Get count of unread messages from Admin."""
+    if hospital_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    unread_count = (
+        db.query(HospitalDirectMessage)
+        .filter(
+            HospitalDirectMessage.hospital_id == hospital_id,
+            HospitalDirectMessage.sender_role == "admin",
+            HospitalDirectMessage.is_read == False,
+        )
+        .count()
+    )
+
+    return {"success": True, "unread_count": unread_count}
+
+
+@app.post("/hospitals/{hospital_id}/messages/reply")
+def hospital_reply_to_admin(
+    hospital_id: int,
+    data: HospitalReplyMessageRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Hospital: Send reply back to Admin."""
+    if hospital_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+
+    reply_text = (data.message or "").strip()
+    if not reply_text:
+        raise HTTPException(status_code=400, detail="Reply message cannot be empty")
+
+    subject = (data.subject or f"Reply from {hospital.name}").strip()
+
+    msg = HospitalDirectMessage(
+        hospital_id=hospital_id,
+        sender_role="hospital",
+        sender_name=hospital.name,
+        subject=subject,
+        message=reply_text,
+        priority="normal",
+        is_read=False,
+        sent_via_email=False,
+        created_at=datetime.utcnow(),
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+
+    return {
+        "success": True,
+        "message": "Reply sent to Admin successfully.",
+        "reply": {
+            "id": msg.id,
+            "subject": msg.subject,
+            "message": msg.message,
+            "created_at": msg.created_at.isoformat() if msg.created_at else None,
+        },
+    }

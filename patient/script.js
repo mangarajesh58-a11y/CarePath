@@ -175,6 +175,40 @@ function loadPatientName() {
 
 
 // =========================================================
+// =========================================================
+// SETUP EVENTS
+// =========================================================
+
+function setupEvents() {
+    const hospitalSelect = document.getElementById("hospital");
+    const departmentSelect = document.getElementById("department");
+    const doctorSelect = document.getElementById("doctor");
+    const continueBtn = document.getElementById("continueBtn");
+    const logoutButton = document.getElementById("logoutButton");
+
+    if (hospitalSelect) {
+        hospitalSelect.addEventListener("change", hospitalSelected);
+    }
+
+    if (departmentSelect) {
+        departmentSelect.addEventListener("change", departmentSelected);
+    }
+
+    if (doctorSelect) {
+        doctorSelect.addEventListener("change", doctorSelected);
+    }
+
+    if (continueBtn) {
+        continueBtn.addEventListener("click", continueAndGetToken);
+    }
+
+    if (logoutButton) {
+        logoutButton.addEventListener("click", logout);
+    }
+}
+
+
+// =========================================================
 // LOAD HOSPITALS
 // =========================================================
 

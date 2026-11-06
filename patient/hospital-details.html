@@ -95,6 +95,7 @@
         </main>
     </div>
 
+    <script src="./broadcast-banner.js"></script>
     <script>
         const hospitalContainer = document.getElementById("hospitalDetails");
         const message = document.getElementById("detailsMessage");
@@ -168,16 +169,21 @@ if (typeof hospital === "string") {
                     hospital.photo ||
                     hospital.image;
 
-                if (imageUrl) {
-                    const image = document.createElement("img");
-                    image.className = "hospital-image";
-                    image.src = imageUrl.startsWith("http")
-    ? imageUrl
-    : "https://carepath-3q9q.onrender.com/" + imageUrl.replace(/^\/+/, "");
-                    image.alt = "Hospital building";
-                    image.onerror = () => image.remove();
-                    hospitalContainer.appendChild(image);
-                }
+                const fallbackPhoto = "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=900&q=80";
+                const image = document.createElement("img");
+                image.className = "hospital-image";
+                image.src = imageUrl
+                    ? (imageUrl.startsWith("http") || imageUrl.startsWith("data:")
+                        ? imageUrl
+                        : "https://carepath-3q9q.onrender.com/" + imageUrl.replace(/^\/+/, ""))
+                    : fallbackPhoto;
+                image.alt = "Hospital building";
+                image.onerror = function() {
+                    if (this.src !== fallbackPhoto) {
+                        this.src = fallbackPhoto;
+                    }
+                };
+                hospitalContainer.appendChild(image);
 
                 addDetail(
                     hospitalContainer,

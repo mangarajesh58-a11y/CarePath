@@ -14,6 +14,7 @@
    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
   <script src="./script.js" defer></script>
 <script src="./dashboard-ui.js"></script>
+  <script src="./broadcast-banner.js"></script>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="carepath-ai-small.png">
 </head>
@@ -359,7 +360,9 @@
 
     try {
       const response = await fetch(
-        "https://carepath-3q9q.onrender.com/ai/chat",
+        (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost")
+          ? "http://127.0.0.1:8000/ai/chat"
+          : "https://carepath-3q9q.onrender.com/ai/chat",
         {
           method: "POST",
 
