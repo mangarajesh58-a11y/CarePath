@@ -2344,7 +2344,7 @@ def health():
         "success": True,
 
         "status": "healthy",
-        "deploy_version": "2026-11-06-v2",
+        "deploy_version": "2026-11-06-v3",
     }
 
 
@@ -2874,6 +2874,11 @@ async def register_hospital(
     password: str = Form(...),
 
     license_certificate: UploadFile = File(...),
+    hospital_photo: Optional[UploadFile] = File(None),
+    account_number: Optional[str] = Form(None),
+    ifsc: Optional[str] = Form(None),
+    upi: Optional[str] = Form(None),
+    account_name: Optional[str] = Form(None),
 
     db: Session = Depends(get_db),
 ):
@@ -3134,6 +3139,27 @@ async def register_hospital(
             )
 
     # --------------------------------------------------------
+    # OPTIONAL HOSPITAL PHOTO
+    # --------------------------------------------------------
+    photo_base64_str = None
+    if hospital_photo:
+        try:
+            photo_data = await hospital_photo.read()
+            if photo_data and len(photo_data) <= MAX_HOSPITAL_PHOTO_SIZE:
+                photo_base64_str = base64.b64encode(photo_data).decode("utf-8")
+        except Exception as photo_err:
+            logging.warning("Could not read hospital photo on registration: %s", photo_err)
+
+    # --------------------------------------------------------
+    # PAYMENT / BANK ACCOUNT DETAILS
+    # --------------------------------------------------------
+    clean_account_number = account_number.strip() if account_number else None
+    clean_ifsc = ifsc.strip().upper() if ifsc else None
+    clean_upi = upi.strip() if upi else None
+    clean_account_name = (account_name.strip() if account_name else name.strip()) if (clean_account_number or clean_upi) else None
+    initial_payment_status = "ADDED" if (clean_account_number or clean_upi) else "NOT_ADDED"
+
+    # --------------------------------------------------------
     # CREATE HOSPITAL
     # --------------------------------------------------------
 
@@ -3194,6 +3220,9 @@ async def register_hospital(
         certificate_base64=
             base64.b64encode(certificate_data).decode("utf-8"),
 
+        photo_base64=
+            photo_base64_str,
+
         # Keep old field compatible
         license_id=
             registration_number,
@@ -3210,14 +3239,48 @@ async def register_hospital(
         is_published=
             False,
 
+        payment_account_name=
+            clean_account_name,
+
+        payment_account_number=
+            clean_account_number,
+
+        payment_ifsc=
+            clean_ifsc,
+
+        payment_upi=
+            clean_upi,
+
         payment_account_status=
-            "NOT_ADDED",
+            initial_payment_status,
     )
     db.add(hospital)
 
     db.commit()
 
     db.refresh(hospital)
+
+    # Try Cashfree vendor onboarding if bank details provided
+    if clean_account_number and clean_ifsc:
+        try:
+            vendor_id = f"carepath_hospital_{hospital.id}"
+            cf_res = create_cashfree_vendor(
+                vendor_id=vendor_id,
+                name=clean_account_name or hospital.name,
+                email=hospital.email,
+                phone=hospital.phone or "9999999999",
+                bank_account_number=clean_account_number,
+                bank_ifsc=clean_ifsc,
+                bank_account_holder=clean_account_name or hospital.name,
+                upi_vpa=clean_upi,
+            )
+            hospital.cashfree_vendor_id = cf_res.get("vendor_id") or vendor_id
+            if cf_res.get("status"):
+                hospital.payment_account_status = cf_res.get("status")
+            db.commit()
+            db.refresh(hospital)
+        except Exception as cf_err:
+            logging.warning("Cashfree vendor creation deferred on registration: %s", cf_err)
 
     # Delete verified OTP after successful registration
 

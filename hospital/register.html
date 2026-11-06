@@ -604,6 +604,7 @@
         maxlength="11"
         autocomplete="off"
     >
+    <span id="ifscFeedback" class="hint" style="display:none; margin-top:4px; font-weight:500;"></span>
 </div>
 
 <div class="form-group">
@@ -710,6 +711,11 @@
 
 const API_URL = "https://carepath-3q9q.onrender.com";
 
+/* Pre-warm Render backend immediately on page load */
+try {
+    fetch(`${API_URL}/health`).catch(() => {});
+} catch (_) {}
+
 
 /* =========================================================
    ELEMENTS
@@ -782,6 +788,35 @@ function getValue(id) {
         : "";
 }
 
+
+/* =========================================================
+   IFSC CODE REALTIME HELPER
+========================================================= */
+const ifscInput = document.getElementById("ifsc");
+const ifscFeedback = document.getElementById("ifscFeedback");
+if (ifscInput) {
+    ifscInput.addEventListener("input", function () {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        const val = this.value;
+        if (!ifscFeedback) return;
+
+        if (val.startsWith("SBI0") || (val.startsWith("SBI") && val.length > 3 && val[3] !== "N")) {
+            ifscFeedback.style.display = "block";
+            ifscFeedback.style.color = "#ea580c";
+            ifscFeedback.textContent = "⚠️ Note: State Bank of India IFSC starts with 'SBIN' (e.g. SBIN0001124). Please check for missing 'N'.";
+        } else if (val.length === 11 && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(val)) {
+            ifscFeedback.style.display = "block";
+            ifscFeedback.style.color = "#dc2626";
+            ifscFeedback.textContent = "⚠️ IFSC must be 11 characters: 4 letters, 5th character '0', and 6 branch digits.";
+        } else if (val.length === 11 && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(val)) {
+            ifscFeedback.style.display = "block";
+            ifscFeedback.style.color = "#16a34a";
+            ifscFeedback.textContent = "✓ Valid IFSC format";
+        } else {
+            ifscFeedback.style.display = "none";
+        }
+    });
+}
 
 /* =========================================================
    PHONE VALIDATION
@@ -1297,6 +1332,22 @@ function buildRegistrationFormData() {
         hospitalPhoto
     );
 
+    /* -----------------------------------------------------
+       PAYMENT / BANK DETAILS
+    ----------------------------------------------------- */
+    const accountNumber = getValue("account_number");
+    const ifscCode = getValue("ifsc").toUpperCase();
+    const upiId = getValue("upi");
+
+    if (accountNumber) {
+        data.append("account_number", accountNumber);
+    }
+    if (ifscCode) {
+        data.append("ifsc", ifscCode);
+    }
+    if (upiId) {
+        data.append("upi", upiId);
+    }
 
     return data;
 }
@@ -1359,88 +1410,64 @@ form.addEventListener(
 
 
         registerButton.disabled = true;
-
-        registerButton.textContent =
-            "Registering Hospital...";
-
-
+        registerButton.textContent = "Registering Hospital (connecting to server)...";
         showMessage("");
 
-
         try {
-
             /* ---------------------------------------------
                BUILD DATA
             --------------------------------------------- */
-
-            const formData =
-                buildRegistrationFormData();
-
+            const formData = buildRegistrationFormData();
 
             /* ---------------------------------------------
-               SEND TO BACKEND
+               SEND TO BACKEND (with auto-retry if waking from sleep)
             --------------------------------------------- */
+            let response;
+            try {
+                response = await fetch(`${API_URL}/hospitals`, {
+                    method: "POST",
+                    body: formData
+                });
+            } catch (netErr) {
+                console.warn("First registration attempt failed, server may be waking up:", netErr);
+                registerButton.textContent = "Server waking up... Retrying (attempt 2 of 2)...";
+                await new Promise(r => setTimeout(r, 2500));
+                response = await fetch(`${API_URL}/hospitals`, {
+                    method: "POST",
+                    body: formData
+                });
+            }
 
-            const response =
-                await fetch(
-                    `${API_URL}/hospitals`,
-                    {
-                        method: "POST",
-                        body: formData
-                    }
-                );
-
-
-            const data =
-                await readResponse(response);
-
+            const data = await readResponse(response);
 
             /* ---------------------------------------------
                SUCCESS
             --------------------------------------------- */
-
             showMessage(
                 data.message ||
                 "Hospital registration submitted successfully. Waiting for admin approval.",
                 "success"
             );
 
-
             /* Reset form */
-
             form.reset();
-
-
-            /* Hide preview */
-
             photoPreview.src = "";
-
-            photoPreviewContainer.style.display =
-                "none";
-
+            photoPreviewContainer.style.display = "none";
+            if (ifscFeedback) ifscFeedback.style.display = "none";
 
         } catch (error) {
-
-            console.error(
-                "Hospital registration error:",
-                error
-            );
-
+            console.error("Hospital registration error:", error);
 
             showMessage(
                 error instanceof TypeError
-                    ? "Cannot connect to the CarePath server. Please try again."
+                    ? "Cannot connect to the CarePath server. The server is currently waking up from sleep (takes ~30-45 seconds on Render free tier). Please wait a few seconds and tap 'Register Hospital' again."
                     : error.message,
                 "error"
             );
 
-
         } finally {
-
             registerButton.disabled = false;
-
-            registerButton.textContent =
-                "Register Hospital";
+            registerButton.textContent = "Register Hospital";
         }
     }
 );

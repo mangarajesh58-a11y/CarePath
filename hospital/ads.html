@@ -619,6 +619,8 @@
 ===================================================== */
 const API_URL = "https://carepath-3q9q.onrender.com";
 
+try { fetch(`${API_URL}/health`).catch(() => {}); } catch (_) {}
+
 const hospitalId = localStorage.getItem("hospital_id");
 const hospitalToken = localStorage.getItem("hospitalToken");
 let storedHospital = null;
@@ -800,7 +802,10 @@ form.addEventListener("submit", async (e) => {
 
     } catch (err) {
         console.error("Ad launch error:", err);
-        showAlert(err.message || "Unable to initiate payment.", "error");
+        const msg = (err instanceof TypeError || (err.message && err.message.toLowerCase().includes("fetch")))
+            ? "Cannot connect to CarePath server or payment gateway. The server may be waking up from sleep—please try again in a few seconds."
+            : (err.message || "Unable to initiate payment.");
+        showAlert(msg, "error");
         launchBtn.disabled = false;
         launchBtn.innerHTML = "💳 Pay ₹999 & Launch 30-Day Campaign";
     }

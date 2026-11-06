@@ -2199,7 +2199,10 @@ if (adCampaignForm) {
 
         } catch (err) {
             console.error("Ad launch error:", err);
-            showAdAlert(err.message || "Unable to proceed with ad payment.", "error");
+            const msg = (err instanceof TypeError || (err.message && err.message.toLowerCase().includes("fetch")))
+                ? "Cannot connect to CarePath server or payment gateway. The server may be waking up from sleep—please try again in a few seconds."
+                : (err.message || "Unable to proceed with ad payment.");
+            showAdAlert(msg, "error");
             submitAdBtn.disabled = false;
             submitAdBtn.innerHTML = "💳 Pay ₹999 & Launch 30-Day Campaign";
         }
