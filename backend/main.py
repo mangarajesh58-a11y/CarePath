@@ -1239,6 +1239,7 @@ class RegistrationOTPVerifyRequest(BaseModel):
 
 class AIChatRequest(BaseModel):
     message: str
+    language: Optional[str] = "en-IN" 
 # ==========================================
 # CAREPATH AI - DATABASE CONTEXT
 # ==========================================
@@ -1280,38 +1281,75 @@ def get_carepath_ai_context(db: Session, message: str):
         return _CAREPATH_CONTEXT_CACHE["data"] or []
 
 
-def check_instant_ai_response(message: str) -> Optional[str]:
+def check_instant_ai_response(message: str, language: str = "en-IN") -> Optional[str]:
     """
-    Instant intent matcher (< 1ms latency) for common greetings,
-    platform FAQs, token guidance, and critical emergencies.
+    Instant intent matcher (< 1ms latency) with full MULTILINGUAL support
+    (Telugu, Hindi, Tamil, Kannada, English).
     """
     text = (message or "").strip().lower()
+
+    # Detect Telugu
+    has_telugu = bool(re.search(r"[ఀ-౿]", message))
+    # Detect Hindi / Devanagari
+    has_hindi = bool(re.search(r"[ऀ-ॿ]", message))
+    # Detect Tamil
+    has_tamil = bool(re.search(r"[஀-௿]", message))
+    # Detect Kannada
+    has_kannada = bool(re.search(r"[ಀ-೿]", message))
+
+    # --- TELUGU INSTANT RESPONSES ---
+    if has_telugu or language.startswith("te") or any(w in text for w in ["jvaram", "thalanopi", "mandulu", "daktaru", "ela undi"]):
+        if any(w in message for w in ["నమస్కారం", "నమస్తే", "హలో", "హాయ్", "బాగున్నారా"]) or any(w in text for w in ["namaste", "namaskaram", "hello"]):
+            return "నమస్కారం! 🙏 నేను CarePath AI, మీ 24/7 ఆరోగ్య సహాయకుడిని. మీకు ఎలా సహాయపడగలను? 💙"
+        if any(w in message for w in ["జ్వరం", "ఫీవర్", "వేడి"]) or "jvaram" in text or "fever" in text:
+            return "🌡️ తేలికపాటి జ్వరానికి తగినంత నీరు లేదా ORS తాగి విశ్రాంతి తీసుకోండి. జ్వరం 102°F దాటితే వెంటనే OPD జనరల్ డాక్టర్‌ను సంప్రదించండి."
+        if any(w in message for w in ["తలనొప్పి", "తల నొప్పి"]) or "thalanopi" in text:
+            return "💆 తలనొప్పికి ప్రశాంతమైన గదిలో విశ్రాంతి తీసుకోండి, ఫోన్ స్క్రీన్ చూడకండి మరియు నీరు తాగండి. నొప్పి ఎక్కువైతే డాక్టర్‌ను సంప్రదించండి."
+        if any(w in message for w in ["మందులు", "టాబ్లెట్", "1-0-1", "డోసేజ్"]):
+            return "💊 1-0-1 అంటే ఉదయం 1 టాబ్లెట్, రాత్రి 1 టాబ్లెట్ భోజనం తర్వాత వేసుకోవాలి. TDS అంటే రోజుకు 3 సార్లు. ప్రిస్క్రిప్షన్ ఫోటో తీసి 📷 బటన్ నొక్కండి!"
+        if any(w in message for w in ["టోకెన్", "క్యూ", "నంబర్"]):
+            return "🎫 మీ లైవ్ క్యూ నంబర్ మరియు సమయాన్ని పైన ఉన్న 'My Tokens' విభాగంలో నేరుగా చూడవచ్చు."
+        if any(w in message for w in ["గుండె నొప్పి", "శ్వాస", "ఎమర్జెన్సీ"]):
+            return "🚨 అత్యవసర హెచ్చరిక: తీవ్రమైన గుండెనొప్పి లేదా శ్వాస ఇబ్బంది ఉంటే వెంటనే 108 / 112 కు కాల్ చేయండి లేదా ఎమర్జెన్సీ వార్డుకు వెళ్లండి!"
+
+    # --- HINDI INSTANT RESPONSES ---
+    if has_hindi or language.startswith("hi") or any(w in text for w in ["bukhar", "sir dard", "dawai", "kaisa hai"]):
+        if any(w in message for w in ["नमस्ते", "प्रणाम", "हेलो", "हाय"]) or any(w in text for w in ["namaste", "pranam"]):
+            return "नमस्ते! 🙏 मैं CarePath AI हूँ, आपका 24/7 स्वास्थ्य सहायक। मैं आपकी क्या मदद कर सकता हूँ? 💙"
+        if any(w in message for w in ["बुखार", "तापमान"]) or "bukhar" in text:
+            return "🌡️ हल्के बुखार में भरपूर पानी या ओआरएस (ORS) पिएं और आराम करें। यदि बुखार 102°F से अधिक है, तो तुरंत डॉक्टर से परामर्श लें।"
+        if any(w in message for w in ["सिरदर्द", "सिर दर्द"]) or "sir dard" in text:
+            return "💆 सिरदर्द में शांत कमरे में आराम करें और पानी पिएं। यदि गंभीर दर्द या उल्टी हो, तो तुरंत डॉक्टर को दिखाएं।"
+        if any(w in message for w in ["दवाई", "दवा", "1-0-1", "खुराक"]):
+            return "💊 1-0-1 का अर्थ है 1 गोली सुबह और 1 गोली रात को भोजन के बाद लेना। TDS का मतलब दिन में 3 बार। पर्चे की फोटो के लिए 📷 दबाएं!"
+        if any(w in message for w in ["टोकन", "कतार", "नंबर"]):
+            return "🎫 आप अपना लाइव कतार नंबर ऊपर 'My Tokens' पर वास्तविक समय में देख सकते हैं।"
+        if any(w in message for w in ["सीने में दर्द", "सांस", "आपातकाल", "इमरजेंसी"]):
+            return "🚨 आपातकालीन चेतावनी: गंभीर सीने में दर्द या सांस की तकलीफ में तुरंत 108 / 112 पर कॉल करें या नजदीकी अस्पताल जाएं!"
+
+    # --- ENGLISH INSTANT RESPONSES ---
     clean = re.sub(r"[^a-zA-Z0-9\s]", "", text)
     tokens = set(clean.split())
 
-    # 1. Greetings (< 1ms)
     greeting_words = {"hi", "hello", "hey", "namaste", "hola", "greetings", "hii", "hiii", "helo", "good morning", "good evening", "good afternoon"}
     if clean in greeting_words or (len(tokens) <= 3 and tokens.intersection({"hi", "hello", "hey", "namaste", "hii"})):
         return (
             "Hello! 👋 I'm CarePath AI, your instant healthcare assistant. "
-            "How can I help you today? You can ask about symptoms, finding hospitals, or booking tokens."
+            "How can I help you today? You can ask about symptoms, medicine dosage, or your token queue! 💙"
         )
 
-    # 2. Platform FAQ / "What is CarePath"
     if any(phrase in text for phrase in ["what is carepath", "about carepath", "tell me about carepath", "what does carepath do"]):
         return (
             "CarePath 💙 is a smart healthcare platform that lets you explore verified hospitals, "
             "check token fees, and book consultation queue tokens online to avoid long waiting times."
         )
 
-    # 3. How to book a token
     if any(phrase in text for phrase in ["how to book", "book token", "how can i book", "how do i book"]):
         return (
             "To book a token, choose any verified hospital from your dashboard, select your department or doctor, "
             "and confirm your token. You can track your live queue number in real-time under 'My Tokens'!"
         )
 
-    # 4. Emergency symptoms (Immediate safety warning)
     emergency_phrases = ["chest pain", "cant breathe", "cannot breathe", "difficulty breathing", "heart attack", "unconscious", "heavy bleeding"]
     if any(phrase in text for phrase in emergency_phrases):
         return (
@@ -1413,7 +1451,7 @@ def carepath_ai_chat(
         )
 
     # 1. Instant Intent Engine (< 1ms response for greetings, FAQs, emergencies)
-    instant_reply = check_instant_ai_response(message)
+    instant_reply = check_instant_ai_response(message, data.language or 'en-IN')
     if instant_reply:
         return {
             "success": True,
@@ -1445,9 +1483,12 @@ def carepath_ai_chat(
                                 "role": "system",
                                 "content": (
                                     "You are CarePath AI, a friendly healthcare assistant on the CarePath platform. "
+                                    "CRITICAL MULTILINGUAL RULE: Always respond in the EXACT SAME LANGUAGE the patient used. "
+                                    "If the patient writes or speaks in Telugu (తెలుగు) or Tenglish, reply in natural, polite Telugu. "
+                                    "If in Hindi (हिंदी) or Hinglish, reply in Hindi. "
+                                    "If in Tamil, Kannada, or English, reply in that language. "
                                     "Keep replies concise (1-2 sentences), reassuring, and helpful. "
-                                    "Never diagnose diseases or prescribe dosages. "
-                                    "For severe symptoms advise seeing a doctor or emergency care."
+                                    "Never diagnose diseases or prescribe dosages. For severe symptoms advise seeing a doctor or emergency care."
                                 ),
                             },
                             {"role": "user", "content": message},
@@ -1487,6 +1528,8 @@ def carepath_ai_chat(
 
     compact_system_instruction = (
         "You are CarePath AI, a helpful healthcare assistant on the CarePath platform. "
+        "CRITICAL MULTILINGUAL RULE: Respond in the EXACT SAME LANGUAGE as the patient's message "
+        "(Telugu, Hindi, English, Tamil, Kannada). If patient asks in Telugu, respond in Telugu. "
         "Keep answers under 2 sentences, clear, warm, and simple. "
         "Never diagnose or prescribe dosages. Advise consulting a doctor or emergency care if severe."
     )
