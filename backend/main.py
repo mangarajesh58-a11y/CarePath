@@ -1812,20 +1812,65 @@ Provide a helpful, caring response to the patient in {target_lang_name}:"""
 
 TTS_AUDIO_CACHE = {}
 
+
+def split_text_into_tts_chunks(text: str, max_chunk_len: int = 180) -> list[str]:
+    """
+    Splits long explanation text into natural spoken phrases/sentences under max_chunk_len
+    without breaking words or sentence flow. Supports Telugu, Hindi, Tamil, English, etc.
+    """
+    clean = re.sub(r'\s+', ' ', text).strip()
+    if not clean:
+        return []
+    if len(clean) <= max_chunk_len:
+        return [clean]
+
+    sentences = re.split(r'([.!?।\n]+)', clean)
+    chunks = []
+    current = ''
+
+    for i in range(0, len(sentences), 2):
+        sentence = sentences[i]
+        sep = sentences[i+1] if i + 1 < len(sentences) else ''
+        piece = (sentence + sep).strip()
+        if not piece:
+            continue
+
+        if len(piece) <= max_chunk_len:
+            if current and len(current) + len(piece) + 1 > max_chunk_len:
+                chunks.append(current.strip())
+                current = piece
+            else:
+                current = (current + ' ' + piece).strip()
+        else:
+            words = piece.split(' ')
+            for w in words:
+                if not w:
+                    continue
+                if current and len(current) + len(w) + 1 > max_chunk_len:
+                    chunks.append(current.strip())
+                    current = w
+                else:
+                    current = (current + ' ' + w).strip()
+    if current.strip():
+        chunks.append(current.strip())
+    return [c for c in chunks if c]
+
+
 @app.get("/ai/tts")
 def carepath_ai_text_to_speech(text: str, lang: str = "en"):
     """
     Streams crystal-clear native MP3 speech in ALL Indian languages.
     Plays on any phone speaker, Android WebView, and browser without
     requiring phone system voice packages to be installed.
-    Features instant in-memory RAM caching for sub-millisecond response.
+    Supports complete multi-paragraph full-chat voice explanations with
+    seamless MP3 chunk concatenation and in-memory caching.
     """
     clean_text = (text or "").strip()
     if not clean_text:
         raise HTTPException(status_code=400, detail="Text is required.")
 
-    # Limit to first 250 characters for clear voice delivery
-    clean_text = clean_text[:250]
+    # Limit total speech text to 2000 characters (~2 minutes of full detailed voice explanation)
+    clean_text = clean_text[:2000]
 
     lang_code = lang.split("-")[0].lower() if "-" in lang else lang.lower()
     valid_langs = {"te", "hi", "ta", "kn", "ml", "mr", "bn", "gu", "pa", "en"}
@@ -1843,36 +1888,56 @@ def carepath_ai_text_to_speech(text: str, lang: str = "en"):
             },
         )
 
-    tts_url = (
-        f"https://translate.google.com/translate_tts?ie=UTF-8&tl={lang_code}&client=tw-ob&q="
-        + requests.utils.quote(clean_text)
-    )
+    chunks = split_text_into_tts_chunks(clean_text, max_chunk_len=180)
+    if not chunks:
+        chunks = [clean_text[:180]]
+
+    # Limit to max 12 chunks to prevent timeouts
+    chunks = chunks[:12]
+
+    audio_chunks = []
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        )
+    }
 
     try:
-        resp = requests.get(
-            tts_url,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/124.0.0.0 Safari/537.36"
-                )
-            },
-            timeout=5.0,
-        )
-        if resp.ok and len(resp.content) > 100:
-            if len(TTS_AUDIO_CACHE) < 500:
-                TTS_AUDIO_CACHE[cache_key] = resp.content
-            return Response(
-                content=resp.content,
-                media_type="audio/mpeg",
-                headers={
-                    "Cache-Control": "public, max-age=86400",
-                    "Access-Control-Allow-Origin": "*",
-                },
+        for chunk in chunks:
+            chunk_cache_key = ("__chunk__" + chunk, lang_code)
+            if chunk_cache_key in TTS_AUDIO_CACHE:
+                audio_chunks.append(TTS_AUDIO_CACHE[chunk_cache_key])
+                continue
+
+            tts_url = (
+                f"https://translate.google.com/translate_tts?ie=UTF-8&tl={lang_code}&client=tw-ob&q="
+                + requests.utils.quote(chunk)
             )
-        else:
+            resp = requests.get(tts_url, headers=headers, timeout=5.0)
+            if resp.ok and len(resp.content) > 100:
+                if len(TTS_AUDIO_CACHE) < 1000:
+                    TTS_AUDIO_CACHE[chunk_cache_key] = resp.content
+                audio_chunks.append(resp.content)
+            else:
+                logging.warning("TTS chunk fetch failed for: %s", chunk[:30])
+
+        if not audio_chunks:
             raise HTTPException(status_code=502, detail="TTS upstream failed.")
+
+        combined_audio = b"".join(audio_chunks)
+        if len(TTS_AUDIO_CACHE) < 1000:
+            TTS_AUDIO_CACHE[cache_key] = combined_audio
+
+        return Response(
+            content=combined_audio,
+            media_type="audio/mpeg",
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
     except Exception as e:
         logging.warning("TTS audio fetch error: %s", e)
         raise HTTPException(status_code=500, detail=str(e))

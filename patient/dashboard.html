@@ -937,6 +937,7 @@
   // with instant fallback to browser SpeechSynthesis!
   // =====================================================
   function stopCarePathSpeech() {
+    speechQueueActive = false;
     if (activeAudioVoice) {
       try {
         activeAudioVoice.pause();
@@ -986,15 +987,8 @@
     const detected = detectTextLanguage(clean, langCode);
     const shortCode = detected.split("-")[0].toLowerCase();
 
-    // Shorten to first 2 sentences or 240 characters for smooth speech
-    let toSpeak = clean;
-    const sentences = clean.match(/[^.!?।\n]+[.!?।\n]+/g);
-    if (sentences && sentences.length > 0) {
-      toSpeak = sentences.slice(0, 2).join(" ");
-    }
-    if (toSpeak.length > 240) {
-      toSpeak = toSpeak.slice(0, 240) + "...";
-    }
+    // Full chat and complete prescription explanation (up to 2000 characters)
+    let toSpeak = clean.slice(0, 2000).trim();
 
     if (msgId) {
       currentlyPlayingMsgId = msgId;
@@ -1063,14 +1057,24 @@
     startNativeAudio(backendTtsUrl);
   }
 
+  let speechQueueActive = false;
+
   function fallbackSpeechSynthesis(toSpeak, detectedLang, msgId) {
     if (!('speechSynthesis' in window)) {
       resetAllSpeakerButtons();
       return;
     }
     try {
+      window.speechSynthesis.cancel();
       window.speechSynthesis.resume();
-      const utterance = new SpeechSynthesisUtterance(toSpeak);
+
+      // Split into natural sentence chunks to prevent browser 15s engine timeout on full-chat explanations
+      const rawChunks = toSpeak.match(/[^.!?।\n]+[.!?।\n]+/g) || [toSpeak];
+      const chunks = rawChunks.map(c => c.trim()).filter(Boolean);
+      if (chunks.length === 0) chunks.push(toSpeak);
+
+      let chunkIndex = 0;
+      speechQueueActive = true;
 
       if (!carepathVoices.length) loadCarepathVoices();
       const langPrefix = detectedLang.slice(0, 2).toLowerCase();
@@ -1079,19 +1083,36 @@
         return vl === detectedLang.toLowerCase() || vl.startsWith(langPrefix);
       }) || carepathVoices.find(v => v.lang.toLowerCase().startsWith("en")) || carepathVoices[0];
 
-      if (bestVoice) {
-        utterance.voice = bestVoice;
-        utterance.lang = bestVoice.lang;
-      } else {
-        utterance.lang = detectedLang;
+      function speakNextChunk() {
+        if (!speechQueueActive || chunkIndex >= chunks.length) {
+          speechQueueActive = false;
+          resetAllSpeakerButtons();
+          return;
+        }
+
+        const textChunk = chunks[chunkIndex++];
+        const utterance = new SpeechSynthesisUtterance(textChunk);
+        if (bestVoice) {
+          utterance.voice = bestVoice;
+          utterance.lang = bestVoice.lang;
+        } else {
+          utterance.lang = detectedLang;
+        }
+
+        utterance.rate = 0.95;
+        utterance.onend = function() {
+          speakNextChunk();
+        };
+        utterance.onerror = function() {
+          speakNextChunk();
+        };
+
+        window.speechSynthesis.speak(utterance);
       }
 
-      utterance.rate = 0.95;
-      utterance.onend = resetAllSpeakerButtons;
-      utterance.onerror = resetAllSpeakerButtons;
-
-      window.speechSynthesis.speak(utterance);
+      speakNextChunk();
     } catch(e) {
+      speechQueueActive = false;
       resetAllSpeakerButtons();
     }
   }
