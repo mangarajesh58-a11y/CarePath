@@ -668,21 +668,37 @@
     carepathAIMessages.appendChild(userMsg);
     carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
 
-    // 2. Add AI Analyzing indicator
+    // 2. Add AI Analyzing indicator with dynamic progress steps
     const analyzingMsg = document.createElement("div");
     analyzingMsg.className = "carepath-ai-message";
     analyzingMsg.id = "carepathAIAnalyzingMsg";
     analyzingMsg.innerHTML = `
       <div style="display: flex; gap: 10px; align-items: center;">
-        <img src="carepath-ai.png" alt="AI" style="width: 26px; height: 26px; border-radius: 50%;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+        <img src="carepath-ai.png" alt="AI" style="width: 28px; height: 28px; border-radius: 50%; animation: pulseDot 1.5s infinite;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
         <div>
-          <div style="font-weight: 700; color: #0284c7;">🔍 CarePath AI Clinical Vision Engine</div>
-          <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Transcribing doctor's handwriting, decoding medicines & verifying safety...</div>
+          <div style="font-weight: 700; color: #0284c7; display: flex; align-items: center; gap: 6px;">
+            <span>⚡</span> CarePath AI High-Speed Vision
+          </div>
+          <div id="aiVisionStepText" style="font-size: 12px; color: #64748b; margin-top: 2px;">
+            Reading image & transcribing doctor notes...
+          </div>
         </div>
       </div>
     `;
     carepathAIMessages.appendChild(analyzingMsg);
     carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+
+    const visionSteps = [
+      "Reading image & transcribing doctor notes...",
+      "Decoding medicines, dosages & timing (1-0-1, TDS)...",
+      "Formatting clinical explanation & precautions..."
+    ];
+    let stepIdx = 0;
+    const stepInterval = setInterval(() => {
+      stepIdx = (stepIdx + 1) % visionSteps.length;
+      const stepEl = document.getElementById("aiVisionStepText");
+      if (stepEl) stepEl.textContent = visionSteps[stepIdx];
+    }, 1500);
 
     // 3. Post to backend
     const formData = new FormData();
@@ -758,6 +774,7 @@
 
       addCarePathMessage("Prescription scan error: " + err.message, "ai");
     } finally {
+      clearInterval(stepInterval);
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.textContent = "🚀 Decode Prescription";

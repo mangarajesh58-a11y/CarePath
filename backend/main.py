@@ -1542,40 +1542,72 @@ async def carepath_ai_analyze_prescription(
     patient_note_context = f"Additional patient note: {notes}" if notes else ""
 
     prescription_system_prompt = (
-        "You are CarePath AI's Expert Medical Document & Doctor's Prescription Decoder Specialist. "
-        "A patient has provided an image of a doctor's handwritten prescription, medical investigation report, or medicine pack. "
-        "Carefully examine the handwriting, symbols, medical shorthand, and text. Explain everything in clear, compassionate, easy-to-understand language.\n\n"
-        "Provide a well-structured breakdown with these exact sections:\n"
-        "📋 1. DOCTOR'S DIAGNOSIS & CLINICAL OBSERVATIONS\n"
-        "- Explain what condition, symptoms, or illness the doctor identified in plain simple English.\n\n"
-        "💊 2. PRESCRIBED MEDICINES & HOW TO TAKE THEM\n"
-        "- List each medicine clearly:\n"
-        "  • Name & Strength (e.g. Tab. Dolo 650mg, Cap. Amoxyclav 625mg)\n"
-        "  • When to take: Decode all medical abbreviations (1-0-1 = morning & night; 1-1-1 / TDS = 3 times a day; BBF = before breakfast; PC = after food; SOS = only when needed in pain/fever; HS = at bedtime)\n"
-        "  • Purpose: What each medicine treats in simple words.\n\n"
-        "🔬 3. ADVISED LAB TESTS & SCANS (if any)\n"
-        "- Any blood tests, urine tests, ultrasound, or X-rays recommended.\n\n"
-        "🥗 4. DIET & RECOVERY ADVICE\n"
-        "- Foods to take or avoid, hydration, and rest.\n\n"
-        "⚠️ 5. RED FLAG WARNINGS\n"
-        "- Symptoms that require visiting hospital emergency immediately.\n\n"
-        "ℹ️ 6. PATIENT SAFETY NOTE\n"
-        "- Remind the patient: 'This AI explanation helps you understand your doctor\'s handwriting. Always verify with your pharmacist when picking up medicines and follow your doctor\'s exact instructions.'\n\n"
-        + patient_note_context
+        """You are CarePath AI's Expert Medical Document & Doctor's Prescription Decoder Specialist.
+A patient has provided an image.
+
+1. If this is a doctor's handwritten prescription, lab report, or medicine pack:
+   - Carefully examine handwriting, symbols, medical shorthand, and text.
+   - 📋 DOCTOR'S DIAGNOSIS & CLINICAL OBSERVATIONS
+   - 💊 PRESCRIBED MEDICINES & HOW TO TAKE THEM (Decode 1-0-1, TDS, BBF, PC, HS, etc.)
+   - 🔬 ADVISED LAB TESTS & SCANS (if any)
+   - 🥗 DIET & RECOVERY ADVICE
+   - ⚠️ RED FLAG WARNINGS (When to visit emergency)
+   - ℹ️ PATIENT SAFETY NOTE: 'Always verify medicines with your pharmacist.'
+
+2. If this image is NOT a medical prescription (e.g. academic notes, whiteboard, screenshot, or personal photo):
+   - Clearly and politely explain what is written/shown in the image.
+   - Remind the patient to upload a photo of their physical doctor's prescription or hospital report for medicine analysis.
+""" + ("\n" + patient_note_context if patient_note_context else "")
     )
 
-    # --- 1. Primary Engine: Gemini Multimodal Vision ---
+    # --- 1. Primary Engine: Ultra-Fast Groq Multimodal Vision (< 2s) ---
+    groq_key = os.getenv("GROQ_API_KEY")
+    if groq_key:
+        try:
+            groq_mime = "image/jpeg" if ("jpeg" in content_type or "jpg" in content_type) else ("image/png" if "png" in content_type else "image/webp")
+            data_uri = f"data:{groq_mime};base64,{b64_image}"
+            groq_res = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {groq_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "qwen/qwen3.8-27b",
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prescription_system_prompt},
+                                {"type": "image_url", "image_url": {"url": data_uri}}
+                            ]
+                        }
+                    ],
+                    "max_tokens": 1000,
+                    "temperature": 0.2,
+                },
+                timeout=8.0,
+            )
+            if groq_res.ok:
+                choices = groq_res.json().get("choices", [])
+                if choices:
+                    analysis = choices[0].get("message", {}).get("content", "").strip()
+                    if analysis and len(analysis) > 20:
+                        return {
+                            "success": True,
+                            "analysis": analysis,
+                            "model": "qwen/qwen3.8-27b",
+                            "source": "groq_fast_vision"
+                        }
+        except Exception as groq_err:
+            logging.warning("Groq fast vision error: %s", groq_err)
+
+    # --- 2. Secondary Engine: Gemini Vision (< 6s timeout) ---
     if gemini_client:
         try:
             from google.genai import types
-            gemini_mime = "image/jpeg" if "jpeg" in content_type or "jpg" in content_type else ("image/png" if "png" in content_type else "image/webp")
-            vision_models = [
-                "gemini-2.5-flash",
-                "gemini-1.5-flash",
-                "gemini-2.0-flash",
-                "gemini-flash-latest",
-            ]
-            for v_model in vision_models:
+            gemini_mime = "image/jpeg" if ("jpeg" in content_type or "jpg" in content_type) else ("image/png" if "png" in content_type else "image/webp")
+            for v_model in ["gemini-3.8-flash", "gemini-flash-latest"]:
                 try:
                     res = gemini_client.models.generate_content(
                         model=v_model,
@@ -1597,55 +1629,7 @@ async def carepath_ai_analyze_prescription(
         except Exception as gemini_err:
             logging.warning("Gemini vision dispatcher error: %s", gemini_err)
 
-    # --- 2. Secondary Engine: Groq Vision Models ---
-    groq_key = os.getenv("GROQ_API_KEY")
-    if groq_key:
-        groq_mime = "image/jpeg" if "jpeg" in content_type or "jpg" in content_type else "image/png"
-        data_uri = f"data:{groq_mime};base64,{b64_image}"
-        groq_vision_models = [
-            "llama-3.2-11b-vision-preview",
-            "llama-3.2-90b-vision-preview",
-        ]
-        for gv_model in groq_vision_models:
-            try:
-                groq_res = requests.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {groq_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": gv_model,
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": [
-                                    {"type": "text", "text": prescription_system_prompt},
-                                    {"type": "image_url", "image_url": {"url": data_uri}}
-                                ]
-                            }
-                        ],
-                        "max_tokens": 1200,
-                        "temperature": 0.2,
-                    },
-                    timeout=20.0,
-                )
-                if groq_res.ok:
-                    choices = groq_res.json().get("choices", [])
-                    if choices:
-                        analysis = choices[0].get("message", {}).get("content", "").strip()
-                        if analysis:
-                            return {
-                                "success": True,
-                                "analysis": analysis,
-                                "model": gv_model,
-                                "source": "groq_multimodal_vision"
-                            }
-            except Exception as gv_err:
-                logging.warning("Groq vision model %s error: %s", gv_model, gv_err)
-                continue
-
-    # --- 3. Intelligent Clinical Guide Fallback ---
+        # --- 3. Intelligent Clinical Guide Fallback ---
     clinical_guide = (
         "📋 **Doctor's Prescription & Medical Report Decoder (CarePath AI)**\n\n"
         "Your medical document photo has been received. Here is the clinical decoder for common Indian & international doctor handwriting and prescription abbreviations:\n\n"
