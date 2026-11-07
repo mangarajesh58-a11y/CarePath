@@ -376,6 +376,35 @@
   </div>
 </div>
 
+<!-- MICROPHONE PERMISSION BLOCKED MODAL -->
+<div id="carepathMicBlockedModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2600000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+  <div style="background: white; border-radius: 20px; max-width: 380px; width: 100%; padding: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.3); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
+    <div style="font-size: 38px; margin-bottom: 8px;">🎙️⚠️</div>
+    <h3 style="margin: 0 0 8px; font-size: 18px; color: #0f172a; font-weight: 800;">Microphone Access Needed</h3>
+    <p style="margin: 0 0 16px; font-size: 13px; color: #64748b; line-height: 1.5; text-align: left;">
+      Your browser blocked microphone access. To talk with CarePath AI:
+    </p>
+
+    <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; text-align: left; font-size: 12.5px; color: #334155; line-height: 1.55; margin-bottom: 18px;">
+      <div style="margin-bottom: 8px; font-weight: 700; color: #0f172a;">📱 In Chrome or Android Settings:</div>
+      <div>1. Tap <strong>⋮ (3 dots)</strong> or <strong>🔒 lock icon</strong> at top of browser.</div>
+      <div>2. Open <strong>Site Settings</strong> ➔ <strong>Microphone</strong> ➔ <strong>Allow</strong>.</div>
+      <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: #64748b;">
+        Or open <strong>Phone Settings ➔ Apps ➔ Chrome ➔ Permissions ➔ Microphone ➔ Allow</strong>.
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <button type="button" onclick="closeMicBlockedModal()" style="flex: 1; padding: 12px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 13.5px; cursor: pointer;">
+        Close
+      </button>
+      <button type="button" onclick="closeMicBlockedModal(); toggleCarePathVoiceRecognition();" style="flex: 1.3; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 13.5px; cursor: pointer; box-shadow: 0 4px 12px rgba(2,132,199,0.3);">
+        🔄 Try Again
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- LIVE CAMERA SCANNER MODAL WITH PERMISSION PROMPT -->
 <div id="carepathAICameraModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); z-index: 2000002; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;">
   <div style="background: #1e293b; color: white; border-radius: 18px; max-width: 460px; width: 100%; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5); display: flex; flex-direction: column;">
@@ -636,23 +665,51 @@
     window.speechSynthesis.speak(utterance);
   }
 
-    // 3. VOICE RECOGNITION (SPEECH-TO-TEXT) DIRECTLY ON USER CLICK
-  function toggleCarePathVoiceRecognition() {
+      // 3. VOICE RECOGNITION (SPEECH-TO-TEXT) WITH NATIVE PROMPT INTEGRATION
+  let activeMicStream = null;
+
+  function showMicBlockedModal() {
+    const m = document.getElementById("carepathMicBlockedModal");
+    if (m) m.style.display = "flex";
+  }
+
+  function closeMicBlockedModal() {
+    const m = document.getElementById("carepathMicBlockedModal");
+    if (m) m.style.display = "none";
+  }
+
+  async function toggleCarePathVoiceRecognition() {
     if (isCpListening) {
       stopCarePathVoiceRecognition();
       return;
     }
 
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRec) {
-      alert("Voice speech recognition is not supported on this browser. Please use Google Chrome, Edge, or Safari.");
+    const micBtn = document.getElementById("carepathAIMicBtn");
+    const listeningBar = document.getElementById("carepathAIListeningBar");
+    const listeningText = document.getElementById("carepathAIListeningText");
+    const input = document.getElementById("carepathAIInput");
+
+    // Step 1: Call getUserMedia to ensure Android runtime permission prompt appears
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        activeMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+    } catch (permErr) {
+      console.warn("Microphone access denied or blocked:", permErr);
+      showMicBlockedModal();
       return;
     }
 
-    const listeningBar = document.getElementById("carepathAIListeningBar");
-    const listeningText = document.getElementById("carepathAIListeningText");
-    const micBtn = document.getElementById("carepathAIMicBtn");
-    const input = document.getElementById("carepathAIInput");
+    // Step 2: Initialize Speech Recognition with active session
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      if (activeMicStream) {
+        activeMicStream.getTracks().forEach(t => t.stop());
+        activeMicStream = null;
+      }
+      alert("Speech recognition is not supported in this browser. Please use Google Chrome.");
+      return;
+    }
 
     try {
       if (cpSpeechRecognition) {
@@ -686,19 +743,7 @@
         console.warn("Speech recognition error:", err);
         stopCarePathVoiceRecognition();
         if (err.error === "not-allowed" || err.error === "service-not-allowed") {
-                    addCarePathMessage(
-            `🎙️ **Microphone Access Blocked in Browser**
-
-To enable voice communication:
-1. Tap the **🔒 lock icon** in the browser address bar at the top.
-2. Tap **Permissions** ➔ **Microphone** ➔ **Allow** (or 'Reset permissions').
-3. Refresh the page and tap 🎙️ to speak!`,
-            "ai"
-          );
-        } else if (err.error === "no-speech") {
-          // Silent timeout
-        } else {
-          console.log("Speech recognition event:", err.error);
+          showMicBlockedModal();
         }
       };
 
@@ -709,15 +754,11 @@ To enable voice communication:
         }
       };
 
-      // Native SpeechRecognition start on direct user tap triggers the Android prompt!
       cpSpeechRecognition.start();
     } catch (e) {
       console.error("Speech recognition start failed:", e);
       stopCarePathVoiceRecognition();
-      addCarePathMessage(
-        "🎙️ **Microphone Access Blocked:** Tap the **🔒 lock icon** at top of browser ➔ **Permissions** ➔ **Microphone** ➔ **Allow**.",
-        "ai"
-      );
+      showMicBlockedModal();
     }
   }
 
@@ -730,6 +771,13 @@ To enable voice communication:
     if (listeningBar) listeningBar.style.display = "none";
     if (micBtn) micBtn.classList.remove("cp-mic-active");
     if (input) input.placeholder = "Ask CarePath AI or tap 🎙️ to speak...";
+
+    if (activeMicStream) {
+      try {
+        activeMicStream.getTracks().forEach(t => t.stop());
+      } catch(e) {}
+      activeMicStream = null;
+    }
 
     if (cpSpeechRecognition) {
       try { cpSpeechRecognition.stop(); } catch(e) {}
