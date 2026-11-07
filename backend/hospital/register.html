@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#e3f2fd">
+
+    <title>Hospital Registration - CarePath</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e3f2fd, #ffffff);
+            padding: 24px 16px;
+            color: #1f2937;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto;
+            padding: 32px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .logo {
+            text-align: center;
+            color: #1976d2;
+            font-size: 30px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #222;
+            font-size: 25px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            width: 100%;
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        input,
+        textarea {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            padding: 13px 14px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 16px;
+            background: #fff;
+            color: #222;
+            outline: none;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: #1976d2;
+            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.12);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        input[type="file"] {
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        .hint {
+            display: block;
+            margin-top: 7px;
+            color: #666;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .photo-preview-container {
+            display: none;
+            margin-top: 14px;
+            text-align: center;
+        }
+
+        .photo-preview-container img {
+            width: 100%;
+            max-width: 280px;
+            max-height: 220px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid #d1d5db;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .photo-preview-label {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .required {
+            color: #dc2626;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            min-height: 50px;
+            padding: 14px 18px;
+            margin-top: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #1976d2;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            line-height: 1.4;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background: #125ca3;
+        }
+
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        #message {
+            margin-top: 18px;
+            text-align: center;
+            font-weight: 600;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+            white-space: pre-line;
+        }
+
+        #message:empty {
+            display: none;
+        }
+
+        .success {
+            color: #15803d;
+        }
+
+        .error {
+            color: #dc2626;
+        }
+
+        .login-link {
+            margin-top: 24px;
+            text-align: center;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .login-link a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .section-title {
+            margin-top: 28px;
+            margin-bottom: 18px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+            color: #1976d2;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .phone-hint {
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .container {
+                padding: 24px 18px;
+                border-radius: 12px;
+            }
+
+            .logo {
+                font-size: 26px;
+            }
+
+            h2 {
+                font-size: 22px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .container {
+                padding: 20px 14px;
+            }
+
+            .logo {
+                font-size: 23px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<main class="container">
+
+    <div class="logo">🏥 CarePath</div>
+
+    <p class="subtitle">
+        Register your hospital with CarePath
+    </p>
+
+    <h2>Hospital Registration</h2>
+
+    <form id="hospitalRegisterForm" enctype="multipart/form-data">
+
+        <!-- BASIC INFORMATION -->
+
+        <div class="section-title">
+            🏥 Hospital Information
+        </div>
+
+        <div class="form-group">
+            <label for="name">
+                Hospital Name <span class="required">*</span>
+            </label>
+
+            <input
+                type="text"
+                id="name"
+                name="name"
+                placeholder="Enter hospital name"
+                autocomplete="organization"
+                required
+            >
+        </div>
+
+
+        <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label for="email" style="margin-bottom: 0;">Hospital Email <span class="required">*</span></label>
+                <button type="button" id="btnSendHospitalOtp" onclick="handleSendHospitalOtp()" style="background: none; border: none; color: #0284c7; font-weight: 600; font-size: 13px; cursor: pointer; text-decoration: underline;">
+                    Send OTP
+                </button>
+            </div>
+
+            <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="hospital@example.com"
+                autocomplete="email"
+                required
+            >
+        </div>
+
+        <!-- HOSPITAL EMAIL OTP VERIFICATION BOX -->
+        <div id="otpSection" style="display: none; background: #f0fdf4; border: 1.5px dashed #86efac; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 13px; font-weight: 600; color: #166534;" id="otpStatusText">Enter the 6-digit code sent to hospital email</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; width: 100%; box-sizing: border-box;">
+                <input type="text" id="regOtpInput" placeholder="Enter 6-digit OTP" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" style="width: 100%; min-width: 0; height: 46px; margin: 0; padding: 10px 14px; border: 1.5px solid #86efac; border-radius: 8px; font-size: 16px; font-weight: 700; letter-spacing: 2px; text-align: center; outline: none; background: white; box-sizing: border-box;">
+                <button type="button" id="btnVerifyHospitalOtp" onclick="handleVerifyHospitalOtp()" style="width: auto; min-width: 120px; height: 46px; min-height: 46px; margin: 0; padding: 0 18px; background: #16a34a; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; white-space: nowrap;">
+                    Verify Code
+                </button>
+            </div>
+            <div id="otpFeedback" style="font-size: 13px; margin-top: 8px; display: none;"></div>
+        </div>
+
+
+        <div class="form-group">
+            <label for="phone">
+                Hospital Phone Number <span class="required">*</span>
+            </label>
+
+            <input
+                type="tel"
+                id="phone"
+                name="phone"
+                placeholder="Enter hospital phone number"
+                autocomplete="tel"
+                inputmode="tel"
+                required
+            >
+
+            <div class="phone-hint">
+                This number can be displayed to patients after the hospital is approved and published.
+            </div>
+        </div>
+
+
+        <div class="form-group">
+            <label for="city">
+                City <span class="required">*</span>
+            </label>
+
+            <input
+                type="text"
+                id="city"
+                name="city"
+                placeholder="Enter city"
+                required
+            >
+        </div>
+
+
+        <div class="form-group">
+            <label for="address">
+                Hospital Address <span class="required">*</span>
+            </label>
+
+            <textarea
+                id="address"
+                name="address"
+                placeholder="Enter complete hospital address"
+                required
+            ></textarea>
+        </div>
+
+
+        <div class="form-group">
+            <label for="description">
+                Hospital Description
+            </label>
+
+            <textarea
+                id="description"
+                name="description"
+                placeholder="Example: Multi-speciality hospital providing 24/7 emergency services."
+            ></textarea>
+        </div>
+
+
+        <!-- HOSPITAL PHOTO -->
+
+        <div class="section-title">
+            📷 Hospital Photo
+        </div>
+
+        <div class="form-group">
+
+            <label for="hospital_photo">
+                Upload Hospital Photo <span class="required">*</span>
+            </label>
+
+            <input
+                type="file"
+                id="hospital_photo"
+                name="hospital_photo"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                required
+            >
+
+            <span class="hint">
+                Upload a clear photo of your hospital.
+                Accepted formats: JPG, JPEG, PNG, WEBP.
+                Maximum size: 5 MB.
+            </span>
+
+            <div
+                id="photoPreviewContainer"
+                class="photo-preview-container"
+            >
+                <img
+                    id="photoPreview"
+                    src=""
+                    alt="Hospital photo preview"
+                >
+
+                <div class="photo-preview-label">
+                    Hospital photo preview
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- LICENSE INFORMATION -->
+
+        <div class="section-title">
+            📄 Registration & License Information
+        </div>
+
+
+        <div class="form-group">
+            <label for="registration_number">
+                Hospital Registration / License Number
+                <span class="required">*</span>
+            </label>
+
+            <input
+                type="text"
+                id="registration_number"
+                name="registration_number"
+                placeholder="Enter registration / license number"
+                required
+            >
+        </div>
+
+
+        <div class="form-group">
+            <label for="issuing_authority">
+                Issuing Authority
+                <span class="required">*</span>
+            </label>
+
+            <input
+                type="text"
+                id="issuing_authority"
+                name="issuing_authority"
+                placeholder="Example: DM&HO / Health Department"
+                required
+            >
+        </div>
+
+
+        <div class="form-group">
+            <label for="license_expiry_date">
+                License Expiry Date
+            </label>
+
+            <input
+                type="date"
+                id="license_expiry_date"
+                name="license_expiry_date"
+            >
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="license_certificate">
+                Hospital Registration Certificate
+                <span class="required">*</span>
+            </label>
+
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                <button
+                    type="button"
+                    onclick="openCertCameraModal('license_certificate', 'regCertPreviewBox')"
+                    style="
+                        background: #0284c7;
+                        color: white;
+                        border: none;
+                        padding: 8px 14px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 13px;
+                        font-weight: 600;
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                        box-shadow: 0 2px 4px rgba(2,132,199,0.25);
+                    "
+                >
+                    📸 Scan with Camera
+                </button>
+                <span class="hint" style="margin:0;">or select document below:</span>
+            </div>
+
+            <input
+                type="file"
+                id="license_certificate"
+                name="license_certificate"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                capture="environment"
+                required
+            >
+
+            <!-- Preview indicator for scanned / selected file -->
+            <div id="regCertPreviewBox" style="display:none; margin-top:8px; padding:10px 12px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; font-size:13px; color:#1e40af;"></div>
+
+            <span class="hint" style="margin-top:6px; display:block;">
+                Accepted formats: PDF, JPG, JPEG, PNG. Maximum size: 10 MB.
+                <br><strong style="color:#b91c1c;">⚠️ Note: Hospital registration certificates are permanently locked and cannot be re-uploaded once registered.</strong>
+            </span>
+
+        </div>
+
+
+        <!-- TOKEN -->
+
+        <div class="section-title">
+            🎫 Token Information
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="token_fee">
+                Token Fee (₹) <span class="required">*</span>
+            </label>
+
+            <input
+                type="number"
+                id="token_fee"
+                name="token_fee"
+                min="0"
+                step="1"
+                value="0"
+                placeholder="Example: 100"
+                required
+            >
+
+            <span class="hint">
+                Enter the amount patients will pay for one token.
+            </span>
+
+        </div>
+
+        <!-- PAYMENT DETAILS -->
+
+<div class="section-title">
+    💳 Payment / Payout Details
+</div>
+
+<div class="form-group">
+    <label for="account_name">
+        Bank Account Holder Name
+    </label>
+
+    <input
+        type="text"
+        id="account_name"
+        name="account_name"
+        placeholder="Enter account holder name"
+        autocomplete="off"
+    >
+</div>
+
+<div class="form-group">
+    <label for="account_number">
+        Bank Account Number
+    </label>
+
+    <input
+        type="password"
+        id="account_number"
+        name="account_number"
+        placeholder="Enter bank account number"
+        inputmode="numeric"
+        autocomplete="off"
+    >
+
+    <span class="hint">
+        Used only for hospital payout processing.
+    </span>
+</div>
+
+<div class="form-group">
+    <label for="ifsc">
+        IFSC Code
+    </label>
+
+    <input
+        type="text"
+        id="ifsc"
+        name="ifsc"
+        placeholder="Example: SBIN0001234"
+        maxlength="11"
+        autocomplete="off"
+    >
+    <span id="ifscFeedback" class="hint" style="display:none; margin-top:4px; font-weight:500;"></span>
+</div>
+
+<div class="form-group">
+    <label for="upi">
+        UPI ID
+    </label>
+
+    <input
+        type="text"
+        id="upi"
+        name="upi"
+        placeholder="Example: hospital@upi"
+        autocomplete="off"
+    >
+
+    <span class="hint">
+        Optional. You can provide either bank details or UPI details.
+    </span>
+</div>
+
+
+        <!-- PASSWORD -->
+
+        <div class="section-title">
+            🔐 Login Security
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="password">
+                Password <span class="required">*</span>
+            </label>
+
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Create password"
+                minlength="6"
+                autocomplete="new-password"
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="confirm_password">
+                Confirm Password <span class="required">*</span>
+            </label>
+
+            <input
+                type="password"
+                id="confirm_password"
+                name="confirm_password"
+                placeholder="Confirm password"
+                minlength="6"
+                autocomplete="new-password"
+                required
+            >
+
+        </div>
+
+
+        <button
+            type="submit"
+            id="registerButton"
+        >
+            Register Hospital
+        </button>
+
+
+        <div
+            id="message"
+            aria-live="polite"
+            role="status"
+        ></div>
+
+    </form>
+
+
+    <div class="login-link">
+
+        Already registered?
+
+        <a href="index.html">
+            Hospital Login
+        </a>
+
+    </div>
+
+</main>
+
+
+<script>
+"use strict";
+
+
+/* =========================================================
+   CAREPATH API
+========================================================= */
+
+const API_URL = "https://carepath-3q9q.onrender.com";
+
+/* Pre-warm Render backend immediately on page load */
+try {
+    fetch(`${API_URL}/health`).catch(() => {});
+} catch (_) {}
+
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
+const form = document.getElementById("hospitalRegisterForm");
+
+const message = document.getElementById("message");
+
+const registerButton =
+    document.getElementById("registerButton");
+
+const hospitalPhotoInput =
+    document.getElementById("hospital_photo");
+
+const photoPreviewContainer =
+    document.getElementById("photoPreviewContainer");
+
+const photoPreview =
+    document.getElementById("photoPreview");
+
+const certificateInput =
+    document.getElementById("license_certificate");
+
+const regCertInput = document.getElementById("license_certificate");
+if (regCertInput) {
+    regCertInput.addEventListener("change", function () {
+        const previewElem = document.getElementById("regCertPreviewBox");
+        if (this.files && this.files[0] && previewElem) {
+            const f = this.files[0];
+            previewElem.style.display = "block";
+            const isImg = f.type.startsWith("image/");
+            previewElem.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    ${isImg ? `<img src="${URL.createObjectURL(f)}" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid #94a3b8;">` : `<span style="font-size:24px;">📄</span>`}
+                    <div>
+                        <strong style="color:#1e40af; font-size:13px;">✓ Document Selected:</strong>
+                        <div style="font-size:12px; color:#475569;">${escapeHtml(f.name)} (${Math.round(f.size / 1024)} KB)</div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+}
+
+
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+function showMessage(text, type = "error") {
+
+    message.textContent = text;
+
+    message.className = type;
+}
+
+
+/* =========================================================
+   GET INPUT VALUE
+========================================================= */
+
+function getValue(id) {
+
+    const element = document.getElementById(id);
+
+    return element
+        ? element.value.trim()
+        : "";
+}
+
+
+/* =========================================================
+   IFSC CODE REALTIME HELPER
+========================================================= */
+const ifscInput = document.getElementById("ifsc");
+const ifscFeedback = document.getElementById("ifscFeedback");
+if (ifscInput) {
+    ifscInput.addEventListener("input", function () {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        const val = this.value;
+        if (!ifscFeedback) return;
+
+        if (val.startsWith("SBI0") || (val.startsWith("SBI") && val.length > 3 && val[3] !== "N")) {
+            ifscFeedback.style.display = "block";
+            ifscFeedback.style.color = "#ea580c";
+            ifscFeedback.textContent = "⚠️ Note: State Bank of India IFSC starts with 'SBIN' (e.g. SBIN0001124). Please check for missing 'N'.";
+        } else if (val.length === 11 && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(val)) {
+            ifscFeedback.style.display = "block";
+            ifscFeedback.style.color = "#dc2626";
+            ifscFeedback.textContent = "⚠️ IFSC must be 11 characters: 4 letters, 5th character '0', and 6 branch digits.";
+        } else if (val.length === 11 && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(val)) {
+            ifscFeedback.style.display = "block";
+            ifscFeedback.style.color = "#16a34a";
+            ifscFeedback.textContent = "✓ Valid IFSC format";
+        } else {
+            ifscFeedback.style.display = "none";
+        }
+    });
+}
+
+/* =========================================================
+   PHONE VALIDATION
+========================================================= */
+
+function validatePhone(phone) {
+
+    /*
+     * Allows:
+     * +919876543210
+     * 9876543210
+     * 0919876543210
+     * spaces / hyphens / brackets
+     */
+
+    const cleaned = phone.replace(
+        /[\s\-()]/g,
+        ""
+    );
+
+    return /^\+?[0-9]{10,15}$/.test(cleaned);
+}
+
+
+/* =========================================================
+   HOSPITAL PHOTO PREVIEW
+========================================================= */
+
+hospitalPhotoInput.addEventListener(
+    "change",
+    function () {
+
+        const file = this.files[0];
+
+        photoPreviewContainer.style.display = "none";
+
+        photoPreview.src = "";
+
+        if (!file) {
+            return;
+        }
+
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+
+            showMessage(
+                "Hospital photo must be JPG, JPEG, PNG, or WEBP.",
+                "error"
+            );
+
+            this.value = "";
+
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+
+            showMessage(
+                "Hospital photo must be 5 MB or smaller.",
+                "error"
+            );
+
+            this.value = "";
+
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+
+            photoPreview.src =
+                event.target.result;
+
+            photoPreviewContainer.style.display =
+                "block";
+        };
+
+        reader.readAsDataURL(file);
+    }
+);
+
+
+/* =========================================================
+   EMAIL OTP VERIFICATION
+========================================================= */
+
+let isHospitalEmailVerified = false;
+let verifiedHospitalEmail = "";
+
+const hospitalEmailInput = document.getElementById("email");
+if (hospitalEmailInput) {
+    hospitalEmailInput.addEventListener("input", function() {
+        if (isHospitalEmailVerified && this.value.trim().toLowerCase() !== verifiedHospitalEmail) {
+            isHospitalEmailVerified = false;
+            const btnSend = document.getElementById("btnSendHospitalOtp");
+            if (btnSend) {
+                btnSend.style.display = "inline";
+                btnSend.textContent = "Send OTP";
+                btnSend.disabled = false;
+            }
+            const btnVerify = document.getElementById("btnVerifyHospitalOtp");
+            if (btnVerify) {
+                btnVerify.textContent = "Verify Code";
+                btnVerify.disabled = false;
+                btnVerify.style.background = "#16a34a";
+            }
+            const otpSection = document.getElementById("otpSection");
+            if (otpSection) otpSection.style.display = "none";
+            const otpInput = document.getElementById("regOtpInput");
+            if (otpInput) {
+                otpInput.disabled = false;
+                otpInput.value = "";
+            }
+        }
+    });
+}
+
+async function handleSendHospitalOtp() {
+    const email = getValue("email").toLowerCase();
+    const btnSend = document.getElementById("btnSendHospitalOtp");
+    const otpSection = document.getElementById("otpSection");
+    const otpFeedback = document.getElementById("otpFeedback");
+
+    if (!email || !email.includes("@")) {
+        showMessage("Please enter a valid hospital email address first.", "error");
+        document.getElementById("email").focus();
+        return;
+    }
+
+    btnSend.disabled = true;
+    btnSend.textContent = "Sending...";
+    otpFeedback.style.display = "none";
+
+    try {
+        const response = await fetch(`${API_URL}/registration/request-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                role: "hospital",
+                email: email
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "Unable to send verification code.");
+        }
+
+        otpSection.style.display = "block";
+        btnSend.textContent = "Resend OTP";
+        btnSend.disabled = false;
+
+        document.getElementById("regOtpInput").value = "";
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#0369a1";
+        otpFeedback.textContent = `✓ Verification code sent to ${email}. Please check your email inbox and spam folder.`;
+        showMessage("Verification code sent to your hospital email! Please check your inbox.", "success");
+    } catch (err) {
+        console.error("OTP send error:", err);
+        showMessage(err.message || "Failed to send verification code.", "error");
+        btnSend.disabled = false;
+        btnSend.textContent = "Send OTP";
+    }
+}
+
+async function handleVerifyHospitalOtp() {
+    const email = getValue("email").toLowerCase();
+    const otpInput = document.getElementById("regOtpInput");
+    const otp = otpInput.value.trim();
+    const btnVerify = document.getElementById("btnVerifyHospitalOtp");
+    const otpFeedback = document.getElementById("otpFeedback");
+
+    if (!otp || otp.length !== 6) {
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#dc2626";
+        otpFeedback.textContent = "Please enter the 6-digit verification code.";
+        return;
+    }
+
+    btnVerify.disabled = true;
+    btnVerify.textContent = "Verifying...";
+
+    try {
+        const response = await fetch(`${API_URL}/registration/verify-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                role: "hospital",
+                email: email,
+                otp: otp
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "Invalid or expired verification code.");
+        }
+
+        isHospitalEmailVerified = true;
+        verifiedHospitalEmail = email;
+
+        btnVerify.textContent = "✓ Verified";
+        btnVerify.style.background = "#16a34a";
+        btnVerify.disabled = true;
+        otpInput.disabled = true;
+
+        const btnSend = document.getElementById("btnSendHospitalOtp");
+        if (btnSend) btnSend.style.display = "none";
+
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#166534";
+        otpFeedback.textContent = "✓ Hospital email verified successfully!";
+        showMessage("Hospital email verified successfully!", "success");
+    } catch (err) {
+        console.error("OTP verify error:", err);
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#dc2626";
+        otpFeedback.textContent = err.message || "Verification failed.";
+        btnVerify.disabled = false;
+        btnVerify.textContent = "Verify Code";
+    }
+}
+
+/* =========================================================
+   BUILD FORM DATA
+========================================================= */
+
+function buildRegistrationFormData() {
+
+    const password =
+        document.getElementById("password").value;
+
+    const confirmPassword =
+        document.getElementById("confirm_password").value;
+
+    const certificate =
+        certificateInput.files[0];
+
+    const hospitalPhoto =
+        hospitalPhotoInput.files[0];
+
+    const tokenFee =
+        Number(
+            document.getElementById("token_fee").value
+        );
+
+
+    /* -----------------------------------------------------
+       REQUIRED FIELDS
+    ----------------------------------------------------- */
+
+    if (!isHospitalEmailVerified || verifiedHospitalEmail !== getValue("email").toLowerCase()) {
+        throw new Error("Please verify your hospital email with OTP before registering.");
+    }
+
+    if (
+        !getValue("name") ||
+        !getValue("email") ||
+        !getValue("phone") ||
+        !getValue("city") ||
+        !getValue("address") ||
+        !getValue("registration_number") ||
+        !getValue("issuing_authority")
+    ) {
+
+        throw new Error(
+            "Please complete all required fields."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       PHONE
+    ----------------------------------------------------- */
+
+    if (!validatePhone(getValue("phone"))) {
+
+        throw new Error(
+            "Please enter a valid hospital phone number."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       PASSWORD
+    ----------------------------------------------------- */
+
+    if (password.length < 6) {
+
+        throw new Error(
+            "Password must contain at least 6 characters."
+        );
+    }
+
+
+    if (password !== confirmPassword) {
+
+        throw new Error(
+            "Passwords do not match."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       TOKEN FEE
+    ----------------------------------------------------- */
+
+    if (
+        !Number.isFinite(tokenFee) ||
+        tokenFee < 0
+    ) {
+
+        throw new Error(
+            "Please enter a valid token fee."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       HOSPITAL PHOTO
+    ----------------------------------------------------- */
+
+    if (!hospitalPhoto) {
+
+        throw new Error(
+            "Please upload the hospital photo."
+        );
+    }
+
+
+    const allowedPhotoTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+
+    if (
+        !allowedPhotoTypes.includes(
+            hospitalPhoto.type
+        )
+    ) {
+
+        throw new Error(
+            "Hospital photo must be JPG, JPEG, PNG, or WEBP."
+        );
+    }
+
+
+    if (
+        hospitalPhoto.size >
+        5 * 1024 * 1024
+    ) {
+
+        throw new Error(
+            "Hospital photo must be 5 MB or smaller."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       CERTIFICATE
+    ----------------------------------------------------- */
+
+    if (!certificate) {
+
+        throw new Error(
+            "Please upload the hospital registration certificate."
+        );
+    }
+
+
+    const certificateName =
+        certificate.name.toLowerCase();
+
+
+    if (
+        !/\.(pdf|jpe?g|png)$/i.test(
+            certificateName
+        )
+    ) {
+
+        throw new Error(
+            "Certificate must be PDF, JPG, JPEG, or PNG."
+        );
+    }
+
+
+    if (
+        certificate.size >
+        10 * 1024 * 1024
+    ) {
+
+        throw new Error(
+            "Certificate must be 10 MB or smaller."
+        );
+    }
+
+
+    /* =====================================================
+       FORM DATA
+    ===================================================== */
+
+    const data = new FormData();
+
+
+    data.append(
+        "name",
+        getValue("name")
+    );
+
+
+    data.append(
+        "email",
+        getValue("email").toLowerCase()
+    );
+
+
+    /*
+     * IMPORTANT:
+     * Hospital phone number is stored in the
+     * backend using this field.
+     */
+    data.append(
+        "phone",
+        getValue("phone")
+    );
+
+
+    data.append(
+        "city",
+        getValue("city")
+    );
+
+
+    data.append(
+        "address",
+        getValue("address")
+    );
+
+
+    data.append(
+        "description",
+        getValue("description")
+    );
+
+
+    data.append(
+        "registration_number",
+        getValue("registration_number")
+    );
+
+
+    data.append(
+        "issuing_authority",
+        getValue("issuing_authority")
+    );
+
+
+    data.append(
+        "password",
+        password
+    );
+
+
+    data.append(
+        "token_fee",
+        String(tokenFee)
+    );
+
+
+    /* -----------------------------------------------------
+       LICENSE EXPIRY
+    ----------------------------------------------------- */
+
+    const expiryDate =
+        document.getElementById(
+            "license_expiry_date"
+        ).value;
+
+
+    if (expiryDate) {
+
+        data.append(
+            "license_expiry_date",
+            expiryDate
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       CERTIFICATE
+    ----------------------------------------------------- */
+
+    data.append(
+        "license_certificate",
+        certificate
+    );
+
+
+    /* -----------------------------------------------------
+       HOSPITAL PHOTO
+    ----------------------------------------------------- */
+
+    data.append(
+        "hospital_photo",
+        hospitalPhoto
+    );
+
+    /* -----------------------------------------------------
+       PAYMENT / BANK DETAILS
+    ----------------------------------------------------- */
+    const accountNumber = getValue("account_number");
+    const ifscCode = getValue("ifsc").toUpperCase();
+    const upiId = getValue("upi");
+
+    if (accountNumber) {
+        data.append("account_number", accountNumber);
+    }
+    if (ifscCode) {
+        data.append("ifsc", ifscCode);
+    }
+    if (upiId) {
+        data.append("upi", upiId);
+    }
+
+    return data;
+}
+
+
+/* =========================================================
+   READ API RESPONSE
+========================================================= */
+
+async function readResponse(response) {
+
+    const data =
+        await response
+            .json()
+            .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+        let error =
+            data.detail ||
+            data.message ||
+            "Registration failed.";
+
+
+        if (Array.isArray(data.detail)) {
+
+            error =
+                data.detail
+                    .map(function (item) {
+                        return item.msg;
+                    })
+                    .join("; ");
+        }
+
+
+        throw new Error(error);
+    }
+
+
+    return data;
+}
+
+
+/* =========================================================
+   FORM SUBMIT
+========================================================= */
+
+form.addEventListener(
+    "submit",
+    async function (event) {
+
+        event.preventDefault();
+
+
+        if (registerButton.disabled) {
+
+            return;
+        }
+
+
+        registerButton.disabled = true;
+        registerButton.textContent = "Registering Hospital (connecting to server)...";
+        showMessage("");
+
+        try {
+            /* ---------------------------------------------
+               BUILD DATA
+            --------------------------------------------- */
+            const formData = buildRegistrationFormData();
+
+            /* ---------------------------------------------
+               SEND TO BACKEND (with auto-retry if waking from sleep)
+            --------------------------------------------- */
+            let response;
+            try {
+                response = await fetch(`${API_URL}/hospitals`, {
+                    method: "POST",
+                    body: formData
+                });
+            } catch (netErr) {
+                console.warn("First registration attempt failed, server may be waking up:", netErr);
+                registerButton.textContent = "Server waking up... Retrying (attempt 2 of 2)...";
+                await new Promise(r => setTimeout(r, 2500));
+                response = await fetch(`${API_URL}/hospitals`, {
+                    method: "POST",
+                    body: formData
+                });
+            }
+
+            const data = await readResponse(response);
+
+            /* ---------------------------------------------
+               SUCCESS
+            --------------------------------------------- */
+            showMessage(
+                data.message ||
+                "Hospital registration submitted successfully. Waiting for admin approval.",
+                "success"
+            );
+
+            /* Reset form */
+            form.reset();
+            photoPreview.src = "";
+            photoPreviewContainer.style.display = "none";
+            if (ifscFeedback) ifscFeedback.style.display = "none";
+
+        } catch (error) {
+            console.error("Hospital registration error:", error);
+
+            showMessage(
+                error instanceof TypeError
+                    ? "Cannot connect to the CarePath server. The server is currently waking up from sleep (takes ~30-45 seconds on Render free tier). Please wait a few seconds and tap 'Register Hospital' again."
+                    : error.message,
+                "error"
+            );
+
+        } finally {
+            registerButton.disabled = false;
+            registerButton.textContent = "Register Hospital";
+        }
+    }
+);
+</script>
+
+
+<!-- =========================================================
+     CAMERA SCANNER MODAL & CONTROLLER
+========================================================= -->
+<div id="certCameraModal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#1e293b; color:#fff; border-radius:16px; width:100%; max-width:520px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.7); display:flex; flex-direction:column; position:relative;">
+        <div style="padding:14px 18px; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
+            <h4 style="margin:0; font-size:16px; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+                📸 Camera Scanner
+            </h4>
+            <button type="button" onclick="closeCertCamera()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer; line-height:1; padding:0 4px;" aria-label="Close">&times;</button>
+        </div>
+        
+        <div style="position:relative; width:100%; background:#090d16; min-height:280px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            <video id="certCameraVideo" autoplay playsinline muted style="width:100%; max-height:360px; object-fit:cover; display:block;"></video>
+            <canvas id="certCameraCanvas" style="display:none;"></canvas>
+            <img id="certCameraSnapshot" style="display:none; width:100%; max-height:360px; object-fit:contain; background:#000;" alt="Captured Certificate">
+            
+            <div id="certCameraGuide" style="position:absolute; inset:20px; border:2px dashed rgba(255,255,255,0.75); border-radius:12px; pointer-events:none; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 9999px rgba(0,0,0,0.25);">
+                <span style="background:rgba(0,0,0,0.7); color:#fff; font-size:12px; font-weight:600; padding:6px 14px; border-radius:20px; letter-spacing:0.3px;">Position certificate within frame</span>
+            </div>
+
+            <div id="certCameraStatus" style="display:none; position:absolute; inset:16px; margin:auto; max-height:180px; padding:18px; text-align:center; color:#f87171; font-size:13px; background:rgba(15,23,42,0.95); border:1px solid #ef4444; border-radius:12px; flex-direction:column; justify-content:center; align-items:center; z-index:10;"></div>
+        </div>
+
+        <div style="padding:14px 18px; background:#1e293b; display:flex; gap:10px; justify-content:flex-end; align-items:center; border-top:1px solid #334155;">
+            <button type="button" onclick="closeCertCamera()" style="padding:9px 16px; background:#334155; color:#cbd5e1; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">Cancel</button>
+            <button type="button" id="certCamCaptureBtn" onclick="captureCertSnapshot()" style="padding:9px 20px; background:#2563eb; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">📸 Capture Photo</button>
+            <button type="button" id="certCamRetakeBtn" onclick="retakeCertSnapshot()" style="display:none; padding:9px 16px; background:#475569; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">🔄 Retake</button>
+            <button type="button" id="certCamUseBtn" onclick="useCertSnapshot()" style="display:none; padding:9px 20px; background:#16a34a; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">✓ Use This Photo</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ==================================
+   CAMERA SCANNER & UTILS
+================================== */
+let certCameraStream = null;
+let activeCertInputId = null;
+let activeCertPreviewId = null;
+let capturedCertBlob = null;
+
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+async function openCertCameraModal(targetInputId, previewContainerId) {
+    activeCertInputId = targetInputId;
+    activeCertPreviewId = previewContainerId;
+    capturedCertBlob = null;
+
+    const modal = document.getElementById("certCameraModal");
+    const video = document.getElementById("certCameraVideo");
+    const canvas = document.getElementById("certCameraCanvas");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const statusBox = document.getElementById("certCameraStatus");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (!modal) return;
+
+    modal.style.display = "flex";
+    if (snapshot) snapshot.style.display = "none";
+    if (canvas) canvas.style.display = "none";
+    if (video) video.style.display = "block";
+    if (guide) guide.style.display = "flex";
+    if (captureBtn) captureBtn.style.display = "inline-flex";
+    if (retakeBtn) retakeBtn.style.display = "none";
+    if (useBtn) useBtn.style.display = "none";
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (statusBox) {
+            statusBox.style.display = "flex";
+            statusBox.innerHTML = `
+                <div style="font-size:24px; margin-bottom:6px;">⚠️</div>
+                <strong style="color:#f87171; font-size:14px;">Camera Access Not Supported</strong>
+                <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">Direct camera access requires a secure connection (HTTPS) or a supported modern browser. Please choose an image or document from your device files.</p>
+            `;
+        }
+        if (captureBtn) captureBtn.style.display = "none";
+        return;
+    }
+
+    if (statusBox) {
+        statusBox.style.display = "flex";
+        statusBox.innerHTML = `
+            <div style="font-size:24px; margin-bottom:6px;">📷</div>
+            <strong style="color:#60a5fa; font-size:14px;">Requesting Camera Permission...</strong>
+            <p style="margin:6px 0 0; color:#94a3b8; font-size:12px;">Please tap "Allow" when prompted by your browser to scan your certificate.</p>
+        `;
+    }
+
+    try {
+        certCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        });
+
+        if (video) {
+            video.srcObject = certCameraStream;
+            await video.play();
+        }
+        if (statusBox) statusBox.style.display = "none";
+    } catch (err) {
+        console.error("Camera access error:", err);
+        if (statusBox) {
+            statusBox.style.display = "flex";
+            if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">🔒</div>
+                    <strong style="color:#f87171; font-size:14px;">Camera Permission Denied</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">Camera permission was denied. Please allow camera permissions in your browser or phone site settings, or use the file picker to choose a document.</p>
+                `;
+            } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">📷</div>
+                    <strong style="color:#f87171; font-size:14px;">No Camera Found</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">No active camera was detected on this device. Please select a certificate file from your device storage.</p>
+                `;
+            } else {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">⚠️</div>
+                    <strong style="color:#f87171; font-size:14px;">Camera Error</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">${escapeHtml(err.message || err.name)}. Please select a file from your device.</p>
+                `;
+            }
+        }
+        if (captureBtn) captureBtn.style.display = "none";
+    }
+}
+
+function captureCertSnapshot() {
+    const video = document.getElementById("certCameraVideo");
+    const canvas = document.getElementById("certCameraCanvas");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (!video || !canvas || !snapshot) return;
+
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+        if (!blob) return;
+        capturedCertBlob = blob;
+        snapshot.src = URL.createObjectURL(blob);
+        snapshot.style.display = "block";
+        video.style.display = "none";
+        if (guide) guide.style.display = "none";
+        if (captureBtn) captureBtn.style.display = "none";
+        if (retakeBtn) retakeBtn.style.display = "inline-flex";
+        if (useBtn) useBtn.style.display = "inline-flex";
+    }, "image/jpeg", 0.92);
+}
+
+function retakeCertSnapshot() {
+    capturedCertBlob = null;
+    const video = document.getElementById("certCameraVideo");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (snapshot) snapshot.style.display = "none";
+    if (video) video.style.display = "block";
+    if (guide) guide.style.display = "flex";
+    if (captureBtn) captureBtn.style.display = "inline-flex";
+    if (retakeBtn) retakeBtn.style.display = "none";
+    if (useBtn) useBtn.style.display = "none";
+}
+
+function useCertSnapshot() {
+    if (!capturedCertBlob || !activeCertInputId) {
+        closeCertCamera();
+        return;
+    }
+
+    const filename = `certificate_scan_${Date.now()}.jpg`;
+    const file = new File([capturedCertBlob], filename, {
+        type: "image/jpeg",
+        lastModified: Date.now()
+    });
+
+    const fileInput = document.getElementById(activeCertInputId);
+    if (fileInput) {
+        try {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+        } catch (err) {
+            console.warn("DataTransfer not fully supported:", err);
+        }
+    }
+
+    if (activeCertPreviewId) {
+        const previewElem = document.getElementById(activeCertPreviewId);
+        if (previewElem) {
+            previewElem.style.display = "block";
+            previewElem.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="${URL.createObjectURL(file)}" style="width:52px; height:52px; object-fit:cover; border-radius:6px; border:1px solid #94a3b8;">
+                    <div>
+                        <strong style="color:#0369a1; font-size:13px; display:flex; align-items:center; gap:4px;">
+                            ✓ Certificate Captured by Camera
+                        </strong>
+                        <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                            ${filename} (${Math.round(file.size / 1024)} KB)
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    closeCertCamera();
+}
+
+function closeCertCamera() {
+    if (certCameraStream) {
+        try {
+            certCameraStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+            console.error("Error stopping tracks:", e);
+        }
+        certCameraStream = null;
+    }
+    const modal = document.getElementById("certCameraModal");
+    if (modal) modal.style.display = "none";
+    const video = document.getElementById("certCameraVideo");
+    if (video) video.srcObject = null;
+}
+</script>
+
+</body>
+</html>

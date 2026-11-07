@@ -549,13 +549,56 @@
             }
         });
 
-        // 3. Audio Chime (Web Audio API Synthesizer - 0 external files)
+        // 3. Robust Shared Audio Context & Autoplay Policy Unlock
+        let sharedDisplayAudioCtx = null;
+
+        function getDisplayAudioCtx() {
+            if (!sharedDisplayAudioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) sharedDisplayAudioCtx = new AudioContextClass();
+            }
+            if (sharedDisplayAudioCtx && sharedDisplayAudioCtx.state === "suspended") {
+                sharedDisplayAudioCtx.resume().catch(() => {});
+            }
+            return sharedDisplayAudioCtx;
+        }
+
+        function unlockDisplayAutoplay() {
+            const ctx = getDisplayAudioCtx();
+            if (ctx && ctx.state === "suspended") {
+                ctx.resume().catch(() => {});
+            }
+            if ("speechSynthesis" in window) {
+                try {
+                    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                } catch(e) {}
+            }
+            const banner = document.getElementById("tvAutoplayBanner");
+            if (banner) banner.style.display = "none";
+        }
+
+        ["click", "touchstart", "pointerdown", "keydown"].forEach(evt => {
+            document.addEventListener(evt, unlockDisplayAutoplay, { passive: true });
+        });
+
         function playChime() {
             if (!audioEnabled) return;
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const now = ctx.currentTime;
+                const ctx = getDisplayAudioCtx();
+                if (!ctx) return;
+                if (ctx.state === "suspended") {
+                    ctx.resume().then(() => playDisplayChimeNodes(ctx)).catch(() => {});
+                } else {
+                    playDisplayChimeNodes(ctx);
+                }
+            } catch (e) {
+                console.warn("Audio chime error:", e);
+            }
+        }
 
+        function playDisplayChimeNodes(ctx) {
+            try {
+                const now = ctx.currentTime;
                 // High tone (523Hz - C5)
                 const osc1 = ctx.createOscillator();
                 const gain1 = ctx.createGain();
@@ -579,26 +622,35 @@
                 gain2.connect(ctx.destination);
                 osc2.start(now + 0.2);
                 osc2.stop(now + 0.9);
-            } catch (e) {
-                console.warn("Audio chime error:", e);
-            }
+            } catch(e) {}
         }
 
-        // 4. Voice Speech Synthesis Announcement
+        // 4. Voice Speech Synthesis Announcement with Autoplay Unfreeze
         function announceToken(tokenNumber, patientName, doctor) {
             if (!audioEnabled) return;
             playChime();
             setTimeout(() => {
+                if (!audioEnabled) return;
                 if ("speechSynthesis" in window) {
-                    window.speechSynthesis.cancel();
-                    const text = `Attention please: Token number ${tokenNumber}, ${patientName || "patient"}, please proceed to doctor ${doctor || "consultation"}.`;
-                    const utterance = new SpeechSynthesisUtterance(text);
-                    utterance.rate = 0.9;
-                    utterance.pitch = 1.0;
-                    utterance.lang = "en-IN";
-                    window.speechSynthesis.speak(utterance);
+                    try {
+                        window.speechSynthesis.cancel();
+                        const safeName = patientName && patientName !== "Patient" ? `${patientName}, ` : "";
+                        const text = `Attention please: Token number ${tokenNumber}, ${safeName}please proceed to doctor ${doctor || "consultation"}.`;
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.rate = 0.9;
+                        utterance.pitch = 1.0;
+                        utterance.lang = "en-IN";
+                        const voices = window.speechSynthesis.getVoices();
+                        const inVoice = voices.find(v => v.lang === "en-IN") || voices.find(v => v.lang && v.lang.startsWith("en"));
+                        if (inVoice) utterance.voice = inVoice;
+
+                        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                        window.speechSynthesis.speak(utterance);
+                    } catch(e) {
+                        console.warn("Speech synthesis error:", e);
+                    }
                 }
-            }, 700);
+            }, 650);
         }
 
         // Audio toggle button
@@ -606,6 +658,12 @@
             audioEnabled = !audioEnabled;
             this.classList.toggle("active", audioEnabled);
             document.getElementById("audioIcon").textContent = audioEnabled ? "🔊" : "🔇";
+            if (audioEnabled) {
+                unlockDisplayAutoplay();
+                playChime();
+            } else {
+                if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+            }
         });
 
         // 5. Fetch and Render Live Queue

@@ -979,6 +979,9 @@
         </div>
 
         <div class="header-actions">
+            <button type="button" class="btn-action-pill" onclick="toggleHospitalAudio()" id="btnHospitalAudioToggle" title="Toggle audio chime and patient call announcements" style="background: #f0fdf4; color: #15803d; border: 1.5px solid #86efac; font-weight: 700;">
+                <span id="hospitalAudioIcon">🔊</span> <span id="hospitalAudioText">Audio: ON</span>
+            </button>
             <button type="button" class="btn-action-pill" onclick="openHospitalBreakModal()" id="btnHospitalBreakTime" style="background: #fefce8; color: #854d0e; border: 1.5px solid #fde047; font-weight: 700;">
                 🍱 Set Break Time
             </button>
@@ -1386,36 +1389,134 @@ function updateLiveClock() {
 setInterval(updateLiveClock, 1000);
 updateLiveClock();
 
-// AUDIO CHIME
-function playCallChime() {
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const now = audioCtx.currentTime;
+// =====================================================
+// ROBUST SHARED AUDIO CONTEXT & AUTOPLAY POLICY UNLOCK
+// =====================================================
+let hospitalAudioEnabled = true;
+let sharedHospitalAudioCtx = null;
+let lastAnnouncedServingTokenId = null;
 
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
+function getSharedHospitalAudioCtx() {
+    if (!sharedHospitalAudioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+            sharedHospitalAudioCtx = new AudioContextClass();
+        }
+    }
+    if (sharedHospitalAudioCtx && sharedHospitalAudioCtx.state === "suspended") {
+        sharedHospitalAudioCtx.resume().catch(() => {});
+    }
+    return sharedHospitalAudioCtx;
+}
+
+// Global unlock on any user interaction so browser autoplay policy never blocks call chime or speech
+function unlockHospitalAutoplay() {
+    const ctx = getSharedHospitalAudioCtx();
+    if (ctx && ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+    }
+    if ("speechSynthesis" in window) {
+        try {
+            if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        } catch(e) {}
+    }
+}
+["click", "touchstart", "pointerdown", "keydown"].forEach(evt => {
+    document.addEventListener(evt, unlockHospitalAutoplay, { passive: true });
+});
+
+function toggleHospitalAudio() {
+    hospitalAudioEnabled = !hospitalAudioEnabled;
+    const btn = document.getElementById("btnHospitalAudioToggle");
+    const icon = document.getElementById("hospitalAudioIcon");
+    const text = document.getElementById("hospitalAudioText");
+    if (icon) icon.textContent = hospitalAudioEnabled ? "🔊" : "🔇";
+    if (text) text.textContent = hospitalAudioEnabled ? "Audio: ON" : "Audio: OFF";
+    if (btn) {
+        btn.style.background = hospitalAudioEnabled ? "#f0fdf4" : "#f1f5f9";
+        btn.style.color = hospitalAudioEnabled ? "#15803d" : "#64748b";
+        btn.style.borderColor = hospitalAudioEnabled ? "#86efac" : "#cbd5e1";
+    }
+    if (hospitalAudioEnabled) {
+        unlockHospitalAutoplay();
+        playCallChime();
+        showToast("Audio alert & announcements enabled", "🔊");
+    } else {
+        if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+        showToast("Audio announcements muted", "🔇");
+    }
+}
+
+function playCallChime() {
+    if (!hospitalAudioEnabled) return;
+    try {
+        const ctx = getSharedHospitalAudioCtx();
+        if (!ctx) return;
+        if (ctx.state === "suspended") {
+            ctx.resume().then(() => playChimeNodes(ctx)).catch(() => {});
+        } else {
+            playChimeNodes(ctx);
+        }
+    } catch(e) {
+        console.warn("Audio chime error:", e);
+    }
+}
+
+function playChimeNodes(ctx) {
+    try {
+        const now = ctx.currentTime;
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
         osc1.type = "sine";
         osc1.frequency.setValueAtTime(880, now);
         gain1.gain.setValueAtTime(0.3, now);
         gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
         osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
+        gain1.connect(ctx.destination);
         osc1.start(now);
         osc1.stop(now + 0.5);
 
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
         osc2.type = "sine";
         osc2.frequency.setValueAtTime(659.25, now + 0.25);
         gain2.gain.setValueAtTime(0.35, now + 0.25);
         gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
         osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
+        gain2.connect(ctx.destination);
         osc2.start(now + 0.25);
         osc2.stop(now + 0.85);
-    } catch(e) {
-        console.warn("Audio chime unsupported:", e);
-    }
+    } catch(e) {}
+}
+
+function announceCalledToken(tokenNum, patientName, doctor) {
+    if (!hospitalAudioEnabled) return;
+    playCallChime();
+
+    // Spoken patient announcement after chime with autoplay unfreeze
+    setTimeout(() => {
+        if (!hospitalAudioEnabled) return;
+        if ("speechSynthesis" in window) {
+            try {
+                window.speechSynthesis.cancel();
+                const safeName = patientName && patientName !== "Patient" && patientName !== "No Patient in Consultation" ? `${patientName}` : "";
+                const docText = doctor && doctor !== "OPD" && doctor !== "No active consultation" ? `doctor ${doctor}` : "consultation";
+                const text = `Attention please: Token number ${tokenNum}. ${safeName ? safeName + ', ' : ''}please proceed to ${docText}.`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.92;
+                utterance.pitch = 1.0;
+                utterance.lang = "en-IN";
+                const voices = window.speechSynthesis.getVoices();
+                const inVoice = voices.find(v => v.lang === "en-IN") || voices.find(v => v.lang && v.lang.startsWith("en"));
+                if (inVoice) utterance.voice = inVoice;
+
+                if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                window.speechSynthesis.speak(utterance);
+            } catch(e) {
+                console.warn("Speech announcement error:", e);
+            }
+        }
+    }, 650);
 }
 
 // TOAST NOTIFICATION
@@ -1601,7 +1702,14 @@ async function loadQueue() {
             document.getElementById("heroPatientName").textContent = current.patient_name || "Patient in Consultation";
             document.getElementById("heroDoctorRoom").textContent = `${current.doctor || 'OPD Doctor'} • ${current.department || 'Consultation'}`;
             document.getElementById("currentServingDoc").textContent = current.doctor || "In Consultation";
+
+            // If another doctor or nurse called a new token and this dashboard observes the transition
+            if (lastAnnouncedServingTokenId !== null && lastAnnouncedServingTokenId !== current.id) {
+                announceCalledToken(current.token_number, current.patient_name, current.doctor);
+            }
+            lastAnnouncedServingTokenId = current.id;
         } else {
+            lastAnnouncedServingTokenId = null;
             currentServingTokenObj = null;
             document.getElementById("currentToken").textContent = "0";
             document.getElementById("heroTokenDisplay").textContent = "#0";
@@ -1670,6 +1778,7 @@ function filterQueueFeed() {
 
 // CALL NEXT PATIENT
 async function callNextPatient() {
+    unlockHospitalAutoplay();
     const btn = document.getElementById("nextButton");
     const msg = document.getElementById("nextMessage");
     const waiting = allHospitalTokens.filter(t => (t.status || "").toLowerCase() === "waiting");
@@ -1683,10 +1792,13 @@ async function callNextPatient() {
     }
 
     const nextUp = waiting[0];
-    await callSpecificToken(nextUp.id, nextUp.token_number);
+    await callSpecificToken(nextUp.id, nextUp.token_number, nextUp.patient_name, nextUp.doctor);
 }
 
-async function callSpecificToken(tokenId, tokenNum) {
+async function callSpecificToken(tokenId, tokenNum, patientName, doctor) {
+    // Synchronously prime audio context BEFORE async fetch (preserves browser user activation context)
+    unlockHospitalAutoplay();
+
     const btn = document.getElementById("nextButton");
     const msg = document.getElementById("nextMessage");
     if (btn) { btn.disabled = true; btn.innerHTML = "<span>📢</span> Calling..."; }
@@ -1700,7 +1812,18 @@ async function callSpecificToken(tokenId, tokenNum) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Unable to call token");
 
-        playCallChime();
+        // Lookup patient metadata if not passed directly
+        let pName = patientName;
+        let dRoom = doctor;
+        if (!pName || !dRoom) {
+            const found = allHospitalTokens.find(t => Number(t.id) === Number(tokenId));
+            if (found) {
+                pName = pName || found.patient_name;
+                dRoom = dRoom || found.doctor;
+            }
+        }
+
+        announceCalledToken(tokenNum, pName, dRoom);
         showToast(`Token #${tokenNum} called into consultation!`, "📢");
 
         if (msg) {

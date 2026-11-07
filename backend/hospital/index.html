@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#071329">
+    <title>CarePath - Hospital Login</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Check whether a valid hospital session already exists -->
+    <script>
+        (function () {
+            const hospitalId =
+                localStorage.getItem("hospital_id");
+
+            const hospitalToken =
+                localStorage.getItem("hospitalToken");
+
+            const loggedIn =
+                localStorage.getItem("hospital_logged_in") === "true";
+
+            if (hospitalId && hospitalToken && loggedIn) {
+                window.location.replace("dashboard.html");
+            }
+        })();
+    </script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #071329, #123967);
+        }
+
+        .login-card {
+            background: #fff;
+            width: 100%;
+            max-width: 430px;
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .brand h1 {
+            color: #1264db;
+            margin: 0;
+            font-size: 34px;
+        }
+
+        .brand p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        h2 {
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 7px;
+            color: #334155;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #1264db;
+        }
+
+        .forgot {
+            display: block;
+            text-align: right;
+            margin-top: 9px;
+            font-size: 13px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #1264db;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0d4fb3;
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        #message {
+            display: none;
+            margin-bottom: 18px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        #message.error {
+            display: block;
+            color: #b91c1c;
+            background: #fee2e2;
+        }
+
+        #message.success {
+            display: block;
+            color: #166534;
+            background: #dcfce7;
+        }
+
+        .register {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        a {
+            color: #1264db;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+            margin: 22px 0;
+            font-size: 13px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            height: 1px;
+            background: #e2e8f0;
+            flex: 1;
+        }
+
+        #googleButton {
+            display: flex;
+            justify-content: center;
+            min-height: 40px;
+        }
+    </style>
+
+    <script
+        src="https://accounts.google.com/gsi/client"
+        async
+        defer>
+    </script>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="carepath-ai-small.png">
+</head>
+
+<body>
+
+    <main class="login-card">
+
+        <div class="brand">
+            <h1>CarePath</h1>
+            <p>Hospital Management Portal</p>
+        </div>
+
+        <h2>Hospital Login</h2>
+
+        <p class="subtitle">
+            Sign in to access your hospital dashboard.
+        </p>
+
+        <div id="message" role="alert"></div>
+
+        <form id="hospitalLoginForm">
+
+            <div class="form-group">
+                <label for="email">
+                    Hospital Email
+                </label>
+
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="Enter registered email"
+                    autocomplete="username"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter password"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <a
+                    class="forgot"
+                    href="forgot-password.html">
+                    Forgot password?
+                </a>
+            </div>
+
+            <button
+                type="submit"
+                id="loginButton">
+                Login
+            </button>
+
+        </form>
+
+        <div class="divider">
+            OR
+        </div>
+
+        <div id="googleButton"></div>
+
+        <p class="register">
+            New hospital?
+            <a href="register.html">
+                Register Hospital
+            </a>
+        </p>
+
+    </main>
+
+    <script>
+        "use strict";
+
+        /* ================================
+           API CONFIGURATION
+        ================================= */
+
+        const API_URL =
+            "https://carepath-3q9q.onrender.com";
+
+        const GOOGLE_CLIENT_ID =
+            "124194505435-nirpgumce4ek0f368mjnkm8daq5dof9p.apps.googleusercontent.com";
+
+
+        /* ================================
+           DOM ELEMENTS
+        ================================= */
+
+        const form =
+            document.getElementById("hospitalLoginForm");
+
+        const loginButton =
+            document.getElementById("loginButton");
+
+        const message =
+            document.getElementById("message");
+
+
+        /* ================================
+           MESSAGE HELPER
+        ================================= */
+
+        function showMessage(
+            text,
+            type = "error"
+        ) {
+            message.textContent = text;
+            message.className = type;
+        }
+
+
+        /* ================================
+           SAVE HOSPITAL SESSION
+        ================================= */
+
+        function saveHospitalSession(hospital) {
+
+            if (!hospital || !hospital.id) {
+                throw new Error(
+                    "Hospital information is missing."
+                );
+            }
+
+            localStorage.setItem(
+                "hospital",
+                JSON.stringify(hospital)
+            );
+
+            localStorage.setItem(
+                "hospital_id",
+                String(hospital.id)
+            );
+
+            localStorage.setItem(
+                "hospital_logged_in",
+                "true"
+            );
+
+
+            if (hospital.name) {
+
+                localStorage.setItem(
+                    "hospital_name",
+                    hospital.name
+                );
+            }
+
+
+            if (hospital.email) {
+
+                localStorage.setItem(
+                    "hospital_email",
+                    hospital.email
+                );
+            }
+
+
+            if (
+                hospital.token_fee !== undefined &&
+                hospital.token_fee !== null
+            ) {
+
+                localStorage.setItem(
+                    "hospital_token_fee",
+                    String(hospital.token_fee)
+                );
+            }
+
+
+            if (hospital.approval_status) {
+
+                localStorage.setItem(
+                    "hospital_approval_status",
+                    hospital.approval_status
+                );
+            }
+
+
+            if (
+                hospital.is_published !== undefined &&
+                hospital.is_published !== null
+            ) {
+
+                localStorage.setItem(
+                    "hospital_is_published",
+                    String(hospital.is_published)
+                );
+            }
+        }
+
+
+        /* ================================
+           NORMAL EMAIL/PASSWORD LOGIN
+        ================================= */
+
+        form.addEventListener(
+            "submit",
+            async function (event) {
+
+                event.preventDefault();
+
+                const email =
+                    document
+                        .getElementById("email")
+                        .value
+                        .trim();
+
+                const password =
+                    document
+                        .getElementById("password")
+                        .value;
+
+
+                loginButton.disabled = true;
+
+                loginButton.textContent =
+                    "Logging in...";
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            `${API_URL}/hospitals/login`,
+                            {
+                                method: "POST",
+
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+
+                                body: JSON.stringify({
+                                    email: email,
+                                    password: password
+                                })
+                            }
+                        );
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            data.detail ||
+                            "Login failed. Check your credentials."
+                        );
+                    }
+
+
+                    /* Authentication token is mandatory */
+
+                    if (!data.access_token) {
+
+                        throw new Error(
+                            "Login succeeded, but the authentication token was not returned."
+                        );
+                    }
+
+
+                    /* Save JWT */
+
+                    localStorage.setItem(
+                        "hospitalToken",
+                        data.access_token
+                    );
+
+
+                    /* Save hospital information */
+
+                    const hospital =
+                        data.hospital || data;
+
+                    saveHospitalSession(
+                        hospital
+                    );
+
+
+                    showMessage(
+                        "Login successful.",
+                        "success"
+                    );
+
+
+                    window.location.replace(
+                        "dashboard.html"
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Hospital login error:",
+                        error
+                    );
+
+                    showMessage(
+                        error.message ||
+                        "Unable to connect to the server."
+                    );
+
+                } finally {
+
+                    loginButton.disabled = false;
+
+                    loginButton.textContent =
+                        "Login";
+                }
+            }
+        );
+
+
+        /* ================================
+           GOOGLE LOGIN
+        ================================= */
+
+        async function handleGoogleLogin(
+            googleResponse
+        ) {
+
+            try {
+
+                if (
+                    !googleResponse ||
+                    !googleResponse.credential
+                ) {
+
+                    throw new Error(
+                        "Google authentication credential was not received."
+                    );
+                }
+
+
+                showMessage(
+                    "Signing in with Google...",
+                    "success"
+                );
+
+
+                const response =
+                    await fetch(
+                        `${API_URL}/hospitals/google-login`,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body: JSON.stringify({
+                                credential:
+                                    googleResponse.credential
+                            })
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.detail ||
+                        "Google login failed."
+                    );
+                }
+
+
+                /* Authentication token is mandatory */
+
+                if (!data.access_token) {
+
+                    throw new Error(
+                        "Google login succeeded, but the authentication token was not returned."
+                    );
+                }
+
+
+                /* Save JWT */
+
+                localStorage.setItem(
+                    "hospitalToken",
+                    data.access_token
+                );
+
+
+                /* Save hospital information */
+
+                saveHospitalSession(
+                    data.hospital || data
+                );
+
+
+                showMessage(
+                    "Google login successful. Opening dashboard...",
+                    "success"
+                );
+
+
+                window.location.replace(
+                    "dashboard.html"
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Google hospital login error:",
+                    error
+                );
+
+                showMessage(
+                    error.message ||
+                    "Google login failed."
+                );
+            }
+        }
+
+
+        /* ================================
+           INITIALIZE GOOGLE SIGN-IN
+        ================================= */
+
+        window.addEventListener(
+            "load",
+            function () {
+
+                if (
+                    window.google &&
+                    google.accounts &&
+                    google.accounts.id
+                ) {
+
+                    google.accounts.id.initialize({
+                        client_id:
+                            GOOGLE_CLIENT_ID,
+
+                        callback:
+                            handleGoogleLogin
+                    });
+
+
+                    google.accounts.id.renderButton(
+                        document.getElementById(
+                            "googleButton"
+                        ),
+                        {
+                            theme: "outline",
+                            size: "large",
+                            text: "signin_with",
+                            shape: "rectangular",
+                            width: 320
+                        }
+                    );
+
+                } else {
+
+                    console.warn(
+                        "Google Identity Services was not loaded."
+                    );
+                }
+            }
+        );
+
+    </script>
+
+</body>
+</html>

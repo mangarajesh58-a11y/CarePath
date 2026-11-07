@@ -1,0 +1,2310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Hospital Profile - CarePath</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+<div class="page-container">
+
+
+    <!-- ==============================
+         HEADER
+    =============================== -->
+
+    <header>
+
+        <div>
+
+            <h1>🏥 Hospital Profile</h1>
+
+            <p>Manage Hospital Information</p>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="logout"
+            onclick="hospitalLogout()"
+        >
+            Logout
+        </button>
+
+    </header>
+
+
+
+    <!-- ==============================
+         HOSPITAL INFORMATION
+    =============================== -->
+
+    <div class="form-card">
+
+        <h2>Hospital Information</h2>
+
+
+        <!-- ==============================
+             HOSPITAL PHOTO
+        =============================== -->
+
+        <div
+            class="hospital-photo-upload-card"
+            style="
+                margin:18px 0 24px;
+                padding:16px;
+                border:1px solid #dbe4f0;
+                border-radius:12px;
+                background:#f8fbff;
+            "
+        >
+
+            <h3 style="margin:0 0 10px;">
+                Hospital Cover Photo
+            </h3>
+
+
+            <p
+                style="
+                    margin:0 0 12px;
+                    color:#64748b;
+                    font-size:14px;
+                "
+            >
+                Upload a clear photo of your hospital building.
+                JPG, PNG, or WEBP; maximum 5 MB.
+            </p>
+
+
+            <img
+                id="hospitalPhotoPreview"
+                alt="Hospital cover preview"
+                style="
+                    display:none;
+                    width:100%;
+                    max-width:420px;
+                    max-height:220px;
+                    object-fit:cover;
+                    border-radius:10px;
+                    margin-bottom:12px;
+                "
+            >
+
+
+            <input
+                type="file"
+                id="hospitalPhotoFile"
+                accept="image/jpeg,image/png,image/webp"
+                style="
+                    display:block;
+                    margin-bottom:12px;
+                "
+            >
+
+
+            <button
+                type="button"
+                onclick="uploadHospitalPhoto()"
+                style="margin-top:4px;"
+            >
+                📷 Upload Hospital Photo
+            </button>
+
+
+            <p
+                id="hospitalPhotoMessage"
+                role="status"
+                style="
+                    margin-top:10px;
+                    font-size:14px;
+                "
+            ></p>
+
+        </div>
+
+
+
+        
+        <!-- ==============================
+     HOSPITAL CERTIFICATE
+=============================== -->
+<div
+    class="hospital-photo-upload-card"
+    style="
+        margin-bottom: 24px;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    "
+>
+    <h3 style="margin:0 0 12px; display:flex; align-items:center; gap:8px;">
+        📄 Hospital Registration Certificate
+    </h3>
+
+    <!-- Locked Certificate Container (Shown if already submitted) -->
+    <div
+        id="certificateLockedContainer"
+        style="
+            display: none;
+            padding: 16px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 10px;
+        "
+    >
+        <div style="display:flex; align-items:flex-start; gap:12px;">
+            <div style="font-size:28px; line-height:1;">🔒</div>
+            <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+                    <strong style="color:#166534; font-size:15px;">Certificate Submitted & Locked</strong>
+                    <span id="lockedCertStatusBadge" style="font-size:11px; font-weight:700; text-transform:uppercase; background:#bbf7d0; color:#14532d; padding:2px 8px; border-radius:999px;">PENDING VERIFICATION</span>
+                </div>
+                <p id="lockedCertDetails" style="margin:4px 0 0; font-size:13px; color:#15803d;">
+                    File: <strong id="lockedCertFileName">Certificate on file</strong>
+                </p>
+                <p id="lockedCertTime" style="margin:2px 0 0; font-size:12px; color:#166534;"></p>
+            </div>
+        </div>
+        <div style="margin-top:12px; padding:10px 12px; background:#dcfce7; border-radius:8px; font-size:12px; color:#14532d; line-height:1.5;">
+            ℹ️ <strong>Re-upload Disabled:</strong> To ensure regulatory compliance and authentic verification, once a hospital certificate is submitted it cannot be altered or re-uploaded. If you need any corrections, please contact CarePath Administrator Support.
+        </div>
+    </div>
+
+    <!-- Upload Area (Shown ONLY when certificate has NOT been uploaded yet) -->
+    <div id="certificateUploadArea">
+        <p
+            id="certificateStatusText"
+            style="margin:0 0 12px; color:#555; font-size:14px; line-height:1.4;"
+        >
+            Upload your official hospital establishment license or registration certificate (PDF, JPG, or PNG, max 10 MB).
+            <br><strong style="color:#dc2626; font-size:12px;">⚠️ Note: Once submitted, your certificate is permanently locked and cannot be re-uploaded.</strong>
+        </p>
+
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+            <button
+                type="button"
+                onclick="openCertCameraModal('hospitalCertificateFile', 'profileCertPreviewBox')"
+                style="
+                    background: #0284c7;
+                    color: white;
+                    border: none;
+                    padding: 8px 14px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 13px;
+                    font-weight: 600;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    box-shadow: 0 2px 4px rgba(2,132,199,0.25);
+                "
+            >
+                📸 Scan with Camera
+            </button>
+            <span style="font-size:12px; color:#64748b;">or select document below:</span>
+        </div>
+
+        <input
+            type="file"
+            id="hospitalCertificateFile"
+            accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+            capture="environment"
+            style="margin-bottom:10px; display:block; width:100%;"
+        >
+
+        <!-- Scanned / selected preview indicator -->
+        <div id="profileCertPreviewBox" style="display:none; margin:10px 0; padding:10px 12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; font-size:13px; color:#166534;"></div>
+
+        <button
+            type="button"
+            id="uploadCertButton"
+            onclick="uploadHospitalCertificate()"
+            style="
+                margin-top: 4px;
+                background: #2563eb;
+                color: white;
+                border: none;
+                padding: 10px 18px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+            "
+        >
+            📄 Submit Certificate
+        </button>
+    </div>
+
+    <p
+        id="hospitalCertificateMessage"
+        role="status"
+        style="margin-top:10px; font-size:14px;"
+    ></p>
+</div>
+
+<!-- ==============================
+     BASIC INFORMATION
+        =============================== -->
+
+        <label for="profileName">
+            Hospital Name
+        </label>
+
+        <input
+            type="text"
+            id="profileName"
+            readonly
+        >
+
+
+        <label for="profileEmail">
+            Hospital Email
+        </label>
+
+        <input
+            type="email"
+            id="profileEmail"
+            readonly
+        >
+
+
+        <label for="profilePhone">
+            Phone Number
+        </label>
+
+        <input
+            type="tel"
+            id="profilePhone"
+            placeholder="Enter phone number"
+        >
+
+
+        <label for="profileCity">
+            City
+        </label>
+
+        <input
+            type="text"
+            id="profileCity"
+            placeholder="Enter city"
+        >
+
+
+        <label for="profileAddress">
+            Hospital Address
+        </label>
+
+        <textarea
+            id="profileAddress"
+            rows="4"
+            placeholder="Enter complete hospital address"
+        ></textarea>
+
+
+        <label for="profileDescription">
+            Hospital Description
+        </label>
+
+        <textarea
+            id="profileDescription"
+            rows="4"
+            placeholder="Describe your hospital"
+        ></textarea>
+
+
+        <label for="profileLicense">
+            Registration / License Number
+        </label>
+
+        <input
+            type="text"
+            id="profileLicense"
+            readonly
+        >
+
+
+
+        <!-- ==============================
+             TOKEN FEE
+        =============================== -->
+
+        <label for="profileTokenFee">
+            Token Fee
+        </label>
+
+        <input
+            type="number"
+            id="profileTokenFee"
+            min="0"
+            step="1"
+            placeholder="Example: 100"
+        >
+
+
+        <p
+            style="
+                margin-top:8px;
+                color:#666;
+                font-size:14px;
+                line-height:1.5;
+            "
+        >
+            This is the amount charged by the hospital
+            for one token. CarePath adds a fixed
+            ₹10 platform fee separately.
+        </p>
+
+        <!-- ==============================
+             OPERATING HOURS
+        =============================== -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
+            <div>
+                <label for="profileOpeningTime" style="font-weight: 600; color: #334155; margin-bottom: 6px; display: block;">
+                    🏥 Hospital Opening Time
+                </label>
+                <input type="time" id="profileOpeningTime" value="09:00" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+            </div>
+            <div>
+                <label for="profileClosingTime" style="font-weight: 600; color: #334155; margin-bottom: 6px; display: block;">
+                    🏥 Hospital Closing Time
+                </label>
+                <input type="time" id="profileClosingTime" value="21:00" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+            </div>
+        </div>
+
+        <!-- ==============================
+             OPD BREAK TIMING (ENTERED BY HOSPITAL ONLY)
+        =============================== -->
+        <div style="background: #fefce8; border: 1.5px solid #fde047; border-radius: 12px; padding: 18px; margin-top: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                <h3 style="margin: 0; font-size: 15px; color: #854d0e; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                    <span>🍱</span> OPD Lunch / Duty Break Timing
+                </h3>
+                <span style="font-size: 11px; background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 999px; font-weight: 700; border: 1px solid #fde68a;">
+                    Hospital Admin Controlled Only
+                </span>
+            </div>
+            <p style="margin: 0 0 14px; font-size: 13px; color: #713f12; line-height: 1.45;">
+                Enter your hospital's daily lunch or doctor consultation break hours. During this period, the system will automatically display <strong>"🟡 OPD On Break"</strong> to patients, while keeping token booking active for post-break slots.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                    <label for="profileBreakStartTime" style="font-weight: 600; color: #713f12; margin-bottom: 6px; display: block; font-size: 13px;">
+                        ⏰ Break Start Time
+                    </label>
+                    <input type="time" id="profileBreakStartTime" value="13:00" style="width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #fde047; background: #ffffff; box-sizing: border-box; font-size: 14px; font-weight: 600; color: #713f12;">
+                </div>
+                <div>
+                    <label for="profileBreakEndTime" style="font-weight: 600; color: #713f12; margin-bottom: 6px; display: block; font-size: 13px;">
+                        ⏰ Break End Time
+                    </label>
+                    <input type="time" id="profileBreakEndTime" value="14:00" style="width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #fde047; background: #ffffff; box-sizing: border-box; font-size: 14px; font-weight: 600; color: #713f12;">
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             PLANNED CLOSURES / HOLIDAYS
+        =============================== -->
+        <div style="margin-top: 30px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+            <h3 style="margin-top: 0; color: #0284c7; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                📅 Hospital Planned Closures & Holidays
+            </h3>
+            <p style="font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 16px;">
+                <strong>Notice Rule:</strong> Planned closures must be announced between <strong>minimum 3 days</strong> and <strong>maximum 10 days</strong> in advance. Any patient tokens already booked on that date will be automatically cancelled and <strong>100% refunded</strong>.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px; align-items: end;">
+                <div>
+                    <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Closure Date</label>
+                    <input type="date" id="closureDateInput" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Reason / Occasion</label>
+                    <input type="text" id="closureReasonInput" placeholder="e.g. Annual Maintenance, National Holiday" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                </div>
+                <div>
+                    <button type="button" onclick="submitHospitalClosure()" style="background: #0284c7; color: white; border: none; padding: 9px 18px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                        + Add Closure
+                    </button>
+                </div>
+            </div>
+            <div id="closuresList" style="margin-top: 16px;">
+                <p style="font-size: 13px; color: #94a3b8;">Loading upcoming closures...</p>
+            </div>
+        </div>
+
+
+        <div
+            style="
+                margin-top:10px;
+                padding:12px;
+                background:#eef6ff;
+                border-radius:8px;
+                color:#164e8a;
+            "
+        >
+
+            Example:
+
+            Hospital token fee ₹100 +
+
+            CarePath platform fee ₹10 =
+
+            <strong>
+                Patient pays ₹110
+            </strong>
+
+        </div>
+
+
+
+        <!-- ==============================
+             PAYMENT ACCOUNT
+        =============================== -->
+
+        <h2 style="margin-top:35px;">
+            💳 Hospital Payment Account
+        </h2>
+
+
+        <p
+            style="
+                color:#666;
+                font-size:14px;
+                line-height:1.5;
+                margin-bottom:20px;
+            "
+        >
+            Add the bank or UPI account used for
+            hospital settlement.
+        </p>
+
+
+        <label for="paymentAccountName">
+            Account Holder Name
+        </label>
+
+        <input
+            type="text"
+            id="paymentAccountName"
+            placeholder="Enter account holder name"
+            autocomplete="off"
+        >
+
+
+        <label for="paymentAccountNumber">
+            Bank Account Number
+        </label>
+
+        <input
+            type="password"
+            id="paymentAccountNumber"
+            placeholder="Enter bank account number"
+            inputmode="numeric"
+            autocomplete="off"
+        >
+
+
+        <label for="paymentConfirmAccountNumber">
+            Confirm Bank Account Number
+        </label>
+
+        <input
+            type="password"
+            id="paymentConfirmAccountNumber"
+            placeholder="Re-enter bank account number"
+            inputmode="numeric"
+            autocomplete="off"
+        >
+
+
+        <label for="paymentIfsc">
+            IFSC Code
+        </label>
+
+        <input
+            type="text"
+            id="paymentIfsc"
+            placeholder="Example: SBIN0001234"
+            maxlength="11"
+            style="text-transform:uppercase;"
+            autocomplete="off"
+        >
+
+
+        <label for="paymentUpi">
+            UPI ID
+        </label>
+
+        <input
+            type="text"
+            id="paymentUpi"
+            placeholder="Example: hospital@upi"
+            autocomplete="off"
+        >
+
+
+        <div
+            id="paymentAccountStatus"
+            style="
+                margin-top:15px;
+                padding:12px;
+                border-radius:8px;
+                background:#f5f5f5;
+                color:#555;
+                font-size:14px;
+            "
+        >
+
+            Payment account status:
+
+            <strong id="paymentAccountStatusValue">
+                NOT_ADDED
+            </strong>
+
+        </div>
+
+
+        <button
+            type="button"
+            id="savePaymentAccountButton"
+            onclick="savePaymentAccount()"
+            style="
+                margin-top:15px;
+                width:100%;
+            "
+        >
+            💳 Save Payment Account
+        </button>
+
+
+
+        <!-- ==============================
+             MESSAGE
+        =============================== -->
+
+        <div
+            id="message"
+            role="status"
+            aria-live="polite"
+            style="
+                display:none;
+                margin-top:15px;
+                padding:12px;
+                border-radius:8px;
+            "
+        ></div>
+
+
+
+        <!-- ==============================
+             SAVE PROFILE
+        =============================== -->
+
+        <button
+            type="button"
+            onclick="saveProfile()"
+            style="margin-top:15px;"
+        >
+            💾 Save Changes
+        </button>
+
+    </div>
+
+
+
+    <!-- ==============================
+         BACK
+    =============================== -->
+
+    <button
+        type="button"
+        class="back-button"
+        onclick="goDashboard()"
+    >
+        ← Back to Dashboard
+    </button>
+
+</div>
+
+
+
+<script>
+
+const API_URL =
+    "https://carepath-3q9q.onrender.com";
+
+
+const hospitalId =
+    localStorage.getItem("hospital_id");
+
+
+const hospitalToken =
+    localStorage.getItem("hospitalToken");
+
+
+
+/* ==================================
+   CHECK LOGIN
+================================== */
+
+if (
+    !hospitalId ||
+    !hospitalToken
+) {
+
+    alert(
+        "Your hospital session is missing or expired. Please login again."
+    );
+
+    window.location.replace(
+        "index.html"
+    );
+
+}
+
+
+
+/* ==================================
+   AUTH HEADERS
+================================== */
+
+function getHospitalAuthHeaders(
+    extraHeaders = {}
+) {
+
+    const token =
+        localStorage.getItem(
+            "hospitalToken"
+        );
+
+
+    if (!token) {
+
+        handleAuthenticationFailure();
+
+        return extraHeaders;
+
+    }
+
+
+    return {
+
+        ...extraHeaders,
+
+        "Authorization":
+            `Bearer ${token}`
+
+    };
+
+}
+
+
+
+/* ==================================
+   CLEAR HOSPITAL SESSION
+================================== */
+
+function clearHospitalSession() {
+
+    [
+        "hospitalToken",
+        "hospital_id",
+        "hospital_name",
+        "hospital_email",
+        "hospital_token_fee",
+        "hospital_approval_status",
+        "hospital_is_published",
+        "hospital_latitude",
+        "hospital_longitude",
+        "hospital_logged_in",
+        "hospital"
+    ].forEach(
+        function(key) {
+
+            localStorage.removeItem(
+                key
+            );
+
+        }
+    );
+
+}
+
+
+
+/* ==================================
+   HANDLE AUTHENTICATION FAILURE
+================================== */
+
+function handleAuthenticationFailure() {
+
+    clearHospitalSession();
+
+
+    alert(
+        "Your hospital session has expired. Please login again."
+    );
+
+
+    window.location.replace(
+        "index.html"
+    );
+
+}
+
+
+
+/* ==================================
+   CHECK RESPONSE AUTH
+================================== */
+
+async function parseResponse(
+    response
+) {
+
+    let data = {};
+
+
+    try {
+
+        data =
+            await response.json();
+
+    } catch {
+
+        data = {};
+
+    }
+
+
+    if (
+        response.status === 401
+    ) {
+
+        handleAuthenticationFailure();
+
+        throw new Error(
+            "Authentication required. Please login again."
+        );
+
+    }
+
+
+    if (
+        response.status === 403
+    ) {
+
+        throw new Error(
+            data.detail ||
+            "You do not have permission to perform this action."
+        );
+
+    }
+
+
+    if (
+        !response.ok
+    ) {
+
+        throw new Error(
+            data.detail ||
+            "Request failed."
+        );
+
+    }
+
+
+    return data;
+
+}
+
+
+
+/* ==================================
+   LOAD PROFILE
+================================== */
+
+async function loadProfile() {
+
+    const currentToken =
+        localStorage.getItem(
+            "hospitalToken"
+        );
+
+
+    if (
+        !hospitalId ||
+        !currentToken
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}`,
+                {
+                    method:
+                        "GET",
+
+                    headers:
+                        getHospitalAuthHeaders()
+                }
+            );
+
+
+        const hospital =
+            await parseResponse(
+                response
+            );
+
+
+
+        document.getElementById(
+            "profileName"
+        ).value =
+            hospital.name || "";
+
+
+
+        document.getElementById(
+            "profileEmail"
+        ).value =
+            hospital.email || "";
+
+
+
+        document.getElementById(
+            "profilePhone"
+        ).value =
+            hospital.phone || "";
+
+
+
+        document.getElementById(
+            "profileCity"
+        ).value =
+            hospital.city || "";
+
+
+
+        document.getElementById(
+            "profileAddress"
+        ).value =
+            hospital.address || "";
+
+
+
+        document.getElementById(
+            "profileDescription"
+        ).value =
+            hospital.description || "";
+
+
+
+        document.getElementById(
+            "profileLicense"
+        ).value =
+            hospital.license_id || "";
+
+
+
+        document.getElementById(
+            "profileTokenFee"
+        ).value =
+            hospital.token_fee ?? 0;
+
+        if (document.getElementById("profileOpeningTime")) {
+            document.getElementById("profileOpeningTime").value = hospital.opening_time || "09:00";
+        }
+        if (document.getElementById("profileClosingTime")) {
+            document.getElementById("profileClosingTime").value = hospital.closing_time || "21:00";
+        }
+        if (document.getElementById("profileBreakStartTime")) {
+            document.getElementById("profileBreakStartTime").value = hospital.break_start_time || "13:00";
+        }
+        if (document.getElementById("profileBreakEndTime")) {
+            document.getElementById("profileBreakEndTime").value = hospital.break_end_time || "14:00";
+        }
+        loadHospitalClosuresList();
+
+        /* ==============================
+           CERTIFICATE STATUS & LOCK
+        ============================== */
+        updateCertificateUI(hospital);
+
+
+
+        /* ==============================
+           HOSPITAL PHOTO
+        ============================== */
+
+        const photoPreview =
+            document.getElementById(
+                "hospitalPhotoPreview"
+            );
+
+
+        if (photoPreview) {
+
+            if (
+                hospital.image_url
+            ) {
+
+                photoPreview.src =
+                    hospital.image_url.startsWith(
+                        "http"
+                    )
+                        ? hospital.image_url
+                        : `${API_URL}${hospital.image_url}`;
+
+                photoPreview.style.display =
+                    "block";
+
+            } else {
+
+                photoPreview.removeAttribute(
+                    "src"
+                );
+
+                photoPreview.style.display =
+                    "none";
+
+            }
+
+        }
+
+
+
+        /* ==============================
+           PAYMENT STATUS
+        ============================== */
+
+        const paymentStatus =
+            hospital.payment_account_status ||
+            "NOT_ADDED";
+
+
+        const paymentStatusValue =
+            document.getElementById(
+                "paymentAccountStatusValue"
+            );
+
+
+        if (paymentStatusValue) {
+
+            paymentStatusValue.textContent =
+                paymentStatus;
+
+        }
+
+
+
+    } catch (error) {
+
+        console.error(
+            "LOAD PROFILE ERROR:",
+            error
+        );
+
+
+        showMessage(
+            error.message,
+            false
+        );
+
+    }
+
+}
+
+
+
+/* ==================================
+   SAVE PROFILE
+================================== */
+
+async function saveProfile() {
+
+    const tokenFee =
+        Number(
+            document.getElementById(
+                "profileTokenFee"
+            ).value || 0
+        );
+
+
+    if (
+        !Number.isFinite(
+            tokenFee
+        ) ||
+        tokenFee < 0
+    ) {
+
+        showMessage(
+            "Token fee cannot be negative.",
+            false
+        );
+
+        return;
+
+    }
+
+
+    const data = {
+
+        phone:
+            document.getElementById(
+                "profilePhone"
+            ).value.trim(),
+
+
+        city:
+            document.getElementById(
+                "profileCity"
+            ).value.trim(),
+
+
+        address:
+            document.getElementById(
+                "profileAddress"
+            ).value.trim(),
+
+
+        description:
+            document.getElementById(
+                "profileDescription"
+            ).value.trim(),
+
+
+        token_fee:
+            tokenFee,
+
+        opening_time:
+            document.getElementById("profileOpeningTime") ? document.getElementById("profileOpeningTime").value : "09:00",
+
+        closing_time:
+            document.getElementById("profileClosingTime") ? document.getElementById("profileClosingTime").value : "21:00",
+
+        break_start_time:
+            document.getElementById("profileBreakStartTime") ? document.getElementById("profileBreakStartTime").value : "13:00",
+
+        break_end_time:
+            document.getElementById("profileBreakEndTime") ? document.getElementById("profileBreakEndTime").value : "14:00"
+
+    };
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}`,
+                {
+
+                    method:
+                        "PUT",
+
+                    headers:
+                        getHospitalAuthHeaders(
+                            {
+                                "Content-Type":
+                                    "application/json"
+                            }
+                        ),
+
+                    body:
+                        JSON.stringify(
+                            data
+                        )
+
+                }
+            );
+
+
+        const result =
+            await parseResponse(
+                response
+            );
+
+
+        localStorage.setItem(
+            "hospital_token_fee",
+            String(
+                tokenFee
+            )
+        );
+
+
+        showMessage(
+            result.message ||
+            "Hospital profile updated successfully.",
+            true
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "SAVE PROFILE ERROR:",
+            error
+        );
+
+
+        showMessage(
+            error.message,
+            false
+        );
+
+    }
+
+}
+
+
+
+/* ==================================
+   SAVE PAYMENT ACCOUNT
+================================== */
+
+async function savePaymentAccount() {
+
+    const accountName =
+        document.getElementById(
+            "paymentAccountName"
+        ).value.trim();
+
+
+    const accountNumber =
+        document.getElementById(
+            "paymentAccountNumber"
+        ).value.trim();
+
+
+    const confirmAccountNumber =
+        document.getElementById(
+            "paymentConfirmAccountNumber"
+        ).value.trim();
+
+
+    const ifsc =
+        document.getElementById(
+            "paymentIfsc"
+        ).value
+        .trim()
+        .toUpperCase();
+
+
+    const upi =
+        document.getElementById(
+            "paymentUpi"
+        ).value.trim();
+
+
+
+    /* ==============================
+       VALIDATION
+    ============================== */
+
+    if (
+        !accountName
+    ) {
+
+        showMessage(
+            "Enter account holder name.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    if (
+        accountNumber !==
+        confirmAccountNumber
+    ) {
+
+        showMessage(
+            "Bank account numbers do not match.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    if (
+        !accountNumber &&
+        !upi
+    ) {
+
+        showMessage(
+            "Enter bank account details or UPI ID.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    if (
+        accountNumber &&
+        !ifsc
+    ) {
+
+        showMessage(
+            "Enter IFSC code for the bank account.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    if (
+        accountNumber &&
+        accountNumber.length < 6
+    ) {
+
+        showMessage(
+            "Enter a valid bank account number.",
+            false
+        );
+
+        return;
+
+    }
+
+
+
+    const data = {
+
+        account_name:
+            accountName,
+
+        account_number:
+            accountNumber,
+
+        ifsc:
+            ifsc,
+
+        upi:
+            upi
+
+    };
+
+
+
+    const button =
+        document.getElementById(
+            "savePaymentAccountButton"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "Saving...";
+
+    }
+
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}/payment-account`,
+                {
+
+                    method:
+                        "PUT",
+
+                    headers:
+                        getHospitalAuthHeaders(
+                            {
+                                "Content-Type":
+                                    "application/json"
+                            }
+                        ),
+
+                    body:
+                        JSON.stringify(
+                            data
+                        )
+
+                }
+            );
+
+
+        const result =
+            await parseResponse(
+                response
+            );
+
+
+        const status =
+            result.payment_account_status ||
+            "PENDING_VERIFICATION";
+
+
+        const paymentStatusValue =
+            document.getElementById(
+                "paymentAccountStatusValue"
+            );
+
+
+        if (paymentStatusValue) {
+
+            paymentStatusValue.textContent =
+                status;
+
+        }
+
+
+        showMessage(
+            "Payment account submitted successfully. It is now pending verification.",
+            true
+        );
+
+
+        /*
+         * Clear sensitive bank account
+         * fields after successful submission.
+         */
+
+        document.getElementById(
+            "paymentAccountNumber"
+        ).value = "";
+
+
+        document.getElementById(
+            "paymentConfirmAccountNumber"
+        ).value = "";
+
+
+    } catch (error) {
+
+        console.error(
+            "SAVE PAYMENT ACCOUNT ERROR:",
+            error
+        );
+
+
+        showMessage(
+            error.message,
+            false
+        );
+
+    } finally {
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.textContent =
+                "💳 Save Payment Account";
+
+        }
+
+    }
+
+}
+
+
+
+/* ==================================
+   MESSAGE
+================================== */
+
+function showMessage(
+    message,
+    success
+) {
+
+    const element =
+        document.getElementById(
+            "message"
+        );
+
+
+    if (!element) {
+
+        return;
+
+    }
+
+
+    element.textContent =
+        String(
+            message ||
+            ""
+        );
+
+
+    element.style.display =
+        "block";
+
+
+    element.style.background =
+        success
+            ? "#dcfce7"
+            : "#fee2e2";
+
+
+    element.style.color =
+        success
+            ? "#166534"
+            : "#991b1b";
+
+}
+
+
+
+/* ==================================
+   UPLOAD HOSPITAL COVER PHOTO
+================================== */
+
+async function uploadHospitalPhoto() {
+
+    const input =
+        document.getElementById(
+            "hospitalPhotoFile"
+        );
+
+
+    const message =
+        document.getElementById(
+            "hospitalPhotoMessage"
+        );
+
+
+    const preview =
+        document.getElementById(
+            "hospitalPhotoPreview"
+        );
+
+
+    const file =
+        input &&
+        input.files
+            ? input.files[0]
+            : null;
+
+
+    const currentToken =
+        localStorage.getItem(
+            "hospitalToken"
+        );
+
+
+    if (
+        !hospitalId ||
+        !currentToken
+    ) {
+
+        if (message) {
+
+            message.textContent =
+                "Your session has expired. Please login again.";
+
+        }
+
+        handleAuthenticationFailure();
+
+        return;
+
+    }
+
+
+
+    if (!file) {
+
+        if (message) {
+
+            message.textContent =
+                "Please choose a hospital photo first.";
+
+        }
+
+        return;
+
+    }
+
+
+
+    if (
+        ![
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ].includes(
+            file.type
+        )
+    ) {
+
+        if (message) {
+
+            message.textContent =
+                "Choose a JPG, PNG, or WEBP image.";
+
+        }
+
+        return;
+
+    }
+
+
+
+    if (
+        file.size >
+        5 * 1024 * 1024
+    ) {
+
+        if (message) {
+
+            message.textContent =
+                "Photo must be 5 MB or smaller.";
+
+        }
+
+        return;
+
+    }
+
+
+
+    const formData =
+        new FormData();
+
+
+    formData.append(
+        "photo",
+        file
+    );
+
+
+    if (message) {
+
+        message.textContent =
+            "Uploading photo...";
+
+    }
+
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/hospitals/${hospitalId}/photo`,
+                {
+
+                    method:
+                        "POST",
+
+                    headers:
+                        getHospitalAuthHeaders(),
+
+                    body:
+                        formData
+
+                }
+            );
+
+
+        const data =
+            await parseResponse(
+                response
+            );
+
+
+        const hospital =
+            data.hospital ||
+            data;
+
+
+
+        if (
+            preview &&
+            hospital.image_url
+        ) {
+
+            preview.src =
+                hospital.image_url.startsWith(
+                    "http"
+                )
+                    ? hospital.image_url
+                    : `${API_URL}${hospital.image_url}`;
+
+            preview.style.display =
+                "block";
+
+        }
+
+
+        /*
+         * Store only the non-sensitive
+         * information needed by the frontend.
+         */
+
+        if (hospital) {
+
+            const hospitalSessionData = {
+
+                id:
+                    hospital.id ??
+                    Number(
+                        hospitalId
+                    ),
+
+                name:
+                    hospital.name ||
+                    localStorage.getItem(
+                        "hospital_name"
+                    ) ||
+                    "",
+
+                email:
+                    hospital.email ||
+                    localStorage.getItem(
+                        "hospital_email"
+                    ) ||
+                    "",
+
+                image_url:
+                    hospital.image_url ||
+                    ""
+
+            };
+
+
+            localStorage.setItem(
+                "hospital",
+                JSON.stringify(
+                    hospitalSessionData
+                )
+            );
+
+        }
+
+
+        if (message) {
+
+            message.textContent =
+                "Hospital photo uploaded successfully.";
+
+        }
+
+
+        if (input) {
+
+            input.value =
+                "";
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "HOSPITAL PHOTO UPLOAD ERROR:",
+            error
+        );
+
+
+        if (message) {
+
+            message.textContent =
+                error.message ||
+                "Unable to upload hospital photo.";
+
+        }
+
+    }
+
+}
+
+
+
+
+/* ==================================
+   CERTIFICATE UI & LOCKING
+================================== */
+function updateCertificateUI(hospital) {
+    if (!hospital) return;
+    const certUploaded = Boolean(
+        hospital.certificate_uploaded ||
+        hospital.license_certificate ||
+        hospital.certificate_uploaded_at ||
+        hospital.certificate_base64
+    );
+
+    const uploadArea = document.getElementById("certificateUploadArea");
+    const lockedContainer = document.getElementById("certificateLockedContainer");
+
+    if (certUploaded) {
+        if (uploadArea) uploadArea.style.display = "none";
+        if (lockedContainer) {
+            lockedContainer.style.display = "block";
+            const fileNameElem = document.getElementById("lockedCertFileName");
+            if (fileNameElem) {
+                fileNameElem.textContent = hospital.certificate_original_name || hospital.license_certificate || "Hospital Registration Certificate";
+            }
+            const statusBadge = document.getElementById("lockedCertStatusBadge");
+            if (statusBadge) {
+                const st = (hospital.certificate_verification_status || "PENDING").toUpperCase();
+                if (st === "VERIFIED") {
+                    statusBadge.textContent = "✓ VERIFIED";
+                    statusBadge.style.background = "#bbf7d0";
+                    statusBadge.style.color = "#14532d";
+                } else if (st === "REJECTED") {
+                    statusBadge.textContent = "✗ REJECTED";
+                    statusBadge.style.background = "#fecaca";
+                    statusBadge.style.color = "#991b1b";
+                } else {
+                    statusBadge.textContent = "⏳ PENDING VERIFICATION";
+                    statusBadge.style.background = "#fef08a";
+                    statusBadge.style.color = "#854d0e";
+                }
+            }
+            const timeElem = document.getElementById("lockedCertTime");
+            if (timeElem) {
+                if (hospital.certificate_uploaded_at) {
+                    try {
+                        const d = new Date(hospital.certificate_uploaded_at);
+                        timeElem.textContent = `Submitted on: ${d.toLocaleDateString()} at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                    } catch (e) {
+                        timeElem.textContent = "";
+                    }
+                } else {
+                    timeElem.textContent = "Submitted with hospital registration";
+                }
+            }
+        }
+    } else {
+        if (uploadArea) uploadArea.style.display = "block";
+        if (lockedContainer) lockedContainer.style.display = "none";
+    }
+}
+
+/* ==================================
+   UPLOAD HOSPITAL CERTIFICATE
+================================== */
+async function uploadHospitalCertificate() {
+    const fileInput = document.getElementById("hospitalCertificateFile");
+    const message = document.getElementById("hospitalCertificateMessage");
+    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+        if (message) {
+            message.textContent = "Please choose or capture a certificate file first.";
+            message.style.color = "#dc2626";
+        }
+        return;
+    }
+
+    const hospital = getHospitalSession();
+    const hospitalId = hospital ? (hospital.id || hospital.hospital_id) : null;
+    if (!hospitalId) {
+        if (message) {
+            message.textContent = "Hospital session expired. Please log in again.";
+            message.style.color = "#dc2626";
+        }
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append("certificate", file);
+
+    const uploadBtn = document.getElementById("uploadCertButton");
+    if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = "Submitting...";
+    }
+
+    if (message) {
+        message.textContent = "Uploading certificate securely...";
+        message.style.color = "#0284c7";
+    }
+
+    try {
+        const token = localStorage.getItem("hospitalToken");
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/certificate`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            if (res.status === 400 && data.detail && data.detail.includes("already been submitted")) {
+                updateCertificateUI({
+                    certificate_uploaded: true,
+                    certificate_original_name: file.name,
+                    certificate_verification_status: "PENDING"
+                });
+            }
+            throw new Error(data.detail || "Unable to upload certificate.");
+        }
+
+        // Lock UI immediately
+        updateCertificateUI({
+            certificate_uploaded: true,
+            certificate_original_name: file.name,
+            certificate_verification_status: "PENDING",
+            certificate_uploaded_at: new Date().toISOString()
+        });
+
+        if (message) {
+            message.textContent = "✓ Certificate uploaded and locked for verification! Re-uploading is disabled.";
+            message.style.color = "#16a34a";
+        }
+    } catch (err) {
+        if (message) {
+            message.textContent = err.message || "Unable to upload certificate.";
+            message.style.color = "#dc2626";
+        }
+    } finally {
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = "📄 Submit Certificate";
+        }
+    }
+}
+
+// File input change preview
+const profileCertFileInput = document.getElementById("hospitalCertificateFile");
+if (profileCertFileInput) {
+    profileCertFileInput.addEventListener("change", function () {
+        const previewElem = document.getElementById("profileCertPreviewBox");
+        if (this.files && this.files[0] && previewElem) {
+            const f = this.files[0];
+            previewElem.style.display = "block";
+            const isImg = f.type.startsWith("image/");
+            previewElem.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    ${isImg ? `<img src="${URL.createObjectURL(f)}" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid #94a3b8;">` : `<span style="font-size:24px;">📄</span>`}
+                    <div>
+                        <strong style="color:#166534; font-size:13px;">✓ Document Selected:</strong>
+                        <div style="font-size:12px; color:#475569;">${escapeHtml(f.name)} (${Math.round(f.size / 1024)} KB)</div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+}
+
+/* ==================================
+   LOGOUT
+================================== */
+
+function hospitalLogout() {
+
+    clearHospitalSession();
+
+
+    window.location.replace(
+        "index.html"
+    );
+
+}
+
+
+
+/* ==================================
+   DASHBOARD
+================================== */
+
+function goDashboard() {
+
+    window.location.href =
+        "dashboard.html";
+
+}
+
+
+
+/* ==================================
+   INITIAL LOAD
+================================== */
+
+loadProfile();
+
+
+/* ==================================
+   HOSPITAL CLOSURES MANAGEMENT
+================================== */
+async function loadHospitalClosuresList() {
+    const listEl = document.getElementById("closuresList");
+    if (!listEl) return;
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/closures`, {
+            headers: getHospitalAuthHeaders()
+        });
+        if (!res.ok) return;
+        const closures = await res.json();
+        if (!closures || closures.length === 0) {
+            listEl.innerHTML = "<p style='font-size: 13px; color: #64748b; margin: 0;'>No upcoming closures scheduled. Hospital is open as per regular hours.</p>";
+            return;
+        }
+        listEl.innerHTML = closures.map(c => `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 8px;">
+                <div>
+                    <strong style="color: #0f172a; font-size: 14px;">📅 ${c.closure_date}</strong>
+                    <span style="color: #64748b; font-size: 13px; margin-left: 8px;">(${escapeHtml(c.reason || 'Closed')})</span>
+                </div>
+                <button type="button" onclick="cancelHospitalClosure(${c.id})" style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                    Remove
+                </button>
+            </div>
+        `).join("");
+    } catch(err) {
+        console.warn("Could not load closures:", err);
+    }
+}
+
+async function submitHospitalClosure() {
+    const dateInput = document.getElementById("closureDateInput");
+    const reasonInput = document.getElementById("closureReasonInput");
+    if (!dateInput || !dateInput.value) {
+        alert("Please select a closure date.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/closures`, {
+            method: "POST",
+            headers: getHospitalAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                closure_date: dateInput.value.trim(),
+                reason: (reasonInput ? reasonInput.value : "").trim() || "Hospital Holiday"
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || "Unable to schedule closure.");
+        }
+        alert("✓ " + (data.message || "Closure scheduled successfully."));
+        if (reasonInput) reasonInput.value = "";
+        loadHospitalClosuresList();
+
+        /* ==============================
+           CERTIFICATE STATUS & LOCK
+        ============================== */
+        updateCertificateUI(hospital);
+    } catch(err) {
+        alert("⚠️ " + err.message);
+    }
+}
+
+async function cancelHospitalClosure(closureId) {
+    if (!confirm("Are you sure you want to remove this closure?")) return;
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/closures/${closureId}`, {
+            method: "DELETE",
+            headers: getHospitalAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to delete closure.");
+        alert("Closure removed.");
+        loadHospitalClosuresList();
+
+        /* ==============================
+           CERTIFICATE STATUS & LOCK
+        ============================== */
+        updateCertificateUI(hospital);
+    } catch(err) {
+        alert(err.message);
+    }
+}
+
+</script>
+
+
+
+<!-- =========================================================
+     CAMERA SCANNER MODAL & CONTROLLER
+========================================================= -->
+<div id="certCameraModal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#1e293b; color:#fff; border-radius:16px; width:100%; max-width:520px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.7); display:flex; flex-direction:column; position:relative;">
+        <div style="padding:14px 18px; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
+            <h4 style="margin:0; font-size:16px; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+                📸 Camera Scanner
+            </h4>
+            <button type="button" onclick="closeCertCamera()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer; line-height:1; padding:0 4px;" aria-label="Close">&times;</button>
+        </div>
+        
+        <div style="position:relative; width:100%; background:#090d16; min-height:280px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            <video id="certCameraVideo" autoplay playsinline muted style="width:100%; max-height:360px; object-fit:cover; display:block;"></video>
+            <canvas id="certCameraCanvas" style="display:none;"></canvas>
+            <img id="certCameraSnapshot" style="display:none; width:100%; max-height:360px; object-fit:contain; background:#000;" alt="Captured Certificate">
+            
+            <div id="certCameraGuide" style="position:absolute; inset:20px; border:2px dashed rgba(255,255,255,0.75); border-radius:12px; pointer-events:none; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 9999px rgba(0,0,0,0.25);">
+                <span style="background:rgba(0,0,0,0.7); color:#fff; font-size:12px; font-weight:600; padding:6px 14px; border-radius:20px; letter-spacing:0.3px;">Position certificate within frame</span>
+            </div>
+
+            <div id="certCameraStatus" style="display:none; position:absolute; inset:16px; margin:auto; max-height:180px; padding:18px; text-align:center; color:#f87171; font-size:13px; background:rgba(15,23,42,0.95); border:1px solid #ef4444; border-radius:12px; flex-direction:column; justify-content:center; align-items:center; z-index:10;"></div>
+        </div>
+
+        <div style="padding:14px 18px; background:#1e293b; display:flex; gap:10px; justify-content:flex-end; align-items:center; border-top:1px solid #334155;">
+            <button type="button" onclick="closeCertCamera()" style="padding:9px 16px; background:#334155; color:#cbd5e1; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">Cancel</button>
+            <button type="button" id="certCamCaptureBtn" onclick="captureCertSnapshot()" style="padding:9px 20px; background:#2563eb; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">📸 Capture Photo</button>
+            <button type="button" id="certCamRetakeBtn" onclick="retakeCertSnapshot()" style="display:none; padding:9px 16px; background:#475569; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">🔄 Retake</button>
+            <button type="button" id="certCamUseBtn" onclick="useCertSnapshot()" style="display:none; padding:9px 20px; background:#16a34a; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">✓ Use This Photo</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ==================================
+   CAMERA SCANNER & UTILS
+================================== */
+let certCameraStream = null;
+let activeCertInputId = null;
+let activeCertPreviewId = null;
+let capturedCertBlob = null;
+
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+async function openCertCameraModal(targetInputId, previewContainerId) {
+    activeCertInputId = targetInputId;
+    activeCertPreviewId = previewContainerId;
+    capturedCertBlob = null;
+
+    const modal = document.getElementById("certCameraModal");
+    const video = document.getElementById("certCameraVideo");
+    const canvas = document.getElementById("certCameraCanvas");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const statusBox = document.getElementById("certCameraStatus");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (!modal) return;
+
+    modal.style.display = "flex";
+    if (snapshot) snapshot.style.display = "none";
+    if (canvas) canvas.style.display = "none";
+    if (video) video.style.display = "block";
+    if (guide) guide.style.display = "flex";
+    if (captureBtn) captureBtn.style.display = "inline-flex";
+    if (retakeBtn) retakeBtn.style.display = "none";
+    if (useBtn) useBtn.style.display = "none";
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (statusBox) {
+            statusBox.style.display = "flex";
+            statusBox.innerHTML = `
+                <div style="font-size:24px; margin-bottom:6px;">⚠️</div>
+                <strong style="color:#f87171; font-size:14px;">Camera Access Not Supported</strong>
+                <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">Direct camera access requires a secure connection (HTTPS) or a supported modern browser. Please choose an image or document from your device files.</p>
+            `;
+        }
+        if (captureBtn) captureBtn.style.display = "none";
+        return;
+    }
+
+    if (statusBox) {
+        statusBox.style.display = "flex";
+        statusBox.innerHTML = `
+            <div style="font-size:24px; margin-bottom:6px;">📷</div>
+            <strong style="color:#60a5fa; font-size:14px;">Requesting Camera Permission...</strong>
+            <p style="margin:6px 0 0; color:#94a3b8; font-size:12px;">Please tap "Allow" when prompted by your browser to scan your certificate.</p>
+        `;
+    }
+
+    try {
+        certCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        });
+
+        if (video) {
+            video.srcObject = certCameraStream;
+            await video.play();
+        }
+        if (statusBox) statusBox.style.display = "none";
+    } catch (err) {
+        console.error("Camera access error:", err);
+        if (statusBox) {
+            statusBox.style.display = "flex";
+            if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">🔒</div>
+                    <strong style="color:#f87171; font-size:14px;">Camera Permission Denied</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">Camera permission was denied. Please allow camera permissions in your browser or phone site settings, or use the file picker to choose a document.</p>
+                `;
+            } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">📷</div>
+                    <strong style="color:#f87171; font-size:14px;">No Camera Found</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">No active camera was detected on this device. Please select a certificate file from your device storage.</p>
+                `;
+            } else {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">⚠️</div>
+                    <strong style="color:#f87171; font-size:14px;">Camera Error</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">${escapeHtml(err.message || err.name)}. Please select a file from your device.</p>
+                `;
+            }
+        }
+        if (captureBtn) captureBtn.style.display = "none";
+    }
+}
+
+function captureCertSnapshot() {
+    const video = document.getElementById("certCameraVideo");
+    const canvas = document.getElementById("certCameraCanvas");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (!video || !canvas || !snapshot) return;
+
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+        if (!blob) return;
+        capturedCertBlob = blob;
+        snapshot.src = URL.createObjectURL(blob);
+        snapshot.style.display = "block";
+        video.style.display = "none";
+        if (guide) guide.style.display = "none";
+        if (captureBtn) captureBtn.style.display = "none";
+        if (retakeBtn) retakeBtn.style.display = "inline-flex";
+        if (useBtn) useBtn.style.display = "inline-flex";
+    }, "image/jpeg", 0.92);
+}
+
+function retakeCertSnapshot() {
+    capturedCertBlob = null;
+    const video = document.getElementById("certCameraVideo");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (snapshot) snapshot.style.display = "none";
+    if (video) video.style.display = "block";
+    if (guide) guide.style.display = "flex";
+    if (captureBtn) captureBtn.style.display = "inline-flex";
+    if (retakeBtn) retakeBtn.style.display = "none";
+    if (useBtn) useBtn.style.display = "none";
+}
+
+function useCertSnapshot() {
+    if (!capturedCertBlob || !activeCertInputId) {
+        closeCertCamera();
+        return;
+    }
+
+    const filename = `certificate_scan_${Date.now()}.jpg`;
+    const file = new File([capturedCertBlob], filename, {
+        type: "image/jpeg",
+        lastModified: Date.now()
+    });
+
+    const fileInput = document.getElementById(activeCertInputId);
+    if (fileInput) {
+        try {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+        } catch (err) {
+            console.warn("DataTransfer not fully supported:", err);
+        }
+    }
+
+    if (activeCertPreviewId) {
+        const previewElem = document.getElementById(activeCertPreviewId);
+        if (previewElem) {
+            previewElem.style.display = "block";
+            previewElem.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="${URL.createObjectURL(file)}" style="width:52px; height:52px; object-fit:cover; border-radius:6px; border:1px solid #94a3b8;">
+                    <div>
+                        <strong style="color:#0369a1; font-size:13px; display:flex; align-items:center; gap:4px;">
+                            ✓ Certificate Captured by Camera
+                        </strong>
+                        <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                            ${filename} (${Math.round(file.size / 1024)} KB)
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    closeCertCamera();
+}
+
+function closeCertCamera() {
+    if (certCameraStream) {
+        try {
+            certCameraStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+            console.error("Error stopping tracks:", e);
+        }
+        certCameraStream = null;
+    }
+    const modal = document.getElementById("certCameraModal");
+    if (modal) modal.style.display = "none";
+    const video = document.getElementById("certCameraVideo");
+    if (video) video.srcObject = null;
+}
+</script>
+
+</body>
+
+</html>

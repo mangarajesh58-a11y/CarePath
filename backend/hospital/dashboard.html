@@ -1,0 +1,2146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CarePath - Hospital Management Command Center</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="carepath-ai-small.png">
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+    <script src="./broadcast-banner.js"></script>
+
+    <style>
+        :root {
+            --primary: #1d4ed8;
+            --primary-dark: #1e40af;
+            --primary-light: #eff6ff;
+            --success: #15803d;
+            --success-light: #dcfce7;
+            --warning: #b45309;
+            --warning-light: #fef3c7;
+            --danger: #b91c1c;
+            --danger-light: #fee2e2;
+            --purple: #7c3aed;
+            --purple-light: #f5f3ff;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-400: #94a3b8;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-900: #0f172a;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f1f5f9;
+            color: var(--slate-900);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        @media (min-width: 768px) {
+            .dashboard-container {
+                padding: 24px;
+            }
+        }
+
+        /* =====================================================
+           TOP BAR & HEADER
+        ===================================================== */
+        .top-navbar {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 16px 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--slate-200);
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        @media (min-width: 900px) {
+            .top-navbar {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                padding: 18px 24px;
+            }
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .brand-icon {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .brand-text h1 {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .hospital-subtitle {
+            font-size: 13px;
+            color: var(--slate-600);
+            font-weight: 500;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--success-light);
+            color: var(--success);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+            animation: pulseDot 2s infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.15); }
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-copy-link {
+            background: var(--slate-100);
+            color: var(--slate-700);
+            border-color: var(--slate-200);
+        }
+        .btn-copy-link:hover {
+            background: var(--slate-200);
+            color: var(--slate-900);
+        }
+
+        .btn-admin-msgs {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: #bfdbfe;
+            position: relative;
+        }
+        .btn-admin-msgs:hover {
+            background: #dbeafe;
+        }
+
+        .btn-logout {
+            background: var(--danger-light);
+            color: var(--danger);
+            border-color: #fecaca;
+        }
+        .btn-logout:hover {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-count {
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 999px;
+            margin-left: 2px;
+        }
+
+        /* =====================================================
+           QUICK ACTIONS NAVIGATION BAR
+        ===================================================== */
+        .quick-nav-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 640px) {
+            .quick-nav-bar {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 10px;
+            }
+        }
+
+        .quick-nav-btn {
+            background: #ffffff;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-decoration: none;
+            color: var(--slate-700);
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+        }
+
+        .quick-nav-btn:hover, .quick-nav-btn:active {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .quick-nav-icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        /* =====================================================
+           TODAY'S VITAL SIGNS (METRICS STRIP)
+        ===================================================== */
+        .vital-signs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        @media (min-width: 900px) {
+            .vital-signs-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 16px;
+            }
+        }
+
+        .vital-card {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--slate-200);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (min-width: 768px) {
+            .vital-card {
+                padding: 20px;
+            }
+        }
+
+        .vital-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .vital-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--slate-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .vital-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .vital-value {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--slate-900);
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        @media (min-width: 768px) {
+            .vital-value {
+                font-size: 32px;
+            }
+        }
+
+        .vital-card.primary .vital-value { color: var(--primary); }
+        .vital-card.warning .vital-value { color: #d97706; }
+        .vital-card.success .vital-value { color: var(--success); }
+        .vital-card.purple .vital-value { color: var(--purple); }
+
+        .vital-subtext {
+            font-size: 12px;
+            color: var(--slate-600);
+            font-weight: 500;
+        }
+
+        /* =====================================================
+           MAIN 2-COLUMN RESPONSIVE LAYOUT
+        ===================================================== */
+        .dashboard-body-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 1024px) {
+            .dashboard-body-grid {
+                grid-template-columns: 1fr 380px;
+                gap: 24px;
+                align-items: start;
+            }
+        }
+
+        .card-panel {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--slate-200);
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .card-panel {
+                padding: 24px;
+            }
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .panel-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--slate-900);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* =====================================================
+           NOW CALLING HERO CONSOLE
+        ===================================================== */
+        .hero-caller-box {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            color: #ffffff;
+            position: relative;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 22px;
+        }
+
+        .hero-caller-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding-bottom: 12px;
+        }
+
+        .hero-caller-label {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #93c5fd;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hero-caller-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .token-display-hero {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+
+        .token-number-massive {
+            font-size: 48px;
+            font-weight: 900;
+            color: #38bdf8;
+            line-height: 1;
+            letter-spacing: -1px;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+
+        @media (min-width: 640px) {
+            .token-number-massive {
+                font-size: 64px;
+            }
+        }
+
+        .token-patient-meta h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .token-patient-meta p {
+            font-size: 13px;
+            color: #94a3b8;
+            margin: 0;
+        }
+
+        .hero-btn-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        @media (min-width: 600px) {
+            .hero-btn-group {
+                grid-template-columns: 2fr 1fr 1fr;
+            }
+        }
+
+        .btn-call-next {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            border: none;
+            padding: 14px 20px;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-call-next:hover {
+            transform: translateY(-2px);
+            opacity: 0.95;
+        }
+
+        .btn-call-next:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-caller-secondary {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-caller-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .caller-status-msg {
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 18px;
+        }
+
+        /* =====================================================
+           DOCTOR OPD ROSTER
+        ===================================================== */
+        .doctor-roster-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .doctor-roster-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .doctor-roster-row:hover {
+            border-color: #cbd5e1;
+            background: #ffffff;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .doc-profile-snippet {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .doc-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #e0e7ff;
+            color: #4338ca;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .doc-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--slate-900);
+            margin-bottom: 2px;
+        }
+
+        .doc-meta {
+            font-size: 12px;
+            color: var(--slate-600);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .badge-status-pill {
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .badge-consulting {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        .badge-break {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        .badge-offline {
+            background: var(--slate-100);
+            color: var(--slate-600);
+        }
+
+        /* =====================================================
+           NEXT UP IN QUEUE (WAITING FEED)
+        ===================================================== */
+        .queue-search-bar {
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        .queue-search-input {
+            width: 100%;
+            padding: 10px 14px 10px 36px;
+            border: 1.5px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            background: var(--slate-50);
+            color: var(--slate-900);
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .queue-search-input:focus {
+            background: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+        }
+
+        .queue-search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--slate-400);
+            font-size: 15px;
+        }
+
+        .queue-feed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        .queue-feed-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: #ffffff;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+            gap: 10px;
+        }
+
+        .queue-feed-item:hover {
+            border-color: #94a3b8;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .token-chip {
+            background: #f0fdf4;
+            color: #166534;
+            font-size: 15px;
+            font-weight: 800;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #bbf7d0;
+            min-width: 48px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .patient-snippet-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .patient-name-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--slate-900);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+
+        .patient-sub-meta {
+            font-size: 12px;
+            color: var(--slate-600);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-call-specific {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid #bfdbfe;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .btn-call-specific:hover {
+            background: var(--primary);
+            color: #ffffff;
+        }
+
+        /* =====================================================
+           RIGHT COLUMN CARDS (INQUIRIES, ADMIN, PROMOTIONS)
+        ===================================================== */
+        .inquiry-feed-item {
+            padding: 12px 14px;
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            margin-bottom: 10px;
+        }
+
+        .inquiry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .inquiry-sender {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--slate-900);
+        }
+
+        .inquiry-time {
+            font-size: 11px;
+            color: var(--slate-400);
+        }
+
+        .inquiry-subject {
+            font-size: 12.5px;
+            color: var(--slate-600);
+            margin-bottom: 8px;
+            line-height: 1.35;
+        }
+
+        .inquiry-action-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-inquiry-wa {
+            background: #25D366;
+            color: white;
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-inquiry-call {
+            background: #0284c7;
+            color: white;
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* PROMOTIONS CARD */
+        .promotion-box-widget {
+            background: linear-gradient(135deg, #faf5ff, #f3e8ff);
+            border: 1.5px solid #d8b4fe;
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .promotion-box-widget h4 {
+            font-size: 15px;
+            font-weight: 800;
+            color: #6b21a8;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .promotion-box-widget p {
+            font-size: 12.5px;
+            color: #7e22ce;
+            line-height: 1.4;
+            margin-bottom: 14px;
+        }
+
+        .share-link-input-group {
+            display: grid !important;
+            grid-template-columns: 1fr auto !important;
+            align-items: center !important;
+            gap: 8px !important;
+            margin-bottom: 12px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .share-link-input-group input {
+            width: 100% !important;
+            min-width: 0 !important;
+            height: 44px !important;
+            padding: 10px 12px !important;
+            border: 1.5px solid #c084fc !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            background: #ffffff !important;
+            color: #4c1d95 !important;
+            outline: none !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        .btn-share-copy {
+            width: auto !important;
+            min-width: 80px !important;
+            height: 44px !important;
+            background: #7c3aed !important;
+            color: white !important;
+            border: none !important;
+            padding: 0 18px !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            white-space: nowrap !important;
+            margin: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+            transition: background 0.2s, transform 0.1s !important;
+        }
+
+        .btn-share-copy:hover {
+            background: #6d28d9 !important;
+        }
+
+        .btn-share-copy:active {
+            transform: scale(0.97) !important;
+        }
+
+        .btn-launch-ad-campaign {
+            width: 100%;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            border: none;
+            padding: 11px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-launch-ad-campaign:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        /* TOAST ALERT */
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #0f172a;
+            color: white;
+            padding: 12px 22px;
+            border-radius: 999px;
+            font-size: 13.5px;
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 100000;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* MODAL STYLES PRESERVED */
+        .ad-modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 100000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        .ad-modal-backdrop.active {
+            display: flex;
+        }
+        .ad-modal {
+            background: #ffffff;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 680px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="dashboard-container">
+
+    <!-- =====================================================
+         TOP CONTEXT BAR & HEADER
+    ===================================================== -->
+    <header class="top-navbar">
+        <div class="brand-section">
+            <span class="brand-icon">🏥</span>
+            <div class="brand-text">
+                <h1>
+                    <span id="hospitalNameDisplay">Hospital</span>
+                    <span class="status-pill" id="opdStatusPill">
+                        <span class="status-dot"></span>
+                        OPD ACTIVE
+                    </span>
+                </h1>
+                <div class="hospital-subtitle" id="hospitalMetaSubtitle">
+                    CarePath Hospital Management & Queue Console
+                </div>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button type="button" class="btn-action-pill" onclick="toggleHospitalAudio()" id="btnHospitalAudioToggle" title="Toggle audio chime and patient call announcements" style="background: #f0fdf4; color: #15803d; border: 1.5px solid #86efac; font-weight: 700;">
+                <span id="hospitalAudioIcon">🔊</span> <span id="hospitalAudioText">Audio: ON</span>
+            </button>
+            <button type="button" class="btn-action-pill" onclick="openHospitalBreakModal()" id="btnHospitalBreakTime" style="background: #fefce8; color: #854d0e; border: 1.5px solid #fde047; font-weight: 700;">
+                🍱 Set Break Time
+            </button>
+            <button type="button" class="btn-action-pill btn-copy-link" onclick="copyHospitalPatientLink()" id="btnCopyPatientLink">
+                📋 Copy Patient Link
+            </button>
+            <button type="button" class="btn-action-pill btn-admin-msgs" onclick="openAdminMessagesModal()" id="btnHospitalAdminMessages">
+                💬 Admin Notices
+                <span id="hospitalAdminMsgBadge" class="badge-count" style="display: none;">0</span>
+            </button>
+            <button type="button" class="btn-action-pill btn-logout" id="logoutButton">
+                Logout
+            </button>
+        </div>
+    </header>
+
+    <!-- =====================================================
+         QUICK ACTIONS NAVIGATION BAR (1-TAP ON PHONE)
+    ===================================================== -->
+    <div class="quick-nav-bar">
+        <a href="doctors.html" class="quick-nav-btn" id="doctorsButton">
+            <span class="quick-nav-icon">👨‍⚕️</span>
+            <span>Doctors</span>
+        </a>
+        <a href="token-queue.html" class="quick-nav-btn" id="queueButton">
+            <span class="quick-nav-icon">🎟️</span>
+            <span>Token Queue</span>
+        </a>
+        <a href="patients.html" class="quick-nav-btn" id="patientsButton">
+            <span class="quick-nav-icon">👥</span>
+            <span>Patients</span>
+        </a>
+        <a href="display.html" target="_blank" class="quick-nav-btn">
+            <span class="quick-nav-icon">📺</span>
+            <span>Waiting TV</span>
+        </a>
+        <a href="ads.html" class="quick-nav-btn">
+            <span class="quick-nav-icon">📢</span>
+            <span>Promote (₹999)</span>
+        </a>
+        <a href="profile.html" class="quick-nav-btn" id="profileButton">
+            <span class="quick-nav-icon">🏥</span>
+            <span>Profile</span>
+        </a>
+    </div>
+
+    <!-- =====================================================
+         TODAY'S VITAL SIGNS (4-METRIC KPI STRIP)
+    ===================================================== -->
+    <section class="vital-signs-grid" aria-label="Today's Operational Metrics">
+        <!-- 1. CURRENT TOKEN -->
+        <div class="vital-card primary">
+            <div class="vital-header">
+                <span class="vital-title">Current Token</span>
+                <span class="vital-icon">🎟️</span>
+            </div>
+            <div class="vital-value" id="currentToken">0</div>
+            <div class="vital-subtext" id="currentServingDoc">Dr. Available • In Session</div>
+        </div>
+
+        <!-- 2. PATIENTS WAITING -->
+        <div class="vital-card warning">
+            <div class="vital-header">
+                <span class="vital-title">Patients Waiting</span>
+                <span class="vital-icon">⏳</span>
+            </div>
+            <div class="vital-value" id="waitingCount">0</div>
+            <div class="vital-subtext" id="estimatedWaitTime">~0 min estimated wait</div>
+        </div>
+
+        <!-- 3. DOCTORS ON DUTY -->
+        <div class="vital-card success">
+            <div class="vital-header">
+                <span class="vital-title">Doctors On Duty</span>
+                <span class="vital-icon">🩺</span>
+            </div>
+            <div class="vital-value" id="activeDoctorsCount">0</div>
+            <div class="vital-subtext" id="totalDoctorsSubtext">Active OPD consultation</div>
+        </div>
+
+        <!-- 4. TODAY'S COLLECTION -->
+        <div class="vital-card purple">
+            <div class="vital-header">
+                <span class="vital-title">Today's Collection</span>
+                <span class="vital-icon">💰</span>
+            </div>
+            <div class="vital-value" id="todayRevenueDisplay">₹0</div>
+            <div class="vital-subtext" id="completedTokensCount">0 Consultations Done</div>
+        </div>
+    </section>
+
+    <!-- HIDDEN COMPATIBILITY ELEMENTS -->
+    <div style="display: none;">
+        <span id="completedCount">0</span>
+        <span id="infoHospitalName">-</span>
+        <span id="infoCity">-</span>
+        <span id="infoTokenFee">₹0</span>
+        <span id="infoApproval">-</span>
+        <span id="infoPublished">-</span>
+        <span id="infoPayment">-</span>
+        <span id="cardAdminMsgBadge"></span>
+    </div>
+
+    <!-- =====================================================
+         MAIN 2-COLUMN RESPONSIVE LAYOUT
+    ===================================================== -->
+    <div class="dashboard-body-grid">
+
+        <!-- =================================================
+             LEFT: LIVE OPD QUEUE COMMAND CONSOLE (65% width)
+        ================================================= -->
+        <main>
+            <!-- 🔊 HERO NOW CALLING CONSOLE -->
+            <div class="hero-caller-box">
+                <div class="hero-caller-top">
+                    <span class="hero-caller-label">
+                        <span class="status-dot"></span>
+                        🔊 Now Calling Consultation
+                    </span>
+                    <span style="font-size: 12px; color: #94a3b8; font-weight: 600;" id="heroLiveClock">--:-- --</span>
+                </div>
+
+                <div class="hero-caller-main">
+                    <div class="token-display-hero">
+                        <div class="token-number-massive" id="heroTokenDisplay">#0</div>
+                        <div class="token-patient-meta">
+                            <h3 id="heroPatientName">No Patient in Consultation</h3>
+                            <p id="heroDoctorRoom">Select or call next token to begin</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hero-btn-group">
+                    <button type="button" class="btn-call-next" id="nextButton" onclick="callNextPatient()">
+                        <span>📢</span> Call Next Patient
+                    </button>
+                    <button type="button" class="btn-caller-secondary" onclick="completeCurrentToken()">
+                        <span>✓</span> Complete
+                    </button>
+                    <a href="display.html" target="_blank" class="btn-caller-secondary">
+                        <span>📺</span> TV Screen
+                    </a>
+                </div>
+
+                <p id="nextMessage" class="caller-status-msg"></p>
+            </div>
+
+            <!-- 👥 NEXT UP IN QUEUE -->
+            <div class="card-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span>👥</span> Next Up In Queue (<span id="queueBadgeTotal">0</span>)
+                    </h2>
+                    <a href="token-queue.html" style="font-size: 13px; font-weight: 700; color: var(--primary);">
+                        Full Queue Table →
+                    </a>
+                </div>
+
+                <div class="queue-search-bar">
+                    <span class="queue-search-icon">🔍</span>
+                    <input type="text" id="queueSearchInput" class="queue-search-input" placeholder="Search patient by name, token #, or phone..." oninput="filterQueueFeed()">
+                </div>
+
+                <div id="queueFeedContainer" class="queue-feed-list">
+                    <div style="text-align: center; color: var(--slate-400); padding: 30px 10px; font-size: 13px;">
+                        Loading live queue...
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📋 DOCTOR ROOMS & ACTIVE QUEUE -->
+            <div class="card-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span>🩺</span> Doctor OPD Rooms & Duty Roster
+                    </h2>
+                    <a href="doctors.html" style="font-size: 13px; font-weight: 700; color: var(--primary);">
+                        Manage Doctors →
+                    </a>
+                </div>
+
+                <div id="doctorRosterContainer" class="doctor-roster-list">
+                    <div style="text-align: center; color: var(--slate-400); padding: 20px 10px; font-size: 13px;">
+                        Loading doctor roster...
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- =================================================
+             RIGHT: COMMUNICATIONS & GROWTH (35% width)
+        ================================================= -->
+        <aside>
+            <!-- 👤 LIVE PATIENT INQUIRIES -->
+            <div class="card-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span>💬</span> Patient Inquiries (<span id="inquiryCountBadge">0</span>)
+                    </h2>
+                    <span style="font-size: 11px; background: var(--success-light); color: var(--success); font-weight: 800; padding: 2px 7px; border-radius: 999px;">
+                        LIVE
+                    </span>
+                </div>
+
+                <div id="patientInquiryContainer">
+                    <div style="text-align: center; color: var(--slate-400); padding: 20px 10px; font-size: 13px;">
+                        No pending inquiries.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🏛️ PLATFORM ADMIN NOTICES -->
+            <div class="card-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span>🏛️</span> Admin Direct Channel
+                    </h2>
+                    <button type="button" onclick="openAdminMessagesModal()" style="background: none; border: none; color: var(--primary); font-size: 13px; font-weight: 700; cursor: pointer;">
+                        Open Chat →
+                    </button>
+                </div>
+
+                <div id="adminNoticeSnippet" style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 14px; font-size: 13px; color: var(--slate-600); line-height: 1.45;">
+                    Stay connected with Platform Admin for compliance, verification, and inspection updates.
+                </div>
+
+                <button type="button" onclick="openAdminMessagesModal()" style="width: 100%; margin-top: 12px; padding: 10px; background: var(--primary-light); color: var(--primary); border: 1px solid #bfdbfe; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                    ✉️ Reply / Message Admin
+                </button>
+            </div>
+
+            <!-- 📢 PROMOTIONS & 30-DAY ADS -->
+            <div class="promotion-box-widget">
+                <h4><span>📢</span> Promote Your Hospital</h4>
+                <p>Reach patients across your city! Features your hospital banner inside the patient app feed for 30 days.</p>
+
+                <div style="font-size: 12px; font-weight: 700; color: #581c87; margin-bottom: 6px;">Share Direct Patient Booking Link:</div>
+                <div class="share-link-input-group" style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; width: 100%; box-sizing: border-box; margin-bottom: 12px;">
+                    <input type="text" id="shareHospitalLinkInput" readonly value="Loading link..." style="width: 100%; min-width: 0; height: 44px; margin: 0; padding: 10px 12px; border: 1.5px solid #c084fc; border-radius: 8px; font-size: 13px; background: #ffffff; color: #4c1d95; outline: none; box-sizing: border-box;">
+                    <button type="button" class="btn-share-copy" onclick="copyHospitalPatientLink()" style="width: auto; min-width: 80px; height: 44px; margin: 0; padding: 0 18px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; white-space: nowrap;">Copy</button>
+                </div>
+
+                <button type="button" class="btn-launch-ad-campaign" onclick="window.location.href='ads.html'" id="openAdModalBtn">
+                    🚀 Launch 30-Day Campaign (₹999)
+                </button>
+            </div>
+        </aside>
+
+    </div>
+
+</div>
+
+<!-- TOAST NOTIFICATION -->
+<div id="toastNotification" class="toast-notification">
+    <span id="toastIcon">✓</span>
+    <span id="toastText">Link copied to clipboard!</span>
+</div>
+
+<!-- =====================================================
+     HOSPITAL OPD BREAK TIMING MODAL (HOSPITAL ONLY)
+===================================================== -->
+<div id="hospitalBreakModal" class="ad-modal-backdrop" aria-hidden="true" style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 18px; box-sizing: border-box;">
+    <div style="background: #ffffff; width: 100%; max-width: 460px; border-radius: 18px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden;">
+        <div style="padding: 16px 20px; background: linear-gradient(135deg, #ca8a04, #eab308); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 26px;">🍱</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 16.5px; font-weight: 800; color: #ffffff;">Set OPD Lunch / Break Timing</h3>
+                    <div style="font-size: 11.5px; opacity: 0.95; margin-top: 1px;">Configured directly by your hospital</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeHospitalBreakModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 22px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+            <p style="margin: 0 0 16px; font-size: 13px; color: #64748b; line-height: 1.45;">
+                Enter your hospital's daily lunch or doctor consultation break hours. During break time, your live status will change to <strong>"🟡 OPD ON BREAK"</strong> for patients.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 6px;">⏰ Break Start</label>
+                    <input type="time" id="dashBreakStart" value="13:00" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 15px; font-weight: 700; color: #1e293b; outline: none;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 6px;">⏰ Break End</label>
+                    <input type="time" id="dashBreakEnd" value="14:00" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 15px; font-weight: 700; color: #1e293b; outline: none;">
+                </div>
+            </div>
+            <div id="breakModalFeedback" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeHospitalBreakModal()" style="padding: 10px 18px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="button" id="btnSaveBreakTime" onclick="saveHospitalBreakTime()" style="padding: 10px 22px; background: #ca8a04; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(202, 138, 4, 0.3);">💾 Save Break Timing</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     ADMIN MESSAGES / DIRECT COMMUNICATION MODAL
+===================================================== -->
+<div id="adminMessagesModal" class="ad-modal-backdrop" aria-hidden="true" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 18px; box-sizing: border-box;">
+    <div style="background: #ffffff; width: 100%; max-width: 720px; max-height: 90vh; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden;">
+        
+        <!-- MODAL HEADER -->
+        <div style="padding: 16px 22px; background: linear-gradient(135deg, #1e40af, #2563eb); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 24px;">💬</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #ffffff;">Platform Admin Communication</h3>
+                    <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">Official notices, inquiries, and two-way messaging with CarePath Admin</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeAdminMessagesModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 22px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
+        </div>
+
+        <!-- MESSAGES THREAD -->
+        <div id="hospitalAdminMsgContainer" style="flex: 1; padding: 18px 22px; background: #f8fafc; overflow-y: auto; max-height: 380px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="text-align: center; color: #64748b; font-size: 13px; padding: 20px 0;">Loading conversation...</div>
+        </div>
+
+        <!-- REPLY FORM -->
+        <div style="padding: 16px 22px; background: #ffffff; border-top: 1px solid #e2e8f0;">
+            <div style="font-weight: 700; font-size: 13px; color: #334155; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span>✉️ Reply to Platform Admin</span>
+                <span style="font-size: 11.5px; color: #64748b; font-weight: normal;">Messages deliver directly to Admin dashboard</span>
+            </div>
+            <input type="text" id="hospitalReplySubject" placeholder="Subject (optional)" style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; margin-bottom: 8px; outline: none;">
+            <textarea id="hospitalReplyText" rows="3" placeholder="Type your reply to platform admin..." style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; margin-bottom: 10px; resize: vertical; outline: none;"></textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeAdminMessagesModal()" style="padding: 9px 18px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">Close</button>
+                <button type="button" id="btnHospitalSendReply" onclick="sendHospitalReplyToAdmin()" style="padding: 9px 20px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">🚀 Send Reply</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+/* =====================================================
+   API CONFIGURATION
+===================================================== */
+const API_URL =
+    (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost")
+        ? "http://127.0.0.1:8000"
+        : "https://carepath-3q9q.onrender.com";
+
+let hospitalId = localStorage.getItem("hospital_id");
+let hospitalName = localStorage.getItem("hospital_name");
+const hospitalToken = localStorage.getItem("hospitalToken");
+
+function getHospitalAuthHeaders(includeJson = false) {
+    const headers = {
+        "Authorization": `Bearer ${hospitalToken || ""}`
+    };
+    if (includeJson) headers["Content-Type"] = "application/json";
+    return headers;
+}
+
+// Read stored hospital session
+let storedHospital = null;
+try {
+    const stored = localStorage.getItem("hospital");
+    if (stored) storedHospital = JSON.parse(stored);
+} catch (e) {
+    console.error("Session parse error:", e);
+}
+
+if (storedHospital && storedHospital.id) {
+    hospitalId = storedHospital.id;
+    hospitalName = storedHospital.name || hospitalName;
+    localStorage.setItem("hospital_id", hospitalId);
+    if (hospitalName) localStorage.setItem("hospital_name", hospitalName);
+}
+
+if (!hospitalId || !hospitalToken) {
+    alert("Hospital session expired. Please log in again.");
+    window.location.replace("index.html");
+}
+
+if (hospitalName) {
+    const nameEl = document.getElementById("hospitalNameDisplay");
+    if (nameEl) nameEl.textContent = hospitalName;
+}
+
+// LOGOUT
+const logoutBtn = document.getElementById("logoutButton");
+if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+        [
+            "hospital", "hospital_id", "hospital_name", "hospital_email",
+            "hospital_token_fee", "hospital_approval_status", "hospital_is_published",
+            "hospital_latitude", "hospital_longitude", "hospital_logged_in", "hospitalToken"
+        ].forEach(k => localStorage.removeItem(k));
+        window.location.replace("index.html");
+    });
+}
+
+// LIVE CLOCK
+function updateLiveClock() {
+    const clockEl = document.getElementById("heroLiveClock");
+    if (clockEl) {
+        const now = new Date();
+        clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+}
+setInterval(updateLiveClock, 1000);
+updateLiveClock();
+
+// =====================================================
+// ROBUST SHARED AUDIO CONTEXT & AUTOPLAY POLICY UNLOCK
+// =====================================================
+let hospitalAudioEnabled = true;
+let sharedHospitalAudioCtx = null;
+let lastAnnouncedServingTokenId = null;
+
+function getSharedHospitalAudioCtx() {
+    if (!sharedHospitalAudioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+            sharedHospitalAudioCtx = new AudioContextClass();
+        }
+    }
+    if (sharedHospitalAudioCtx && sharedHospitalAudioCtx.state === "suspended") {
+        sharedHospitalAudioCtx.resume().catch(() => {});
+    }
+    return sharedHospitalAudioCtx;
+}
+
+// Global unlock on any user interaction so browser autoplay policy never blocks call chime or speech
+function unlockHospitalAutoplay() {
+    const ctx = getSharedHospitalAudioCtx();
+    if (ctx && ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+    }
+    if ("speechSynthesis" in window) {
+        try {
+            if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        } catch(e) {}
+    }
+}
+["click", "touchstart", "pointerdown", "keydown"].forEach(evt => {
+    document.addEventListener(evt, unlockHospitalAutoplay, { passive: true });
+});
+
+function toggleHospitalAudio() {
+    hospitalAudioEnabled = !hospitalAudioEnabled;
+    const btn = document.getElementById("btnHospitalAudioToggle");
+    const icon = document.getElementById("hospitalAudioIcon");
+    const text = document.getElementById("hospitalAudioText");
+    if (icon) icon.textContent = hospitalAudioEnabled ? "🔊" : "🔇";
+    if (text) text.textContent = hospitalAudioEnabled ? "Audio: ON" : "Audio: OFF";
+    if (btn) {
+        btn.style.background = hospitalAudioEnabled ? "#f0fdf4" : "#f1f5f9";
+        btn.style.color = hospitalAudioEnabled ? "#15803d" : "#64748b";
+        btn.style.borderColor = hospitalAudioEnabled ? "#86efac" : "#cbd5e1";
+    }
+    if (hospitalAudioEnabled) {
+        unlockHospitalAutoplay();
+        playCallChime();
+        showToast("Audio alert & announcements enabled", "🔊");
+    } else {
+        if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+        showToast("Audio announcements muted", "🔇");
+    }
+}
+
+function playCallChime() {
+    if (!hospitalAudioEnabled) return;
+    try {
+        const ctx = getSharedHospitalAudioCtx();
+        if (!ctx) return;
+        if (ctx.state === "suspended") {
+            ctx.resume().then(() => playChimeNodes(ctx)).catch(() => {});
+        } else {
+            playChimeNodes(ctx);
+        }
+    } catch(e) {
+        console.warn("Audio chime error:", e);
+    }
+}
+
+function playChimeNodes(ctx) {
+    try {
+        const now = ctx.currentTime;
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = "sine";
+        osc1.frequency.setValueAtTime(880, now);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.5);
+
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(659.25, now + 0.25);
+        gain2.gain.setValueAtTime(0.35, now + 0.25);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.25);
+        osc2.stop(now + 0.85);
+    } catch(e) {}
+}
+
+function announceCalledToken(tokenNum, patientName, doctor) {
+    if (!hospitalAudioEnabled) return;
+    playCallChime();
+
+    // Spoken patient announcement after chime with autoplay unfreeze
+    setTimeout(() => {
+        if (!hospitalAudioEnabled) return;
+        if ("speechSynthesis" in window) {
+            try {
+                window.speechSynthesis.cancel();
+                const safeName = patientName && patientName !== "Patient" && patientName !== "No Patient in Consultation" ? `${patientName}` : "";
+                const docText = doctor && doctor !== "OPD" && doctor !== "No active consultation" ? `doctor ${doctor}` : "consultation";
+                const text = `Attention please: Token number ${tokenNum}. ${safeName ? safeName + ', ' : ''}please proceed to ${docText}.`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.92;
+                utterance.pitch = 1.0;
+                utterance.lang = "en-IN";
+                const voices = window.speechSynthesis.getVoices();
+                const inVoice = voices.find(v => v.lang === "en-IN") || voices.find(v => v.lang && v.lang.startsWith("en"));
+                if (inVoice) utterance.voice = inVoice;
+
+                if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                window.speechSynthesis.speak(utterance);
+            } catch(e) {
+                console.warn("Speech announcement error:", e);
+            }
+        }
+    }, 650);
+}
+
+// TOAST NOTIFICATION
+function showToast(text, icon = "✓") {
+    const toast = document.getElementById("toastNotification");
+    const tText = document.getElementById("toastText");
+    const tIcon = document.getElementById("toastIcon");
+    if (!toast) return;
+    if (tText) tText.textContent = text;
+    if (tIcon) tIcon.textContent = icon;
+    toast.classList.add("show");
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2800);
+}
+
+// COPY PATIENT LINK
+function getPatientDirectUrl() {
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    return isLocal
+        ? `${window.location.protocol}//${window.location.host}/patient/hospital-details.html?id=${hospitalId}`
+        : `https://carepath-patient-mx5v.vercel.app/hospital-details.html?id=${hospitalId}`;
+}
+
+function copyHospitalPatientLink() {
+    const url = getPatientDirectUrl();
+    navigator.clipboard.writeText(url).then(() => {
+        showToast("Patient booking link copied! Share anywhere.", "📋");
+    }).catch(() => {
+        prompt("Copy hospital patient link:", url);
+    });
+}
+
+// UPDATE SHARE LINK INPUT
+const shareInput = document.getElementById("shareHospitalLinkInput");
+if (shareInput) shareInput.value = getPatientDirectUrl();
+
+/* =====================================================
+   DATA FETCHING & RENDERING
+===================================================== */
+let allHospitalTokens = [];
+let allHospitalDoctors = [];
+let currentServingTokenObj = null;
+
+// LOAD HOSPITAL INFO
+async function loadHospital() {
+    try {
+        const response = await fetch(`${API_URL}/hospitals/${hospitalId}`, {
+            headers: getHospitalAuthHeaders()
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        storedHospital = data;
+        localStorage.setItem("hospital", JSON.stringify(data));
+
+        if (data.name) {
+            document.getElementById("hospitalNameDisplay").textContent = data.name;
+        }
+
+        const fee = Number(data.token_fee || 0);
+        document.getElementById("infoTokenFee").textContent = `₹${fee}`;
+        const breakStr = data.break_hours_12h || '1:00 PM - 2:00 PM';
+        document.getElementById("hospitalMetaSubtitle").textContent = `${data.city || 'City'} • OPD Hours: ${data.operating_hours_12h || '9:00 AM - 9:00 PM'} • Lunch Break: ${breakStr}`;
+
+        // Live OPD Break & Operational Status
+        const opdStatus = data.opd_status || {};
+        const pill = document.getElementById("opdStatusPill");
+        if (pill) {
+            if (opdStatus.status === "BREAK") {
+                pill.className = "status-pill";
+                pill.style.background = "#fef3c7";
+                pill.style.color = "#b45309";
+                pill.innerHTML = `<span class="status-dot" style="background: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);"></span> ${opdStatus.label || 'OPD ON BREAK'}`;
+            } else if (opdStatus.status === "CLOSED") {
+                pill.className = "status-pill";
+                pill.style.background = "#fee2e2";
+                pill.style.color = "#b91c1c";
+                pill.innerHTML = `<span class="status-dot" style="background: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);"></span> OPD CLOSED`;
+            } else {
+                pill.className = "status-pill";
+                pill.style.background = "var(--success-light)";
+                pill.style.color = "var(--success)";
+                pill.innerHTML = `<span class="status-dot"></span> OPD ACTIVE`;
+            }
+        }
+    } catch (e) {
+        console.error("Load hospital error:", e);
+    }
+}
+
+// LOAD DOCTORS
+async function loadDoctors() {
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/doctors`, {
+            headers: getHospitalAuthHeaders()
+        });
+        if (!res.ok) return;
+        allHospitalDoctors = await res.json();
+        renderDoctorRoster();
+    } catch (e) {
+        console.error("Load doctors error:", e);
+    }
+}
+
+function renderDoctorRoster() {
+    const container = document.getElementById("doctorRosterContainer");
+    const countEl = document.getElementById("activeDoctorsCount");
+    if (!container) return;
+
+    if (!Array.isArray(allHospitalDoctors) || allHospitalDoctors.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--slate-400); padding: 18px 10px; font-size: 13px;">No doctors added yet. <a href="doctors.html" style="color: var(--primary); font-weight: 700;">Add Doctors</a></div>`;
+        if (countEl) countEl.textContent = "0";
+        return;
+    }
+
+    const activeDocs = allHospitalDoctors.filter(d => d.is_available !== false);
+    if (countEl) countEl.textContent = `${activeDocs.length} / ${allHospitalDoctors.length}`;
+
+    container.innerHTML = allHospitalDoctors.map((doc, idx) => {
+        const isOnline = doc.is_available !== false;
+        const statusClass = isOnline ? "badge-consulting" : "badge-offline";
+        const statusText = isOnline ? "🟢 In Session" : "⚪ Offline";
+        const roomNum = doc.room_number || `Rm ${idx + 1}`;
+        const initials = (doc.name || "Doctor").split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+
+        return `
+            <div class="doctor-roster-row">
+                <div class="doc-profile-snippet">
+                    <div class="doc-avatar">${initials}</div>
+                    <div>
+                        <div class="doc-name">${escapeHtml(doc.name)}</div>
+                        <div class="doc-meta">
+                            <span>${escapeHtml(doc.department || 'General')}</span>
+                            <span>•</span>
+                            <span style="font-weight: 700; color: #1e40af;">${roomNum}</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="badge-status-pill ${statusClass}">${statusText}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+// LOAD TOKENS & QUEUE
+async function loadQueue() {
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/tokens`, {
+            headers: getHospitalAuthHeaders()
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const tokens = Array.isArray(data) ? data : (data.tokens || []);
+        allHospitalTokens = tokens;
+
+        const waiting = tokens.filter(t => (t.status || "").toLowerCase() === "waiting");
+        const serving = tokens.filter(t => (t.status || "").toLowerCase() === "serving");
+        const completed = tokens.filter(t => (t.status || "").toLowerCase() === "completed");
+
+        // Metrics
+        document.getElementById("waitingCount").textContent = waiting.length;
+        document.getElementById("queueBadgeTotal").textContent = waiting.length;
+        document.getElementById("completedCount").textContent = completed.length;
+        document.getElementById("completedTokensCount").textContent = `${completed.length} Consultations Done`;
+
+        // Estimated wait (~3 mins per patient)
+        const estMinutes = waiting.length * 3;
+        document.getElementById("estimatedWaitTime").textContent = `~${estMinutes} min estimated wait`;
+
+        // Revenue computation
+        const tokenFee = Number(storedHospital && storedHospital.token_fee ? storedHospital.token_fee : 10);
+        const totalRev = tokens.reduce((sum, t) => sum + Number(t.token_fee || tokenFee || 0), 0);
+        document.getElementById("todayRevenueDisplay").textContent = `₹${totalRev.toLocaleString()}`;
+
+        // Current Serving Token
+        if (serving.length > 0) {
+            const current = serving[serving.length - 1];
+            currentServingTokenObj = current;
+            document.getElementById("currentToken").textContent = `#${current.token_number}`;
+            document.getElementById("heroTokenDisplay").textContent = `#${current.token_number}`;
+            document.getElementById("heroPatientName").textContent = current.patient_name || "Patient in Consultation";
+            document.getElementById("heroDoctorRoom").textContent = `${current.doctor || 'OPD Doctor'} • ${current.department || 'Consultation'}`;
+            document.getElementById("currentServingDoc").textContent = current.doctor || "In Consultation";
+
+            // If another doctor or nurse called a new token and this dashboard observes the transition
+            if (lastAnnouncedServingTokenId !== null && lastAnnouncedServingTokenId !== current.id) {
+                announceCalledToken(current.token_number, current.patient_name, current.doctor);
+            }
+            lastAnnouncedServingTokenId = current.id;
+        } else {
+            lastAnnouncedServingTokenId = null;
+            currentServingTokenObj = null;
+            document.getElementById("currentToken").textContent = "0";
+            document.getElementById("heroTokenDisplay").textContent = "#0";
+            document.getElementById("heroPatientName").textContent = "No Patient in Consultation";
+            document.getElementById("heroDoctorRoom").textContent = waiting.length > 0 ? "Click 'Call Next Patient' below" : "Queue is empty";
+            document.getElementById("currentServingDoc").textContent = "No active consultation";
+        }
+
+        renderQueueFeed(waiting);
+    } catch (e) {
+        console.error("Load queue error:", e);
+    }
+}
+
+function renderQueueFeed(waitingTokens) {
+    const container = document.getElementById("queueFeedContainer");
+    if (!container) return;
+
+    if (!waitingTokens || waitingTokens.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: var(--slate-400); padding: 35px 10px;">
+                <div style="font-size: 28px; margin-bottom: 6px;">🎉</div>
+                <div style="font-weight: 700; color: var(--slate-600);">No patients waiting in queue</div>
+                <div style="font-size: 12px; margin-top: 4px;">Walk-in and online tokens will appear here automatically.</div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = waitingTokens.map((t, idx) => {
+        const estWait = (idx + 1) * 3;
+        return `
+            <div class="queue-feed-item">
+                <div class="token-chip">#${t.token_number}</div>
+                <div class="patient-snippet-info">
+                    <div class="patient-name-text">${escapeHtml(t.patient_name || 'Patient')}</div>
+                    <div class="patient-sub-meta">
+                        <span>👨‍⚕️ ${escapeHtml(t.doctor || 'OPD')}</span>
+                        <span>•</span>
+                        <span>⏳ ~${estWait} min</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-call-specific" onclick="callSpecificToken(${t.id}, ${t.token_number})">
+                    📢 Call Now
+                </button>
+            </div>
+        `;
+    }).join("");
+}
+
+function filterQueueFeed() {
+    const q = (document.getElementById("queueSearchInput").value || "").toLowerCase().trim();
+    const waiting = allHospitalTokens.filter(t => (t.status || "").toLowerCase() === "waiting");
+    if (!q) {
+        renderQueueFeed(waiting);
+        return;
+    }
+    const filtered = waiting.filter(t => 
+        String(t.token_number).includes(q) ||
+        (t.patient_name || "").toLowerCase().includes(q) ||
+        (t.patient_phone || "").includes(q) ||
+        (t.doctor || "").toLowerCase().includes(q)
+    );
+    renderQueueFeed(filtered);
+}
+
+// CALL NEXT PATIENT
+async function callNextPatient() {
+    unlockHospitalAutoplay();
+    const btn = document.getElementById("nextButton");
+    const msg = document.getElementById("nextMessage");
+    const waiting = allHospitalTokens.filter(t => (t.status || "").toLowerCase() === "waiting");
+
+    if (waiting.length === 0) {
+        if (msg) {
+            msg.style.color = "#d97706";
+            msg.textContent = "No patients waiting in queue.";
+        }
+        return;
+    }
+
+    const nextUp = waiting[0];
+    await callSpecificToken(nextUp.id, nextUp.token_number, nextUp.patient_name, nextUp.doctor);
+}
+
+async function callSpecificToken(tokenId, tokenNum, patientName, doctor) {
+    // Synchronously prime audio context BEFORE async fetch (preserves browser user activation context)
+    unlockHospitalAutoplay();
+
+    const btn = document.getElementById("nextButton");
+    const msg = document.getElementById("nextMessage");
+    if (btn) { btn.disabled = true; btn.innerHTML = "<span>📢</span> Calling..."; }
+    if (msg) msg.textContent = "";
+
+    try {
+        const res = await fetch(`${API_URL}/tokens/${tokenId}/call`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders(true)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Unable to call token");
+
+        // Lookup patient metadata if not passed directly
+        let pName = patientName;
+        let dRoom = doctor;
+        if (!pName || !dRoom) {
+            const found = allHospitalTokens.find(t => Number(t.id) === Number(tokenId));
+            if (found) {
+                pName = pName || found.patient_name;
+                dRoom = dRoom || found.doctor;
+            }
+        }
+
+        announceCalledToken(tokenNum, pName, dRoom);
+        showToast(`Token #${tokenNum} called into consultation!`, "📢");
+
+        if (msg) {
+            msg.style.color = "#15803d";
+            msg.textContent = `✓ Token #${tokenNum} called successfully.`;
+        }
+        await loadQueue();
+    } catch (e) {
+        console.error("Call token error:", e);
+        if (msg) {
+            msg.style.color = "#dc2626";
+            msg.textContent = e.message || "Failed to call token.";
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = "<span>📢</span> Call Next Patient";
+        }
+    }
+}
+
+async function completeCurrentToken() {
+    if (!currentServingTokenObj) {
+        alert("No patient currently in consultation to complete.");
+        return;
+    }
+    const tokenId = currentServingTokenObj.id;
+    const tokenNum = currentServingTokenObj.token_number;
+
+    try {
+        const res = await fetch(`${API_URL}/tokens/${tokenId}/complete`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders(true)
+        });
+        if (!res.ok) throw new Error("Could not complete consultation");
+
+        showToast(`Token #${tokenNum} completed!`, "✓");
+        await loadQueue();
+    } catch(e) {
+        alert("Complete consultation error: " + e.message);
+    }
+}
+
+/* =====================================================
+   ADMIN MESSAGES & PATIENT INQUIRIES
+===================================================== */
+function openAdminMessagesModal() {
+    const modal = document.getElementById("adminMessagesModal");
+    if (!modal) return;
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    loadHospitalAdminMessages();
+}
+
+function closeAdminMessagesModal() {
+    const modal = document.getElementById("adminMessagesModal");
+    if (!modal) return;
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    checkAdminMessagesUnreadCount();
+}
+
+const adminModalEl = document.getElementById("adminMessagesModal");
+if (adminModalEl) {
+    adminModalEl.addEventListener("click", (e) => {
+        if (e.target === adminModalEl) closeAdminMessagesModal();
+    });
+}
+
+async function checkAdminMessagesUnreadCount() {
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/messages/unread-count`, {
+            headers: getHospitalAuthHeaders()
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const unread = data.unread_count || 0;
+        const badge = document.getElementById("hospitalAdminMsgBadge");
+        if (badge) {
+            if (unread > 0) {
+                badge.textContent = unread;
+                badge.style.display = "inline-block";
+            } else {
+                badge.style.display = "none";
+            }
+        }
+    } catch(e) {}
+}
+
+async function loadHospitalAdminMessages() {
+    const container = document.getElementById("hospitalAdminMsgContainer");
+    if (!container) return;
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/messages`, {
+            headers: getHospitalAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to load messages");
+        const messages = await res.json();
+
+        // Update inquiry sidebar widget
+        renderInquiriesWidget(messages);
+
+        if (!Array.isArray(messages) || messages.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 30px 10px; color: var(--slate-400);">
+                    <div style="font-size: 26px; margin-bottom: 6px;">✉️</div>
+                    <div style="font-weight: 700; color: var(--slate-600);">No messages yet</div>
+                    <div style="font-size: 12px; margin-top: 4px;">Platform Admin notices and patient inquiries will appear here.</div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = messages.map(msg => {
+            const role = (msg.sender_role || "").toLowerCase();
+            const isMe = role === "hospital";
+            const isPatient = role === "patient";
+            const align = isMe ? "flex-end" : "flex-start";
+            const bubbleBg = isMe ? "#1d4ed8" : (isPatient ? "#f0fdf4" : "#ffffff");
+            const textColor = isMe ? "#ffffff" : "#0f172a";
+            const border = isMe ? "none" : (isPatient ? "1px solid #86efac" : "1px solid #cbd5e1");
+            const senderTag = isMe ? "Your Hospital Staff" : (isPatient ? `👤 Patient Inquiry: ${msg.sender_name || 'Patient'}` : "🏛️ Platform Admin");
+
+            return `
+                <div style="display: flex; flex-direction: column; align-self: ${align}; max-width: 85%;">
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 3px; display: flex; gap: 6px;">
+                        <strong>${senderTag}</strong> • <span>${msg.created_at ? new Date(msg.created_at).toLocaleTimeString() : ''}</span>
+                    </div>
+                    <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; line-height: 1.45;">
+                        ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 3px;">${escapeHtml(msg.subject)}</div>` : ''}
+                        <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.message || '')}</div>
+                    </div>
+                </div>
+            `;
+        }).join("");
+        container.scrollTop = container.scrollHeight;
+    } catch(e) {
+        container.innerHTML = `<div style="color: #ef4444; padding: 20px; text-align: center;">Error loading messages: ${escapeHtml(e.message)}</div>`;
+    }
+}
+
+function renderInquiriesWidget(messages) {
+    const container = document.getElementById("patientInquiryContainer");
+    const countBadge = document.getElementById("inquiryCountBadge");
+    if (!container) return;
+
+    const patientMsgs = (Array.isArray(messages) ? messages : []).filter(m => (m.sender_role || "").toLowerCase() === "patient");
+    if (countBadge) countBadge.textContent = patientMsgs.length;
+
+    if (patientMsgs.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: var(--slate-400); padding: 18px 10px; font-size: 12.5px;">
+                No patient inquiries right now. When patients send questions via WhatsApp or App, they appear here.
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = patientMsgs.slice(-4).reverse().map(inq => {
+        const phone = inq.sender_phone || "";
+        const cleanPhone = String(phone).replace(/[^0-9]/g, "");
+        const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
+        const timeStr = inq.created_at ? new Date(inq.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+
+        return `
+            <div class="inquiry-feed-item">
+                <div class="inquiry-header">
+                    <span class="inquiry-sender">${escapeHtml(inq.sender_name || 'Patient')}</span>
+                    <span class="inquiry-time">${timeStr}</span>
+                </div>
+                <div class="inquiry-subject">${escapeHtml(inq.subject || inq.message || 'General OPD Inquiry')}</div>
+                <div class="inquiry-action-row">
+                    ${cleanPhone ? `
+                        <a href="https://wa.me/${waNum}" target="_blank" class="btn-inquiry-wa">
+                            💬 WhatsApp
+                        </a>
+                        <a href="tel:${cleanPhone}" class="btn-inquiry-call">
+                            📞 Call
+                        </a>
+                    ` : ''}
+                    <button type="button" onclick="openAdminMessagesModal()" style="border: none; background: #e2e8f0; color: #475569; font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 6px; cursor: pointer;">
+                        View
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+async function sendHospitalReplyToAdmin() {
+    const textInput = document.getElementById("hospitalReplyText");
+    const subjInput = document.getElementById("hospitalReplySubject");
+    const btn = document.getElementById("btnHospitalSendReply");
+
+    const message = textInput ? textInput.value.trim() : "";
+    if (!message) {
+        alert("Please enter a reply message.");
+        return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = "Sending..."; }
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/messages/reply`, {
+            method: "POST",
+            headers: getHospitalAuthHeaders(true),
+            body: JSON.stringify({
+                subject: subjInput ? subjInput.value.trim() || null : null,
+                message: message
+            })
+        });
+        if (!res.ok) throw new Error("Could not send reply");
+        if (textInput) textInput.value = "";
+        if (subjInput) subjInput.value = "";
+        await loadHospitalAdminMessages();
+    } catch(e) {
+        alert("Send reply error: " + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "🚀 Send Reply"; }
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+/* =====================================================
+   INITIALIZATION & AUTO-REFRESH (10s)
+===================================================== */
+loadHospital();
+loadDoctors();
+loadQueue();
+loadHospitalAdminMessages();
+checkAdminMessagesUnreadCount();
+
+setInterval(() => {
+    loadQueue();
+    checkAdminMessagesUnreadCount();
+}, 10000);
+
+/* =====================================================
+   HOSPITAL BREAK TIME MANAGEMENT (HOSPITAL ONLY)
+===================================================== */
+function openHospitalBreakModal() {
+    const modal = document.getElementById("hospitalBreakModal");
+    if (!modal) return;
+    if (storedHospital) {
+        if (storedHospital.break_start_time) document.getElementById("dashBreakStart").value = storedHospital.break_start_time;
+        if (storedHospital.break_end_time) document.getElementById("dashBreakEnd").value = storedHospital.break_end_time;
+    }
+    const fb = document.getElementById("breakModalFeedback");
+    if (fb) fb.style.display = "none";
+    modal.style.display = "flex";
+}
+
+function closeHospitalBreakModal() {
+    const modal = document.getElementById("hospitalBreakModal");
+    if (modal) modal.style.display = "none";
+}
+
+async function saveHospitalBreakTime() {
+    const start = document.getElementById("dashBreakStart").value;
+    const end = document.getElementById("dashBreakEnd").value;
+    const btn = document.getElementById("btnSaveBreakTime");
+    const fb = document.getElementById("breakModalFeedback");
+
+    if (!start || !end) {
+        alert("Please specify both start and end time for the break.");
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                break_start_time: start,
+                break_end_time: end
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to update break time");
+
+        showToast("✓ Break timing updated successfully!", "🍱");
+        closeHospitalBreakModal();
+        await loadHospital();
+    } catch (err) {
+        if (fb) {
+            fb.style.display = "block";
+            fb.style.background = "#fee2e2";
+            fb.style.color = "#991b1b";
+            fb.textContent = "Error: " + err.message;
+        } else {
+            alert(err.message);
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "💾 Save Break Timing";
+        }
+    }
+}
+
+</script>
+
+</body>
+</html>

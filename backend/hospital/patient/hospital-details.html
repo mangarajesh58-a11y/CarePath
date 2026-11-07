@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to CarePath Patient...</title>
+    <script>
+        const search = window.location.search || "";
+        window.location.replace("https://carepath-patient-mx5v.vercel.app/hospital-details.html" + search);
+    </script>
+</head>
+<body style="font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f8fafc; margin: 0;">
+    <div style="text-align: center; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 400px;">
+        <div style="font-size: 32px; margin-bottom: 10px;">🏥</div>
+        <h3 style="margin: 0 0 8px; color: #1e293b;">Opening Hospital Details...</h3>
+        <p style="margin: 0 0 16px; font-size: 13px; color: #64748b;">Redirecting you to the CarePath Patient App...</p>
+        <a id="fallbackLink" href="https://carepath-patient-mx5v.vercel.app/hospital-details.html" style="color: #2563eb; font-weight: bold; font-size: 13px; text-decoration: none;">Click here if not redirected automatically ➔</a>
+    </div>
+    <script>
+        document.getElementById("fallbackLink").href = "https://carepath-patient-mx5v.vercel.app/hospital-details.html" + (window.location.search || "");
+    </script>
+</body>
+</html>
