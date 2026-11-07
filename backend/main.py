@@ -1510,6 +1510,7 @@ Provide a direct, helpful 1-2 sentence response to the patient.""",
 # ============================================================
 
 @app.post("/ai/analyze-prescription")
+@app.post("/ai/analyze-prescription/")
 async def carepath_ai_analyze_prescription(
     photo: UploadFile = File(...),
     notes: Optional[str] = Form(""),

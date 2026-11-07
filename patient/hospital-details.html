@@ -169,29 +169,78 @@
 
         let currentLoadedHospital = null;
 
+        async function fetchHospitalWithRetry(id, maxRetries = 3) {
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const response = await fetch(`${API}/hospitals/${id}`);
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (err) {
+                    console.warn(`Attempt ${attempt} to fetch hospital ${id} failed:`, err);
+                }
+                if (attempt < maxRetries) {
+                    await new Promise(r => setTimeout(r, 1200));
+                }
+            }
+            return null;
+        }
+
         async function showHospitalDetails() {
             const urlParams = new URLSearchParams(window.location.search);
             const urlHospitalId = urlParams.get("id") || urlParams.get("hospital_id") || urlParams.get("hospitalId");
 
             if (urlHospitalId) {
-                try {
-                    hospitalContainer.innerHTML = "<p style='text-align: center; color: #64748b; padding: 25px;'>🏥 Loading hospital details from CarePath...</p>";
-                    const response = await fetch(`${API}/hospitals/${urlHospitalId}`);
-                    if (response.ok) {
-                        const hospitalData = await response.json();
-                        localStorage.setItem("selectedHospitalId", String(urlHospitalId));
-                        localStorage.setItem("hospital_id", String(urlHospitalId));
-                        localStorage.setItem("hospitalId", String(urlHospitalId));
-                        localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
-                        localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
-                        renderHospitalContent(hospitalData);
-                        return;
-                    } else {
-                        console.warn("Hospital not found on server:", urlHospitalId);
-                    }
-                } catch (err) {
-                    console.warn("Could not load hospital from URL param:", err);
+                hospitalContainer.innerHTML = `
+                    <div style="text-align: center; padding: 36px 20px;">
+                        <div style="font-size: 38px; animation: pulseDot 1.5s infinite; margin-bottom: 12px;">🏥</div>
+                        <h3 style="margin: 0 0 6px; color: #1e293b; font-size: 18px;">Connecting to CarePath...</h3>
+                        <p style="color: #64748b; font-size: 13.5px; margin: 0;">Loading verified hospital details & doctor OPD schedule...</p>
+                    </div>
+                `;
+
+                const hospitalData = await fetchHospitalWithRetry(urlHospitalId, 3);
+                if (hospitalData) {
+                    localStorage.setItem("selectedHospitalId", String(urlHospitalId));
+                    localStorage.setItem("hospital_id", String(urlHospitalId));
+                    localStorage.setItem("hospitalId", String(urlHospitalId));
+                    localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
+                    localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
+                    renderHospitalContent(hospitalData);
+                    return;
                 }
+
+                // If fetch with retry failed (e.g. cold start or offline), check cached version if matches id
+                const saved = localStorage.getItem("selectedHospital");
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (String(parsed.id || parsed.hospital_id) === String(urlHospitalId)) {
+                            renderHospitalContent(parsed);
+                            return;
+                        }
+                    } catch (e) {}
+                }
+
+                // Render friendly Retry Card instead of misleading "No hospital selected"
+                hospitalContainer.innerHTML = `
+                    <div style="text-align: center; padding: 36px 20px;">
+                        <div style="font-size: 40px; margin-bottom: 12px;">📡</div>
+                        <h3 style="margin: 0 0 8px; color: #1e293b; font-size: 18px;">Unable to Reach Hospital Server</h3>
+                        <p style="color: #64748b; font-size: 13.5px; margin: 0 0 20px; line-height: 1.5; max-width: 440px; margin-left: auto; margin-right: auto;">
+                            The cloud server is taking a moment to respond. Please check your internet connection or tap retry.
+                        </p>
+                        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <button type="button" class="continue-button" onclick="showHospitalDetails()" style="margin: 0; display: inline-flex; align-items: center; gap: 6px;">
+                                🔄 Retry Loading Hospital
+                            </button>
+                            <a href="./index.html" class="back-button" style="margin: 0; display: inline-flex; align-items: center; text-decoration: none;">
+                                Browse All Hospitals
+                            </a>
+                        </div>
+                    </div>
+                `;
+                return;
             }
 
             const savedHospital = localStorage.getItem("selectedHospital");

@@ -280,12 +280,16 @@
   </div>
 
   <div class="carepath-ai-input-area" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #ffffff; border-top: 1px solid #e2e8f0;">
-    <input type="file" id="carepathAIPicInput" accept="image/*" capture="environment" style="display: none;">
+    <!-- HIDDEN INPUTS FOR CAMERA AND GALLERY CHOOSER -->
+    <input type="file" id="carepathAICameraInput" accept="image/*" capture="environment" style="display: none;">
+    <input type="file" id="carepathAIGalleryInput" accept="image/*" style="display: none;">
+
     <button
       type="button"
       id="carepathAIAttachBtn"
       title="Upload or take photo of prescription / medical report"
       aria-label="Upload prescription photo"
+      onclick="openPrescriptionChoiceModal()"
       style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; color: #166534; flex-shrink: 0; transition: transform 0.2s;"
       onmouseover="this.style.transform='scale(1.08)'"
       onmouseout="this.style.transform='scale(1)'"
@@ -309,6 +313,74 @@
     </button>
   </div>
 
+</div>
+
+<!-- PRESCRIPTION UPLOAD CHOICE MODAL (CAMERA OR GALLERY) -->
+<div id="carepathAIPhotoModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 100000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+  <div style="background: white; border-radius: 18px; max-width: 420px; width: 100%; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
+    <div style="font-size: 38px; margin-bottom: 8px;">🩺</div>
+    <h3 style="margin: 0 0 6px; font-size: 18px; color: #0f172a; font-weight: 800;">Scan Doctor's Prescription</h3>
+    <p style="margin: 0 0 18px; font-size: 13px; color: #64748b; line-height: 1.45;">
+      CarePath AI reads handwriting, decodes dosage terms (1-0-1, TDS), and explains medicines in plain English.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+      <!-- OPTION 1: CAMERA -->
+      <button type="button" onclick="triggerPrescriptionCamera()" style="display: flex; align-items: center; gap: 14px; padding: 13px 16px; border: 1.5px solid #0284c7; background: #f0f9ff; border-radius: 12px; cursor: pointer; text-align: left; transition: all 0.2s;">
+        <span style="font-size: 26px;">📸</span>
+        <div style="flex: 1;">
+          <div style="font-size: 14.5px; font-weight: 800; color: #0369a1;">Take Photo with Camera</div>
+          <div style="font-size: 12px; color: #0284c7; margin-top: 2px;">Snap a clear photo of your paper prescription</div>
+        </div>
+        <span style="color: #0284c7; font-size: 18px; font-weight: bold;">➔</span>
+      </button>
+
+      <!-- OPTION 2: GALLERY / FILES -->
+      <button type="button" onclick="triggerPrescriptionGallery()" style="display: flex; align-items: center; gap: 14px; padding: 13px 16px; border: 1.5px solid #16a34a; background: #f0fdf4; border-radius: 12px; cursor: pointer; text-align: left; transition: all 0.2s;">
+        <span style="font-size: 26px;">🖼️</span>
+        <div style="flex: 1;">
+          <div style="font-size: 14.5px; font-weight: 800; color: #15803d;">Upload from Gallery / Files</div>
+          <div style="font-size: 12px; color: #166534; margin-top: 2px;">Choose photo, screenshot, or scan from device</div>
+        </div>
+        <span style="color: #16a34a; font-size: 18px; font-weight: bold;">➔</span>
+      </button>
+    </div>
+
+    <div id="cameraPermissionNotice" style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #b91c1c; margin-bottom: 14px; text-align: left; line-height: 1.4;">
+      ℹ️ <strong>Camera Permission:</strong> If your browser asks, tap <strong>Allow</strong>. If camera does not open, choose <strong>Upload from Gallery / Files</strong> above.
+    </div>
+
+    <button type="button" onclick="closePrescriptionChoiceModal()" style="width: 100%; padding: 11px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 13.5px; cursor: pointer;">
+      Cancel
+    </button>
+  </div>
+</div>
+
+<!-- PRESCRIPTION PREVIEW & CONFIRM MODAL -->
+<div id="carepathAIPreviewModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 100001; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+  <div style="background: white; border-radius: 18px; max-width: 440px; width: 100%; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0; font-size: 17px; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+        <span>🔍</span> Confirm Prescription Photo
+      </h3>
+      <button type="button" onclick="cancelPrescriptionPreview()" style="background: transparent; border: none; font-size: 22px; cursor: pointer; color: #64748b;">&times;</button>
+    </div>
+    
+    <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 8px; margin-bottom: 12px;">
+      <img id="prescriptionPreviewImg" src="" alt="Prescription Preview" style="width: 100%; max-height: 220px; object-fit: contain; border-radius: 8px; display: block; margin: 0 auto;">
+    </div>
+
+    <input type="text" id="prescriptionUserNotes" placeholder="Optional: Any specific question for AI? (e.g. tablet timings)" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; margin-bottom: 16px; outline: none;">
+    
+    <div style="display: flex; gap: 10px;">
+      <button type="button" onclick="cancelPrescriptionPreview()" style="flex: 1; padding: 12px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 13.5px; cursor: pointer;">
+        ✕ Change Photo
+      </button>
+      <button type="button" id="btnConfirmDecodePrescription" onclick="submitPrescriptionForAnalysis()" style="flex: 1.6; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 13.5px; cursor: pointer; box-shadow: 0 4px 12px rgba(2,132,199,0.3);">
+        🚀 Decode Prescription
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -474,11 +546,43 @@
   // =====================================================
   // CAREPATH AI - PRESCRIPTION & REPORT VISION EXPLAINER
   // =====================================================
-  const picInput = document.getElementById("carepathAIPicInput");
-  const attachBtn = document.getElementById("carepathAIAttachBtn");
+  const cameraInput = document.getElementById("carepathAICameraInput");
+  const galleryInput = document.getElementById("carepathAIGalleryInput");
+  const choiceModal = document.getElementById("carepathAIPhotoModal");
+  const previewModal = document.getElementById("carepathAIPreviewModal");
+  const previewImg = document.getElementById("prescriptionPreviewImg");
+  const userNotesInput = document.getElementById("prescriptionUserNotes");
+  let pendingPrescriptionFile = null;
+
+  function openPrescriptionChoiceModal() {
+    if (choiceModal) choiceModal.style.display = "flex";
+  }
+
+  function closePrescriptionChoiceModal() {
+    if (choiceModal) choiceModal.style.display = "none";
+  }
+
+  function triggerPrescriptionCamera() {
+    closePrescriptionChoiceModal();
+    if (cameraInput) {
+      try {
+        cameraInput.click();
+      } catch (err) {
+        console.warn("Camera trigger failed, falling back to gallery:", err);
+        const notice = document.getElementById("cameraPermissionNotice");
+        if (notice) notice.style.display = "block";
+        if (choiceModal) choiceModal.style.display = "flex";
+      }
+    }
+  }
+
+  function triggerPrescriptionGallery() {
+    closePrescriptionChoiceModal();
+    if (galleryInput) galleryInput.click();
+  }
 
   function triggerPrescriptionCapture() {
-    if (picInput) picInput.click();
+    openPrescriptionChoiceModal();
   }
 
   function quickAskAI(text) {
@@ -488,127 +592,188 @@
     }
   }
 
-  if (attachBtn) {
-    attachBtn.addEventListener("click", triggerPrescriptionCapture);
+  function handlePrescriptionFileSelected(file) {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Please select an image smaller than 10 MB.");
+      return;
+    }
+    pendingPrescriptionFile = file;
+
+    // Show confirmation preview modal
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      if (previewImg) previewImg.src = evt.target.result;
+      if (userNotesInput) userNotesInput.value = "";
+      if (previewModal) previewModal.style.display = "flex";
+    };
+    reader.readAsDataURL(file);
   }
 
-  if (picInput) {
-    picInput.addEventListener("change", async function(e) {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
+  function cancelPrescriptionPreview() {
+    pendingPrescriptionFile = null;
+    if (previewModal) previewModal.style.display = "none";
+    if (cameraInput) cameraInput.value = "";
+    if (galleryInput) galleryInput.value = "";
+  }
 
-      // 1. Show patient upload preview bubble
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const previewUrl = evt.target.result;
-        const userMsg = document.createElement("div");
-        userMsg.className = "carepath-ai-message user";
-        userMsg.innerHTML = `
-          <div style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
-            <span>📸</span> Prescription Photo Uploaded
-          </div>
-          <img src="${previewUrl}" alt="Prescription" style="width: 100%; max-width: 240px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.4); display: block;">
-        `;
-        carepathAIMessages.appendChild(userMsg);
-        carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
-      };
-      reader.readAsDataURL(file);
+  async function submitPrescriptionForAnalysis() {
+    if (!pendingPrescriptionFile) {
+      alert("No image selected.");
+      return;
+    }
 
-      // 2. Add AI Analyzing indicator
-      const analyzingMsg = document.createElement("div");
-      analyzingMsg.className = "carepath-ai-message";
-      analyzingMsg.id = "carepathAIAnalyzingMsg";
-      analyzingMsg.innerHTML = `
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <img src="carepath-ai.png" alt="AI" style="width: 24px; height: 24px; border-radius: 50%;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
-          <div>
-            <strong>🔍 CarePath AI Vision:</strong> Reading doctor's handwriting & analyzing medicines...
-          </div>
+    const file = pendingPrescriptionFile;
+    const userNotes = userNotesInput ? userNotesInput.value.trim() : "";
+    if (previewModal) previewModal.style.display = "none";
+
+    // 1. Show user message with thumbnail
+    const userMsg = document.createElement("div");
+    userMsg.className = "carepath-ai-message user";
+    userMsg.innerHTML = `
+      <div style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
+        <span>📸</span> Prescription Submitted
+      </div>
+      <img src="${previewImg.src}" alt="Prescription" style="width: 100%; max-width: 240px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.4); display: block;">
+      ${userNotes ? `<div style="font-size: 12px; margin-top: 6px; opacity: 0.9;"><strong>Note:</strong> ${escapeHtml(userNotes)}</div>` : ''}
+    `;
+    carepathAIMessages.appendChild(userMsg);
+    carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+
+    // 2. Add AI Analyzing indicator
+    const analyzingMsg = document.createElement("div");
+    analyzingMsg.className = "carepath-ai-message";
+    analyzingMsg.id = "carepathAIAnalyzingMsg";
+    analyzingMsg.innerHTML = `
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <img src="carepath-ai.png" alt="AI" style="width: 26px; height: 26px; border-radius: 50%;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+        <div>
+          <div style="font-weight: 700; color: #0284c7;">🔍 CarePath AI Clinical Vision Engine</div>
+          <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Transcribing doctor's handwriting, decoding medicines & verifying safety...</div>
         </div>
-      `;
-      carepathAIMessages.appendChild(analyzingMsg);
-      carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+      </div>
+    `;
+    carepathAIMessages.appendChild(analyzingMsg);
+    carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
 
-      // 3. Post to backend vision analyzer
-      const formData = new FormData();
-      formData.append("photo", file);
-      formData.append("notes", "Explain this doctor's prescription clearly to the patient.");
+    // 3. Post to backend
+    const formData = new FormData();
+    formData.append("photo", file);
+    formData.append("notes", userNotes || "Explain this doctor prescription clearly to the patient.");
 
-      const aiEndpoint = (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost")
-        ? "http://127.0.0.1:8000/ai/analyze-prescription"
-        : "https://carepath-3q9q.onrender.com/ai/analyze-prescription";
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    const primaryUrl = isLocal ? "http://127.0.0.1:8000/ai/analyze-prescription" : "https://carepath-3q9q.onrender.com/ai/analyze-prescription";
 
-      try {
-        const res = await fetch(aiEndpoint, {
+    const submitBtn = document.getElementById("btnConfirmDecodePrescription");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "⏳ Analyzing...";
+    }
+
+    try {
+      let res = await fetch(primaryUrl, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!res.ok && res.status === 404) {
+        // Try fallback with trailing slash
+        const fallbackUrl = primaryUrl + "/";
+        res = await fetch(fallbackUrl, {
           method: "POST",
           body: formData
         });
-
-        const data = await res.json();
-        const analyzingEl = document.getElementById("carepathAIAnalyzingMsg");
-        if (analyzingEl) analyzingEl.remove();
-
-        if (!res.ok) throw new Error(data.detail || "Unable to analyze prescription right now.");
-
-        const explanationText = data.analysis || "Prescription processed successfully.";
-
-        // Display structured explanation
-        const aiReply = document.createElement("div");
-        aiReply.className = "carepath-ai-message";
-        aiReply.style.background = "#f0fdf4";
-        aiReply.style.border = "1.5px solid #86efac";
-        aiReply.style.color = "#0f172a";
-        aiReply.style.lineHeight = "1.55";
-
-        // Convert markdown bold and bullets to clean HTML
-        let formatted = explanationText
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\n/g, '<br>');
-
-        aiReply.innerHTML = `
-          <div style="font-size: 13.5px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #bbf7d0; padding-bottom: 6px;">
-              <strong style="color: #166534; display: flex; align-items: center; gap: 6px;">
-                <span>🩺</span> Prescription Decoded by CarePath AI
-              </strong>
-              <button type="button" onclick="speakPrescriptionExplanation(this)" data-text="${encodeURIComponent(explanationText.slice(0, 500))}" style="background: #22c55e; color: white; border: none; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">
-                🔊 Listen
-              </button>
-            </div>
-            <div>${formatted}</div>
-          </div>
-        `;
-        carepathAIMessages.appendChild(aiReply);
-        carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
-
-      } catch (err) {
-        console.error("Prescription Vision Error:", err);
-        const analyzingEl = document.getElementById("carepathAIAnalyzingMsg");
-        if (analyzingEl) analyzingEl.remove();
-
-        addCarePathMessage("Prescription scan error: " + err.message, "ai");
-      } finally {
-        picInput.value = "";
       }
+
+      const analyzingEl = document.getElementById("carepathAIAnalyzingMsg");
+      if (analyzingEl) analyzingEl.remove();
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.message || "Prescription analysis service is currently unavailable.");
+      }
+
+      const explanationText = data.analysis || "Prescription decoded successfully.";
+
+      // Display formatted explanation
+      const aiReply = document.createElement("div");
+      aiReply.className = "carepath-ai-message";
+      aiReply.style.background = "#f0fdf4";
+      aiReply.style.border = "1.5px solid #86efac";
+      aiReply.style.color = "#0f172a";
+      aiReply.style.lineHeight = "1.55";
+
+      let formatted = explanationText
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/
+/g, '<br>');
+
+      aiReply.innerHTML = `
+        <div style="font-size: 13.5px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #bbf7d0; padding-bottom: 6px;">
+            <strong style="color: #166534; display: flex; align-items: center; gap: 6px;">
+              <span>🩺</span> Prescription Decoded by CarePath AI
+            </strong>
+            <button type="button" onclick="speakPrescriptionExplanation(this)" data-text="${encodeURIComponent(explanationText.slice(0, 600))}" style="background: #22c55e; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+              🔊 Listen
+            </button>
+          </div>
+          <div>${formatted}</div>
+        </div>
+      `;
+      carepathAIMessages.appendChild(aiReply);
+      carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+
+    } catch (err) {
+      console.error("Prescription Vision Error:", err);
+      const analyzingEl = document.getElementById("carepathAIAnalyzingMsg");
+      if (analyzingEl) analyzingEl.remove();
+
+      addCarePathMessage("Prescription scan error: " + err.message, "ai");
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "🚀 Decode Prescription";
+      }
+      pendingPrescriptionFile = null;
+      if (cameraInput) cameraInput.value = "";
+      if (galleryInput) galleryInput.value = "";
+    }
+  }
+
+  if (cameraInput) {
+    cameraInput.addEventListener("change", function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) handlePrescriptionFileSelected(file);
+    });
+  }
+
+  if (galleryInput) {
+    galleryInput.addEventListener("change", function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) handlePrescriptionFileSelected(file);
     });
   }
 
   function speakPrescriptionExplanation(btn) {
-    if (!('speechSynthesis' in window)) {
+    if (!window.speechSynthesis) {
       alert("Text-to-speech is not supported on this browser.");
       return;
     }
-    const raw = decodeURIComponent(btn.getAttribute("data-text") || "");
-    if (!raw) return;
+    const rawText = decodeURIComponent(btn.getAttribute("data-text") || "");
+    if (!rawText) return;
+
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(raw);
+    const cleanText = rawText.replace(/[*#_~]/g, "").replace(/<[^>]*>/g, "");
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "en-IN";
     utterance.rate = 0.95;
-    window.speechSynthesis.speak(utterance);
-    btn.textContent = "🔊 Playing...";
+    btn.textContent = "🔊 Reading...";
     utterance.onend = () => { btn.textContent = "🔊 Listen"; };
+    utterance.onerror = () => { btn.textContent = "🔊 Listen"; };
+    window.speechSynthesis.speak(utterance);
   }
 
-  // Send button
   if (carepathAISend) {
     carepathAISend.addEventListener(
       "click",
