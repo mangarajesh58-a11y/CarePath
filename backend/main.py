@@ -1311,7 +1311,7 @@ def check_instant_ai_response(message: str, language: str = "en-IN") -> Optional
     # --- TELUGU INSTANT RESPONSES ---
     if has_telugu or language.startswith("te") or any(w in text for w in ["jvaram", "thalanopi", "mandulu", "daktaru", "ela undi"]):
         if any(w in message for w in ["నమస్కారం", "నమస్తే", "హలో", "హాయ్", "బాగున్నారా"]) or any(w in text for w in ["namaste", "namaskaram", "hello"]):
-            return "నమస్కారం! 🙏 నేను CarePath AI, మీ 24/7 ఆరోగ్య సహాయకుడిని. మీకు ఎలా సహాయపడగలను? 💙"
+            return "నమస్కారం! 🙏 మీకు ఎలా సహాయపడగలను? మీ ఆరోగ్య ప్రశ్నలను అడగండి! 💙"
         if any(w in message for w in ["జ్వరం", "ఫీవర్", "వేడి"]) or "jvaram" in text or "fever" in text:
             return "🌡️ తేలికపాటి జ్వరానికి తగినంత నీరు లేదా ORS తాగి విశ్రాంతి తీసుకోండి. జ్వరం 102°F దాటితే వెంటనే OPD జనరల్ డాక్టర్‌ను సంప్రదించండి."
         if any(w in message for w in ["తలనొప్పి", "తల నొప్పి"]) or "thalanopi" in text:
@@ -1326,7 +1326,7 @@ def check_instant_ai_response(message: str, language: str = "en-IN") -> Optional
     # --- HINDI INSTANT RESPONSES ---
     if has_hindi or language.startswith("hi") or any(w in text for w in ["bukhar", "sir dard", "dawai", "kaisa hai"]):
         if any(w in message for w in ["नमस्ते", "प्रणाम", "हेलो", "हाय"]) or any(w in text for w in ["namaste", "pranam"]):
-            return "नमस्ते! 🙏 मैं CarePath AI हूँ, आपका 24/7 स्वास्थ्य सहायक। मैं आपकी क्या मदद कर सकता हूँ? 💙"
+            return "नमस्ते! 🙏 मैं आपकी क्या मदद कर सकता हूँ? अपने स्वास्थ्य संबंधी प्रश्न पूछें! 💙"
         if any(w in message for w in ["बुखार", "तापमान"]) or "bukhar" in text:
             return "🌡️ हल्के बुखार में भरपूर पानी या ओआरएस (ORS) पिएं और आराम करें। यदि बुखार 102°F से अधिक है, तो तुरंत डॉक्टर से परामर्श लें।"
         if any(w in message for w in ["सिरदर्द", "सिर दर्द"]) or "sir dard" in text:
