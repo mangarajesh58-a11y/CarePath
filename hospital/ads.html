@@ -546,6 +546,29 @@
                     <textarea id="adDesc" rows="3" placeholder="e.g. Free ECG and blood pressure checkup included with doctor consultation. Walk-ins welcome daily 9 AM - 6 PM." maxlength="1000"></textarea>
                 </div>
 
+                                <!-- YOUR HOSPITAL'S DIRECT PATIENT LINK -->
+                <div class="form-group" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1.5px solid #86efac; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                        <label style="margin: 0; font-weight: 700; font-size: 13.5px; color: #166534; display: flex; align-items: center; gap: 6px;">
+                            🏥 Your Direct Hospital Patient Link
+                        </label>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" onclick="copyHospitalDirectLink()" style="background: #16a34a; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                📋 Copy Link
+                            </button>
+                            <button type="button" onclick="useAsAdTargetLink()" style="background: #2563eb; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                🔗 Use in Target Link
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="hospitalDirectLinkInput" readonly style="background: #ffffff; border: 1.5px solid #86efac; font-weight: 600; color: #15803d; font-size: 13px; font-family: monospace; padding: 10px 12px; border-radius: 8px; width: 100%; box-sizing: border-box;" value="Generating your direct link...">
+                    </div>
+                    <div style="font-size: 12px; color: #15803d; margin-top: 6px; line-height: 1.4;">
+                        ✨ When patients click this link (from your ad, WhatsApp, or website), CarePath directly opens your hospital details & appointment booking!
+                    </div>
+                </div>
+
                 <!-- CONTACT PHONE & TARGET URL -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                     <div class="form-group">
@@ -924,6 +947,56 @@ async function loadCampaigns() {
 })();
 
 // INITIAL LOAD
+
+/* =====================================================
+   HOSPITAL DIRECT PATIENT LINK HELPERS
+===================================================== */
+function generateHospitalDirectLink() {
+    const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId");
+    if (!activeHospId) return "";
+
+    const loc = window.location;
+    const pathname = loc.pathname;
+    let patientPath = "/patient/hospital-details.html";
+    if (pathname.includes("/hospital/")) {
+        patientPath = pathname.substring(0, pathname.lastIndexOf("/hospital/")) + "/patient/hospital-details.html";
+    }
+    const directLink = `${loc.origin}${patientPath}?id=${activeHospId}`;
+    const input = document.getElementById("hospitalDirectLinkInput");
+    if (input) {
+        input.value = directLink;
+    }
+    return directLink;
+}
+
+function copyHospitalDirectLink() {
+    const input = document.getElementById("hospitalDirectLinkInput");
+    if (!input || !input.value) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+        alert("Hospital direct patient link copied to clipboard!\n\n" + input.value);
+    }).catch(() => {
+        input.select();
+        document.execCommand("copy");
+        alert("Hospital direct patient link copied to clipboard!");
+    });
+}
+
+function useAsAdTargetLink() {
+    const directLink = generateHospitalDirectLink();
+    const adLinkInput = document.getElementById("adLink");
+    if (adLinkInput && directLink) {
+        adLinkInput.value = directLink;
+        adLinkInput.focus();
+        adLinkInput.style.borderColor = "#16a34a";
+        adLinkInput.style.background = "#f0fdf4";
+        setTimeout(() => {
+            adLinkInput.style.borderColor = "";
+            adLinkInput.style.background = "";
+        }, 1500);
+    }
+}
+
+generateHospitalDirectLink();
 loadHospitalInfo();
 loadCampaigns();
 </script>

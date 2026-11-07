@@ -214,7 +214,16 @@
            GET HOSPITAL ID
         ================================================= */
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlHospId = urlParams.get("id") || urlParams.get("hospital_id") || urlParams.get("hospitalId");
+        if (urlHospId) {
+            localStorage.setItem("selectedHospitalId", String(urlHospId));
+            localStorage.setItem("hospital_id", String(urlHospId));
+            localStorage.setItem("hospitalId", String(urlHospId));
+        }
+
         const hospitalId =
+            urlHospId ||
             localStorage.getItem(
                 "selectedHospitalId"
             ) ||

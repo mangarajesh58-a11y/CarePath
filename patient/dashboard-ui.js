@@ -117,6 +117,17 @@
     // Show previously viewed hospitals immediately.
     renderRecentHospitals();
 
+    // Check if patient navigated with direct hospital link (?id=... or ?hospital_id=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetHospId = urlParams.get("id") || urlParams.get("hospital_id") || urlParams.get("hospitalId");
+    if (targetHospId) {
+        localStorage.setItem("selectedHospitalId", String(targetHospId));
+        localStorage.setItem("hospital_id", String(targetHospId));
+        localStorage.setItem("hospitalId", String(targetHospId));
+        window.location.replace("./hospital-details.html?id=" + encodeURIComponent(targetHospId));
+        return;
+    }
+
     // Load current hospital records from the backend.
     loadHospitalsForCards();
   }

@@ -100,6 +100,10 @@
         const hospitalContainer = document.getElementById("hospitalDetails");
         const message = document.getElementById("detailsMessage");
 
+        const API = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+            ? "http://127.0.0.1:8000"
+            : "https://carepath-3q9q.onrender.com";
+
         function addDetail(container, label, value) {
             const row = document.createElement("p");
             row.className = "detail-row";
@@ -116,11 +120,37 @@
             container.appendChild(row);
         }
 
-        function showHospitalDetails() {
+        async function showHospitalDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlHospitalId = urlParams.get("id") || urlParams.get("hospital_id") || urlParams.get("hospitalId");
+
+            if (urlHospitalId) {
+                try {
+                    hospitalContainer.innerHTML = "<p style='text-align: center; color: #64748b; padding: 25px;'>🏥 Loading hospital details from CarePath...</p>";
+                    const response = await fetch(`${API}/hospitals/${urlHospitalId}`);
+                    if (response.ok) {
+                        const hospitalData = await response.json();
+                        localStorage.setItem("selectedHospitalId", String(urlHospitalId));
+                        localStorage.setItem("hospital_id", String(urlHospitalId));
+                        localStorage.setItem("hospitalId", String(urlHospitalId));
+                        localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
+                        localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
+                        renderHospitalContent(hospitalData);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn("Could not load hospital from URL param:", err);
+                }
+            }
+
             const savedHospital = localStorage.getItem("selectedHospital");
 
             if (!savedHospital) {
-                hospitalContainer.replaceChildren();
+                renderHospitalContent(hospital);
+        }
+
+        function renderHospitalContent(hospital) {
+            hospitalContainer.replaceChildren();
 
                 const heading = document.createElement("h2");
                 heading.textContent = "No hospital selected";
