@@ -8010,3 +8010,89 @@ def hospital_reply_to_admin(
             "created_at": msg.created_at.isoformat() if msg.created_at else None,
         },
     }
+
+
+# ============================================================
+# PATIENT DIRECT INQUIRY TO HOSPITAL
+# ============================================================
+
+class PatientInquiryRequest(BaseModel):
+    patient_name: str
+    patient_phone: Optional[str] = None
+    patient_email: Optional[str] = None
+    subject: Optional[str] = "Patient Inquiry"
+    message: str
+
+
+@app.post("/hospitals/{hospital_id}/patient-inquiry")
+def submit_patient_inquiry(
+    hospital_id: int,
+    data: PatientInquiryRequest,
+    db: Session = Depends(get_db),
+):
+    """Patient: Directly send inquiry to a hospital helpdesk."""
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+
+    message_text = (data.message or "").strip()
+    if not message_text:
+        raise HTTPException(status_code=400, detail="Inquiry message cannot be empty")
+
+    patient_name = (data.patient_name or "CarePath Patient").strip()
+    sender_info = patient_name
+    if data.patient_phone:
+        sender_info += f" ({data.patient_phone.strip()})"
+
+    subj = (data.subject or f"Patient Inquiry from {patient_name}").strip()
+
+    msg = HospitalDirectMessage(
+        hospital_id=hospital_id,
+        sender_role="patient",
+        sender_name=sender_info,
+        subject=subj,
+        message=message_text,
+        priority="normal",
+        is_read=False,
+        sent_via_email=False,
+        created_at=datetime.utcnow(),
+    )
+
+    # Optional email dispatch to hospital
+    if hospital.email:
+        email_body = f"""New Patient Inquiry on CarePath:
+
+From: {sender_info}
+Email: {data.patient_email or 'Not provided'}
+Subject: {subj}
+
+Message:
+{message_text}
+
+---
+You can view and reply to this inquiry directly on your CarePath Hospital Dashboard.
+"""
+        try:
+            send_email_notification(
+                to_email=hospital.email,
+                subject=f"CarePath Patient Inquiry: {subj}",
+                body=email_body,
+            )
+            msg.sent_via_email = True
+        except Exception as e:
+            logging.warning("Patient inquiry email delivery skipped: %s", e)
+
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+
+    return {
+        "success": True,
+        "message": "Inquiry submitted to hospital helpdesk successfully.",
+        "inquiry": {
+            "id": msg.id,
+            "subject": msg.subject,
+            "message": msg.message,
+            "created_at": msg.created_at.isoformat() if msg.created_at else None,
+        },
+    }

@@ -92,6 +92,53 @@
             </div>
 
             <p id="detailsMessage" role="status"></p>
+        
+            <!-- PATIENT INQUIRY MODAL -->
+            <div id="patientInquiryModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; padding: 20px; align-items: center; justify-content: center; box-sizing: border-box;">
+                <div style="background: white; border-radius: 14px; max-width: 520px; width: 100%; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; box-sizing: border-box;">
+                    <button type="button" onclick="closePatientInquiryModal()" style="position: absolute; top: 12px; right: 14px; background: transparent; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+                    <h3 style="margin: 0 0 6px; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                        ✉️ Send Inquiry to <span id="inquiryHospitalNameSpan">Hospital</span>
+                    </h3>
+                    <p style="margin: 0 0 16px; font-size: 12.5px; color: #64748b;">
+                        The hospital helpdesk will receive your inquiry on their dashboard and respond to your phone/email.
+                    </p>
+                    <div id="inquiryModalAlert" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px;"></div>
+                    <form id="patientInquiryForm" onsubmit="submitPatientInquiryForm(event)">
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Your Full Name *</label>
+                            <input type="text" id="inquiryPatientName" placeholder="Enter your name" required style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                            <div>
+                                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Contact Phone *</label>
+                                <input type="tel" id="inquiryPatientPhone" placeholder="Mobile number" required style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Email (Optional)</label>
+                                <input type="email" id="inquiryPatientEmail" placeholder="your@email.com" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;">
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Subject</label>
+                            <input type="text" id="inquirySubject" placeholder="e.g. OPD Timings, Bed Availability, Specialist Consultation" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Message *</label>
+                            <textarea id="inquiryMessage" rows="3" placeholder="Type your inquiry for the hospital staff..." required style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical; outline: none;"></textarea>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <a id="inquiryModalWhatsAppBtn" href="#" target="_blank" style="font-size: 12.5px; color: #15803d; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                🟢 Chat on WhatsApp instead ↗
+                            </a>
+                            <button type="submit" id="btnSubmitInquiry" style="background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 13.5px; cursor: pointer; box-shadow: 0 2px 6px rgba(37,99,235,0.3);">
+                                🚀 Send Inquiry
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -150,6 +197,7 @@
         }
 
         function renderHospitalContent(hospital) {
+            currentLoadedHospital = hospital;
             hospitalContainer.replaceChildren();
 
                 const heading = document.createElement("h2");
@@ -252,6 +300,45 @@ if (typeof hospital === "string") {
                         : hospital.departments
                 );
 
+                
+                // DIRECT COMMUNICATION BLOCK FOR PATIENT
+                const rawPhone = hospital.phone || "";
+                const cleanPhone = String(rawPhone).replace(/[^0-9]/g, "");
+                const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
+                const hospName = hospital.name || hospital.hospital_name || "Hospital";
+
+                const commCard = document.createElement("div");
+                commCard.className = "patient-direct-comm-card";
+                commCard.setAttribute("style", "margin: 22px 0 16px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);");
+                
+                commCard.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                        <div style="font-weight: 800; font-size: 15px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                            💬 Direct Communication with Hospital
+                        </div>
+                        <span style="font-size: 11px; font-weight: 700; background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 20px;">
+                            ✓ Verified Front Desk
+                        </span>
+                    </div>
+                    <p style="margin: 0 0 12px; font-size: 13px; color: #475569; line-height: 1.45;">
+                        Have questions about OPD schedules, doctor availability, or emergency care? Contact this hospital directly:
+                    </p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        ${cleanPhone ? `
+                            <a href="https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hospName}, I have an inquiry from CarePath regarding doctor appointments and OPD.`)}" target="_blank" rel="noopener noreferrer" style="background: #25D366; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,211,102,0.3);">
+                                🟢 Chat on WhatsApp
+                            </a>
+                            <a href="tel:${cleanPhone}" style="background: #0284c7; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(2,132,199,0.3);">
+                                📞 Call Hospital Desk
+                            </a>
+                        ` : ''}
+                        <button type="button" onclick="openPatientInquiryModal()" style="background: #4f46e5; color: white; border: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(79,70,229,0.3);">
+                            ✉️ Send Direct Inquiry
+                        </button>
+                    </div>
+                `;
+                hospitalContainer.appendChild(commCard);
+
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "continue-button";
@@ -275,6 +362,102 @@ if (typeof hospital === "string") {
                 console.error("Unable to display hospital details:", error);
                 message.textContent =
                     "Unable to display hospital details. Please return to the dashboard and try again.";
+            }
+        }
+
+        
+        let currentLoadedHospital = null;
+
+        function openPatientInquiryModal() {
+            const modal = document.getElementById("patientInquiryModal");
+            if (!modal) return;
+            const hosp = currentLoadedHospital || {};
+            const span = document.getElementById("inquiryHospitalNameSpan");
+            if (span) span.textContent = hosp.name || hosp.hospital_name || "Hospital";
+
+            const nameInput = document.getElementById("inquiryPatientName");
+            if (nameInput && !nameInput.value) {
+                nameInput.value = localStorage.getItem("patientName") || localStorage.getItem("patient_name") || "";
+            }
+
+            const phoneInput = document.getElementById("inquiryPatientPhone");
+            if (phoneInput && !phoneInput.value) {
+                phoneInput.value = localStorage.getItem("patientPhone") || localStorage.getItem("patient_phone") || "";
+            }
+
+            const rawPhone = hosp.phone || "";
+            const cleanPhone = String(rawPhone).replace(/[^0-9]/g, "");
+            const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
+            const waBtn = document.getElementById("inquiryModalWhatsAppBtn");
+            if (waBtn) {
+                if (cleanPhone) {
+                    waBtn.href = `https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hosp.name || "Hospital"}, I have an inquiry from CarePath.`)}`;
+                    waBtn.style.display = "inline-flex";
+                } else {
+                    waBtn.style.display = "none";
+                }
+            }
+
+            modal.style.display = "flex";
+        }
+
+        function closePatientInquiryModal() {
+            const modal = document.getElementById("patientInquiryModal");
+            if (modal) modal.style.display = "none";
+        }
+
+        async function submitPatientInquiryForm(e) {
+            e.preventDefault();
+            const hosp = currentLoadedHospital || {};
+            const hospId = hosp.id || hosp.hospital_id || localStorage.getItem("selectedHospitalId");
+            if (!hospId) {
+                alert("Hospital ID not found.");
+                return;
+            }
+
+            const name = document.getElementById("inquiryPatientName").value.trim();
+            const phone = document.getElementById("inquiryPatientPhone").value.trim();
+            const email = document.getElementById("inquiryPatientEmail").value.trim();
+            const subject = document.getElementById("inquirySubject").value.trim() || "General Inquiry";
+            const message = document.getElementById("inquiryMessage").value.trim();
+            const btn = document.getElementById("btnSubmitInquiry");
+
+            if (!name || !phone || !message) {
+                alert("Please fill in your name, phone, and inquiry message.");
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = "⏳ Submitting...";
+            }
+
+            try {
+                const response = await fetch(`${API}/hospitals/${hospId}/patient-inquiry`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        patient_name: name,
+                        patient_phone: phone,
+                        patient_email: email || null,
+                        subject: subject,
+                        message: message
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || data.message || "Failed to submit inquiry");
+
+                alert("✓ Your inquiry has been submitted directly to the hospital helpdesk! The hospital staff will review it on their dashboard and contact you.");
+                document.getElementById("inquiryMessage").value = "";
+                closePatientInquiryModal();
+            } catch (err) {
+                alert("Inquiry submission error: " + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = "🚀 Send Inquiry";
+                }
             }
         }
 

@@ -390,6 +390,32 @@
         : "No hospitals match your search. Try another name or city.";
     }
 
+        // Instagram-style randomized ad injection:
+    // Ads appear naturally with random spacing (every 3-5 items) and shuffled non-fixed rotation
+    const adInsertIndices = new Set();
+    if (activeSponsoredAds && activeSponsoredAds.length > 0 && items.length > 0) {
+      if (items.length === 1) {
+        adInsertIndices.add(0);
+      } else {
+        let nextAdPos = Math.floor(Math.random() * 3) + 2; // First ad randomly after 2nd, 3rd, or 4th item
+        while (nextAdPos <= items.length) {
+          adInsertIndices.add(nextAdPos - 1);
+          const randomGap = Math.floor(Math.random() * 3) + 3; // Random gap of 3 to 5 organic hospitals
+          nextAdPos += randomGap;
+        }
+      }
+    }
+
+    // Shuffled copy of active sponsored ads (Fisher-Yates) for fresh, non-repetitive order
+    const shuffledAds = (activeSponsoredAds || []).slice();
+    for (let si = shuffledAds.length - 1; si > 0; si--) {
+      const sj = Math.floor(Math.random() * (si + 1));
+      const st = shuffledAds[si];
+      shuffledAds[si] = shuffledAds[sj];
+      shuffledAds[sj] = st;
+    }
+    let adCounter = 0;
+
     items.forEach(function (hospital, index) {
       const card = makeElement("article", "hospital-card");
       const cover = makeElement("div", "hospital-cover");
@@ -452,15 +478,35 @@
       selectButton.addEventListener("click", function () {
         selectHospital(hospital);
       });
-
       actionRow.appendChild(selectButton);
+
+      const rawPhone = hospital.phone || "";
+      const cleanPhone = String(rawPhone).replace(/[^0-9]/g, "");
+      if (cleanPhone) {
+        const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
+        const waLink = makeElement("a", "card-wa-btn", "🟢");
+        waLink.href = "https://wa.me/" + waNum + "?text=" + encodeURIComponent("Hello " + (hospitalName(hospital) || "Hospital") + ", I have an inquiry about appointments on CarePath.");
+        waLink.target = "_blank";
+        waLink.rel = "noopener noreferrer";
+        waLink.title = "Chat with " + hospitalName(hospital) + " on WhatsApp";
+        waLink.setAttribute("style", "padding: 10px 14px; background: #25D366; color: white; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center;");
+        actionRow.appendChild(waLink);
+
+        const callLink = makeElement("a", "card-call-btn", "📞");
+        callLink.href = "tel:" + cleanPhone;
+        callLink.title = "Call " + hospitalName(hospital);
+        callLink.setAttribute("style", "padding: 10px 14px; background: #0284c7; color: white; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: bold; display: inline-flex; align-items: center; justify-content: center;");
+        actionRow.appendChild(callLink);
+      }
+
       card.appendChild(actionRow);
       container.appendChild(card);
 
-      // Inject dynamic rotating sponsored ad after every 5 hospitals
-      if ((index + 1) % 5 === 0 && activeSponsoredAds && activeSponsoredAds.length > 0) {
-        const adIndex = Math.floor(index / 5) % activeSponsoredAds.length;
-        const sponsoredCard = makeSponsoredAdCard(activeSponsoredAds[adIndex]);
+      // Inject Instagram-style randomized sponsored ad
+      if (adInsertIndices.has(index) && shuffledAds.length > 0) {
+        const adToRender = shuffledAds[adCounter % shuffledAds.length];
+        adCounter++;
+        const sponsoredCard = makeSponsoredAdCard(adToRender);
         if (sponsoredCard) {
           container.appendChild(sponsoredCard);
         }

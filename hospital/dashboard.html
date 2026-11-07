@@ -2522,18 +2522,26 @@ async function loadHospitalAdminMessages() {
         }
 
         container.innerHTML = messages.map(msg => {
-            const isAdmin = (msg.sender_role || "").toLowerCase() === "admin";
-            const align = isAdmin ? "flex-start" : "flex-end";
-            const bubbleBg = isAdmin ? "#ffffff" : "#2563eb";
-            const textColor = isAdmin ? "#0f172a" : "#ffffff";
-            const border = isAdmin ? "1.5px solid #cbd5e1" : "none";
-            const senderTag = isAdmin ? "Platform Admin" : "Your Hospital Staff (You)";
+            const role = (msg.sender_role || "").toLowerCase();
+            const isMe = role === "hospital";
+            const isPatient = role === "patient";
+            const isAdmin = role === "admin";
+
+            const align = isMe ? "flex-end" : "flex-start";
+            const bubbleBg = isMe ? "#2563eb" : (isPatient ? "#f0fdf4" : "#ffffff");
+            const textColor = isMe ? "#ffffff" : "#0f172a";
+            const border = isMe ? "none" : (isPatient ? "1.5px solid #86efac" : "1.5px solid #cbd5e1");
+            const senderTag = isMe 
+                ? "Your Hospital Staff (You)" 
+                : (isPatient ? `👤 Patient Inquiry: ${msg.sender_name || 'Patient'}` : "Platform Admin");
             const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleString() : "";
             const isUrgent = msg.priority === "urgent";
             const isCompliance = msg.priority === "compliance";
 
             let priorityBadge = "";
-            if (isUrgent) {
+            if (isPatient) {
+                priorityBadge = `<span style="background: #dcfce7; color: #166534; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">👤 PATIENT INQUIRY</span>`;
+            } else if (isUrgent) {
                 priorityBadge = `<span style="background: #fee2e2; color: #b91c1c; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">🚨 URGENT ACTION</span>`;
             } else if (isCompliance) {
                 priorityBadge = `<span style="background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">⚠️ COMPLIANCE NOTICE</span>`;
