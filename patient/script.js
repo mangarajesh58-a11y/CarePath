@@ -92,7 +92,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     loadPatientName();
     setupEvents();
-    loadHospitals();
+    if (document.getElementById("hospital")) {
+        loadHospitals();
+    }
 
     const params = new URLSearchParams(window.location.search);
     const cashfreeOrderId = params.get("cashfree_order_id");
@@ -217,15 +219,8 @@ async function loadHospitals() {
     const hospitalSelect =
         document.getElementById("hospital");
 
-
     if (!hospitalSelect) {
-
-        console.error(
-            "Hospital select not found."
-        );
-
         return;
-
     }
 
 
