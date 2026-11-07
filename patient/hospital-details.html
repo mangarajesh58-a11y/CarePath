@@ -167,6 +167,8 @@
             container.appendChild(row);
         }
 
+        let currentLoadedHospital = null;
+
         async function showHospitalDetails() {
             const urlParams = new URLSearchParams(window.location.search);
             const urlHospitalId = urlParams.get("id") || urlParams.get("hospital_id") || urlParams.get("hospitalId");
@@ -184,6 +186,8 @@
                         localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
                         renderHospitalContent(hospitalData);
                         return;
+                    } else {
+                        console.warn("Hospital not found on server:", urlHospitalId);
                     }
                 } catch (err) {
                     console.warn("Could not load hospital from URL param:", err);
@@ -191,15 +195,24 @@
             }
 
             const savedHospital = localStorage.getItem("selectedHospital");
-
             if (!savedHospital) {
-                renderHospitalContent(hospital);
+                renderHospitalContent(null);
+                return;
+            }
+
+            try {
+                let parsed = JSON.parse(savedHospital);
+                renderHospitalContent(parsed);
+            } catch (error) {
+                renderHospitalContent({ name: savedHospital });
+            }
         }
 
         function renderHospitalContent(hospital) {
-            currentLoadedHospital = hospital;
             hospitalContainer.replaceChildren();
 
+            if (!hospital) {
+                currentLoadedHospital = null;
                 const heading = document.createElement("h2");
                 heading.textContent = "No hospital selected";
 
@@ -219,33 +232,31 @@
             }
 
             try {
-                let hospital;
+                let hospitalData = hospital;
+                if (typeof hospitalData === "string") {
+                    try {
+                        hospitalData = JSON.parse(hospitalData);
+                    } catch (e) {
+                        hospitalData = { name: hospitalData };
+                    }
+                }
 
-try {
-    hospital = JSON.parse(savedHospital);
-} catch (error) {
-    hospital = { name: savedHospital };
-}
-
-if (typeof hospital === "string") {
-    hospital = { name: hospital };
-}
-                hospitalContainer.replaceChildren();
+                currentLoadedHospital = hospitalData;
 
                 const heading = document.createElement("h2");
                 heading.textContent =
-                    hospital.name || hospital.hospital_name || "Hospital";
+                    hospitalData.name || hospitalData.hospital_name || "Hospital";
 
                 hospitalContainer.appendChild(heading);
 
                 const imageUrl =
-                    hospital.cover_image_url ||
-                    hospital.hospital_image_url ||
-                    hospital.image_url ||
-                    hospital.photo_url ||
-                    hospital.hospital_photo ||
-                    hospital.photo ||
-                    hospital.image;
+                    hospitalData.cover_image_url ||
+                    hospitalData.hospital_image_url ||
+                    hospitalData.image_url ||
+                    hospitalData.photo_url ||
+                    hospitalData.hospital_photo ||
+                    hospitalData.photo ||
+                    hospitalData.image;
 
                 const fallbackPhoto = "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=900&q=80";
                 const image = document.createElement("img");
@@ -266,46 +277,58 @@ if (typeof hospital === "string") {
                 addDetail(
                     hospitalContainer,
                     "Hospital ID",
-                    String(hospital.id ?? hospital.hospital_id ?? "")
+                    String(hospitalData.id ?? hospitalData.hospital_id ?? "")
                 );
 
                 addDetail(
                     hospitalContainer,
                     "Location",
-                    hospital.city || hospital.address || hospital.location
+                    hospitalData.city || hospitalData.address || hospitalData.location
                 );
-                addDetail(
-    hospitalContainer,
-    "Phone",
-    hospital.phone
-);
-
+                
                 addDetail(
                     hospitalContainer,
-                    "Description",
-                    hospital.description
+                    "Phone",
+                    hospitalData.phone
                 );
+
+                if (hospitalData.description) {
+                    addDetail(
+                        hospitalContainer,
+                        "Description",
+                        hospitalData.description
+                    );
+                }
 
                 addDetail(
                     hospitalContainer,
                     "Token Fee",
-                    "₹" + Number(hospital.token_fee ?? hospital.tokenFee ?? 0)
+                    "₹" + Number(hospitalData.token_fee ?? hospitalData.tokenFee ?? 0)
                 );
 
-                addDetail(
-                    hospitalContainer,
-                    "Departments",
-                    Array.isArray(hospital.departments)
-                        ? hospital.departments.join(", ")
-                        : hospital.departments
-                );
+                if (hospitalData.operating_hours_12h || (hospitalData.opening_time && hospitalData.closing_time)) {
+                    addDetail(
+                        hospitalContainer,
+                        "OPD Hours",
+                        hospitalData.operating_hours_12h || `${hospitalData.opening_time} - ${hospitalData.closing_time}`
+                    );
+                }
 
-                
+                if (hospitalData.departments) {
+                    addDetail(
+                        hospitalContainer,
+                        "Departments",
+                        Array.isArray(hospitalData.departments)
+                            ? hospitalData.departments.join(", ")
+                            : hospitalData.departments
+                    );
+                }
+
                 // DIRECT COMMUNICATION BLOCK FOR PATIENT
-                const rawPhone = hospital.phone || "";
+                const rawPhone = hospitalData.phone || "";
                 const cleanPhone = String(rawPhone).replace(/[^0-9]/g, "");
                 const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
-                const hospName = hospital.name || hospital.hospital_name || "Hospital";
+                const hospName = hospitalData.name || hospitalData.hospital_name || "Hospital";
 
                 const commCard = document.createElement("div");
                 commCard.className = "patient-direct-comm-card";
@@ -345,14 +368,12 @@ if (typeof hospital === "string") {
                 button.textContent = "View Departments & Doctors →";
 
                 button.onclick = () => {
-                    localStorage.setItem(
-                        "hospital_id",
-                        String(hospital.id ?? hospital.hospital_id)
-                    );
-                    localStorage.setItem(
-                        "hospitalId",
-                        String(hospital.id ?? hospital.hospital_id)
-                    );
+                    const hId = String(hospitalData.id ?? hospitalData.hospital_id);
+                    localStorage.setItem("hospital_id", hId);
+                    localStorage.setItem("hospitalId", hId);
+                    localStorage.setItem("selectedHospitalId", hId);
+                    localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
+                    localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
 
                     window.location.href = "./doctor.html";
                 };
@@ -364,9 +385,6 @@ if (typeof hospital === "string") {
                     "Unable to display hospital details. Please return to the dashboard and try again.";
             }
         }
-
-        
-        let currentLoadedHospital = null;
 
         function openPatientInquiryModal() {
             const modal = document.getElementById("patientInquiryModal");
