@@ -1006,33 +1006,53 @@
 
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
     const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
-    const ttsUrl = `${apiBase}/ai/tts?text=${encodeURIComponent(toSpeak)}&lang=${shortCode}`;
+    const backendTtsUrl = `${apiBase}/ai/tts?text=${encodeURIComponent(toSpeak)}&lang=${shortCode}`;
+    const directTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${shortCode}&client=tw-ob&q=${encodeURIComponent(toSpeak)}`;
 
-    // Play native MP3 audio stream
-    try {
-      const audio = new Audio(ttsUrl);
-      activeAudioVoice = audio;
+    // Triple Fail-Safe Native Audio Player:
+    // Layer 1: Backend /ai/tts proxy stream
+    // Layer 2: Direct Google TTS audio stream
+    // Layer 3: Client Web SpeechSynthesis fallback
+    let triedDirect = false;
 
-      audio.onended = function() {
-        activeAudioVoice = null;
-        resetAllSpeakerButtons();
-      };
+    function startNativeAudio(audioUrl) {
+      try {
+        const audio = new Audio(audioUrl);
+        activeAudioVoice = audio;
 
-      audio.onerror = function() {
-        activeAudioVoice = null;
+        audio.onended = function() {
+          activeAudioVoice = null;
+          resetAllSpeakerButtons();
+        };
+
+        audio.onerror = function() {
+          activeAudioVoice = null;
+          if (!triedDirect) {
+            triedDirect = true;
+            startNativeAudio(directTtsUrl);
+          } else {
+            fallbackSpeechSynthesis(toSpeak, detected, msgId);
+          }
+        };
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(err => {
+            console.warn("Audio play blocked, attempting fallback:", err);
+            if (!triedDirect) {
+              triedDirect = true;
+              startNativeAudio(directTtsUrl);
+            } else {
+              fallbackSpeechSynthesis(toSpeak, detected, msgId);
+            }
+          });
+        }
+      } catch(e) {
         fallbackSpeechSynthesis(toSpeak, detected, msgId);
-      };
-
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(err => {
-          console.warn("Audio autoplay blocked, falling back to speech synthesis:", err);
-          fallbackSpeechSynthesis(toSpeak, detected, msgId);
-        });
       }
-    } catch(e) {
-      fallbackSpeechSynthesis(toSpeak, detected, msgId);
     }
+
+    startNativeAudio(backendTtsUrl);
   }
 
   function fallbackSpeechSynthesis(toSpeak, detectedLang, msgId) {
