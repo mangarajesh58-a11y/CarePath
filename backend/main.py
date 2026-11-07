@@ -948,6 +948,12 @@ def run_database_migration():
         "closing_time":
             "VARCHAR(10) DEFAULT '21:00' NULL",
 
+        "break_start_time":
+            "VARCHAR(10) DEFAULT '13:00' NULL",
+
+        "break_end_time":
+            "VARCHAR(10) DEFAULT '14:00' NULL",
+
         "created_at":
             "TIMESTAMP NULL",
     }
@@ -1498,6 +1504,174 @@ Provide a direct, helpful 1-2 sentence response to the patient.""",
         "fallback": True,
     }
 
+
+# ============================================================
+# CAREPATH AI - PRESCRIPTION & MEDICAL REPORT EXPLAINER
+# ============================================================
+
+@app.post("/ai/analyze-prescription")
+async def carepath_ai_analyze_prescription(
+    photo: UploadFile = File(...),
+    notes: Optional[str] = Form(""),
+    db: Session = Depends(get_db),
+):
+    """
+    CarePath AI Multimodal Vision Engine:
+    Reads doctor's handwriting, prescriptions, lab reports, and medicine strips,
+    and explains medicines, dosages, diagnosis, and precautions in simple language.
+    """
+    if not photo:
+        raise HTTPException(status_code=400, detail="Prescription image is required.")
+
+    # Validate file format
+    content_type = (photo.content_type or "image/jpeg").lower()
+    if not any(t in content_type for t in ["image", "jpeg", "jpg", "png", "webp", "octet-stream"]):
+        raise HTTPException(
+            status_code=400,
+            detail="Please upload a valid image (JPG, PNG, WebP) of the doctor's prescription."
+        )
+
+    image_bytes = await photo.read()
+    if len(image_bytes) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded image is empty.")
+    if len(image_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image size exceeds maximum limit of 10 MB.")
+
+    b64_image = base64.b64encode(image_bytes).decode("utf-8")
+    patient_note_context = f"Additional patient note: {notes}" if notes else ""
+
+    prescription_system_prompt = (
+        "You are CarePath AI's Expert Medical Document & Doctor's Prescription Decoder Specialist. "
+        "A patient has provided an image of a doctor's handwritten prescription, medical investigation report, or medicine pack. "
+        "Carefully examine the handwriting, symbols, medical shorthand, and text. Explain everything in clear, compassionate, easy-to-understand language.\n\n"
+        "Provide a well-structured breakdown with these exact sections:\n"
+        "📋 1. DOCTOR'S DIAGNOSIS & CLINICAL OBSERVATIONS\n"
+        "- Explain what condition, symptoms, or illness the doctor identified in plain simple English.\n\n"
+        "💊 2. PRESCRIBED MEDICINES & HOW TO TAKE THEM\n"
+        "- List each medicine clearly:\n"
+        "  • Name & Strength (e.g. Tab. Dolo 650mg, Cap. Amoxyclav 625mg)\n"
+        "  • When to take: Decode all medical abbreviations (1-0-1 = morning & night; 1-1-1 / TDS = 3 times a day; BBF = before breakfast; PC = after food; SOS = only when needed in pain/fever; HS = at bedtime)\n"
+        "  • Purpose: What each medicine treats in simple words.\n\n"
+        "🔬 3. ADVISED LAB TESTS & SCANS (if any)\n"
+        "- Any blood tests, urine tests, ultrasound, or X-rays recommended.\n\n"
+        "🥗 4. DIET & RECOVERY ADVICE\n"
+        "- Foods to take or avoid, hydration, and rest.\n\n"
+        "⚠️ 5. RED FLAG WARNINGS\n"
+        "- Symptoms that require visiting hospital emergency immediately.\n\n"
+        "ℹ️ 6. PATIENT SAFETY NOTE\n"
+        "- Remind the patient: 'This AI explanation helps you understand your doctor\'s handwriting. Always verify with your pharmacist when picking up medicines and follow your doctor\'s exact instructions.'\n\n"
+        + patient_note_context
+    )
+
+    # --- 1. Primary Engine: Gemini Multimodal Vision ---
+    if gemini_client:
+        try:
+            from google.genai import types
+            gemini_mime = "image/jpeg" if "jpeg" in content_type or "jpg" in content_type else ("image/png" if "png" in content_type else "image/webp")
+            vision_models = [
+                "gemini-2.5-flash",
+                "gemini-1.5-flash",
+                "gemini-2.0-flash",
+                "gemini-flash-latest",
+            ]
+            for v_model in vision_models:
+                try:
+                    res = gemini_client.models.generate_content(
+                        model=v_model,
+                        contents=[
+                            types.Part.from_bytes(data=image_bytes, mime_type=gemini_mime),
+                            prescription_system_prompt
+                        ]
+                    )
+                    if res and res.text and len(res.text.strip()) > 30:
+                        return {
+                            "success": True,
+                            "analysis": res.text.strip(),
+                            "model": v_model,
+                            "source": "gemini_multimodal_vision"
+                        }
+                except Exception as m_err:
+                    logging.warning("Gemini Vision model %s failed: %s", v_model, m_err)
+                    continue
+        except Exception as gemini_err:
+            logging.warning("Gemini vision dispatcher error: %s", gemini_err)
+
+    # --- 2. Secondary Engine: Groq Vision Models ---
+    groq_key = os.getenv("GROQ_API_KEY")
+    if groq_key:
+        groq_mime = "image/jpeg" if "jpeg" in content_type or "jpg" in content_type else "image/png"
+        data_uri = f"data:{groq_mime};base64,{b64_image}"
+        groq_vision_models = [
+            "llama-3.2-11b-vision-preview",
+            "llama-3.2-90b-vision-preview",
+        ]
+        for gv_model in groq_vision_models:
+            try:
+                groq_res = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {groq_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": gv_model,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": prescription_system_prompt},
+                                    {"type": "image_url", "image_url": {"url": data_uri}}
+                                ]
+                            }
+                        ],
+                        "max_tokens": 1200,
+                        "temperature": 0.2,
+                    },
+                    timeout=20.0,
+                )
+                if groq_res.ok:
+                    choices = groq_res.json().get("choices", [])
+                    if choices:
+                        analysis = choices[0].get("message", {}).get("content", "").strip()
+                        if analysis:
+                            return {
+                                "success": True,
+                                "analysis": analysis,
+                                "model": gv_model,
+                                "source": "groq_multimodal_vision"
+                            }
+            except Exception as gv_err:
+                logging.warning("Groq vision model %s error: %s", gv_model, gv_err)
+                continue
+
+    # --- 3. Intelligent Clinical Guide Fallback ---
+    clinical_guide = (
+        "📋 **Doctor's Prescription & Medical Report Decoder (CarePath AI)**\n\n"
+        "Your medical document photo has been received. Here is the clinical decoder for common Indian & international doctor handwriting and prescription abbreviations:\n\n"
+        "💊 **Dosage Schedule Abbreviations Explained:**\n"
+        "• **OD (Once Daily)**: Take 1 time per day (usually morning)\n"
+        "• **BD / BID (Twice Daily / 1-0-1)**: Take 1 in morning and 1 at night\n"
+        "• **TDS / TID (Thrice Daily / 1-1-1)**: Take 1 morning, 1 afternoon, 1 night\n"
+        "• **QID (Four Times Daily)**: Take every 6 hours\n"
+        "• **BBF / AC**: Take before food on an empty stomach\n"
+        "• **PC / AF**: Take after meals (to prevent stomach irritation)\n"
+        "• **SOS**: Take only when needed (e.g. Paracetamol if fever > 100°F or severe pain)\n"
+        "• **HS**: Take at bedtime right before sleeping\n\n"
+        "🔬 **Common Lab Tests:**\n"
+        "• **CBC**: Complete Blood Count (checks hemoglobin and infection)\n"
+        "• **LFT / KFT**: Liver / Kidney Function Tests\n"
+        "• **RBS / FBS**: Random or Fasting Blood Sugar\n\n"
+        "⚠️ **Safety & Precautions:**\n"
+        "1. Verify exact medicine brand and strength with your certified pharmacist.\n"
+        "2. Do not stop antibiotic courses midway without consulting your doctor.\n"
+        "3. Seek immediate emergency casualty care if experiencing chest pain, high fever with breathlessness, or severe allergic reaction."
+    )
+    return {
+        "success": True,
+        "analysis": clinical_guide,
+        "source": "clinical_guide_fallback"
+    }
+
 @app.post("/registration/request-otp")
 def request_registration_otp(
     data: RegistrationOTPRequest,
@@ -1946,6 +2120,8 @@ class HospitalUpdate(BaseModel):
     phone: Optional[str] = None
     opening_time: Optional[str] = None
     closing_time: Optional[str] = None
+    break_start_time: Optional[str] = None
+    break_end_time: Optional[str] = None
 
     city: Optional[str] = None
 
@@ -2048,6 +2224,80 @@ class WalkInTokenRequest(BaseModel):
     doctor: str
     token_number: Optional[int] = None
 # ============================================================
+# HELPER - HOSPITAL OPD & BREAK TIMINGS
+# ============================================================
+
+def check_is_on_break(break_start_str: str | None, break_end_str: str | None) -> bool:
+    """Returns True if the current Indian Standard Time (IST) is within hospital break hours."""
+    if not break_start_str or not break_end_str:
+        return False
+    try:
+        ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+        curr_time = ist_now.strftime("%H:%M")
+        b_start = str(break_start_str).strip()[:5]
+        b_end = str(break_end_str).strip()[:5]
+        return b_start <= curr_time < b_end
+    except Exception:
+        return False
+
+
+def get_hospital_opd_status(hospital) -> dict:
+    """
+    Computes real-time OPD status based on opening hours, break hours, and current IST time.
+    """
+    opening = hospital.opening_time or "09:00"
+    closing = hospital.closing_time or "21:00"
+    b_start = getattr(hospital, "break_start_time", None) or "13:00"
+    b_end = getattr(hospital, "break_end_time", None) or "14:00"
+
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    curr_time = ist_now.strftime("%H:%M")
+
+    b_start_12h = format_time_12h(b_start)
+    b_end_12h = format_time_12h(b_end)
+    open_12h = format_time_12h(opening)
+    close_12h = format_time_12h(closing)
+
+    # 1. Outside daily operating hours
+    if curr_time < opening or curr_time >= closing:
+        return {
+            "status": "CLOSED",
+            "label": "OPD CLOSED",
+            "badge_color": "red",
+            "is_active": False,
+            "is_on_break": False,
+            "detail": f"OPD is currently closed. Resumes tomorrow at {open_12h}.",
+            "break_hours_12h": f"{b_start_12h} - {b_end_12h}",
+            "operating_hours_12h": f"{open_12h} - {close_12h}",
+        }
+
+    # 2. Currently on break (lunch/shift break)
+    if b_start <= curr_time < b_end:
+        return {
+            "status": "BREAK",
+            "label": f"OPD ON BREAK ({b_start_12h} - {b_end_12h})",
+            "badge_color": "amber",
+            "is_active": False,
+            "is_on_break": True,
+            "detail": f"Doctors are currently on break ({b_start_12h} - {b_end_12h}). Consultations resume at {b_end_12h}.",
+            "break_hours_12h": f"{b_start_12h} - {b_end_12h}",
+            "operating_hours_12h": f"{open_12h} - {close_12h}",
+        }
+
+    # 3. Active
+    return {
+        "status": "ACTIVE",
+        "label": "OPD ACTIVE",
+        "badge_color": "green",
+        "is_active": True,
+        "is_on_break": False,
+        "detail": f"OPD is open until {close_12h}. Break timing: {b_start_12h} - {b_end_12h}.",
+        "break_hours_12h": f"{b_start_12h} - {b_end_12h}",
+        "operating_hours_12h": f"{open_12h} - {close_12h}",
+    }
+
+
+# ============================================================
 # HELPER - HOSPITAL RESPONSE
 # ============================================================
 
@@ -2094,6 +2344,11 @@ def hospital_to_dict(hospital):
         "opening_time": hospital.opening_time or "09:00",
         "closing_time": hospital.closing_time or "21:00",
         "operating_hours_12h": f"{format_time_12h(hospital.opening_time or '09:00')} - {format_time_12h(hospital.closing_time or '21:00')}",
+        "break_start_time": getattr(hospital, "break_start_time", None) or "13:00",
+        "break_end_time": getattr(hospital, "break_end_time", None) or "14:00",
+        "break_hours_12h": f"{format_time_12h(getattr(hospital, 'break_start_time', None) or '13:00')} - {format_time_12h(getattr(hospital, 'break_end_time', None) or '14:00')}",
+        "is_on_break": check_is_on_break(getattr(hospital, "break_start_time", None) or "13:00", getattr(hospital, "break_end_time", None) or "14:00"),
+        "opd_status": get_hospital_opd_status(hospital),
         "certificate_uploaded": bool(
             hospital.license_certificate
             or hospital.certificate_uploaded_at
@@ -2128,6 +2383,11 @@ def public_hospital_to_dict(hospital):
         "opening_time": hospital.opening_time or "09:00",
         "closing_time": hospital.closing_time or "21:00",
         "operating_hours_12h": f"{format_time_12h(hospital.opening_time or '09:00')} - {format_time_12h(hospital.closing_time or '21:00')}",
+        "break_start_time": getattr(hospital, "break_start_time", None) or "13:00",
+        "break_end_time": getattr(hospital, "break_end_time", None) or "14:00",
+        "break_hours_12h": f"{format_time_12h(getattr(hospital, 'break_start_time', None) or '13:00')} - {format_time_12h(getattr(hospital, 'break_end_time', None) or '14:00')}",
+        "is_on_break": check_is_on_break(getattr(hospital, "break_start_time", None) or "13:00", getattr(hospital, "break_end_time", None) or "14:00"),
+        "opd_status": get_hospital_opd_status(hospital),
     }
 # ============================================================
 # HELPER - DOCTOR RESPONSE
@@ -3774,6 +4034,12 @@ def update_hospital(
 
     if data.closing_time is not None:
         hospital.closing_time = data.closing_time.strip()
+
+    if getattr(data, "break_start_time", None) is not None:
+        hospital.break_start_time = data.break_start_time.strip()
+
+    if getattr(data, "break_end_time", None) is not None:
+        hospital.break_end_time = data.break_end_time.strip()
 
     if data.token_fee is not None:
 

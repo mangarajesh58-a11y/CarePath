@@ -95,6 +95,10 @@ class Hospital(Base):
     opening_time = Column(String(10), default="09:00", nullable=True)
     closing_time = Column(String(10), default="21:00", nullable=True)
 
+    # Daily OPD Break Timing (default afternoon lunch break 13:00 to 14:00)
+    break_start_time = Column(String(10), default="13:00", nullable=True)
+    break_end_time = Column(String(10), default="14:00", nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

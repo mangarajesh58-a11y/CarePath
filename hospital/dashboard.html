@@ -1411,7 +1411,30 @@ async function loadHospital() {
 
         const fee = Number(data.token_fee || 0);
         document.getElementById("infoTokenFee").textContent = `₹${fee}`;
-        document.getElementById("hospitalMetaSubtitle").textContent = `${data.city || 'City'} • OPD Hours: ${data.operating_hours_12h || '9:00 AM - 9:00 PM'}`;
+        const breakStr = data.break_hours_12h || '1:00 PM - 2:00 PM';
+        document.getElementById("hospitalMetaSubtitle").textContent = `${data.city || 'City'} • OPD Hours: ${data.operating_hours_12h || '9:00 AM - 9:00 PM'} • Lunch Break: ${breakStr}`;
+
+        // Live OPD Break & Operational Status
+        const opdStatus = data.opd_status || {};
+        const pill = document.getElementById("opdStatusPill");
+        if (pill) {
+            if (opdStatus.status === "BREAK") {
+                pill.className = "status-pill";
+                pill.style.background = "#fef3c7";
+                pill.style.color = "#b45309";
+                pill.innerHTML = `<span class="status-dot" style="background: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);"></span> ${opdStatus.label || 'OPD ON BREAK'}`;
+            } else if (opdStatus.status === "CLOSED") {
+                pill.className = "status-pill";
+                pill.style.background = "#fee2e2";
+                pill.style.color = "#b91c1c";
+                pill.innerHTML = `<span class="status-dot" style="background: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);"></span> OPD CLOSED`;
+            } else {
+                pill.className = "status-pill";
+                pill.style.background = "var(--success-light)";
+                pill.style.color = "var(--success)";
+                pill.innerHTML = `<span class="status-dot"></span> OPD ACTIVE`;
+            }
+        }
     } catch (e) {
         console.error("Load hospital error:", e);
     }
