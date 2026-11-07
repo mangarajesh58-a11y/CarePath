@@ -485,9 +485,11 @@ CERTIFICATE_DIR = os.path.join(
 
 os.makedirs(CERTIFICATE_DIR, exist_ok=True)
 
-PATIENT_STATIC_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "patient")
-)
+PATIENT_STATIC_DIR = os.path.join(os.path.dirname(__file__), "patient")
+if not os.path.exists(PATIENT_STATIC_DIR):
+    PATIENT_STATIC_DIR = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "patient")
+    )
 HOSPITAL_STATIC_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "hospital")
 )

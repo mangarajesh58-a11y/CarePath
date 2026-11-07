@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b132b" />
+      <stop offset="50%" stop-color="#1c2541" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+
+    <!-- Chatbot Body Gradient -->
+    <linearGradient id="botGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="40%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+
+    <!-- Glassmorphic Sheen -->
+    <linearGradient id="sheenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.0" />
+    </linearGradient>
+
+    <!-- Pulse & Heartbeat Wave Gradient -->
+    <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="50%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#4ade80" />
+    </linearGradient>
+
+    <!-- Soft Glow Filter -->
+    <filter id="aiGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Deep Drop Shadow -->
+    <filter id="botShadow" x="-20%" y="-15%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#0284c7" flood-opacity="0.38" />
+    </filter>
+
+    <!-- Radial Aura -->
+    <radialGradient id="auraGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.35" />
+      <stop offset="60%" stop-color="#3b82f6" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Squircle App Icon Container -->
+  <rect x="28" y="28" width="456" height="456" rx="108" fill="url(#bgGrad)" stroke="#38bdf8" stroke-width="2" stroke-opacity="0.25" />
+
+  <!-- Ambient Backdrop Aura -->
+  <circle cx="256" cy="256" r="190" fill="url(#auraGlow)" />
+
+  <!-- Decorative Orbit Ring (AI Connectivity) -->
+  <ellipse cx="256" cy="180" rx="140" ry="24" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="8 10" stroke-opacity="0.4" />
+  
+  <!-- Orbit Satellite Particles -->
+  <circle cx="118" cy="184" r="4.5" fill="#38bdf8" filter="url(#aiGlow)" />
+  <circle cx="394" cy="176" r="5" fill="#22d3ee" filter="url(#aiGlow)" />
+
+  <!-- Top AI Neural Spark / Pulse Beacon -->
+  <line x1="256" y1="128" x2="256" y2="100" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round" />
+  <circle cx="256" cy="94" r="11" fill="#22d3ee" filter="url(#aiGlow)" />
+  <circle cx="256" cy="94" r="5" fill="#ffffff" />
+
+  <!-- Main AI Chatbot Bubble Body -->
+  <g filter="url(#botShadow)">
+    <!-- Chat Bubble with Rounded Organic Contours & Tail -->
+    <path d="M 160 128 
+             L 352 128 
+             A 64 64 0 0 1 416 192 
+             L 416 312 
+             A 64 64 0 0 1 352 376 
+             L 242 376 
+             L 174 414 
+             A 10 10 0 0 1 158 405 
+             L 160 376 
+             A 64 64 0 0 1 96 312 
+             L 96 192 
+             A 64 64 0 0 1 160 128 Z" 
+          fill="url(#botGrad)" 
+          stroke="#7dd3fc" 
+          stroke-width="3" 
+          stroke-opacity="0.5" />
+    
+    <!-- Glossy Upper Sheen -->
+    <path d="M 160 132 
+             L 352 132 
+             A 60 60 0 0 1 412 192 
+             L 412 230 
+             Q 256 270 100 230 
+             L 100 192 
+             A 60 60 0 0 1 160 132 Z" 
+          fill="url(#sheenGrad)" />
+  </g>
+
+  <!-- Dark Visor Glass for High-Tech Expressive Face -->
+  <rect x="144" y="174" width="224" height="88" rx="44" fill="#091427" stroke="#38bdf8" stroke-width="2" stroke-opacity="0.3" />
+
+  <!-- Friendly Glowing AI Eyes -->
+  <!-- Left Eye -->
+  <g filter="url(#aiGlow)">
+    <rect x="188" y="196" width="22" height="42" rx="11" fill="#22d3ee" />
+    <circle cx="194" cy="204" r="4.5" fill="#ffffff" />
+  </g>
+  <!-- Right Eye -->
+  <g filter="url(#aiGlow)">
+    <rect x="302" y="196" width="22" height="42" rx="11" fill="#22d3ee" />
+    <circle cx="308" cy="204" r="4.5" fill="#ffffff" />
+  </g>
+
+  <!-- Center Medical Cross with Soft Glow -->
+  <g filter="url(#aiGlow)" opacity="0.95">
+    <!-- Cross Vertical Bar -->
+    <rect x="246" y="278" width="20" height="64" rx="7" fill="#ffffff" />
+    <!-- Cross Horizontal Bar -->
+    <rect x="224" y="300" width="64" height="20" rx="7" fill="#ffffff" />
+  </g>
+
+  <!-- Dynamic ECG Heartbeat Pulse Line Overlay (Intersecting Cross) -->
+  <path d="M 124 310 
+           L 182 310 
+           L 204 290 
+           L 226 332 
+           L 256 272 
+           L 286 348 
+           L 308 302 
+           L 330 310 
+           L 388 310" 
+        fill="none" 
+        stroke="url(#pulseGrad)" 
+        stroke-width="5" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        filter="url(#aiGlow)" />
+
+  <!-- Heartbeat Endpoint Glowing Dots -->
+  <circle cx="124" cy="310" r="5" fill="#22d3ee" filter="url(#aiGlow)" />
+  <circle cx="388" cy="310" r="5" fill="#4ade80" filter="url(#aiGlow)" />
+
+  <!-- Sparkle Stars for AI Intelligence -->
+  <!-- Top Right Sparkle -->
+  <path d="M 406 112 Q 416 112 416 102 Q 416 112 426 112 Q 416 112 416 122 Q 416 112 406 112 Z" fill="#67e8f9" filter="url(#aiGlow)" />
+  <!-- Bottom Left Mini Sparkle -->
+  <path d="M 88 368 Q 94 368 94 362 Q 94 368 100 368 Q 94 368 94 374 Q 94 368 88 368 Z" fill="#38bdf8" filter="url(#aiGlow)" />
+
+</svg>

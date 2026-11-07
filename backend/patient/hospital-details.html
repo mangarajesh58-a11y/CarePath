@@ -1,0 +1,547 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#071329">
+    <title>Hospital Details - CarePath</title>
+    <link rel="stylesheet" href="./style.css">
+
+    <style>
+        .details-container {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 20px;
+        }
+
+        .hospital-detail-card {
+            background: white;
+            color: #172033;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,.08);
+        }
+
+        .hospital-detail-card h2 {
+            margin-top: 0;
+        }
+
+        .detail-row {
+            margin: 12px 0;
+            line-height: 1.6;
+        }
+
+        .detail-label {
+            font-weight: bold;
+        }
+
+        .back-button, .continue-button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 16px;
+            font-size: 15px;
+        }
+
+        .back-button {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .continue-button {
+            background: #1765b1;
+            color: white;
+        }
+
+        .hospital-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        #detailsMessage {
+            margin-top: 16px;
+            color: #b91c1c;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-icon" aria-hidden="true">✚</span>
+                <div>
+                    <h1>CarePath</h1>
+                    <p>Hospital Details</p>
+                </div>
+            </div>
+            <button type="button" class="back-button"
+                onclick="window.location.href='./index.html'">
+                ← Back
+            </button>
+        </header>
+
+        <main class="page-content details-container">
+            <div id="hospitalDetails" class="hospital-detail-card">
+                <p>Loading hospital details...</p>
+            </div>
+
+            <p id="detailsMessage" role="status"></p>
+        
+            <!-- PATIENT INQUIRY MODAL -->
+            <div id="patientInquiryModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; padding: 20px; align-items: center; justify-content: center; box-sizing: border-box;">
+                <div style="background: white; border-radius: 14px; max-width: 520px; width: 100%; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; box-sizing: border-box;">
+                    <button type="button" onclick="closePatientInquiryModal()" style="position: absolute; top: 12px; right: 14px; background: transparent; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+                    <h3 style="margin: 0 0 6px; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                        ✉️ Send Inquiry to <span id="inquiryHospitalNameSpan">Hospital</span>
+                    </h3>
+                    <p style="margin: 0 0 16px; font-size: 12.5px; color: #64748b;">
+                        The hospital helpdesk will receive your inquiry on their dashboard and respond to your phone/email.
+                    </p>
+                    <div id="inquiryModalAlert" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px;"></div>
+                    <form id="patientInquiryForm" onsubmit="submitPatientInquiryForm(event)">
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Your Full Name *</label>
+                            <input type="text" id="inquiryPatientName" placeholder="Enter your name" required style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                            <div>
+                                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Contact Phone *</label>
+                                <input type="tel" id="inquiryPatientPhone" placeholder="Mobile number" required style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Email (Optional)</label>
+                                <input type="email" id="inquiryPatientEmail" placeholder="your@email.com" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;">
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Subject</label>
+                            <input type="text" id="inquirySubject" placeholder="e.g. OPD Timings, Bed Availability, Specialist Consultation" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 4px;">Message *</label>
+                            <textarea id="inquiryMessage" rows="3" placeholder="Type your inquiry for the hospital staff..." required style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical; outline: none;"></textarea>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <a id="inquiryModalWhatsAppBtn" href="#" target="_blank" style="font-size: 12.5px; color: #15803d; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                🟢 Chat on WhatsApp instead ↗
+                            </a>
+                            <button type="submit" id="btnSubmitInquiry" style="background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 13.5px; cursor: pointer; box-shadow: 0 2px 6px rgba(37,99,235,0.3);">
+                                🚀 Send Inquiry
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="./broadcast-banner.js"></script>
+    <script>
+        const hospitalContainer = document.getElementById("hospitalDetails");
+        const message = document.getElementById("detailsMessage");
+
+        const API = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+            ? "http://127.0.0.1:8000"
+            : "https://carepath-3q9q.onrender.com";
+
+        function addDetail(container, label, value) {
+            const row = document.createElement("p");
+            row.className = "detail-row";
+
+            const strong = document.createElement("span");
+            strong.className = "detail-label";
+            strong.textContent = label + ": ";
+
+            const text = document.createElement("span");
+            text.textContent = value || "Not provided";
+
+            row.appendChild(strong);
+            row.appendChild(text);
+            container.appendChild(row);
+        }
+
+        let currentLoadedHospital = null;
+
+        async function fetchHospitalWithRetry(id, maxRetries = 3) {
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const response = await fetch(`${API}/hospitals/${id}`);
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (err) {
+                    console.warn(`Attempt ${attempt} to fetch hospital ${id} failed:`, err);
+                }
+                if (attempt < maxRetries) {
+                    await new Promise(r => setTimeout(r, 1200));
+                }
+            }
+            return null;
+        }
+
+        async function showHospitalDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlHospitalId = urlParams.get("id") || urlParams.get("hospital_id") || urlParams.get("hospitalId");
+
+            if (urlHospitalId) {
+                hospitalContainer.innerHTML = `
+                    <div style="text-align: center; padding: 36px 20px;">
+                        <div style="font-size: 38px; animation: pulseDot 1.5s infinite; margin-bottom: 12px;">🏥</div>
+                        <h3 style="margin: 0 0 6px; color: #1e293b; font-size: 18px;">Connecting to CarePath...</h3>
+                        <p style="color: #64748b; font-size: 13.5px; margin: 0;">Loading verified hospital details & doctor OPD schedule...</p>
+                    </div>
+                `;
+
+                const hospitalData = await fetchHospitalWithRetry(urlHospitalId, 3);
+                if (hospitalData) {
+                    localStorage.setItem("selectedHospitalId", String(urlHospitalId));
+                    localStorage.setItem("hospital_id", String(urlHospitalId));
+                    localStorage.setItem("hospitalId", String(urlHospitalId));
+                    localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
+                    localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
+                    renderHospitalContent(hospitalData);
+                    return;
+                }
+
+                // If fetch with retry failed (e.g. cold start or offline), check cached version if matches id
+                const saved = localStorage.getItem("selectedHospital");
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (String(parsed.id || parsed.hospital_id) === String(urlHospitalId)) {
+                            renderHospitalContent(parsed);
+                            return;
+                        }
+                    } catch (e) {}
+                }
+
+                // Render friendly Retry Card instead of misleading "No hospital selected"
+                hospitalContainer.innerHTML = `
+                    <div style="text-align: center; padding: 36px 20px;">
+                        <div style="font-size: 40px; margin-bottom: 12px;">📡</div>
+                        <h3 style="margin: 0 0 8px; color: #1e293b; font-size: 18px;">Unable to Reach Hospital Server</h3>
+                        <p style="color: #64748b; font-size: 13.5px; margin: 0 0 20px; line-height: 1.5; max-width: 440px; margin-left: auto; margin-right: auto;">
+                            The cloud server is taking a moment to respond. Please check your internet connection or tap retry.
+                        </p>
+                        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <button type="button" class="continue-button" onclick="showHospitalDetails()" style="margin: 0; display: inline-flex; align-items: center; gap: 6px;">
+                                🔄 Retry Loading Hospital
+                            </button>
+                            <a href="./index.html" class="back-button" style="margin: 0; display: inline-flex; align-items: center; text-decoration: none;">
+                                Browse All Hospitals
+                            </a>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const savedHospital = localStorage.getItem("selectedHospital");
+            if (!savedHospital) {
+                renderHospitalContent(null);
+                return;
+            }
+
+            try {
+                let parsed = JSON.parse(savedHospital);
+                renderHospitalContent(parsed);
+            } catch (error) {
+                renderHospitalContent({ name: savedHospital });
+            }
+        }
+
+        function renderHospitalContent(hospital) {
+            hospitalContainer.replaceChildren();
+
+            if (!hospital) {
+                currentLoadedHospital = null;
+                const heading = document.createElement("h2");
+                heading.textContent = "No hospital selected";
+
+                const paragraph = document.createElement("p");
+                paragraph.textContent =
+                    "Please return to the dashboard and select a hospital.";
+
+                const button = document.createElement("button");
+                button.className = "continue-button";
+                button.textContent = "Choose Hospital";
+                button.onclick = () => {
+                    window.location.href = "./index.html";
+                };
+
+                hospitalContainer.append(heading, paragraph, button);
+                return;
+            }
+
+            try {
+                let hospitalData = hospital;
+                if (typeof hospitalData === "string") {
+                    try {
+                        hospitalData = JSON.parse(hospitalData);
+                    } catch (e) {
+                        hospitalData = { name: hospitalData };
+                    }
+                }
+
+                currentLoadedHospital = hospitalData;
+
+                const heading = document.createElement("h2");
+                heading.textContent =
+                    hospitalData.name || hospitalData.hospital_name || "Hospital";
+
+                hospitalContainer.appendChild(heading);
+
+                const imageUrl =
+                    hospitalData.cover_image_url ||
+                    hospitalData.hospital_image_url ||
+                    hospitalData.image_url ||
+                    hospitalData.photo_url ||
+                    hospitalData.hospital_photo ||
+                    hospitalData.photo ||
+                    hospitalData.image;
+
+                const fallbackPhoto = "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=900&q=80";
+                const image = document.createElement("img");
+                image.className = "hospital-image";
+                image.src = imageUrl
+                    ? (imageUrl.startsWith("http") || imageUrl.startsWith("data:")
+                        ? imageUrl
+                        : "https://carepath-3q9q.onrender.com/" + imageUrl.replace(/^\/+/, ""))
+                    : fallbackPhoto;
+                image.alt = "Hospital building";
+                image.onerror = function() {
+                    if (this.src !== fallbackPhoto) {
+                        this.src = fallbackPhoto;
+                    }
+                };
+                hospitalContainer.appendChild(image);
+
+                addDetail(
+                    hospitalContainer,
+                    "Hospital ID",
+                    String(hospitalData.id ?? hospitalData.hospital_id ?? "")
+                );
+
+                addDetail(
+                    hospitalContainer,
+                    "Location",
+                    hospitalData.city || hospitalData.address || hospitalData.location
+                );
+                
+                addDetail(
+                    hospitalContainer,
+                    "Phone",
+                    hospitalData.phone
+                );
+
+                if (hospitalData.description) {
+                    addDetail(
+                        hospitalContainer,
+                        "Description",
+                        hospitalData.description
+                    );
+                }
+
+                addDetail(
+                    hospitalContainer,
+                    "Token Fee",
+                    "₹" + Number(hospitalData.token_fee ?? hospitalData.tokenFee ?? 0)
+                );
+
+                if (hospitalData.operating_hours_12h || (hospitalData.opening_time && hospitalData.closing_time)) {
+                    addDetail(
+                        hospitalContainer,
+                        "OPD Hours",
+                        hospitalData.operating_hours_12h || `${hospitalData.opening_time} - ${hospitalData.closing_time}`
+                    );
+                }
+
+                addDetail(
+                    hospitalContainer,
+                    "OPD Break Timing",
+                    hospitalData.break_hours_12h || "1:00 PM - 2:00 PM (Lunch Break)"
+                );
+
+                if (hospitalData.is_on_break) {
+                    const breakNotice = document.createElement("div");
+                    breakNotice.setAttribute("style", "margin: 14px 0; background: #fef3c7; border: 1.5px solid #fde047; color: #854d0e; padding: 12px 16px; border-radius: 12px; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);");
+                    breakNotice.innerHTML = `<span>🟡</span> OPD is currently on lunch break (${hospitalData.break_hours_12h || '1:00 PM - 2:00 PM'}). Doctor consultations will resume promptly after break.`;
+                    hospitalContainer.insertBefore(breakNotice, hospitalContainer.children[2] || hospitalContainer.firstChild);
+                }
+
+                if (hospitalData.departments) {
+                    addDetail(
+                        hospitalContainer,
+                        "Departments",
+                        Array.isArray(hospitalData.departments)
+                            ? hospitalData.departments.join(", ")
+                            : hospitalData.departments
+                    );
+                }
+
+                // DIRECT COMMUNICATION BLOCK FOR PATIENT
+                const rawPhone = hospitalData.phone || "";
+                const cleanPhone = String(rawPhone).replace(/[^0-9]/g, "");
+                const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
+                const hospName = hospitalData.name || hospitalData.hospital_name || "Hospital";
+
+                const commCard = document.createElement("div");
+                commCard.className = "patient-direct-comm-card";
+                commCard.setAttribute("style", "margin: 22px 0 16px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);");
+                
+                commCard.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                        <div style="font-weight: 800; font-size: 15px; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                            💬 Direct Communication with Hospital
+                        </div>
+                        <span style="font-size: 11px; font-weight: 700; background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 20px;">
+                            ✓ Verified Front Desk
+                        </span>
+                    </div>
+                    <p style="margin: 0 0 12px; font-size: 13px; color: #475569; line-height: 1.45;">
+                        Have questions about OPD schedules, doctor availability, or emergency care? Contact this hospital directly:
+                    </p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        ${cleanPhone ? `
+                            <a href="https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hospName}, I have an inquiry from CarePath regarding doctor appointments and OPD.`)}" target="_blank" rel="noopener noreferrer" style="background: #25D366; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,211,102,0.3);">
+                                🟢 Chat on WhatsApp
+                            </a>
+                            <a href="tel:${cleanPhone}" style="background: #0284c7; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(2,132,199,0.3);">
+                                📞 Call Hospital Desk
+                            </a>
+                        ` : ''}
+                        <button type="button" onclick="openPatientInquiryModal()" style="background: #4f46e5; color: white; border: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(79,70,229,0.3);">
+                            ✉️ Send Direct Inquiry
+                        </button>
+                    </div>
+                `;
+                hospitalContainer.appendChild(commCard);
+
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "continue-button";
+                button.textContent = "View Departments & Doctors →";
+
+                button.onclick = () => {
+                    const hId = String(hospitalData.id ?? hospitalData.hospital_id);
+                    localStorage.setItem("hospital_id", hId);
+                    localStorage.setItem("hospitalId", hId);
+                    localStorage.setItem("selectedHospitalId", hId);
+                    localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
+                    localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
+
+                    window.location.href = "./doctor.html";
+                };
+
+                hospitalContainer.appendChild(button);
+            } catch (error) {
+                console.error("Unable to display hospital details:", error);
+                message.textContent =
+                    "Unable to display hospital details. Please return to the dashboard and try again.";
+            }
+        }
+
+        function openPatientInquiryModal() {
+            const modal = document.getElementById("patientInquiryModal");
+            if (!modal) return;
+            const hosp = currentLoadedHospital || {};
+            const span = document.getElementById("inquiryHospitalNameSpan");
+            if (span) span.textContent = hosp.name || hosp.hospital_name || "Hospital";
+
+            const nameInput = document.getElementById("inquiryPatientName");
+            if (nameInput && !nameInput.value) {
+                nameInput.value = localStorage.getItem("patientName") || localStorage.getItem("patient_name") || "";
+            }
+
+            const phoneInput = document.getElementById("inquiryPatientPhone");
+            if (phoneInput && !phoneInput.value) {
+                phoneInput.value = localStorage.getItem("patientPhone") || localStorage.getItem("patient_phone") || "";
+            }
+
+            const rawPhone = hosp.phone || "";
+            const cleanPhone = String(rawPhone).replace(/[^0-9]/g, "");
+            const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
+            const waBtn = document.getElementById("inquiryModalWhatsAppBtn");
+            if (waBtn) {
+                if (cleanPhone) {
+                    waBtn.href = `https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hosp.name || "Hospital"}, I have an inquiry from CarePath.`)}`;
+                    waBtn.style.display = "inline-flex";
+                } else {
+                    waBtn.style.display = "none";
+                }
+            }
+
+            modal.style.display = "flex";
+        }
+
+        function closePatientInquiryModal() {
+            const modal = document.getElementById("patientInquiryModal");
+            if (modal) modal.style.display = "none";
+        }
+
+        async function submitPatientInquiryForm(e) {
+            e.preventDefault();
+            const hosp = currentLoadedHospital || {};
+            const hospId = hosp.id || hosp.hospital_id || localStorage.getItem("selectedHospitalId");
+            if (!hospId) {
+                alert("Hospital ID not found.");
+                return;
+            }
+
+            const name = document.getElementById("inquiryPatientName").value.trim();
+            const phone = document.getElementById("inquiryPatientPhone").value.trim();
+            const email = document.getElementById("inquiryPatientEmail").value.trim();
+            const subject = document.getElementById("inquirySubject").value.trim() || "General Inquiry";
+            const message = document.getElementById("inquiryMessage").value.trim();
+            const btn = document.getElementById("btnSubmitInquiry");
+
+            if (!name || !phone || !message) {
+                alert("Please fill in your name, phone, and inquiry message.");
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = "⏳ Submitting...";
+            }
+
+            try {
+                const response = await fetch(`${API}/hospitals/${hospId}/patient-inquiry`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        patient_name: name,
+                        patient_phone: phone,
+                        patient_email: email || null,
+                        subject: subject,
+                        message: message
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || data.message || "Failed to submit inquiry");
+
+                alert("✓ Your inquiry has been submitted directly to the hospital helpdesk! The hospital staff will review it on their dashboard and contact you.");
+                document.getElementById("inquiryMessage").value = "";
+                closePatientInquiryModal();
+            } catch (err) {
+                alert("Inquiry submission error: " + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = "🚀 Send Inquiry";
+                }
+            }
+        }
+
+        showHospitalDetails();
+    </script>
+</body>
+</html>
