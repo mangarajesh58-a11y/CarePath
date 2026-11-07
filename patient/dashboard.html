@@ -229,7 +229,7 @@
    <!-- CarePath AI Assistant -->
 <button
   type="button"
-  id="carepathAIButton"
+  id="carepathAIButton" onclick="toggleCarePathAIChat()"
   aria-label="Open CarePath AI Assistant"
   title="CarePath AI Assistant"
   style="padding: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: transparent; border: none; box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);"
@@ -239,7 +239,7 @@
 
 
 <!-- CarePath AI Chat Window -->
-<div id="carepathAIChat" class="carepath-ai-chat" hidden>
+<div id="carepathAIChat" class="carepath-ai-chat" style="display: none;">
 
   <div class="carepath-ai-header">
     <div style="display: flex; align-items: center; gap: 12px;">
@@ -255,7 +255,7 @@
 
     <button
       type="button"
-      id="carepathAIClose"
+      id="carepathAIClose" onclick="closeCarePathAIChat()"
       aria-label="Close CarePath AI"
     >
       ×
@@ -385,19 +385,50 @@
 
 <script>
   // CarePath AI open / close
+  function toggleCarePathAIChat() {
+    const chat = document.getElementById("carepathAIChat");
+    if (!chat) return;
+    const isHidden = chat.style.display === "none" || chat.hidden;
+    if (isHidden) {
+      chat.style.display = "flex";
+      chat.hidden = false;
+      const input = document.getElementById("carepathAIInput");
+      if (input) setTimeout(() => input.focus(), 100);
+    } else {
+      chat.style.display = "none";
+      chat.hidden = true;
+    }
+  }
+
+  function closeCarePathAIChat() {
+    const chat = document.getElementById("carepathAIChat");
+    if (chat) {
+      chat.style.display = "none";
+      chat.hidden = true;
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || "").replace(/[&<>"']/g, function(m) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m];
+    });
+  }
+
   const carepathAIButton = document.getElementById("carepathAIButton");
   const carepathAIChat = document.getElementById("carepathAIChat");
   const carepathAIClose = document.getElementById("carepathAIClose");
 
-  if (carepathAIButton && carepathAIChat) {
-    carepathAIButton.addEventListener("click", () => {
-      carepathAIChat.hidden = !carepathAIChat.hidden;
+  if (carepathAIButton) {
+    carepathAIButton.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleCarePathAIChat();
     });
   }
 
-  if (carepathAIClose && carepathAIChat) {
-    carepathAIClose.addEventListener("click", () => {
-      carepathAIChat.hidden = true;
+  if (carepathAIClose) {
+    carepathAIClose.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeCarePathAIChat();
     });
   }
 
@@ -705,8 +736,7 @@
 
       let formatted = explanationText
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/
-/g, '<br>');
+        .split('\n').join('<br>');
 
       aiReply.innerHTML = `
         <div style="font-size: 13.5px;">
