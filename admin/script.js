@@ -151,6 +151,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (path.includes("hospitals.html")) {
         loadHospitals();
+    const commParam = new URLSearchParams(window.location.search);
+    if (commParam.get("open_comm") === "true") {
+        setTimeout(() => {
+            if (typeof openGeneralDirectCommunicationModal === "function") {
+                openGeneralDirectCommunicationModal();
+            }
+        }, 800);
+    }
+
     }
 
     if (path.includes("payments.html")) {
@@ -542,6 +551,8 @@ async function loadDashboardHospitals() {
                 ? data
                 : data.hospitals || [];
 
+        allLoadedHospitals = hospitals;
+
         if (hospitalCount) {
             hospitalCount.textContent =
                 hospitals.length;
@@ -929,6 +940,15 @@ async function loadHospitals() {
                                 👁 View
                             </button>
 
+                            <button
+                                class="view-btn"
+                                style="background: #2563eb; color: #ffffff; font-weight: 700; border: none;"
+                                onclick="openDirectCommModal(${hospitalId}, '${escapeHtml(hospital.name || 'Hospital')}', '${escapeHtml(hospital.phone || '')}', '${escapeHtml(hospital.city || '')}')"
+                                title="Send direct notice, WhatsApp or call"
+                            >
+                                💬 Message
+                            </button>
+
                             ${approveButton}
 
                             ${rejectButton}
@@ -997,6 +1017,9 @@ async function loadHospitals() {
 // =====================================================
 
 let currentHospitalDetailsId = null;
+let allLoadedHospitals = [];
+let currentDirectCommHospitalId = null;
+
 
 // =====================================================
 // VIEW HOSPITAL
@@ -2908,3 +2931,330 @@ async function sendDirectMessageToHospital() {
         }
     }
 }
+
+
+// =====================================================
+// DEDICATED DIRECT COMMUNICATION MODAL FUNCTIONS
+// =====================================================
+
+function switchHospitalModalTab(tabName) {
+    const detailsTab = document.getElementById("hospitalModalDetailsTab");
+    const commTab = document.getElementById("hospitalModalCommTab");
+    const btnDetails = document.getElementById("tabBtnDetails");
+    const btnComm = document.getElementById("tabBtnComm");
+
+    if (tabName === "comm") {
+        if (detailsTab) detailsTab.style.display = "none";
+        if (commTab) commTab.style.display = "block";
+        if (btnDetails) {
+            btnDetails.style.background = "#f1f5f9";
+            btnDetails.style.color = "#475569";
+        }
+        if (btnComm) {
+            btnComm.style.background = "#2563eb";
+            btnComm.style.color = "#ffffff";
+        }
+    } else {
+        if (detailsTab) detailsTab.style.display = "block";
+        if (commTab) commTab.style.display = "none";
+        if (btnDetails) {
+            btnDetails.style.background = "#2563eb";
+            btnDetails.style.color = "#ffffff";
+        }
+        if (btnComm) {
+            btnComm.style.background = "#f1f5f9";
+            btnComm.style.color = "#475569";
+        }
+    }
+}
+
+async function openDirectCommModal(hospitalId, hospitalName = "", hospitalPhone = "", hospitalCity = "") {
+    const modal = document.getElementById("directCommModal");
+    if (!modal) {
+        // Fallback: If dedicated modal is missing, open via viewHospital
+        await viewHospital(hospitalId);
+        switchHospitalModalTab("comm");
+        return;
+    }
+
+    currentDirectCommHospitalId = Number(hospitalId);
+    currentHospitalDetailsId = Number(hospitalId);
+
+    // If name wasn't passed, find in allLoadedHospitals
+    if (!hospitalName && Array.isArray(allLoadedHospitals)) {
+        const found = allLoadedHospitals.find(h => Number(h.id) === currentDirectCommHospitalId);
+        if (found) {
+            hospitalName = found.name || found.hospital_name || "";
+            hospitalPhone = found.phone || "";
+            hospitalCity = found.city || "";
+        }
+    }
+
+    const titleEl = document.getElementById("commModalHospitalBadge");
+    if (titleEl) {
+        titleEl.textContent = hospitalName ? `${hospitalName} (ID: ${hospitalId})` : `Hospital #${hospitalId}`;
+    }
+
+    const cityEl = document.getElementById("commModalCityBadge");
+    if (cityEl) {
+        cityEl.textContent = hospitalCity ? `📍 ${hospitalCity}` : "";
+    }
+
+    const pickerEl = document.getElementById("commModalHospitalPicker");
+    if (pickerEl) pickerEl.style.display = "none";
+
+    // Clean Phone for WhatsApp and Call
+    const cleanPhone = String(hospitalPhone || "").replace(/[^0-9]/g, "");
+    const btnWhatsApp = document.getElementById("commModalWhatsAppBtn");
+    if (btnWhatsApp) {
+        if (cleanPhone) {
+            const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+            btnWhatsApp.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${hospitalName || "Hospital"}, this is CarePath Platform Admin.`)}`;
+            btnWhatsApp.style.display = "inline-flex";
+        } else {
+            btnWhatsApp.style.display = "none";
+        }
+    }
+
+    const btnCall = document.getElementById("commModalCallBtn");
+    if (btnCall) {
+        if (cleanPhone) {
+            btnCall.href = `tel:${cleanPhone}`;
+            btnCall.style.display = "inline-flex";
+        } else {
+            btnCall.style.display = "none";
+        }
+    }
+
+    // Reset inputs
+    const subjInput = document.getElementById("commModalMsgSubject");
+    if (subjInput) subjInput.value = "";
+    const textInput = document.getElementById("commModalMsgText");
+    if (textInput) textInput.value = "";
+
+    modal.style.display = "block";
+    await loadDirectCommMessages(currentDirectCommHospitalId);
+}
+
+function closeDirectCommModal() {
+    const modal = document.getElementById("directCommModal");
+    if (modal) modal.style.display = "none";
+    currentDirectCommHospitalId = null;
+}
+
+function openGeneralDirectCommunicationModal() {
+    const modal = document.getElementById("directCommModal");
+    if (!modal) return;
+
+    const pickerEl = document.getElementById("commModalHospitalPicker");
+    const selectEl = document.getElementById("commModalHospitalSelect");
+
+    if (pickerEl && selectEl && Array.isArray(allLoadedHospitals) && allLoadedHospitals.length > 0) {
+        pickerEl.style.display = "block";
+        selectEl.innerHTML = allLoadedHospitals.map(h => 
+            `<option value="${h.id}">${escapeHtml(h.name || 'Hospital')} (ID: ${h.id}${h.city ? ', ' + h.city : ''})</option>`
+        ).join("");
+
+        const first = allLoadedHospitals[0];
+        openDirectCommModal(first.id, first.name, first.phone, first.city);
+        pickerEl.style.display = "block";
+        selectEl.value = String(first.id);
+    } else {
+        alert("Loading hospitals... please wait 2 seconds and try again.");
+    }
+}
+
+function onCommHospitalSelectChange(hospId) {
+    const hid = Number(hospId);
+    if (!Array.isArray(allLoadedHospitals)) return;
+    const target = allLoadedHospitals.find(h => Number(h.id) === hid);
+    if (target) {
+        openDirectCommModal(target.id, target.name, target.phone, target.city);
+        const pickerEl = document.getElementById("commModalHospitalPicker");
+        if (pickerEl) pickerEl.style.display = "block";
+        const selectEl = document.getElementById("commModalHospitalSelect");
+        if (selectEl) selectEl.value = String(target.id);
+    }
+}
+
+async function refreshCurrentCommMessages() {
+    if (currentDirectCommHospitalId) {
+        await loadDirectCommMessages(currentDirectCommHospitalId);
+    }
+}
+
+async function loadDirectCommMessages(hospitalId) {
+    const container = document.getElementById("commModalMessagesContainer");
+    if (!container) return;
+
+    container.innerHTML = `
+        <div style="text-align: center; color: #64748b; font-size: 13px; padding: 20px 0;">
+            💬 Loading conversation messages...
+        </div>
+    `;
+
+    try {
+        const response = await fetch(`${API}/admin/hospitals/${hospitalId}/messages`, {
+            headers: getAdminAuthHeaders()
+        });
+
+        const data = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, "Unable to load conversation"));
+        }
+
+        const messages = Array.isArray(data.messages) ? data.messages : [];
+
+        if (messages.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: #94a3b8; font-size: 13px; padding: 30px 10px; background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                    <div style="font-size: 28px; margin-bottom: 6px;">💬</div>
+                    <strong style="color: #475569; font-size: 14px;">No messages exchanged yet</strong>
+                    <div style="font-size: 12px; margin-top: 4px; color: #64748b;">
+                        Send your first direct message, inquiry, or compliance notice below.
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = messages.map(msg => {
+            const isAdmin = (msg.sender_role || "").toLowerCase() === "admin";
+            const align = isAdmin ? "flex-end" : "flex-start";
+            const bubbleBg = isAdmin ? "#2563eb" : "#ffffff";
+            const textColor = isAdmin ? "#ffffff" : "#0f172a";
+            const border = isAdmin ? "none" : "1px solid #e2e8f0";
+            const senderTag = isAdmin ? "Platform Admin (You)" : (msg.sender_name || "Hospital Staff");
+            const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleString() : "";
+            const isUrgent = msg.priority === "urgent";
+            const isCompliance = msg.priority === "compliance";
+
+            let priorityBadge = "";
+            if (isUrgent) {
+                priorityBadge = `<span style="background: ${isAdmin ? '#ef4444' : '#fee2e2'}; color: ${isAdmin ? '#fff' : '#b91c1c'}; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">🚨 URGENT</span>`;
+            } else if (isCompliance) {
+                priorityBadge = `<span style="background: ${isAdmin ? '#f59e0b' : '#fef3c7'}; color: ${isAdmin ? '#fff' : '#b45309'}; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">⚠️ COMPLIANCE</span>`;
+            }
+
+            const emailTag = msg.sent_via_email 
+                ? `<span style="font-size: 11px; opacity: 0.85; margin-left: 6px;">📧 Dispatched to email</span>` 
+                : "";
+
+            return `
+                <div style="display: flex; flex-direction: column; align-self: ${align}; max-width: 85%;">
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 3px; display: flex; gap: 6px; align-items: center; justify-content: ${isAdmin ? 'flex-end' : 'flex-start'};">
+                        <strong>${escapeHtml(senderTag)}</strong>
+                        <span>•</span>
+                        <span>${timeStr}</span>
+                        ${emailTag}
+                    </div>
+                    <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 11px 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 13px; line-height: 1.45;">
+                        ${priorityBadge ? `<div style="margin-bottom: 6px;">${priorityBadge}</div>` : ''}
+                        ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 4px; font-size: 13.5px;">${escapeHtml(msg.subject)}</div>` : ''}
+                        <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.message || '')}</div>
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        container.scrollTop = container.scrollHeight;
+    } catch (err) {
+        console.error("Load direct comm messages error:", err);
+        container.innerHTML = `
+            <div style="color: #ef4444; font-size: 13px; text-align: center; padding: 14px;">
+                Failed to load conversation: ${escapeHtml(err.message)}
+            </div>
+        `;
+    }
+}
+
+async function sendCommModalMessage() {
+    if (!currentDirectCommHospitalId) {
+        alert("Please select a hospital first.");
+        return;
+    }
+
+    const textInput = document.getElementById("commModalMsgText");
+    const subjInput = document.getElementById("commModalMsgSubject");
+    const prioSelect = document.getElementById("commModalMsgPriority");
+    const emailCheck = document.getElementById("commModalSendEmail");
+    const btn = document.getElementById("btnCommModalSend");
+
+    const message = textInput ? textInput.value.trim() : "";
+    if (!message) {
+        alert("Please enter a message for the hospital.");
+        if (textInput) textInput.focus();
+        return;
+    }
+
+    const subject = subjInput ? subjInput.value.trim() : "";
+    const priority = prioSelect ? prioSelect.value : "normal";
+    const sendEmail = emailCheck ? emailCheck.checked : true;
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = "⏳ Sending...";
+    }
+
+    try {
+        const response = await fetch(`${API}/admin/hospitals/${currentDirectCommHospitalId}/messages`, {
+            method: "POST",
+            headers: {
+                ...getAdminAuthHeaders(),
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                subject: subject || null,
+                message: message,
+                priority: priority,
+                send_email: sendEmail
+            })
+        });
+
+        const data = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, "Could not send direct message"));
+        }
+
+        if (textInput) textInput.value = "";
+        if (subjInput) subjInput.value = "";
+
+        showMessage(
+            data.email_dispatched 
+                ? "Message sent to hospital and email copy dispatched!" 
+                : "Message delivered to hospital dashboard!",
+            "success"
+        );
+
+        await loadDirectCommMessages(currentDirectCommHospitalId);
+    } catch (err) {
+        console.error("Send message error:", err);
+        alert(err.message || "Failed to send message to hospital");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = "🚀 Send Message";
+        }
+    }
+}
+
+window.openDirectCommModal = openDirectCommModal;
+window.closeDirectCommModal = closeDirectCommModal;
+window.openGeneralDirectCommunicationModal = openGeneralDirectCommunicationModal;
+window.onCommHospitalSelectChange = onCommHospitalSelectChange;
+window.switchHospitalModalTab = switchHospitalModalTab;
+window.refreshCurrentCommMessages = refreshCurrentCommMessages;
+window.sendCommModalMessage = sendCommModalMessage;
+
+window.addEventListener("DOMContentLoaded", function() {
+    const directCommModalEl = document.getElementById("directCommModal");
+    if (directCommModalEl) {
+        directCommModalEl.addEventListener("click", function(e) {
+            if (e.target === directCommModalEl) {
+                closeDirectCommModal();
+            }
+        });
+    }
+});
