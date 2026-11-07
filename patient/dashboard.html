@@ -1337,8 +1337,7 @@
       chat.hidden = false;
       const input = document.getElementById("carepathAIInput");
       if (input) setTimeout(() => input.focus(), 120);
-      const sel = document.getElementById("carepathLanguageSelect");
-      if (sel) sel.value = currentAiLang;
+      // Language is auto-detected
     } else {
       chat.style.display = "none";
       chat.hidden = true;
