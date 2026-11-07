@@ -1244,9 +1244,10 @@
 
       const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
 
+      let speechSilenceTimer = null;
       cpSpeechRecognition = new SpeechRec();
       cpSpeechRecognition.lang = conf.speechRecLang;
-      cpSpeechRecognition.continuous = false;
+      cpSpeechRecognition.continuous = true;
       cpSpeechRecognition.interimResults = true;
       cpSpeechRecognition.maxAlternatives = 1;
 
@@ -1257,37 +1258,57 @@
 
       cpSpeechRecognition.onresult = function(event) {
         let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
+        for (let i = 0; i < event.results.length; ++i) {
           transcript += event.results[i][0].transcript;
         }
-        updateVoiceAssistantTranscript(transcript);
+        if (transcript.trim()) {
+          updateVoiceAssistantTranscript(transcript);
+          if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
+          speechSilenceTimer = setTimeout(() => {
+            const input = document.getElementById("carepathAIInput");
+            if (input && input.value.trim().length > 1) {
+              setVoiceAssistantStatus("Thinking & sending to CarePath AI... 💙");
+              setTimeout(() => {
+                closeVoiceAssistantOverlay();
+                sendCarePathMessage();
+              }, 250);
+            }
+          }, 1800);
+        }
       };
 
       cpSpeechRecognition.onerror = function(event) {
         console.warn("SpeechRec error:", event.error);
         const err = event.error;
-        stopCarePathVoiceRecognition();
-
         if (err === "no-speech") {
-          setVoiceAssistantStatus("Didn't catch that. Please speak again or tap a question below.");
+          setVoiceAssistantStatus("Listening... speak in your language or tap a topic below.");
         } else if (err === "not-allowed" || err === "service-not-allowed") {
+          stopCarePathVoiceRecognition();
           closeVoiceAssistantOverlay();
           showMicBlockedModal();
         } else {
-          setVoiceAssistantStatus("Speech paused. Tap 🎙️ to try again or tap a question below.");
+          setVoiceAssistantStatus("Speech paused. Tap 🎙️ to speak or tap a question below.");
         }
       };
 
       cpSpeechRecognition.onend = function() {
-        stopCarePathVoiceRecognition();
         const input = document.getElementById("carepathAIInput");
         const val = input ? input.value.trim() : "";
         if (val.length > 1) {
+          stopCarePathVoiceRecognition();
           setVoiceAssistantStatus("Thinking & sending to CarePath AI... 💙");
           setTimeout(() => {
             closeVoiceAssistantOverlay();
             sendCarePathMessage();
-          }, 350);
+          }, 300);
+        } else if (isCpListening) {
+          try {
+            cpSpeechRecognition.start();
+          } catch(e) {
+            stopCarePathVoiceRecognition();
+          }
+        } else {
+          stopCarePathVoiceRecognition();
         }
       };
 

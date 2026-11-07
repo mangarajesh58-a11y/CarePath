@@ -1592,12 +1592,15 @@ Provide a direct, helpful 1-2 sentence response to the patient.""",
 # Malayalam, Marathi, Bengali, Gujarati, Punjabi, Odia, English
 # ============================================================
 
+TTS_AUDIO_CACHE = {}
+
 @app.get("/ai/tts")
 def carepath_ai_text_to_speech(text: str, lang: str = "en"):
     """
     Streams crystal-clear native MP3 speech in ALL Indian languages.
     Plays on any phone speaker, Android WebView, and browser without
     requiring phone system voice packages to be installed.
+    Features instant in-memory RAM caching for sub-millisecond response.
     """
     clean_text = (text or "").strip()
     if not clean_text:
@@ -1610,6 +1613,17 @@ def carepath_ai_text_to_speech(text: str, lang: str = "en"):
     valid_langs = {"te", "hi", "ta", "kn", "ml", "mr", "bn", "gu", "pa", "en"}
     if lang_code not in valid_langs:
         lang_code = "en"
+
+    cache_key = (clean_text, lang_code)
+    if cache_key in TTS_AUDIO_CACHE:
+        return Response(
+            content=TTS_AUDIO_CACHE[cache_key],
+            media_type="audio/mpeg",
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
 
     tts_url = (
         f"https://translate.google.com/translate_tts?ie=UTF-8&tl={lang_code}&client=tw-ob&q="
@@ -1629,6 +1643,8 @@ def carepath_ai_text_to_speech(text: str, lang: str = "en"):
             timeout=5.0,
         )
         if resp.ok and len(resp.content) > 100:
+            if len(TTS_AUDIO_CACHE) < 500:
+                TTS_AUDIO_CACHE[cache_key] = resp.content
             return Response(
                 content=resp.content,
                 media_type="audio/mpeg",
