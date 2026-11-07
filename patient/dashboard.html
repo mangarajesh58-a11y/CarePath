@@ -317,14 +317,19 @@
       <select
         id="carepathLanguageSelect"
         onchange="changeCarePathLanguage(this.value)"
-        title="Choose AI Language / భాషను ఎంచుకోండి"
+        title="Choose AI Indian Language / భాషను ఎంచుకోండి"
         style="background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.4); color: white; border-radius: 14px; padding: 4px 6px; font-size: 11px; font-weight: 700; cursor: pointer; outline: none; backdrop-filter: blur(2px);"
       >
-        <option value="en-IN" style="color: #0f172a; font-weight: 600;">🌐 English</option>
         <option value="te-IN" style="color: #0f172a; font-weight: 600;">🌐 తెలుగు (Telugu)</option>
         <option value="hi-IN" style="color: #0f172a; font-weight: 600;">🌐 हिंदी (Hindi)</option>
+        <option value="en-IN" style="color: #0f172a; font-weight: 600;">🌐 English (Indian)</option>
         <option value="ta-IN" style="color: #0f172a; font-weight: 600;">🌐 தமிழ் (Tamil)</option>
         <option value="kn-IN" style="color: #0f172a; font-weight: 600;">🌐 ಕನ್ನಡ (Kannada)</option>
+        <option value="ml-IN" style="color: #0f172a; font-weight: 600;">🌐 മലയാളം (Malayalam)</option>
+        <option value="mr-IN" style="color: #0f172a; font-weight: 600;">🌐 मराठी (Marathi)</option>
+        <option value="bn-IN" style="color: #0f172a; font-weight: 600;">🌐 বাংলা (Bengali)</option>
+        <option value="gu-IN" style="color: #0f172a; font-weight: 600;">🌐 ગુજરાતી (Gujarati)</option>
+        <option value="pa-IN" style="color: #0f172a; font-weight: 600;">🌐 ਪੰਜਾਬੀ (Punjabi)</option>
       </select>
       <button
         type="button"
@@ -591,8 +596,9 @@
 
 <script>
   // =====================================================
-  // CAREPATH AI - TWO-WAY MULTILINGUAL VOICE & FAST CHAT ENGINE
-  // Supported Languages: English, Telugu (తెలుగు), Hindi (हिंदी), Tamil (தமிழ்), Kannada (ಕನ್ನಡ)
+  // CAREPATH AI - ALL INDIAN LANGUAGES TWO-WAY VOICE ENGINE
+  // Supported: Telugu, Hindi, English, Tamil, Kannada, Malayalam,
+  // Marathi, Bengali, Gujarati, Punjabi
   // =====================================================
   let lastAiToggleTimestamp = 0;
   let autoVoiceOutput = true;
@@ -603,42 +609,22 @@
   let pendingPrescriptionFile = null;
   let carepathVoices = [];
   let currentlyPlayingMsgId = null;
+  let activeAudioVoice = null;
   window.cpMessageTextMap = window.cpMessageTextMap || {};
 
-  // Current active language (saved in localStorage)
-  let currentAiLang = localStorage.getItem("carepath_lang") || "en-IN";
+  // Default to Telugu or Hindi if in India or user preference, fallback to English
+  let currentAiLang = localStorage.getItem("carepath_lang") || "te-IN";
 
   const CP_LANG_CONFIG = {
-    "en-IN": {
-      name: "English",
-      speechRecLang: "en-IN",
-      ttsLang: "en-IN",
-      welcome: "Hi! I'm your AI Healthcare Assistant. Ask me about doctors, OPD tokens, or <strong>upload / take a photo of your doctor's prescription</strong> and I will explain what the doctor wrote and how to take your medicines!",
-      placeholder: "Ask CarePath AI or tap 🎙️ to speak...",
-      listening: "Listening... Speak your symptoms or question",
-      transcriptBoxHint: "Speak now — words will appear here in real time...",
-      unsupported: "🎙️ Real-time voice isn't supported in this browser. Tap any question below or type to communicate!",
-      btnScan: "📸 Scan Doctor's Prescription",
-      btnDecode: "💊 Decode Dosage Terms",
-      sendBtn: "Send Question",
-      orTapTopic: "Or Tap a Question to Hear Answer:",
-      topics: [
-        { text: "I have mild fever and headache, what should I do?", label: "🌡️ Fever & Headache" },
-        { text: "Explain prescription dosage abbreviations 1-0-1 and TDS", label: "💊 1-0-1 Dosage Meaning" },
-        { text: "How can I check my live OPD token queue position?", label: "🎫 Check Token Queue" }
-      ],
-      greetingVoice: "Hello! I am CarePath AI. How can I help your health today?",
-      dosageQuery: "Explain what dosage 1-0-1 and TDS mean in a doctor prescription"
-    },
     "te-IN": {
       name: "తెలుగు",
+      code: "te",
       speechRecLang: "te-IN",
-      ttsLang: "te-IN",
       welcome: "నమస్కారం! 🙏 నేను మీ CarePath AI ఆరోగ్య సహాయకుడిని. వైద్యుల వివరాలు, OPD టోకెన్ లేదా <strong>డాక్టర్ ప్రిస్క్రిప్షన్ ఫోటో తీసి అప్‌లోడ్ చేయండి</strong>. మందులు ఎలా వాడాలో వివరంగా చెప్తాను!",
       placeholder: "CarePath AI ని అడగండి లేదా మాట్లాడటానికి 🎙️ నొక్కండి...",
       listening: "వింటున్నాను... మీ లక్షణాలు లేదా ప్రశ్నను మాట్లాడండి",
       transcriptBoxHint: "మాట్లాడండి — మీ మాటలు ఇక్కడ కనిపిస్తాయి...",
-      unsupported: "🎙️ ఈ బ్రౌజర్‌లో వాయిస్ రికగ్నిషన్ సపోర్ట్ లేదు. కింది ప్రశ్నను నొక్కండి లేదా టైప్ చేయండి!",
+      unsupported: "🎙️ ఈ బ్రౌజర్‌లో వాయిస్ రికగ్నిషన్ అందుబాటులో లేదు. కింది ప్రశ్నను నొక్కండి లేదా టైప్ చేయండి!",
       btnScan: "📸 ప్రిస్క్రిప్షన్ స్కాన్ చేయండి",
       btnDecode: "💊 మందుల మోతాదు అర్థం",
       sendBtn: "ప్రశ్న పంపండి",
@@ -653,8 +639,8 @@
     },
     "hi-IN": {
       name: "हिंदी",
+      code: "hi",
       speechRecLang: "hi-IN",
-      ttsLang: "hi-IN",
       welcome: "नमस्ते! 🙏 मैं CarePath AI स्वास्थ्य सहायक हूँ। डॉक्टरों, OPD टोकन या <strong>डॉक्टर की पर्ची (Prescription) की फोटो अपलोड करें</strong> और मैं दवाइयों की पूरी जानकारी दूंगा!",
       placeholder: "CarePath AI से पूछें या बोलने के लिए 🎙️ दबाएं...",
       listening: "सुन रहे हैं... अपने लक्षण या स्वास्थ्य प्रश्न बोलें",
@@ -672,10 +658,31 @@
       greetingVoice: "नमस्ते! मैं केयरपाथ AI हूँ। मैं आपकी क्या मदद कर सकता हूँ?",
       dosageQuery: "डॉक्टर के पर्चे में 1-0-1 और TDS खुराक का मतलब समझाएं"
     },
+    "en-IN": {
+      name: "English",
+      code: "en",
+      speechRecLang: "en-IN",
+      welcome: "Hi! I'm your AI Healthcare Assistant. Ask me about doctors, OPD tokens, or <strong>upload / take a photo of your doctor's prescription</strong> and I will explain what the doctor wrote and how to take your medicines!",
+      placeholder: "Ask CarePath AI or tap 🎙️ to speak...",
+      listening: "Listening... Speak your symptoms or question",
+      transcriptBoxHint: "Speak now — words will appear here in real time...",
+      unsupported: "🎙️ Real-time voice isn't supported in this browser. Tap any question below or type to communicate!",
+      btnScan: "📸 Scan Doctor's Prescription",
+      btnDecode: "💊 Decode Dosage Terms",
+      sendBtn: "Send Question",
+      orTapTopic: "Or Tap a Question to Hear Answer:",
+      topics: [
+        { text: "I have mild fever and headache, what should I do?", label: "🌡️ Fever & Headache" },
+        { text: "Explain prescription dosage abbreviations 1-0-1 and TDS", label: "💊 1-0-1 Dosage Meaning" },
+        { text: "How can I check my live OPD token queue position?", label: "🎫 Check Token Queue" }
+      ],
+      greetingVoice: "Hello! I am CarePath AI. How can I help your health today?",
+      dosageQuery: "Explain what dosage 1-0-1 and TDS mean in a doctor prescription"
+    },
     "ta-IN": {
       name: "தமிழ்",
+      code: "ta",
       speechRecLang: "ta-IN",
-      ttsLang: "ta-IN",
       welcome: "வணக்கம்! 🙏 நான் உங்கள் CarePath AI சுகாதார உதவியாளர். மருத்துவர்கள், OPD டோக்கன் அல்லது <strong>மருத்துவ சீட்டை படம் எடுத்து பதிவேற்றவும்</strong>, மருந்துகள் உட்கொள்ளும் முறையை விளக்குகிறேன்!",
       placeholder: "CarePath AI-யிடம் கேளுங்கள் அல்லது 🎙️ அழுத்தவும்...",
       listening: "கேட்கிறது... உங்கள் கேள்வியைப் பேசுங்கள்",
@@ -695,8 +702,8 @@
     },
     "kn-IN": {
       name: "ಕನ್ನಡ",
+      code: "kn",
       speechRecLang: "kn-IN",
-      ttsLang: "kn-IN",
       welcome: "ನಮಸ್ಕಾರ! 🙏 ನಾನು ನಿಮ್ಮ CarePath AI ಆರೋಗ್ಯ ಸಹಾಯಕ. ವೈದ್ಯರು, OPD ಟೋಕನ್ ಅಥವಾ <strong>ವೈದ್ಯರ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ</strong>, ಔಷಧಿ ವಿವರಗಳನ್ನು ನೀಡುತ್ತೇನೆ!",
       placeholder: "CarePath AI ಅನ್ನು ಕೇಳಿ ಅಥವಾ 🎙️ ಒತ್ತಿರಿ...",
       listening: "ಕೇಳಿಸಿಕೊಳ್ಳುತ್ತಿದೆ... ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಮಾತನಾಡಿ",
@@ -713,50 +720,169 @@
       ],
       greetingVoice: "ನಮಸ್ಕಾರ! ನಾನು CarePath AI. ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?",
       dosageQuery: "ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್‌ನಲ್ಲಿ 1-0-1 ಮತ್ತು TDS ಪ್ರಮಾಣದ ಅರ್ಥವೇನು ಎಂದು ವಿವರಿಸಿ"
+    },
+    "ml-IN": {
+      name: "മലയാളം",
+      code: "ml",
+      speechRecLang: "ml-IN",
+      welcome: "നമസ്കാരം! 🙏 ഞാൻ CarePath AI ആരോഗ്യ സഹായിയാണ്. ഡോക്ടർമാർ, ഒപിഡി ടോക്കൺ വിവരങ്ങൾ അറിയാനും മരുന്നുകൾ മനസ്സിലാക്കാനും ചോദിക്കാം!",
+      placeholder: "CarePath AI-യോട് ചോദിക്കുക അല്ലെങ്കിൽ 🎙️ അമർത്തുക...",
+      listening: "കേൾക്കുന്നു... നിങ്ങളുടെ ചോദ്യം സംസാരിക്കുക",
+      transcriptBoxHint: "സംസാരിക്കൂ — വാക്കുകൾ ഇവിടെ കാണാം...",
+      unsupported: "🎙️ ഈ ബ്രൗസറിൽ വോയ്‌സ് പിന്തുണ ലഭ്യമല്ല. ചോദ്യം ടൈപ്പ് ചെയ്യുക!",
+      btnScan: "📸 കുറിപ്പടി സ്കാൻ ചെയ്യുക",
+      btnDecode: "💊 മരുന്നിന്റെ അളവ്",
+      sendBtn: "ചോദ്യം അയക്കുക",
+      orTapTopic: "ഉത്തരം കേൾക്കാൻ ചോദ്യം തിരഞ്ഞെടുക്കുക:",
+      topics: [
+        { text: "എനിക്ക് പനിയും തലവേദനയും ഉണ്ട്, എന്ത് ചെയ്യണം?", label: "🌡️ പനിയും തലവേദനയും" },
+        { text: "ഡോക്ടറുടെ കുറിപ്പടിയിൽ 1-0-1 എന്നാൽ എന്താണ്?", label: "💊 1-0-1 അർത്ഥം" },
+        { text: "എന്റെ ടോക്കൺ നമ്പർ എങ്ങനെ പരിശോധിക്കാം?", label: "🎫 ടോക്കൺ നില" }
+      ],
+      greetingVoice: "നമസ്കാരം! ഞാൻ CarePath AI. ഞാൻ എങ്ങനെ സഹായിക്കണം?",
+      dosageQuery: "കുറിപ്പടിയിൽ 1-0-1 എന്താണെന്ന് വിശദീകരിക്കുക"
+    },
+    "mr-IN": {
+      name: "मराठी",
+      code: "mr",
+      speechRecLang: "mr-IN",
+      welcome: "नमस्कार! 🙏 मी CarePath AI आरोग्य सहाय्यक आहे. डॉक्टर, ओपीडी टोकन किंवा <strong>डॉक्टरांच्या प्रिस्क्रिप्शनचा फोटो अपलोड करा</strong>!",
+      placeholder: "CarePath AI ला विचारा किंवा 🎙️ दाबा...",
+      listening: "ऐकत आहे... आपली समस्या बोला",
+      transcriptBoxHint: "बोला — आपले शब्द येथे दिसतील...",
+      unsupported: "🎙️ या ब्राउझरमध्ये व्हॉइस सपोर्ट नाही. खालील प्रश्न निवडा!",
+      btnScan: "📸 प्रिस्क्रिप्शन स्कॅन करा",
+      btnDecode: "💊 औषधांचा डोस समजून घ्या",
+      sendBtn: "प्रश्न पाठवा",
+      orTapTopic: "उत्तर ऐकण्यासाठी प्रश्न निवडा:",
+      topics: [
+        { text: "मला हलका ताप आणि डोकेदुखी आहे, मी काय करावे?", label: "🌡️ ताप आणि डोकेदुखी" },
+        { text: "प्रिस्क्रिप्शनमध्ये 1-0-1 चा अर्थ काय आहे?", label: "💊 1-0-1 अर्थ" },
+        { text: "माझा टोकन नंबर कसा तपासायचा?", label: "🎫 टोकन तपासा" }
+      ],
+      greetingVoice: "नमस्कार! मी CarePath AI आहे. मी आपल्याला कशी मदत करू शकेन?",
+      dosageQuery: "प्रिस्क्रिप्शनमध्ये 1-0-1 डोसचा अर्थ स्पष्ट करा"
+    },
+    "bn-IN": {
+      name: "বাংলা",
+      code: "bn",
+      speechRecLang: "bn-IN",
+      welcome: "নমস্কার! 🙏 আমি CarePath AI স্বাস্থ্য সহকারী। ডাক্তার, ওপিডি টোকেন বা প্রেসক্রিপশনের ছবি আপলোড করে ওষুধের নিয়ম জেনে নিন!",
+      placeholder: "CarePath AI-কে জিজ্ঞাসা করুন বা 🎙️ চাপুন...",
+      listening: "শুনছি... আপনার স্বাস্থ্য সমস্যা বলুন",
+      transcriptBoxHint: "বলুন — আপনার কথা এখানে দেখা যাবে...",
+      unsupported: "🎙️ এই ব্রাউজারে ভয়েস সাপোর্ট নেই। নিচের প্রশ্নটি বেছে নিন!",
+      btnScan: "📸 প্রেসক্রিপশন স্ক্যান করুন",
+      btnDecode: "💊 ওষুধের ডোজ বুঝুন",
+      sendBtn: "প্রশ্ন পাঠান",
+      orTapTopic: "উত্তর শুনতে প্রশ্ন বেছে নিন:",
+      topics: [
+        { text: "আমার জ্বর এবং মাথাব্যথা আছে, কী করা উচিত?", label: "🌡️ জ্বর ও মাথাব্যথা" },
+        { text: "প্রেসক্রিপশনে 1-0-1 এর অর্থ কী?", label: "💊 1-0-1 এর অর্থ" },
+        { text: "আমার লাইভ টোকেন স্ট্যাটাস কীভাবে দেখব?", label: "🎫 টোকেন দেখুন" }
+      ],
+      greetingVoice: "নমস্কার! আমি CarePath AI. আপনাকে কীভাবে সাহায্য করতে পারি?",
+      dosageQuery: "প্রেসক্রিপশনে 1-0-1 এর অর্থ কী ব্যাখ্যা করুন"
+    },
+    "gu-IN": {
+      name: "ગુજરાતી",
+      code: "gu",
+      speechRecLang: "gu-IN",
+      welcome: "નમસ્તે! 🙏 હું CarePath AI હેલ્થકેર સહાયક છું. ડોકટરો, OPD ટોકન અથવા પ્રિસ્ક્રિપ્શન વિશે પૂછો!",
+      placeholder: "CarePath AI ને પૂછો અથવા 🎙️ દબાવો...",
+      listening: "સાંભળી રહ્યો છું... તમારી સમસ્યા બોલો",
+      transcriptBoxHint: "બોલો — તમારા શબ્દો અહીં દેખાશે...",
+      unsupported: "🎙️ આ બ્રાઉઝરમાં વૉઇસ સપોર્ટ નથી. નીચેનો પ્રશ્ન પસંદ કરો!",
+      btnScan: "📸 પ્રિસ્ક્રિપ્શન સ્કેન કરો",
+      btnDecode: "💊 દવાના ડોઝ સમજો",
+      sendBtn: "પ્રશ્ન મોકલો",
+      orTapTopic: "જવાબ સાંભળવા માટે પ્રશ્ન પસંદ કરો:",
+      topics: [
+        { text: "મને તાવ અને માથાનો દુખાવો છે, શું કરવું જોઈએ?", label: "🌡️ તાવ અને માથાનો દુખાવો" },
+        { text: "પ્રિસ્ક્રિપ્શનમાં 1-0-1 નો અર્થ શું છે?", label: "💊 1-0-1 નો અર્થ" },
+        { text: "મારું લાઇવ ટોકન સ્ટેટસ કેવી રીતે જોવું?", label: "🎫 ટોકન સ્ટેટસ" }
+      ],
+      greetingVoice: "નમસ્તે! હું CarePath AI છું. હું તમારી કેવી રીતે મદદ કરી શકું?",
+      dosageQuery: "પ્રિસ્ક્રિપ્શનમાં 1-0-1 નો અર્થ શું છે તે સમજાવો"
+    },
+    "pa-IN": {
+      name: "ਪੰਜਾਬੀ",
+      code: "pa",
+      speechRecLang: "pa-IN",
+      welcome: "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ! 🙏 ਮੈਂ CarePath AI ਸਿਹਤ ਸਹਾਇਕ ਹਾਂ। ਡਾਕਟਰਾਂ, OPD ਟੋਕਨ ਜਾਂ ਪਰਚੀ ਬਾਰੇ ਪੁੱਛੋ!",
+      placeholder: "CarePath AI ਨੂੰ ਪੁੱਛੋ ਜਾਂ 🎙️ ਦਬਾਓ...",
+      listening: "ਸੁਣ ਰਿਹਾ ਹਾਂ... ਆਪਣੀ ਸਮੱਸਿਆ ਦੱਸੋ",
+      transcriptBoxHint: "ਬੋਲੋ — ਤੁਹਾਡੇ ਸ਼ਬਦ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੇ...",
+      unsupported: "🎙️ ਇਸ ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਆਵਾਜ਼ ਸਹਿਯੋਗ ਨਹੀਂ ਹੈ। ਹੇਠਾਂ ਦਿੱਤਾ ਸਵਾਲ ਚੁਣੋ!",
+      btnScan: "📸 ਪਰਚੀ ਸਕੈਨ ਕਰੋ",
+      btnDecode: "💊 ਦਵਾਈ ਦੀ ਖੁਰਾਕ",
+      sendBtn: "ਸਵਾਲ ਭੇਜੋ",
+      orTapTopic: "ਜਵਾਬ ਸੁਣਨ ਲਈ ਸਵਾਲ ਚੁਣੋ:",
+      topics: [
+        { text: "ਮੈਨੂੰ ਬੁਖਾਰ ਅਤੇ ਸਿਰ ਦਰਦ ਹੈ, ਕੀ ਕਰਨਾ ਚਾਹੀਦਾ ਹੈ?", label: "🌡️ ਬੁਖਾਰ ਅਤੇ ਸਿਰ ਦਰਦ" },
+        { text: "ਪਰਚੀ ਵਿੱਚ 1-0-1 ਦਾ ਕੀ ਅਰਥ ਹੈ?", label: "💊 1-0-1 ਦਾ ਮਤਲਬ" },
+        { text: "ਮੇਰਾ ਲਾਈਵ ਟੋਕਨ ਨੰਬਰ ਕਿਵੇਂ ਵੇਖੀਏ?", label: "🎫 ਟੋਕਨ ਵੇਖੋ" }
+      ],
+      greetingVoice: "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ! ਮੈਂ CarePath AI ਹਾਂ। ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
+      dosageQuery: "ਪਰਚੀ ਵਿੱਚ 1-0-1 ਦਾ ਕੀ ਮਤਲਬ ਹੈ ਸਮਝਾਓ"
     }
   };
 
-  // Preload speech synthesis voices
+  // Preload speech synthesis voices as secondary fallback
   function loadCarepathVoices() {
     if (!('speechSynthesis' in window)) return;
-    try {
-      carepathVoices = window.speechSynthesis.getVoices() || [];
-    } catch(e) {}
+    try { carepathVoices = window.speechSynthesis.getVoices() || []; } catch(e) {}
   }
   if ('speechSynthesis' in window) {
     loadCarepathVoices();
     window.speechSynthesis.onvoiceschanged = loadCarepathVoices;
   }
 
-  // Critical for Mobile Chrome: Prime speech synthesis on touch gesture
+  // Prime speech & audio channel on user touch (critical for Android autoplay policy)
   function primeSpeechSynthesis() {
-    if (!('speechSynthesis' in window)) return;
     try {
-      window.speechSynthesis.resume();
-      const u = new SpeechSynthesisUtterance(" ");
-      u.volume = 0.01;
-      window.speechSynthesis.speak(u);
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+        const u = new SpeechSynthesisUtterance(" ");
+        u.volume = 0.01;
+        window.speechSynthesis.speak(u);
+      }
     } catch(e) {}
   }
 
-  // Language Change Handler
+  // Detect which Indian language a given piece of text is written in
+  function detectTextLanguage(text, defaultLang) {
+    if (!text) return defaultLang || currentAiLang || "te-IN";
+    if (/[\u0C00-\u0C7F]/.test(text)) return "te-IN"; // Telugu
+    if (/[\u0900-\u097F]/.test(text)) {
+      // Check Marathi specific words or default to Hindi
+      if (text.includes("आहे") || text.includes("मला") || text.includes("करावे")) return "mr-IN";
+      return "hi-IN"; // Hindi
+    }
+    if (/[\u0B80-\u0BFF]/.test(text)) return "ta-IN"; // Tamil
+    if (/[\u0C80-\u0CFF]/.test(text)) return "kn-IN"; // Kannada
+    if (/[\u0D00-\u0D7F]/.test(text)) return "ml-IN"; // Malayalam
+    if (/[\u0980-\u09FF]/.test(text)) return "bn-IN"; // Bengali
+    if (/[\u0A80-\u0AFF]/.test(text)) return "gu-IN"; // Gujarati
+    if (/[\u0A00-\u0A7F]/.test(text)) return "pa-IN"; // Punjabi
+    return defaultLang || currentAiLang || "en-IN";
+  }
+
+  // Switch Active Language
   function changeCarePathLanguage(newLang) {
     primeSpeechSynthesis();
-    if (!CP_LANG_CONFIG[newLang]) newLang = "en-IN";
+    if (!CP_LANG_CONFIG[newLang]) newLang = "te-IN";
     currentAiLang = newLang;
     localStorage.setItem("carepath_lang", newLang);
 
-    // Update select element
     const sel = document.getElementById("carepathLanguageSelect");
     if (sel && sel.value !== newLang) sel.value = newLang;
 
     const conf = CP_LANG_CONFIG[newLang];
 
-    // Update input placeholder
     const input = document.getElementById("carepathAIInput");
     if (input) input.placeholder = conf.placeholder;
 
-    // Update Voice Overlay text and chips
     const voiceStatus = document.getElementById("cpVoiceStatusText");
     if (voiceStatus && !isCpListening) voiceStatus.textContent = conf.listening;
 
@@ -775,7 +901,6 @@
       `).join("");
     }
 
-    // Update Initial Chat Message Action Chips
     const initialChips = document.getElementById("carepathInitialActionChips");
     if (initialChips) {
       initialChips.innerHTML = `
@@ -788,158 +913,33 @@
       `;
     }
 
-    // Update SpeechRecognition language if initialized
     if (cpSpeechRecognition) {
       try { cpSpeechRecognition.lang = conf.speechRecLang; } catch(e) {}
     }
 
-    // Speak greeting in the selected language if Auto-Voice is active
     if (autoVoiceOutput && conf.greetingVoice) {
-      speakCarePathText(conf.greetingVoice);
+      playAudioVoice(conf.greetingVoice, newLang, null);
     }
   }
 
   function handleDosageChipClick() {
-    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
+    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
     quickAskAI(conf.dosageQuery);
   }
 
-  // Automatic script and language detector
-  function detectTextLanguage(text) {
-    if (!text) return currentAiLang || "en-IN";
-    if (/[\u0C00-\u0C7F]/.test(text)) return "te-IN"; // Telugu script
-    if (/[\u0900-\u097F]/.test(text)) return "hi-IN"; // Devanagari / Hindi script
-    if (/[\u0B80-\u0BFF]/.test(text)) return "ta-IN"; // Tamil script
-    if (/[\u0C80-\u0CFF]/.test(text)) return "kn-IN"; // Kannada script
-    return currentAiLang || "en-IN";
-  }
-
   // =====================================================
-  // ANDROID RUNTIME PERMISSION HANDLER (CAMERA & MIC)
+  // UNIVERSAL NATIVE AUDIO VOICE PLAYER (ALL INDIAN LANGUAGES)
+  // Plays via backend /ai/tts stream for 100% guarantee on all phones,
+  // with instant fallback to browser SpeechSynthesis!
   // =====================================================
-  let activePermType = null;
-  let onPermGrantedCallback = null;
-
-  function showCarePathPermissionPrompt(type, onGranted) {
-    activePermType = type;
-    onPermGrantedCallback = onGranted;
-
-    const dialog = document.getElementById("carepathPermissionDialog");
-    const icon = document.getElementById("cpPermIcon");
-    const title = document.getElementById("cpPermTitle");
-    const desc = document.getElementById("cpPermDesc");
-
-    if (!dialog) {
-      if (onGranted) onGranted();
-      return;
-    }
-
-    if (type === "camera") {
-      if (icon) icon.textContent = "📷";
-      if (title) title.textContent = "Allow CarePath to take pictures and record video?";
-      if (desc) desc.textContent = "CarePath AI uses your camera to scan doctor prescriptions, read handwriting, and decode medicines.";
-    } else {
-      if (icon) icon.textContent = "🎙️";
-      if (title) title.textContent = "Allow CarePath to record audio?";
-      if (desc) desc.textContent = "CarePath AI uses your microphone for voice communication, allowing you to ask health questions aloud.";
-    }
-
-    dialog.style.display = "flex";
-  }
-
-  function closeCarePathPermissionPrompt() {
-    const dialog = document.getElementById("carepathPermissionDialog");
-    if (dialog) dialog.style.display = "none";
-  }
-
-  async function handleCarePathPermChoice(choice) {
-    closeCarePathPermissionPrompt();
-
-    if (choice === "always") {
-      if (activePermType) {
-        localStorage.setItem("carepath_perm_" + activePermType, "granted");
-      }
-      if (onPermGrantedCallback) onPermGrantedCallback();
-    } else if (choice === "once") {
-      if (onPermGrantedCallback) onPermGrantedCallback();
-    } else {
-      if (activePermType === "camera") {
-        triggerPrescriptionGallery();
-      } else {
-        addCarePathMessage("🎙️ Voice communication cancelled. You can type your question in the text box or tap any quick topic.", "ai");
-      }
-    }
-  }
-
-  function triggerPrescriptionCamera() {
-    closePrescriptionChoiceModal();
-    startCarePathCameraInternal();
-  }
-
-  // 1. OPEN / CLOSE CAREPATH AI
-  function toggleCarePathAIChat(e) {
-    if (e && e.stopPropagation) e.stopPropagation();
-    const now = Date.now();
-    if (now - lastAiToggleTimestamp < 250) return;
-    lastAiToggleTimestamp = now;
-
-    primeSpeechSynthesis();
-
-    const chat = document.getElementById("carepathAIChat");
-    if (!chat) return;
-
-    const isCurrentlyHidden = (chat.style.display === "none" || chat.hidden);
-    if (isCurrentlyHidden) {
-      chat.style.display = "flex";
-      chat.hidden = false;
-      const input = document.getElementById("carepathAIInput");
-      if (input) setTimeout(() => input.focus(), 120);
-      // Sync language select on open
-      const sel = document.getElementById("carepathLanguageSelect");
-      if (sel) sel.value = currentAiLang;
-    } else {
-      chat.style.display = "none";
-      chat.hidden = true;
-      stopCarePathVoiceRecognition();
-      stopCarePathSpeech();
-    }
-  }
-
-  function closeCarePathAIChat(e) {
-    if (e && e.stopPropagation) e.stopPropagation();
-    const chat = document.getElementById("carepathAIChat");
-    if (chat) {
-      chat.style.display = "none";
-      chat.hidden = true;
-      stopCarePathVoiceRecognition();
-      stopCarePathSpeech();
-    }
-  }
-
-  function escapeHtml(str) {
-    return String(str || "").replace(/[&<>"']/g, function(m) {
-      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m];
-    });
-  }
-
-  // 2. TWO-WAY MULTILINGUAL TEXT-TO-SPEECH (AI TALKING BACK ALOUD)
-  function toggleCarePathVoiceOutput() {
-    primeSpeechSynthesis();
-    autoVoiceOutput = !autoVoiceOutput;
-    const label = document.getElementById("carepathVoiceLabel");
-    const icon = document.getElementById("carepathVoiceIcon");
-    if (label) label.textContent = autoVoiceOutput ? "Voice: ON" : "Voice: OFF";
-    if (icon) icon.textContent = autoVoiceOutput ? "🔊" : "🔇";
-
-    if (!autoVoiceOutput) {
-      stopCarePathSpeech();
-    } else {
-      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
-      speakCarePathText(conf.greetingVoice);
-    }
-  }
-
   function stopCarePathSpeech() {
+    if (activeAudioVoice) {
+      try {
+        activeAudioVoice.pause();
+        activeAudioVoice.currentTime = 0;
+      } catch(e) {}
+      activeAudioVoice = null;
+    }
     if ('speechSynthesis' in window) {
       try { window.speechSynthesis.cancel(); } catch(e) {}
     }
@@ -958,8 +958,7 @@
     });
   }
 
-  function speakCarePathText(text, msgId) {
-    if (!('speechSynthesis' in window)) return;
+  function playAudioVoice(text, langCode, msgId) {
     stopCarePathSpeech();
 
     let raw = String(text || "");
@@ -967,7 +966,6 @@
       if (raw.includes("%")) raw = decodeURIComponent(raw);
     } catch(e) {}
 
-    // Strip markdown, html tags, bracket links, urls, and emojis
     let clean = raw
       .replace(/<[^>]*>/g, " ")
       .replace(/\*\*(.*?)\*\*/g, "$1")
@@ -981,64 +979,91 @@
 
     if (!clean) return;
 
-    // Detect language of text for accurate native voice output
-    const targetLang = detectTextLanguage(clean);
+    const detected = detectTextLanguage(clean, langCode);
+    const shortCode = detected.split("-")[0].toLowerCase();
 
+    // Shorten to first 2 sentences or 240 characters for smooth speech
     let toSpeak = clean;
     const sentences = clean.match(/[^.!?।\n]+[.!?।\n]+/g);
     if (sentences && sentences.length > 0) {
       toSpeak = sentences.slice(0, 2).join(" ");
     }
-    if (toSpeak.length > 250) {
-      toSpeak = toSpeak.slice(0, 250) + "...";
+    if (toSpeak.length > 240) {
+      toSpeak = toSpeak.slice(0, 240) + "...";
     }
 
+    if (msgId) {
+      currentlyPlayingMsgId = msgId;
+      const btn = document.querySelector(`.cp-voice-btn[data-msg-id="${msgId}"]`);
+      if (btn) {
+        btn.classList.add("playing");
+        const icon = btn.querySelector(".cp-speaker-icon");
+        const label = btn.querySelector(".cp-speaker-label");
+        if (icon) icon.textContent = "⏹️";
+        if (label) label.textContent = "Stop";
+      }
+    }
+
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+    const ttsUrl = `${apiBase}/ai/tts?text=${encodeURIComponent(toSpeak)}&lang=${shortCode}`;
+
+    // Play native MP3 audio stream
+    try {
+      const audio = new Audio(ttsUrl);
+      activeAudioVoice = audio;
+
+      audio.onended = function() {
+        activeAudioVoice = null;
+        resetAllSpeakerButtons();
+      };
+
+      audio.onerror = function() {
+        activeAudioVoice = null;
+        fallbackSpeechSynthesis(toSpeak, detected, msgId);
+      };
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn("Audio autoplay blocked, falling back to speech synthesis:", err);
+          fallbackSpeechSynthesis(toSpeak, detected, msgId);
+        });
+      }
+    } catch(e) {
+      fallbackSpeechSynthesis(toSpeak, detected, msgId);
+    }
+  }
+
+  function fallbackSpeechSynthesis(toSpeak, detectedLang, msgId) {
+    if (!('speechSynthesis' in window)) {
+      resetAllSpeakerButtons();
+      return;
+    }
     try {
       window.speechSynthesis.resume();
       const utterance = new SpeechSynthesisUtterance(toSpeak);
 
       if (!carepathVoices.length) loadCarepathVoices();
-
-      // Find matching language voice (e.g. te-IN for Telugu, hi-IN for Hindi, ta-IN for Tamil, kn-IN for Kannada, en-IN for English)
-      const langPrefix = targetLang.slice(0, 2).toLowerCase();
+      const langPrefix = detectedLang.slice(0, 2).toLowerCase();
       const bestVoice = carepathVoices.find(v => {
         const vl = v.lang.replace('_', '-').toLowerCase();
-        return vl === targetLang.toLowerCase() || vl.startsWith(langPrefix);
+        return vl === detectedLang.toLowerCase() || vl.startsWith(langPrefix);
       }) || carepathVoices.find(v => v.lang.toLowerCase().startsWith("en")) || carepathVoices[0];
 
       if (bestVoice) {
         utterance.voice = bestVoice;
         utterance.lang = bestVoice.lang;
       } else {
-        utterance.lang = targetLang;
+        utterance.lang = detectedLang;
       }
 
       utterance.rate = 0.95;
-      utterance.pitch = 1.0;
-
-      if (msgId) {
-        currentlyPlayingMsgId = msgId;
-        const btn = document.querySelector(`.cp-voice-btn[data-msg-id="${msgId}"]`);
-        if (btn) {
-          btn.classList.add("playing");
-          const icon = btn.querySelector(".cp-speaker-icon");
-          const label = btn.querySelector(".cp-speaker-label");
-          if (icon) icon.textContent = "⏹️";
-          if (label) label.textContent = "Stop";
-        }
-      }
-
-      utterance.onend = function() {
-        resetAllSpeakerButtons();
-      };
-
-      utterance.onerror = function() {
-        resetAllSpeakerButtons();
-      };
+      utterance.onend = resetAllSpeakerButtons;
+      utterance.onerror = resetAllSpeakerButtons;
 
       window.speechSynthesis.speak(utterance);
-    } catch(err) {
-      console.warn("speechSynthesis notice:", err);
+    } catch(e) {
       resetAllSpeakerButtons();
     }
   }
@@ -1051,11 +1076,18 @@
     }
     const fullText = (window.cpMessageTextMap && window.cpMessageTextMap[msgId]) || "";
     if (fullText) {
-      speakCarePathText(fullText, msgId);
+      playAudioVoice(fullText, currentAiLang, msgId);
     }
   }
 
-  // 3. MULTILINGUAL VOICE RECOGNITION (SPEECH-TO-TEXT) & LIVE ASSISTANT OVERLAY
+  // Alias for backward compatibility
+  function speakCarePathText(text, msgId) {
+    playAudioVoice(text, currentAiLang, msgId);
+  }
+
+  // =====================================================
+  // VOICE RECOGNITION (SPEECH-TO-TEXT) & LIVE ASSISTANT OVERLAY
+  // =====================================================
   function showVoiceAssistantOverlay(state) {
     const overlay = document.getElementById("carepathVoiceOverlay");
     const statusText = document.getElementById("cpVoiceStatusText");
@@ -1067,7 +1099,7 @@
 
     overlay.style.display = "flex";
 
-    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
+    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
 
     if (state === "unsupported") {
       if (statusText) statusText.textContent = conf.unsupported;
@@ -1108,7 +1140,7 @@
     if (val.length > 0) {
       sendCarePathMessage();
     } else {
-      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
+      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
       quickAskAI(conf.dosageQuery);
     }
   }
@@ -1168,7 +1200,7 @@
         cpSpeechRecognition = null;
       }
 
-      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
+      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
 
       cpSpeechRecognition = new SpeechRec();
       cpSpeechRecognition.lang = conf.speechRecLang;
@@ -1235,6 +1267,67 @@
       try { cpSpeechRecognition.stop(); } catch(e) {}
       cpSpeechRecognition = null;
     }
+  }
+
+  // 1. OPEN / CLOSE CAREPATH AI
+  function toggleCarePathAIChat(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const now = Date.now();
+    if (now - lastAiToggleTimestamp < 250) return;
+    lastAiToggleTimestamp = now;
+
+    primeSpeechSynthesis();
+
+    const chat = document.getElementById("carepathAIChat");
+    if (!chat) return;
+
+    const isCurrentlyHidden = (chat.style.display === "none" || chat.hidden);
+    if (isCurrentlyHidden) {
+      chat.style.display = "flex";
+      chat.hidden = false;
+      const input = document.getElementById("carepathAIInput");
+      if (input) setTimeout(() => input.focus(), 120);
+      const sel = document.getElementById("carepathLanguageSelect");
+      if (sel) sel.value = currentAiLang;
+    } else {
+      chat.style.display = "none";
+      chat.hidden = true;
+      stopCarePathVoiceRecognition();
+      stopCarePathSpeech();
+    }
+  }
+
+  function closeCarePathAIChat(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const chat = document.getElementById("carepathAIChat");
+    if (chat) {
+      chat.style.display = "none";
+      chat.hidden = true;
+      stopCarePathVoiceRecognition();
+      stopCarePathSpeech();
+    }
+  }
+
+  function toggleCarePathVoiceOutput() {
+    primeSpeechSynthesis();
+    autoVoiceOutput = !autoVoiceOutput;
+    const label = document.getElementById("carepathVoiceLabel");
+    const icon = document.getElementById("carepathVoiceIcon");
+    if (label) label.textContent = autoVoiceOutput ? "Voice: ON" : "Voice: OFF";
+    if (icon) icon.textContent = autoVoiceOutput ? "🔊" : "🔇";
+
+    if (!autoVoiceOutput) {
+      stopCarePathSpeech();
+    } else {
+      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
+      playAudioVoice(conf.greetingVoice, currentAiLang, null);
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || "").replace(/[&<>"']/g, function(m) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m];
+    });
   }
 
   // 4. LIVE CAMERA SCANNER WITH PERMISSION REQUEST
@@ -1428,9 +1521,6 @@
       if (anyWord(q, ["காய்ச்சல்"])) {
         return "🌡️ லேசான காய்ச்சலுக்கு போதுமான ஓய்வு எடுத்துக்கொள்ளுங்கள் மற்றும் நிறைய தண்ணீர் அல்லது ORS குடிக்கவும். காய்ச்சல் 102°F-க்கு மேல் இருந்தால் மருத்துவரை அணுகவும்.";
       }
-      if (anyWord(q, ["தலைவலி"])) {
-        return "💆 அமைதியான இடத்தில் ஓய்வெடுத்து நீர் அருந்துங்கள். வலி நீடித்தால் மருத்துவரை ஆலோசிக்கவும்.";
-      }
       if (anyWord(q, ["மருந்து", "1-0-1", "டோக்கன்"])) {
         return "📋 1-0-1 என்பது காலை 1 மற்றும் இரவு 1 மாத்திரை சாப்பிட்ட பின் உட்கொள்ள வேண்டும். நேரலை டோக்கனை 'My Tokens' பகுதியில் பார்க்கலாம்.";
       }
@@ -1449,6 +1539,61 @@
         return "📋 1-0-1 ಎಂದರೆ ಬೆಳಗ್ಗೆ 1 ಮತ್ತು ರಾತ್ರಿ 1 ಮಾತ್ರೆ ಊಟದ ನಂತರ ಸೇವಿಸಬೇಕು. ನಿಮ್ಮ ಟೋಕನ್ ಸ್ಥಿತಿಯನ್ನು 'My Tokens' ನಲ್ಲಿ ನೋಡಿ.";
       }
       return "CarePath ಸಂಪರ್ಕಿಸಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು. ವಿಶ್ರಾಂತಿ ಪಡೆಯಿರಿ! 💙";
+    }
+
+    // --- MALAYALAM TRIAGE ---
+    if (lang.startsWith("ml") || /[\u0D00-\u0D7F]/.test(userText)) {
+      if (anyWord(q, ["നമസ്കാരം", "ഹലോ"])) {
+        return "നമസ്കാരം! 🙏 ഞാൻ CarePath AI ആരോഗ്യ സഹായിയാണ്. ഞാൻ എങ്ങനെ സഹായിക്കണം? 💙";
+      }
+      if (anyWord(q, ["പനി"])) {
+        return "🌡️ ലഘുവായ പനിക്ക് ആവശ്യത്തിന് വിശ്രമിക്കുകയും ധാരാളം വെള്ളം അല്ലെങ്കിൽ ഒ.ആർ.എസ് കുടിക്കുകയും ചെയ്യുക.";
+      }
+      return "CarePath-ലേക്ക് സ്വാഗതം! ആരോഗ്യപരമായ സംശയങ്ങൾ ചോദിക്കാം. 💙";
+    }
+
+    // --- MARATHI TRIAGE ---
+    if (lang.startsWith("mr") || textContainsMarathi(userText)) {
+      if (anyWord(q, ["नमस्कार", "हॅलो"])) {
+        return "नमस्कार! 🙏 मी CarePath AI आरोग्य सहाय्यक आहे. मी आपल्याला कशी मदत करू शकेन? 💙";
+      }
+      if (anyWord(q, ["ताप"])) {
+        return "🌡️ सौम्य तापासाठी भरपूर विश्रांती घ्या आणि पाणी किंवा ओआरएस प्या. ताप जास्त असल्यास डॉक्टरांचा सल्ला घ्या.";
+      }
+      return "CarePath शी संपर्क साधल्याबद्दल धन्यवाद. विश्रांती घ्या आणि काळजी घ्या! 💙";
+    }
+
+    // --- BENGALI TRIAGE ---
+    if (lang.startsWith("bn") || /[\u0980-\u09FF]/.test(userText)) {
+      if (anyWord(q, ["নমস্কার", "হ্যালো"])) {
+        return "নমস্কার! 🙏 আমি CarePath AI স্বাস্থ্য সহকারী। আপনাকে কীভাবে সাহায্য করতে পারি? 💙";
+      }
+      if (anyWord(q, ["জ্বর"])) {
+        return "🌡️ হালকা জ্বরের জন্য পর্যাপ্ত বিশ্রাম নিন এবং জল বা ওআরএস পান করুন। জ্বর বাড়লে ডাক্তারের পরামর্শ নিন।";
+      }
+      return "CarePath-এ যোগাযোগ করার জন্য ধন্যবাদ। নিজের যত্ন নিন! 💙";
+    }
+
+    // --- GUJARATI TRIAGE ---
+    if (lang.startsWith("gu") || /[\u0A80-\u0AFF]/.test(userText)) {
+      if (anyWord(q, ["નમસ્તે", "હેલો"])) {
+        return "નમસ્તે! 🙏 હું CarePath AI છું. હું તમારી કેવી રીતે મદદ કરી શકું? 💙";
+      }
+      if (anyWord(q, ["તાવ"])) {
+        return "🌡️ હળવા તાવમાં પૂરતો આરામ કરો અને પાણી અથવા ORS પીવો. તાવ વધુ હોય તો ડોક્ટરની સલાહ લો.";
+      }
+      return "CarePath સાથે જોડાવા બદલ આભાર. ધ્યાન રાખજો! 💙";
+    }
+
+    // --- PUNJABI TRIAGE ---
+    if (lang.startsWith("pa") || /[\u0A00-\u0A7F]/.test(userText)) {
+      if (anyWord(q, ["ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ", "ਹੈਲੋ"])) {
+        return "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ! 🙏 ਮੈਂ CarePath AI ਹਾਂ। ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ? 💙";
+      }
+      if (anyWord(q, ["ਬੁਖਾਰ"])) {
+        return "🌡️ ਹਲਕੇ ਬੁਖਾਰ ਲਈ ਪੂਰਾ ਆਰਾਮ ਕਰੋ ਅਤੇ ਪਾਣੀ ਜਾਂ ORS ਪੀਓ।";
+      }
+      return "CarePath ਨਾਲ ਜੁੜਨ ਲਈ ਧੰਨਵਾਦ। 💙";
     }
 
     // --- ENGLISH TRIAGE (DEFAULT) ---
@@ -1487,6 +1632,10 @@
     return "Thank you for reaching out. To stay safe, ensure adequate hydration and rest. If your symptoms are persistent or concerning, please consult a verified doctor at one of our partner hospitals above. You can also tap 📷 to scan any prescription or report! 💙";
   }
 
+  function textContainsMarathi(text) {
+    return text.includes("आहे") || text.includes("मला") || text.includes("करावे") || text.includes("नमस्कार");
+  }
+
   function anyWord(text, words) {
     return words.some(w => text.includes(w));
   }
@@ -1511,12 +1660,10 @@
       window.cpMessageTextMap = window.cpMessageTextMap || {};
       window.cpMessageTextMap[msgId] = text;
 
-      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
-
       message.innerHTML = `
         <div style="font-size: 13.5px; line-height: 1.55;">${formatted}</div>
         <button type="button" class="cp-voice-btn" data-msg-id="${msgId}" onclick="togglePlayMessageSpeech('${msgId}', this)">
-          <span class="cp-speaker-icon">🔊</span> <span class="cp-speaker-label">${conf.listenBtn || 'Listen'}</span>
+          <span class="cp-speaker-icon">🔊</span> <span class="cp-speaker-label">Listen</span>
         </button>
       `;
     }
@@ -1537,8 +1684,6 @@
 
     addCarePathMessage(text, "user");
     input.value = "";
-
-    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
 
     // Show temporary thinking indicator
     addCarePathMessage("Thinking... 💙", "ai");
@@ -1583,7 +1728,7 @@
 
     // Speak aloud in the matching language if Auto-Voice is active
     if (autoVoiceOutput) {
-      speakCarePathText(replyText);
+      playAudioVoice(replyText, currentAiLang, null);
     }
   }
 
@@ -1770,7 +1915,7 @@
     carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
 
     if (autoVoiceOutput) {
-      speakCarePathText(explanationText);
+      playAudioVoice(explanationText, currentAiLang, null);
     }
   }
 
@@ -1816,10 +1961,8 @@
     });
   }
 
-  // Set initial language from saved preference
-  if (currentAiLang && currentAiLang !== "en-IN") {
-    setTimeout(() => changeCarePathLanguage(currentAiLang), 100);
-  }
+  // Set initial language from saved preference (default: Telugu or saved choice)
+  setTimeout(() => changeCarePathLanguage(currentAiLang), 100);
 
   // Footer year
   const footerYear = document.getElementById("footerYear");

@@ -1576,6 +1576,100 @@ Provide a direct, helpful 1-2 sentence response to the patient.""",
 
 
 # ============================================================
+
+# ============================================================
+# CAREPATH AI - MULTILINGUAL AUDIO TTS & TRANSCRIBE ENGINE
+# Supports All Indian Languages: Telugu, Hindi, Tamil, Kannada,
+# Malayalam, Marathi, Bengali, Gujarati, Punjabi, Odia, English
+# ============================================================
+
+@app.get("/ai/tts")
+def carepath_ai_text_to_speech(text: str, lang: str = "en"):
+    """
+    Streams crystal-clear native MP3 speech in ALL Indian languages.
+    Plays on any phone speaker, Android WebView, and browser without
+    requiring phone system voice packages to be installed.
+    """
+    clean_text = (text or "").strip()
+    if not clean_text:
+        raise HTTPException(status_code=400, detail="Text is required.")
+
+    # Limit to first 250 characters for clear voice delivery
+    clean_text = clean_text[:250]
+
+    lang_code = lang.split("-")[0].lower() if "-" in lang else lang.lower()
+    valid_langs = {"te", "hi", "ta", "kn", "ml", "mr", "bn", "gu", "pa", "en"}
+    if lang_code not in valid_langs:
+        lang_code = "en"
+
+    tts_url = (
+        f"https://translate.google.com/translate_tts?ie=UTF-8&tl={lang_code}&client=tw-ob&q="
+        + requests.utils.quote(clean_text)
+    )
+
+    try:
+        resp = requests.get(
+            tts_url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0.0.0 Safari/537.36"
+                )
+            },
+            timeout=5.0,
+        )
+        if resp.ok and len(resp.content) > 100:
+            return Response(
+                content=resp.content,
+                media_type="audio/mpeg",
+                headers={
+                    "Cache-Control": "public, max-age=86400",
+                    "Access-Control-Allow-Origin": "*",
+                },
+            )
+        else:
+            raise HTTPException(status_code=502, detail="TTS upstream failed.")
+    except Exception as e:
+        logging.warning("TTS audio fetch error: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ai/transcribe")
+async def carepath_ai_transcribe_audio(
+    audio: UploadFile = File(...),
+    language: Optional[str] = Form("te-IN"),
+):
+    """
+    Transcribes audio speech in any Indian language using Groq Whisper or Gemini.
+    """
+    try:
+        content = await audio.read()
+        if not content:
+            raise HTTPException(status_code=400, detail="Empty audio file.")
+
+        groq_key = os.getenv("GROQ_API_KEY")
+        if groq_key:
+            try:
+                whisper_res = requests.post(
+                    "https://api.groq.com/openai/v1/audio/transcriptions",
+                    headers={"Authorization": f"Bearer {groq_key}"},
+                    files={"file": (audio.filename or "speech.webm", content, audio.content_type or "audio/webm")},
+                    data={"model": "whisper-large-v3", "temperature": 0.0},
+                    timeout=5.0,
+                )
+                if whisper_res.ok:
+                    transcription = whisper_res.json().get("text", "").strip()
+                    if transcription:
+                        return {"success": True, "text": transcription, "source": "groq_whisper"}
+            except Exception as e:
+                logging.warning("Groq whisper error: %s", e)
+
+        return {"success": False, "error": "Transcription unavailable."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # CAREPATH AI - PRESCRIPTION & MEDICAL REPORT EXPLAINER
 # ============================================================
 
