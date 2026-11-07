@@ -839,6 +839,8 @@
   }
 
   // Prime speech & audio channel on user touch (critical for Android autoplay policy)
+  let sharedVoiceAudio = null;
+
   function primeSpeechSynthesis() {
     try {
       if ('speechSynthesis' in window) {
@@ -846,6 +848,22 @@
         const u = new SpeechSynthesisUtterance(" ");
         u.volume = 0.01;
         window.speechSynthesis.speak(u);
+      }
+    } catch(e) {}
+
+    // Unlock HTML5 Audio on mobile Chrome / Safari user tap gesture
+    try {
+      if (!sharedVoiceAudio) {
+        sharedVoiceAudio = new Audio();
+      }
+      if (!sharedVoiceAudio.src || sharedVoiceAudio.src.startsWith("data:")) {
+        sharedVoiceAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+        const p = sharedVoiceAudio.play();
+        if (p !== undefined) {
+          p.then(() => {
+            sharedVoiceAudio.pause();
+          }).catch(() => {});
+        }
       }
     } catch(e) {}
   }
@@ -1017,15 +1035,19 @@
 
     function startNativeAudio(audioUrl) {
       try {
-        const audio = new Audio(audioUrl);
-        activeAudioVoice = audio;
+        if (!sharedVoiceAudio) {
+          sharedVoiceAudio = new Audio();
+        }
+        activeAudioVoice = sharedVoiceAudio;
+        sharedVoiceAudio.pause();
+        sharedVoiceAudio.src = audioUrl;
 
-        audio.onended = function() {
+        sharedVoiceAudio.onended = function() {
           activeAudioVoice = null;
           resetAllSpeakerButtons();
         };
 
-        audio.onerror = function() {
+        sharedVoiceAudio.onerror = function() {
           activeAudioVoice = null;
           if (!triedDirect) {
             triedDirect = true;
@@ -1035,7 +1057,7 @@
           }
         };
 
-        const playPromise = audio.play();
+        const playPromise = sharedVoiceAudio.play();
         if (playPromise !== undefined) {
           playPromise.catch(err => {
             console.warn("Audio play blocked, attempting fallback:", err);

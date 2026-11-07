@@ -1,10 +1,9 @@
-
 {
   "appId": "com.carepath.patient",
   "appName": "CarePath",
   "webDir": "www",
   "server": {
-    "url": "https://carepath-patient-mx5v.vercel.app",
+    "url": "https://carepath-3q9q.onrender.com/dashboard.html",
     "cleartext": false
   }
 }

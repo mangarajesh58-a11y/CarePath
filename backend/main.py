@@ -485,6 +485,13 @@ CERTIFICATE_DIR = os.path.join(
 
 os.makedirs(CERTIFICATE_DIR, exist_ok=True)
 
+PATIENT_STATIC_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "patient")
+)
+HOSPITAL_STATIC_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "hospital")
+)
+
 
 # ============================================================
 # CORS
@@ -2784,17 +2791,14 @@ def verify_google_credential(
 # ============================================================
 
 @app.get("/")
-def root():
-
+def root(request: Request):
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept and os.path.exists(os.path.join(PATIENT_STATIC_DIR, "dashboard.html")):
+        return FileResponse(os.path.join(PATIENT_STATIC_DIR, "dashboard.html"))
     return {
-
         "success": True,
-
-        "message":
-            "CarePath API is running",
-
-        "version":
-            "11.0.0",
+        "message": "CarePath API is running",
+        "version": "11.0.0",
     }
 
 
@@ -8511,3 +8515,24 @@ You can view and reply to this inquiry directly on your CarePath Hospital Dashbo
             "created_at": msg.created_at.isoformat() if msg.created_at else None,
         },
     }
+
+
+# ============================================================
+# STATIC FILES SERVING (Render Direct Full-Stack Deployment)
+# ============================================================
+from fastapi.staticfiles import StaticFiles
+
+if os.path.exists(PATIENT_STATIC_DIR):
+    @app.get("/dashboard.html", include_in_schema=False)
+    def serve_root_dashboard():
+        return FileResponse(os.path.join(PATIENT_STATIC_DIR, "dashboard.html"))
+
+    @app.get("/patient/dashboard.html", include_in_schema=False)
+    def serve_sub_dashboard():
+        return FileResponse(os.path.join(PATIENT_STATIC_DIR, "dashboard.html"))
+
+    app.mount("/patient", StaticFiles(directory=PATIENT_STATIC_DIR, html=True), name="patient")
+    app.mount("/", StaticFiles(directory=PATIENT_STATIC_DIR, html=True), name="patient_root")
+
+if os.path.exists(HOSPITAL_STATIC_DIR):
+    app.mount("/hospital", StaticFiles(directory=HOSPITAL_STATIC_DIR, html=True), name="hospital")
