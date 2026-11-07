@@ -390,6 +390,37 @@
         </div>
 
         <!-- ==============================
+             OPD BREAK TIMING (ENTERED BY HOSPITAL ONLY)
+        =============================== -->
+        <div style="background: #fefce8; border: 1.5px solid #fde047; border-radius: 12px; padding: 18px; margin-top: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                <h3 style="margin: 0; font-size: 15px; color: #854d0e; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                    <span>🍱</span> OPD Lunch / Duty Break Timing
+                </h3>
+                <span style="font-size: 11px; background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 999px; font-weight: 700; border: 1px solid #fde68a;">
+                    Hospital Admin Controlled Only
+                </span>
+            </div>
+            <p style="margin: 0 0 14px; font-size: 13px; color: #713f12; line-height: 1.45;">
+                Enter your hospital's daily lunch or doctor consultation break hours. During this period, the system will automatically display <strong>"🟡 OPD On Break"</strong> to patients, while keeping token booking active for post-break slots.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                    <label for="profileBreakStartTime" style="font-weight: 600; color: #713f12; margin-bottom: 6px; display: block; font-size: 13px;">
+                        ⏰ Break Start Time
+                    </label>
+                    <input type="time" id="profileBreakStartTime" value="13:00" style="width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #fde047; background: #ffffff; box-sizing: border-box; font-size: 14px; font-weight: 600; color: #713f12;">
+                </div>
+                <div>
+                    <label for="profileBreakEndTime" style="font-weight: 600; color: #713f12; margin-bottom: 6px; display: block; font-size: 13px;">
+                        ⏰ Break End Time
+                    </label>
+                    <input type="time" id="profileBreakEndTime" value="14:00" style="width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #fde047; background: #ffffff; box-sizing: border-box; font-size: 14px; font-weight: 600; color: #713f12;">
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
              PLANNED CLOSURES / HOLIDAYS
         =============================== -->
         <div style="margin-top: 30px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
@@ -911,6 +942,12 @@ async function loadProfile() {
         if (document.getElementById("profileClosingTime")) {
             document.getElementById("profileClosingTime").value = hospital.closing_time || "21:00";
         }
+        if (document.getElementById("profileBreakStartTime")) {
+            document.getElementById("profileBreakStartTime").value = hospital.break_start_time || "13:00";
+        }
+        if (document.getElementById("profileBreakEndTime")) {
+            document.getElementById("profileBreakEndTime").value = hospital.break_end_time || "14:00";
+        }
         loadHospitalClosuresList();
 
         /* ==============================
@@ -1068,7 +1105,13 @@ async function saveProfile() {
             document.getElementById("profileOpeningTime") ? document.getElementById("profileOpeningTime").value : "09:00",
 
         closing_time:
-            document.getElementById("profileClosingTime") ? document.getElementById("profileClosingTime").value : "21:00"
+            document.getElementById("profileClosingTime") ? document.getElementById("profileClosingTime").value : "21:00",
+
+        break_start_time:
+            document.getElementById("profileBreakStartTime") ? document.getElementById("profileBreakStartTime").value : "13:00",
+
+        break_end_time:
+            document.getElementById("profileBreakEndTime") ? document.getElementById("profileBreakEndTime").value : "14:00"
 
     };
 

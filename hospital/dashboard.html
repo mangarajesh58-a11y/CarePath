@@ -981,6 +981,9 @@
         </div>
 
         <div class="header-actions">
+            <button type="button" class="btn-action-pill" onclick="openHospitalBreakModal()" id="btnHospitalBreakTime" style="background: #fefce8; color: #854d0e; border: 1.5px solid #fde047; font-weight: 700;">
+                🍱 Set Break Time
+            </button>
             <button type="button" class="btn-action-pill btn-copy-link" onclick="copyHospitalPatientLink()" id="btnCopyPatientLink">
                 📋 Copy Patient Link
             </button>
@@ -1234,6 +1237,44 @@
 <div id="toastNotification" class="toast-notification">
     <span id="toastIcon">✓</span>
     <span id="toastText">Link copied to clipboard!</span>
+</div>
+
+<!-- =====================================================
+     HOSPITAL OPD BREAK TIMING MODAL (HOSPITAL ONLY)
+===================================================== -->
+<div id="hospitalBreakModal" class="ad-modal-backdrop" aria-hidden="true" style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 18px; box-sizing: border-box;">
+    <div style="background: #ffffff; width: 100%; max-width: 460px; border-radius: 18px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden;">
+        <div style="padding: 16px 20px; background: linear-gradient(135deg, #ca8a04, #eab308); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 26px;">🍱</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 16.5px; font-weight: 800; color: #ffffff;">Set OPD Lunch / Break Timing</h3>
+                    <div style="font-size: 11.5px; opacity: 0.95; margin-top: 1px;">Configured directly by your hospital</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeHospitalBreakModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 22px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+            <p style="margin: 0 0 16px; font-size: 13px; color: #64748b; line-height: 1.45;">
+                Enter your hospital's daily lunch or doctor consultation break hours. During break time, your live status will change to <strong>"🟡 OPD ON BREAK"</strong> for patients.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 6px;">⏰ Break Start</label>
+                    <input type="time" id="dashBreakStart" value="13:00" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 15px; font-weight: 700; color: #1e293b; outline: none;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 6px;">⏰ Break End</label>
+                    <input type="time" id="dashBreakEnd" value="14:00" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 15px; font-weight: 700; color: #1e293b; outline: none;">
+                </div>
+            </div>
+            <div id="breakModalFeedback" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeHospitalBreakModal()" style="padding: 10px 18px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="button" id="btnSaveBreakTime" onclick="saveHospitalBreakTime()" style="padding: 10px 22px; background: #ca8a04; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(202, 138, 4, 0.3);">💾 Save Break Timing</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- =====================================================
@@ -1909,6 +1950,75 @@ setInterval(() => {
     loadQueue();
     checkAdminMessagesUnreadCount();
 }, 10000);
+
+/* =====================================================
+   HOSPITAL BREAK TIME MANAGEMENT (HOSPITAL ONLY)
+===================================================== */
+function openHospitalBreakModal() {
+    const modal = document.getElementById("hospitalBreakModal");
+    if (!modal) return;
+    if (storedHospital) {
+        if (storedHospital.break_start_time) document.getElementById("dashBreakStart").value = storedHospital.break_start_time;
+        if (storedHospital.break_end_time) document.getElementById("dashBreakEnd").value = storedHospital.break_end_time;
+    }
+    const fb = document.getElementById("breakModalFeedback");
+    if (fb) fb.style.display = "none";
+    modal.style.display = "flex";
+}
+
+function closeHospitalBreakModal() {
+    const modal = document.getElementById("hospitalBreakModal");
+    if (modal) modal.style.display = "none";
+}
+
+async function saveHospitalBreakTime() {
+    const start = document.getElementById("dashBreakStart").value;
+    const end = document.getElementById("dashBreakEnd").value;
+    const btn = document.getElementById("btnSaveBreakTime");
+    const fb = document.getElementById("breakModalFeedback");
+
+    if (!start || !end) {
+        alert("Please specify both start and end time for the break.");
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                break_start_time: start,
+                break_end_time: end
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to update break time");
+
+        showToast("✓ Break timing updated successfully!", "🍱");
+        closeHospitalBreakModal();
+        await loadHospital();
+    } catch (err) {
+        if (fb) {
+            fb.style.display = "block";
+            fb.style.background = "#fee2e2";
+            fb.style.color = "#991b1b";
+            fb.textContent = "Error: " + err.message;
+        } else {
+            alert(err.message);
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "💾 Save Break Timing";
+        }
+    }
+}
+
 </script>
 
 </body>
