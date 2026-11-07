@@ -337,7 +337,7 @@
     <div class="carepath-ai-message" style="display: flex; gap: 10px; align-items: flex-start;">
       <img src="carepath-ai.png" alt="Bot" style="width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
       <div>
-        Hi! I'm your AI Healthcare Assistant. Ask me about doctors, OPD tokens, or <strong>upload / take a photo of your doctor's prescription</strong> and I will explain what the doctor wrote and how to take your medicines!
+        Welcome! Ask me about symptoms, doctors, OPD tokens, or <strong>upload / take a photo of your doctor's prescription</strong> and I will explain how to take your medicines.
       </div>
     </div>
     <div id="carepathInitialActionChips" style="display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px 36px;">
@@ -922,9 +922,8 @@
       try { cpSpeechRecognition.lang = conf.speechRecLang; } catch(e) {}
     }
 
-    if (autoVoiceOutput && conf.greetingVoice) {
-      playAudioVoice(conf.greetingVoice, newLang, null);
-    }
+    // Auto-greeting audio removed: speech only plays when answering patient questions
+    stopCarePathSpeech();
   }
 
   function handleDosageChipClick() {
@@ -1367,9 +1366,6 @@
 
     if (!autoVoiceOutput) {
       stopCarePathSpeech();
-    } else {
-      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
-      playAudioVoice(conf.greetingVoice, currentAiLang, null);
     }
   }
 
