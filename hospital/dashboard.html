@@ -1,385 +1,920 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>CarePath - Hospital Dashboard</title>
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CarePath - Hospital Management Command Center</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="carepath-ai-small.png">
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+    <script src="./broadcast-banner.js"></script>
 
     <style>
+        :root {
+            --primary: #1d4ed8;
+            --primary-dark: #1e40af;
+            --primary-light: #eff6ff;
+            --success: #15803d;
+            --success-light: #dcfce7;
+            --warning: #b45309;
+            --warning-light: #fef3c7;
+            --danger: #b91c1c;
+            --danger-light: #fee2e2;
+            --purple: #7c3aed;
+            --purple-light: #f5f3ff;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-400: #94a3b8;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-900: #0f172a;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.08);
+        }
 
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            margin: 0;
-            font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
-            background: #f4f7fb;
-            color: #172554;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f1f5f9;
+            color: var(--slate-900);
+            min-height: 100vh;
+            padding-bottom: 40px;
         }
 
-        .dashboard {
+        .dashboard-container {
             width: 100%;
-            max-width: 1200px;
-            margin: auto;
-            padding: 25px;
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 16px;
         }
 
-        /* =================================================
-           HEADER
-        ================================================= */
+        @media (min-width: 768px) {
+            .dashboard-container {
+                padding: 24px;
+            }
+        }
 
-        header {
-            background: white;
-            border-radius: 16px;
-            padding: 20px 25px;
+        /* =====================================================
+           TOP BAR & HEADER
+        ===================================================== */
+        .top-navbar {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 16px 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--slate-200);
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        @media (min-width: 900px) {
+            .top-navbar {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                padding: 18px 24px;
+            }
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .brand-icon {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .brand-text h1 {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .hospital-subtitle {
+            font-size: 13px;
+            color: var(--slate-600);
+            font-weight: 500;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--success-light);
+            color: var(--success);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+            animation: pulseDot 2s infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.15); }
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-copy-link {
+            background: var(--slate-100);
+            color: var(--slate-700);
+            border-color: var(--slate-200);
+        }
+        .btn-copy-link:hover {
+            background: var(--slate-200);
+            color: var(--slate-900);
+        }
+
+        .btn-admin-msgs {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: #bfdbfe;
+            position: relative;
+        }
+        .btn-admin-msgs:hover {
+            background: #dbeafe;
+        }
+
+        .btn-logout {
+            background: var(--danger-light);
+            color: var(--danger);
+            border-color: #fecaca;
+        }
+        .btn-logout:hover {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-count {
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 999px;
+            margin-left: 2px;
+        }
+
+        /* =====================================================
+           QUICK ACTIONS NAVIGATION BAR
+        ===================================================== */
+        .quick-nav-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 640px) {
+            .quick-nav-bar {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 10px;
+            }
+        }
+
+        .quick-nav-btn {
+            background: #ffffff;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-decoration: none;
+            color: var(--slate-700);
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+        }
+
+        .quick-nav-btn:hover, .quick-nav-btn:active {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .quick-nav-icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        /* =====================================================
+           TODAY'S VITAL SIGNS (METRICS STRIP)
+        ===================================================== */
+        .vital-signs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        @media (min-width: 900px) {
+            .vital-signs-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 16px;
+            }
+        }
+
+        .vital-card {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--slate-200);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (min-width: 768px) {
+            .vital-card {
+                padding: 20px;
+            }
+        }
+
+        .vital-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            box-shadow:
-                0 8px 25px
-                rgba(0, 0, 0, 0.08);
-            margin-bottom: 25px;
-        }
-
-        header h1 {
-            margin: 0 0 5px;
-            font-size: 28px;
-            color: #1976d2;
-        }
-
-        header p {
-            margin: 0;
-            color: #64748b;
-        }
-
-        .logout {
-            border: none;
-            background: #dc2626;
-            color: white;
-            padding: 11px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .logout:hover {
-            background: #b91c1c;
-        }
-
-        /* =================================================
-           WELCOME
-        ================================================= */
-
-        .welcome {
-            background:
-                linear-gradient(
-                    135deg,
-                    #1976d2,
-                    #7c3aed
-                );
-            color: white;
-            padding: 30px;
-            border-radius: 16px;
-            margin-bottom: 25px;
-            box-shadow:
-                0 10px 30px
-                rgba(37, 99, 235, 0.2);
-        }
-
-        .welcome h2 {
-            margin: 0 0 8px;
-            font-size: 26px;
-        }
-
-        .welcome p {
-            margin: 0;
-            opacity: 0.9;
-        }
-
-        /* =================================================
-           DASHBOARD GRID
-        ================================================= */
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns:
-                repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .dashboard-card {
-            background: white;
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow:
-                0 8px 25px
-                rgba(0, 0, 0, 0.07);
-            transition: 0.2s;
-        }
-
-        .dashboard-card:hover {
-            transform: translateY(-3px);
-        }
-
-        .card-icon {
-            font-size: 35px;
-            margin-bottom: 12px;
-        }
-
-        .dashboard-card h3 {
-            margin: 0 0 8px;
-            color: #172554;
-        }
-
-        .dashboard-card p {
-            color: #64748b;
-            min-height: 45px;
-            line-height: 1.5;
-        }
-
-        .dashboard-card button {
-            width: 100%;
-            padding: 11px;
-            border: none;
-            border-radius: 8px;
-            background: #1976d2;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .dashboard-card button:hover {
-            background: #125ca3;
-        }
-
-        /* =================================================
-           HOSPITAL INFORMATION
-        ================================================= */
-
-        .hospital-info {
-            background: white;
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow:
-                0 8px 25px
-                rgba(0, 0, 0, 0.07);
-            margin-bottom: 25px;
-        }
-
-        .hospital-info h2 {
-            margin-top: 0;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns:
-                repeat(3, 1fr);
-            gap: 15px;
-        }
-
-        .info-box {
-            background: #f8fafc;
-            border:
-                1px solid
-                #e2e8f0;
-            border-radius: 10px;
-            padding: 15px;
-        }
-
-        .info-box span {
-            display: block;
-            color: #64748b;
-            font-size: 13px;
-            margin-bottom: 5px;
-        }
-
-        .info-box strong {
-            color: #172554;
-            font-size: 17px;
-        }
-
-        /* =================================================
-           QUEUE
-        ================================================= */
-
-        .queue-card {
-            background: white;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow:
-                0 8px 25px
-                rgba(0, 0, 0, 0.07);
-        }
-
-        .queue-card h2 {
-            margin-top: 0;
-            margin-bottom: 25px;
-        }
-
-        .queue-stats {
-            display: grid;
-            grid-template-columns:
-                repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .queue-stats div {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            border:
-                1px solid
-                #e2e8f0;
-        }
-
-        .queue-stats span {
-            display: block;
-            color: #64748b;
+            align-items: flex-start;
             margin-bottom: 8px;
         }
 
-        .queue-stats strong {
-            font-size: 30px;
-            color: #1976d2;
+        .vital-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--slate-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .next-button {
-            width: 100%;
-            padding: 14px;
+        .vital-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .vital-value {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--slate-900);
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        @media (min-width: 768px) {
+            .vital-value {
+                font-size: 32px;
+            }
+        }
+
+        .vital-card.primary .vital-value { color: var(--primary); }
+        .vital-card.warning .vital-value { color: #d97706; }
+        .vital-card.success .vital-value { color: var(--success); }
+        .vital-card.purple .vital-value { color: var(--purple); }
+
+        .vital-subtext {
+            font-size: 12px;
+            color: var(--slate-600);
+            font-weight: 500;
+        }
+
+        /* =====================================================
+           MAIN 2-COLUMN RESPONSIVE LAYOUT
+        ===================================================== */
+        .dashboard-body-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 1024px) {
+            .dashboard-body-grid {
+                grid-template-columns: 1fr 380px;
+                gap: 24px;
+                align-items: start;
+            }
+        }
+
+        .card-panel {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--slate-200);
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .card-panel {
+                padding: 24px;
+            }
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .panel-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--slate-900);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* =====================================================
+           NOW CALLING HERO CONSOLE
+        ===================================================== */
+        .hero-caller-box {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            color: #ffffff;
+            position: relative;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 22px;
+        }
+
+        .hero-caller-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding-bottom: 12px;
+        }
+
+        .hero-caller-label {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #93c5fd;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hero-caller-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .token-display-hero {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+
+        .token-number-massive {
+            font-size: 48px;
+            font-weight: 900;
+            color: #38bdf8;
+            line-height: 1;
+            letter-spacing: -1px;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+
+        @media (min-width: 640px) {
+            .token-number-massive {
+                font-size: 64px;
+            }
+        }
+
+        .token-patient-meta h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .token-patient-meta p {
+            font-size: 13px;
+            color: #94a3b8;
+            margin: 0;
+        }
+
+        .hero-btn-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        @media (min-width: 600px) {
+            .hero-btn-group {
+                grid-template-columns: 2fr 1fr 1fr;
+            }
+        }
+
+        .btn-call-next {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #ffffff;
             border: none;
-            border-radius: 10px;
-            background:
-                linear-gradient(
-                    135deg,
-                    #1976d2,
-                    #7c3aed
-                );
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
+            padding: 14px 20px;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 800;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+            transition: all 0.2s;
+            width: 100%;
         }
 
-        .next-button:hover {
-            opacity: 0.9;
+        .btn-call-next:hover {
+            transform: translateY(-2px);
+            opacity: 0.95;
         }
 
-        .next-button:disabled {
+        .btn-call-next:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
         }
 
-        .next-message {
+        .btn-caller-secondary {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-caller-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .caller-status-msg {
+            font-size: 13px;
+            font-weight: 600;
             text-align: center;
-            font-weight: bold;
-            margin-top: 15px;
+            margin-top: 10px;
+            min-height: 18px;
         }
 
-        /* =================================================
-           LOADING
-        ================================================= */
-
-        .loading {
-            opacity: 0.7;
+        /* =====================================================
+           DOCTOR OPD ROSTER
+        ===================================================== */
+        .doctor-roster-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        /* =================================================
-           MOBILE
-        ================================================= */
-
-        @media (max-width: 900px) {
-
-            .dashboard-grid {
-                grid-template-columns:
-                    repeat(2, 1fr);
-            }
-
-            .info-grid {
-                grid-template-columns:
-                    repeat(2, 1fr);
-            }
-
+        .doctor-roster-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
-        @media (max-width: 600px) {
-
-            .dashboard {
-                padding: 15px;
-            }
-
-            header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-
-            .logout {
-                width: 100%;
-            }
-
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .queue-stats {
-                grid-template-columns: 1fr;
-            }
-
-            .welcome {
-                padding: 22px;
-            }
-
-            .welcome h2 {
-                font-size: 22px;
-            }
-
+        .doctor-roster-row:hover {
+            border-color: #cbd5e1;
+            background: #ffffff;
+            box-shadow: var(--shadow-sm);
         }
 
+        .doc-profile-snippet {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-        /* =================================================
-           HOSPITAL ADVERTISEMENTS & MODAL (INR 999 / 30 DAYS)
-        ================================================= */
+        .doc-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #e0e7ff;
+            color: #4338ca;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .doc-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--slate-900);
+            margin-bottom: 2px;
+        }
+
+        .doc-meta {
+            font-size: 12px;
+            color: var(--slate-600);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .badge-status-pill {
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .badge-consulting {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        .badge-break {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        .badge-offline {
+            background: var(--slate-100);
+            color: var(--slate-600);
+        }
+
+        /* =====================================================
+           NEXT UP IN QUEUE (WAITING FEED)
+        ===================================================== */
+        .queue-search-bar {
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        .queue-search-input {
+            width: 100%;
+            padding: 10px 14px 10px 36px;
+            border: 1.5px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            background: var(--slate-50);
+            color: var(--slate-900);
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .queue-search-input:focus {
+            background: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+        }
+
+        .queue-search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--slate-400);
+            font-size: 15px;
+        }
+
+        .queue-feed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        .queue-feed-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: #ffffff;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+            gap: 10px;
+        }
+
+        .queue-feed-item:hover {
+            border-color: #94a3b8;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .token-chip {
+            background: #f0fdf4;
+            color: #166534;
+            font-size: 15px;
+            font-weight: 800;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #bbf7d0;
+            min-width: 48px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .patient-snippet-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .patient-name-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--slate-900);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+        }
+
+        .patient-sub-meta {
+            font-size: 12px;
+            color: var(--slate-600);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-call-specific {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid #bfdbfe;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .btn-call-specific:hover {
+            background: var(--primary);
+            color: #ffffff;
+        }
+
+        /* =====================================================
+           RIGHT COLUMN CARDS (INQUIRIES, ADMIN, PROMOTIONS)
+        ===================================================== */
+        .inquiry-feed-item {
+            padding: 12px 14px;
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            margin-bottom: 10px;
+        }
+
+        .inquiry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .inquiry-sender {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--slate-900);
+        }
+
+        .inquiry-time {
+            font-size: 11px;
+            color: var(--slate-400);
+        }
+
+        .inquiry-subject {
+            font-size: 12.5px;
+            color: var(--slate-600);
+            margin-bottom: 8px;
+            line-height: 1.35;
+        }
+
+        .inquiry-action-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-inquiry-wa {
+            background: #25D366;
+            color: white;
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-inquiry-call {
+            background: #0284c7;
+            color: white;
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* PROMOTIONS CARD */
+        .promotion-box-widget {
+            background: linear-gradient(135deg, #faf5ff, #f3e8ff);
+            border: 1.5px solid #d8b4fe;
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .promotion-box-widget h4 {
+            font-size: 15px;
+            font-weight: 800;
+            color: #6b21a8;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .promotion-box-widget p {
+            font-size: 12.5px;
+            color: #7e22ce;
+            line-height: 1.4;
+            margin-bottom: 14px;
+        }
+
+        .share-link-input-group {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .share-link-input-group input {
+            flex: 1;
+            padding: 8px 10px;
+            border: 1px solid #c084fc;
+            border-radius: 8px;
+            font-size: 12px;
+            background: #ffffff;
+            color: #4c1d95;
+            outline: none;
+        }
+
+        .btn-share-copy {
+            background: #7c3aed;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-launch-ad-campaign {
+            width: 100%;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            border: none;
+            padding: 11px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-launch-ad-campaign:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        /* TOAST ALERT */
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #0f172a;
+            color: white;
+            padding: 12px 22px;
+            border-radius: 999px;
+            font-size: 13.5px;
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 100000;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* MODAL STYLES PRESERVED */
         .ad-modal-backdrop {
             display: none;
             position: fixed;
             inset: 0;
             background: rgba(15, 23, 42, 0.7);
             backdrop-filter: blur(4px);
-            z-index: 10000;
+            z-index: 100000;
             align-items: center;
             justify-content: center;
             padding: 16px;
             overflow-y: auto;
         }
-
         .ad-modal-backdrop.active {
             display: flex;
         }
-
         .ad-modal {
             background: #ffffff;
             border-radius: 20px;
@@ -390,821 +925,288 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             display: flex;
             flex-direction: column;
-            animation: modalFadeIn 0.25s ease-out;
         }
-
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: translateY(12px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .ad-modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: linear-gradient(135deg, #f8fafc, #eff6ff);
-            border-radius: 20px 20px 0 0;
-        }
-
-        .ad-modal-header h2 {
-            margin: 0;
-            font-size: 20px;
-            color: #1e293b;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .ad-modal-close {
-            background: #f1f5f9;
-            border: none;
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            cursor: pointer;
-            color: #64748b;
-            transition: all 0.2s;
-        }
-
-        .ad-modal-close:hover {
-            background: #fee2e2;
-            color: #ef4444;
-        }
-
-        .ad-modal-body {
-            padding: 24px;
-            overflow-y: auto;
-        }
-
-        .ad-tabs {
-            display: flex;
-            gap: 8px;
-            border-bottom: 2px solid #e2e8f0;
-            margin-bottom: 20px;
-        }
-
-        .ad-tab-btn {
-            background: none;
-            border: none;
-            padding: 10px 16px;
-            font-size: 14px;
-            font-weight: 700;
-            color: #64748b;
-            cursor: pointer;
-            position: relative;
-            transition: color 0.2s;
-        }
-
-        .ad-tab-btn.active {
-            color: #7c3aed;
-        }
-
-        .ad-tab-btn.active::after {
-            content: "";
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: #7c3aed;
-            border-radius: 2px;
-        }
-
-        .ad-plan-banner {
-            background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-            border: 1px solid #ddd6fe;
-            border-radius: 14px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 14px;
-        }
-
-        .ad-plan-info h4 {
-            margin: 0 0 4px;
-            font-size: 16px;
-            color: #5b21b6;
-        }
-
-        .ad-plan-info p {
-            margin: 0;
-            font-size: 12px;
-            color: #6d28d9;
-            line-height: 1.4;
-        }
-
-        .ad-plan-price {
-            text-align: right;
-            white-space: nowrap;
-        }
-
-        .ad-plan-price .amount {
-            font-size: 22px;
-            font-weight: 800;
-            color: #7c3aed;
-        }
-
-        .ad-plan-price .term {
-            font-size: 11px;
-            color: #6b21a8;
-            font-weight: 600;
-        }
-
-        .ad-form-group {
-            margin-bottom: 18px;
-        }
-
-        .ad-form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #334155;
-        }
-
-        .ad-form-group input[type="text"],
-        .ad-form-group input[type="tel"],
-        .ad-form-group input[type="url"],
-        .ad-form-group textarea {
-            width: 100%;
-            padding: 11px 14px;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 10px;
-            font-size: 14px;
-            font-family: inherit;
-            color: #1e293b;
-            background: #f8fafc;
-            transition: all 0.2s;
-            box-sizing: border-box;
-        }
-
-        .ad-form-group input:focus,
-        .ad-form-group textarea:focus {
-            outline: none;
-            border-color: #8b5cf6;
-            background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
-        }
-
-        .ad-dropzone {
-            border: 2px dashed #cbd5e1;
-            border-radius: 12px;
-            padding: 22px 16px;
-            text-align: center;
-            background: #f8fafc;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .ad-dropzone:hover, .ad-dropzone.dragover {
-            border-color: #8b5cf6;
-            background: #f5f3ff;
-        }
-
-        .ad-preview-wrapper {
-            margin-top: 12px;
-            border-radius: 10px;
-            overflow: hidden;
-            display: none;
-            border: 1px solid #e2e8f0;
-            position: relative;
-            max-height: 190px;
-            background: #000;
-        }
-
-        .ad-preview-wrapper img {
-            width: 100%;
-            height: 190px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .ad-preview-overlay {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(0,0,0,0.6);
-            color: #fff;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .ad-submit-btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            color: #ffffff;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
-            transition: all 0.2s;
-        }
-
-        .ad-submit-btn:hover {
-            opacity: 0.95;
-            transform: translateY(-1px);
-        }
-
-        .ad-submit-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .ad-card-item {
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 14px;
-            display: flex;
-            gap: 14px;
-            align-items: center;
-            background: #ffffff;
-            transition: all 0.2s;
-        }
-
-        .ad-card-item:hover {
-            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
-        }
-
-        .ad-card-thumb {
-            width: 90px;
-            height: 60px;
-            border-radius: 8px;
-            object-fit: cover;
-            flex-shrink: 0;
-            background: #f1f5f9;
-        }
-
-        .ad-card-content {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .ad-card-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0 0 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .ad-card-meta {
-            font-size: 12px;
-            color: #64748b;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .badge-active {
-            background: #dcfce7;
-            color: #15803d;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .badge-expired {
-            background: #fee2e2;
-            color: #b91c1c;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .badge-pending {
-            background: #fef3c7;
-            color: #b45309;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
     </style>
-
-  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
-  <script src="./broadcast-banner.js"></script>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="carepath-ai-small.png">
 </head>
-
 
 <body>
 
+<div class="dashboard-container">
 
-<div class="dashboard">
-
-
-    <!-- =================================================
-         HEADER
-    ================================================= -->
-
-    <header>
-
-        <div>
-
-            <h1>
-                🏥 CarePath
-            </h1>
-
-            <p>
-                Hospital Management Dashboard
-            </p>
-
+    <!-- =====================================================
+         TOP CONTEXT BAR & HEADER
+    ===================================================== -->
+    <header class="top-navbar">
+        <div class="brand-section">
+            <span class="brand-icon">🏥</span>
+            <div class="brand-text">
+                <h1>
+                    <span id="hospitalNameDisplay">Hospital</span>
+                    <span class="status-pill" id="opdStatusPill">
+                        <span class="status-dot"></span>
+                        OPD ACTIVE
+                    </span>
+                </h1>
+                <div class="hospital-subtitle" id="hospitalMetaSubtitle">
+                    CarePath Hospital Management & Queue Console
+                </div>
+            </div>
         </div>
 
-
-        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <button
-                type="button"
-                id="headerPromoteBtn"
-                onclick="window.location.href='ads.html'"
-                style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35); transition: opacity 0.2s;"
-            >
-                📢 Promote Hospital (₹999)
+        <div class="header-actions">
+            <button type="button" class="btn-action-pill btn-copy-link" onclick="copyHospitalPatientLink()" id="btnCopyPatientLink">
+                📋 Copy Patient Link
             </button>
-            <button
-                type="button"
-                id="btnHospitalAdminMessages"
-                onclick="openAdminMessagesModal()"
-                style="background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);"
-            >
-                💬 Admin Messages
-                <span id="hospitalAdminMsgBadge" style="display: none; background: #ef4444; color: white; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 999px;">0</span>
+            <button type="button" class="btn-action-pill btn-admin-msgs" onclick="openAdminMessagesModal()" id="btnHospitalAdminMessages">
+                💬 Admin Notices
+                <span id="hospitalAdminMsgBadge" class="badge-count" style="display: none;">0</span>
             </button>
-            <button
-                class="logout"
-                id="logoutButton"
-            >
+            <button type="button" class="btn-action-pill btn-logout" id="logoutButton">
                 Logout
             </button>
         </div>
-
     </header>
 
-
-    <!-- =================================================
-         WELCOME
-    ================================================= -->
-
-    <div class="welcome">
-
-        <h2>
-
-            Welcome,
-
-            <span id="hospitalNameDisplay">
-                Hospital
-            </span>
-
-        </h2>
-
-        <p>
-            Manage your hospital, doctors and patient queue.
-        </p>
-
+    <!-- =====================================================
+         QUICK ACTIONS NAVIGATION BAR (1-TAP ON PHONE)
+    ===================================================== -->
+    <div class="quick-nav-bar">
+        <a href="doctors.html" class="quick-nav-btn" id="doctorsButton">
+            <span class="quick-nav-icon">👨‍⚕️</span>
+            <span>Doctors</span>
+        </a>
+        <a href="token-queue.html" class="quick-nav-btn" id="queueButton">
+            <span class="quick-nav-icon">🎟️</span>
+            <span>Token Queue</span>
+        </a>
+        <a href="patients.html" class="quick-nav-btn" id="patientsButton">
+            <span class="quick-nav-icon">👥</span>
+            <span>Patients</span>
+        </a>
+        <a href="display.html" target="_blank" class="quick-nav-btn">
+            <span class="quick-nav-icon">📺</span>
+            <span>Waiting TV</span>
+        </a>
+        <a href="ads.html" class="quick-nav-btn">
+            <span class="quick-nav-icon">📢</span>
+            <span>Promote (₹999)</span>
+        </a>
+        <a href="profile.html" class="quick-nav-btn" id="profileButton">
+            <span class="quick-nav-icon">🏥</span>
+            <span>Profile</span>
+        </a>
     </div>
 
-
-    <!-- =================================================
-         DASHBOARD CARDS
-    ================================================= -->
-
-    <div class="dashboard-grid">
-
-
-        <!-- DOCTORS -->
-
-        <div class="dashboard-card">
-
-            <div class="card-icon">
-                🧑‍⚕️
+    <!-- =====================================================
+         TODAY'S VITAL SIGNS (4-METRIC KPI STRIP)
+    ===================================================== -->
+    <section class="vital-signs-grid" aria-label="Today's Operational Metrics">
+        <!-- 1. CURRENT TOKEN -->
+        <div class="vital-card primary">
+            <div class="vital-header">
+                <span class="vital-title">Current Token</span>
+                <span class="vital-icon">🎟️</span>
             </div>
-
-            <h3>
-                Doctors
-            </h3>
-
-            <p>
-                Add and manage hospital doctors.
-            </p>
-
-            <button id="doctorsButton">
-                Manage Doctors
-            </button>
-
+            <div class="vital-value" id="currentToken">0</div>
+            <div class="vital-subtext" id="currentServingDoc">Dr. Available • In Session</div>
         </div>
 
-
-        <!-- QUEUE -->
-
-        <div class="dashboard-card">
-
-            <div class="card-icon">
-                🎫
+        <!-- 2. PATIENTS WAITING -->
+        <div class="vital-card warning">
+            <div class="vital-header">
+                <span class="vital-title">Patients Waiting</span>
+                <span class="vital-icon">⏳</span>
             </div>
-
-            <h3>
-                Token Queue
-            </h3>
-
-            <p>
-                Manage today's patient tokens.
-            </p>
-
-            <button id="queueButton">
-                View Queue
-            </button>
-
+            <div class="vital-value" id="waitingCount">0</div>
+            <div class="vital-subtext" id="estimatedWaitTime">~0 min estimated wait</div>
         </div>
 
-
-        <!-- PATIENTS -->
-
-        <div class="dashboard-card">
-
-            <div class="card-icon">
-                👥
+        <!-- 3. DOCTORS ON DUTY -->
+        <div class="vital-card success">
+            <div class="vital-header">
+                <span class="vital-title">Doctors On Duty</span>
+                <span class="vital-icon">🩺</span>
             </div>
-
-            <h3>
-                Patients
-            </h3>
-
-            <p>
-                View patients waiting for consultation.
-            </p>
-
-            <button id="patientsButton">
-                View Patients
-            </button>
-
+            <div class="vital-value" id="activeDoctorsCount">0</div>
+            <div class="vital-subtext" id="totalDoctorsSubtext">Active OPD consultation</div>
         </div>
 
-        <!-- WAITING ROOM TV DISPLAY -->
-        <div class="dashboard-card" style="border: 2px solid #0284c7; background: linear-gradient(180deg, #f0f9ff, #ffffff);">
-            <div class="card-icon">
-                📺
+        <!-- 4. TODAY'S COLLECTION -->
+        <div class="vital-card purple">
+            <div class="vital-header">
+                <span class="vital-title">Today's Collection</span>
+                <span class="vital-icon">💰</span>
             </div>
-            <h3 style="color: #0284c7;">
-                Waiting Room TV Display
-            </h3>
-            <p>
-                Full-screen live display screen for waiting room TV with audio chime and token announcements.
-            </p>
-            <button onclick="window.open('display.html', '_blank')" style="background: #0284c7; font-weight: 700;">
-                Launch TV Display ↗
-            </button>
+            <div class="vital-value" id="todayRevenueDisplay">₹0</div>
+            <div class="vital-subtext" id="completedTokensCount">0 Consultations Done</div>
         </div>
+    </section>
 
-
-        <!-- PROMOTE HOSPITAL ADS (INR 999 / 30 DAYS) -->
-        <div class="dashboard-card" style="border: 2px solid #8b5cf6; background: linear-gradient(180deg, #faf5ff, #ffffff); position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 12px; right: 12px; background: #8b5cf6; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; letter-spacing: 0.5px;">
-                INR 999 / 30 DAYS
-            </div>
-            <div class="card-icon">
-                📢
-            </div>
-            <h3 style="color: #6d28d9;">
-                Promote Hospital
-            </h3>
-            <p>
-                Reach thousands of patients! Upload banner photo, pay INR 999, and feature inside the patient scrolling feed for 1 month.
-            </p>
-            <button id="openAdModalBtn" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); font-weight: 700; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);">
-                Launch Ad Campaign 📢
-            </button>
-        </div>
-
-        <!-- PROFILE -->
-
-        <div class="dashboard-card">
-
-            <div class="card-icon">
-                🏥
-            </div>
-
-            <h3>
-                Hospital Profile
-            </h3>
-
-            <p>
-                View and update hospital information.
-            </p>
-
-            <button id="profileButton">
-                Manage Profile
-            </button>
-        </div>
-
-        <!-- ADMIN DIRECT COMMUNICATION CARD -->
-        <div class="dashboard-card" style="border: 2px solid #2563eb; background: linear-gradient(180deg, #eff6ff, #ffffff); position: relative;">
-            <div id="cardAdminMsgBadge" style="display: none; position: absolute; top: 12px; right: 12px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px;">
-                NEW MESSAGE
-            </div>
-            <div class="card-icon">
-                💬
-            </div>
-            <h3 style="color: #1d4ed8;">
-                Admin Communication
-            </h3>
-            <p>
-                Direct messages, compliance notices, and official announcements from Platform Admin.
-            </p>
-            <button onclick="openAdminMessagesModal()" style="background: #2563eb; font-weight: 700; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
-                View Messages 💬
-            </button>
-
-        </div>
-
-
+    <!-- HIDDEN COMPATIBILITY ELEMENTS -->
+    <div style="display: none;">
+        <span id="completedCount">0</span>
+        <span id="infoHospitalName">-</span>
+        <span id="infoCity">-</span>
+        <span id="infoTokenFee">₹0</span>
+        <span id="infoApproval">-</span>
+        <span id="infoPublished">-</span>
+        <span id="infoPayment">-</span>
+        <span id="cardAdminMsgBadge"></span>
     </div>
 
+    <!-- =====================================================
+         MAIN 2-COLUMN RESPONSIVE LAYOUT
+    ===================================================== -->
+    <div class="dashboard-body-grid">
 
-    <!-- =================================================
-         HOSPITAL INFORMATION
-    ================================================= -->
+        <!-- =================================================
+             LEFT: LIVE OPD QUEUE COMMAND CONSOLE (65% width)
+        ================================================= -->
+        <main>
+            <!-- 🔊 HERO NOW CALLING CONSOLE -->
+            <div class="hero-caller-box">
+                <div class="hero-caller-top">
+                    <span class="hero-caller-label">
+                        <span class="status-dot"></span>
+                        🔊 Now Calling Consultation
+                    </span>
+                    <span style="font-size: 12px; color: #94a3b8; font-weight: 600;" id="heroLiveClock">--:-- --</span>
+                </div>
 
-    <div class="hospital-info">
+                <div class="hero-caller-main">
+                    <div class="token-display-hero">
+                        <div class="token-number-massive" id="heroTokenDisplay">#0</div>
+                        <div class="token-patient-meta">
+                            <h3 id="heroPatientName">No Patient in Consultation</h3>
+                            <p id="heroDoctorRoom">Select or call next token to begin</p>
+                        </div>
+                    </div>
+                </div>
 
-        <h2>
-            Hospital Information
-        </h2>
+                <div class="hero-btn-group">
+                    <button type="button" class="btn-call-next" id="nextButton" onclick="callNextPatient()">
+                        <span>📢</span> Call Next Patient
+                    </button>
+                    <button type="button" class="btn-caller-secondary" onclick="completeCurrentToken()">
+                        <span>✓</span> Complete
+                    </button>
+                    <a href="display.html" target="_blank" class="btn-caller-secondary">
+                        <span>📺</span> TV Screen
+                    </a>
+                </div>
 
-        <div class="info-grid">
-
-            <div class="info-box">
-
-                <span>
-                    Hospital Name
-                </span>
-
-                <strong id="infoHospitalName">
-                    -
-                </strong>
-
+                <p id="nextMessage" class="caller-status-msg"></p>
             </div>
 
+            <!-- 👥 NEXT UP IN QUEUE -->
+            <div class="card-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span>👥</span> Next Up In Queue (<span id="queueBadgeTotal">0</span>)
+                    </h2>
+                    <a href="token-queue.html" style="font-size: 13px; font-weight: 700; color: var(--primary);">
+                        Full Queue Table →
+                    </a>
+                </div>
 
-            <div class="info-box">
+                <div class="queue-search-bar">
+                    <span class="queue-search-icon">🔍</span>
+                    <input type="text" id="queueSearchInput" class="queue-search-input" placeholder="Search patient by name, token #, or phone..." oninput="filterQueueFeed()">
+                </div>
 
-                <span>
-                    City
-                </span>
-
-                <strong id="infoCity">
-                    -
-                </strong>
-
+                <div id="queueFeedContainer" class="queue-feed-list">
+                    <div style="text-align: center; color: var(--slate-400); padding: 30px 10px; font-size: 13px;">
+                        Loading live queue...
+                    </div>
+                </div>
             </div>
 
+            <!-- 📋 DOCTOR ROOMS & ACTIVE QUEUE -->
+            <div class="card-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span>🩺</span> Doctor OPD Rooms & Duty Roster
+                    </h2>
+                    <a href="doctors.html" style="font-size: 13px; font-weight: 700; color: var(--primary);">
+                        Manage Doctors →
+                    </a>
+                </div>
 
-            <div class="info-box">
+                <div id="doctorRosterContainer" class="doctor-roster-list">
+                    <div style="text-align: center; color: var(--slate-400); padding: 20px 10px; font-size: 13px;">
+                        Loading doctor roster...
+                    </div>
+                </div>
+            </div>
+        </main>
 
-                <span>
-                    Token Fee
-                </span>
+        <!-- =================================================
+             RIGHT: COMMUNICATIONS & GROWTH (35% width)
+        ================================================= -->
+        <aside>
+            <!-- 👤 LIVE PATIENT INQUIRIES -->
+            <div class="card-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span>💬</span> Patient Inquiries (<span id="inquiryCountBadge">0</span>)
+                    </h2>
+                    <span style="font-size: 11px; background: var(--success-light); color: var(--success); font-weight: 800; padding: 2px 7px; border-radius: 999px;">
+                        LIVE
+                    </span>
+                </div>
 
-                <strong id="infoTokenFee">
-                    ₹0
-                </strong>
-
+                <div id="patientInquiryContainer">
+                    <div style="text-align: center; color: var(--slate-400); padding: 20px 10px; font-size: 13px;">
+                        No pending inquiries.
+                    </div>
+                </div>
             </div>
 
+            <!-- 🏛️ PLATFORM ADMIN NOTICES -->
+            <div class="card-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">
+                        <span>🏛️</span> Admin Direct Channel
+                    </h2>
+                    <button type="button" onclick="openAdminMessagesModal()" style="background: none; border: none; color: var(--primary); font-size: 13px; font-weight: 700; cursor: pointer;">
+                        Open Chat →
+                    </button>
+                </div>
 
-            <div class="info-box">
+                <div id="adminNoticeSnippet" style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 14px; font-size: 13px; color: var(--slate-600); line-height: 1.45;">
+                    Stay connected with Platform Admin for compliance, verification, and inspection updates.
+                </div>
 
-                <span>
-                    Approval
-                </span>
-
-                <strong id="infoApproval">
-                    -
-                </strong>
-
+                <button type="button" onclick="openAdminMessagesModal()" style="width: 100%; margin-top: 12px; padding: 10px; background: var(--primary-light); color: var(--primary); border: 1px solid #bfdbfe; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                    ✉️ Reply / Message Admin
+                </button>
             </div>
 
+            <!-- 📢 PROMOTIONS & 30-DAY ADS -->
+            <div class="promotion-box-widget">
+                <h4><span>📢</span> Promote Your Hospital</h4>
+                <p>Reach patients across your city! Features your hospital banner inside the patient app feed for 30 days.</p>
 
-            <div class="info-box">
+                <div style="font-size: 12px; font-weight: 700; color: #581c87; margin-bottom: 4px;">Share Direct Patient Booking Link:</div>
+                <div class="share-link-input-group">
+                    <input type="text" id="shareHospitalLinkInput" readonly value="Loading link...">
+                    <button type="button" class="btn-share-copy" onclick="copyHospitalPatientLink()">Copy</button>
+                </div>
 
-                <span>
-                    Publication
-                </span>
-
-                <strong id="infoPublished">
-                    -
-                </strong>
-
+                <button type="button" class="btn-launch-ad-campaign" onclick="window.location.href='ads.html'" id="openAdModalBtn">
+                    🚀 Launch 30-Day Campaign (₹999)
+                </button>
             </div>
-
-
-            <div class="info-box">
-
-                <span>
-                    Payment Account
-                </span>
-
-                <strong id="infoPayment">
-                    -
-                </strong>
-
-            </div>
-
-        </div>
+        </aside>
 
     </div>
-
-
-    <!-- =================================================
-         TODAY'S QUEUE
-    ================================================= -->
-
-    <div class="queue-card">
-
-        <h2>
-            Today's Queue
-        </h2>
-
-        <div class="queue-stats">
-
-            <div>
-
-                <span>
-                    Waiting
-                </span>
-
-                <strong id="waitingCount">
-                    0
-                </strong>
-
-            </div>
-
-
-            <div>
-
-                <span>
-                    Current Token
-                </span>
-
-                <strong id="currentToken">
-                    0
-                </strong>
-
-            </div>
-
-
-            <div>
-
-                <span>
-                    Completed
-                </span>
-
-                <strong id="completedCount">
-                    0
-                </strong>
-
-            </div>
-
-        </div>
-
-
-        <button
-            class="next-button"
-            id="nextButton"
-        >
-            📢 Call Next Patient
-        </button>
-
-
-        <p
-            id="nextMessage"
-            class="next-message"
-        ></p>
-
-    </div>
-
 
 </div>
 
-
-
-<!-- =====================================================
-     HOSPITAL ADVERTISEMENT MODAL (INR 999 / 30 DAYS)
-===================================================== -->
-<div id="hospitalAdModal" class="ad-modal-backdrop" aria-hidden="true">
-    <div class="ad-modal" role="dialog" aria-modal="true" aria-labelledby="adModalTitle">
-        <div class="ad-modal-header">
-            <h2 id="adModalTitle">
-                📢 Hospital Advertisement Promotion
-            </h2>
-            <button type="button" class="ad-modal-close" id="closeAdModalBtn" aria-label="Close dialog">&times;</button>
-        </div>
-
-        <div class="ad-modal-body">
-            <!-- Tabs -->
-            <div class="ad-tabs">
-                <button type="button" class="ad-tab-btn active" id="tabCreateAd">🚀 Create New Campaign</button>
-                <button type="button" class="ad-tab-btn" id="tabMyAds">📋 My Ads & Validity (<span id="adActiveCount">0</span>)</button>
-            </div>
-
-            <!-- Tab 1: Create Ad -->
-            <div id="sectionCreateAd">
-                <div class="ad-plan-banner">
-                    <div class="ad-plan-info">
-                        <h4>⭐ Sponsored Feed Placement</h4>
-                        <p>Your banner appears dynamically after every 5 hospitals in the patient app feed. 100% transparent rotation for 30 full days.</p>
-                    </div>
-                    <div class="ad-plan-price">
-                        <div class="amount">₹999</div>
-                        <div class="term">for 30 Days</div>
-                    </div>
-                </div>
-
-                <form id="adCampaignForm">
-                    <div class="ad-form-group">
-                        <label for="adBannerInput">Promotional Banner Photo * (JPG, PNG, WebP - max 5MB)</label>
-                        <div class="ad-dropzone" id="adDropzone">
-                            <span style="font-size: 28px;">🖼️</span>
-                            <div style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 4px;">Click or drag & drop banner photo here</div>
-                            <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Recommended: Horizontal 16:9 or 1200×500 px</div>
-                            <input type="file" id="adBannerInput" accept="image/jpeg,image/png,image/webp" style="display: none;" required>
-                        </div>
-                        <div id="adPreviewWrapper" class="ad-preview-wrapper">
-                            <img id="adPreviewImg" src="" alt="Banner Preview">
-                            <span class="ad-preview-overlay">Live Preview</span>
-                        </div>
-                    </div>
-
-                    <div class="ad-form-group">
-                        <label for="adTitleInput">Campaign Title * (e.g. Free Cardiology Health Camp, 24/7 ICU & Trauma Care)</label>
-                        <input type="text" id="adTitleInput" placeholder="Enter headline for patients..." minlength="3" maxlength="255" required>
-                    </div>
-
-                    <div class="ad-form-group">
-                        <label for="adDescInput">Offer / Campaign Description (Optional)</label>
-                        <textarea id="adDescInput" rows="2" placeholder="e.g. Comprehensive blood tests, ECG, and physician consultation included. Walk-ins welcome." maxlength="1000"></textarea>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-                        <div class="ad-form-group">
-                            <label for="adPhoneInput">Contact Phone</label>
-                            <input type="tel" id="adPhoneInput" placeholder="Hospital contact phone">
-                        </div>
-                        <div class="ad-form-group">
-                            <label for="adLinkInput">Target Link / URL (Optional)</label>
-                            <input type="url" id="adLinkInput" placeholder="https://yourhospital.com/offer">
-                        </div>
-                    </div>
-
-                    <div id="adFormAlert" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; font-weight: 600;"></div>
-
-                    <button type="submit" class="ad-submit-btn" id="submitAdBtn">
-                        💳 Pay ₹999 & Launch 30-Day Campaign
-                    </button>
-                </form>
-            </div>
-
-            <!-- Tab 2: My Ads -->
-            <div id="sectionMyAds" style="display: none;">
-                <div id="myAdsLoading" style="text-align: center; padding: 30px; color: #64748b;">
-                    <span>Loading your advertisement campaigns...</span>
-                </div>
-                <div id="myAdsList" style="display: none;"></div>
-                <div id="myAdsEmpty" style="display: none; text-align: center; padding: 40px 20px; color: #94a3b8;">
-                    <div style="font-size: 36px; margin-bottom: 8px;">📢</div>
-                    <div style="font-size: 15px; font-weight: 700; color: #475569;">No active campaigns yet</div>
-                    <p style="font-size: 13px; margin: 6px 0 16px;">Promote your hospital to reach patients actively searching for care!</p>
-                    <button type="button" class="ad-tab-btn active" onclick="document.getElementById('tabCreateAd').click()" style="background: #7c3aed; color: #fff; border-radius: 8px; padding: 8px 18px;">Create Campaign</button>
-                </div>
-            </div>
-        </div>
-    </div>
+<!-- TOAST NOTIFICATION -->
+<div id="toastNotification" class="toast-notification">
+    <span id="toastIcon">✓</span>
+    <span id="toastText">Link copied to clipboard!</span>
 </div>
 
 <!-- =====================================================
@@ -1247,1177 +1249,415 @@
     </div>
 </div>
 
-<div style="display:none;"><div><div><div><div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-
 /* =====================================================
-   API
+   API CONFIGURATION
 ===================================================== */
-
 const API_URL =
     (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost")
         ? "http://127.0.0.1:8000"
         : "https://carepath-3q9q.onrender.com";
 
-
-/* =====================================================
-   HOSPITAL SESSION
-===================================================== */
-
-let hospitalId =
-    localStorage.getItem("hospital_id");
-
-let hospitalName =
-    localStorage.getItem("hospital_name");
-
-const hospitalToken =
-    localStorage.getItem("hospitalToken");
-
-
-/* =====================================================
-   AUTH HEADERS
-===================================================== */
+let hospitalId = localStorage.getItem("hospital_id");
+let hospitalName = localStorage.getItem("hospital_name");
+const hospitalToken = localStorage.getItem("hospitalToken");
 
 function getHospitalAuthHeaders(includeJson = false) {
-
     const headers = {
-        "Authorization":
-            `Bearer ${hospitalToken || ""}`
+        "Authorization": `Bearer ${hospitalToken || ""}`
     };
-
-    if (includeJson) {
-
-        headers["Content-Type"] =
-            "application/json";
-
-    }
-
+    if (includeJson) headers["Content-Type"] = "application/json";
     return headers;
 }
 
-
-/* =====================================================
-   READ STORED HOSPITAL
-===================================================== */
-
+// Read stored hospital session
 let storedHospital = null;
-
 try {
-
-    const stored =
-        localStorage.getItem("hospital");
-
-    if (stored) {
-
-        storedHospital =
-            JSON.parse(stored);
-
-    }
-
-}
-catch (error) {
-
-    console.error(
-        "Unable to read stored hospital:",
-        error
-    );
-
+    const stored = localStorage.getItem("hospital");
+    if (stored) storedHospital = JSON.parse(stored);
+} catch (e) {
+    console.error("Session parse error:", e);
 }
 
-
-/* =====================================================
-   USE STORED HOSPITAL OBJECT
-===================================================== */
-
-if (
-    storedHospital &&
-    storedHospital.id
-) {
-
-    hospitalId =
-        storedHospital.id;
-
-    hospitalName =
-        storedHospital.name ||
-        hospitalName;
-
-    localStorage.setItem(
-        "hospital_id",
-        hospitalId
-    );
-
-    if (hospitalName) {
-
-        localStorage.setItem(
-            "hospital_name",
-            hospitalName
-        );
-
-    }
-
+if (storedHospital && storedHospital.id) {
+    hospitalId = storedHospital.id;
+    hospitalName = storedHospital.name || hospitalName;
+    localStorage.setItem("hospital_id", hospitalId);
+    if (hospitalName) localStorage.setItem("hospital_name", hospitalName);
 }
 
-
-/* =====================================================
-   CHECK LOGIN
-===================================================== */
-
-if (
-    !hospitalId ||
-    !hospitalToken
-) {
-
-    alert(
-        "Your hospital session is missing or expired. Please login again."
-    );
-
-    window.location.replace(
-        "index.html"
-    );
-
+if (!hospitalId || !hospitalToken) {
+    alert("Hospital session expired. Please log in again.");
+    window.location.replace("index.html");
 }
-
-
-/* =====================================================
-   DISPLAY LOCAL HOSPITAL NAME
-===================================================== */
 
 if (hospitalName) {
-
-    document.getElementById(
-        "hospitalNameDisplay"
-    ).textContent =
-        hospitalName;
-
+    const nameEl = document.getElementById("hospitalNameDisplay");
+    if (nameEl) nameEl.textContent = hospitalName;
 }
 
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-document
-    .getElementById("logoutButton")
-    .addEventListener(
-        "click",
-        hospitalLogout
-    );
-
-
-function hospitalLogout() {
-
-    [
-        "hospital",
-        "hospital_id",
-        "hospital_name",
-        "hospital_email",
-        "hospital_token_fee",
-        "hospital_approval_status",
-        "hospital_is_published",
-        "hospital_latitude",
-        "hospital_longitude",
-        "hospital_logged_in",
-        "hospitalToken"
-    ].forEach(function(key) {
-
-        localStorage.removeItem(key);
-
+// LOGOUT
+const logoutBtn = document.getElementById("logoutButton");
+if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+        [
+            "hospital", "hospital_id", "hospital_name", "hospital_email",
+            "hospital_token_fee", "hospital_approval_status", "hospital_is_published",
+            "hospital_latitude", "hospital_longitude", "hospital_logged_in", "hospitalToken"
+        ].forEach(k => localStorage.removeItem(k));
+        window.location.replace("index.html");
     });
-
-    window.location.replace(
-        "index.html"
-    );
-
 }
 
+// LIVE CLOCK
+function updateLiveClock() {
+    const clockEl = document.getElementById("heroLiveClock");
+    if (clockEl) {
+        const now = new Date();
+        clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+}
+setInterval(updateLiveClock, 1000);
+updateLiveClock();
+
+// AUDIO CHIME
+function playCallChime() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = "sine";
+        osc1.frequency.setValueAtTime(880, now);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.5);
+
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(659.25, now + 0.25);
+        gain2.gain.setValueAtTime(0.35, now + 0.25);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.25);
+        osc2.stop(now + 0.85);
+    } catch(e) {
+        console.warn("Audio chime unsupported:", e);
+    }
+}
+
+// TOAST NOTIFICATION
+function showToast(text, icon = "✓") {
+    const toast = document.getElementById("toastNotification");
+    const tText = document.getElementById("toastText");
+    const tIcon = document.getElementById("toastIcon");
+    if (!toast) return;
+    if (tText) tText.textContent = text;
+    if (tIcon) tIcon.textContent = icon;
+    toast.classList.add("show");
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2800);
+}
+
+// COPY PATIENT LINK
+function getPatientDirectUrl() {
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    return isLocal
+        ? `${window.location.protocol}//${window.location.host}/patient/hospital-details.html?id=${hospitalId}`
+        : `https://carepath-patient-mx5v.vercel.app/hospital-details.html?id=${hospitalId}`;
+}
+
+function copyHospitalPatientLink() {
+    const url = getPatientDirectUrl();
+    navigator.clipboard.writeText(url).then(() => {
+        showToast("Patient booking link copied! Share anywhere.", "📋");
+    }).catch(() => {
+        prompt("Copy hospital patient link:", url);
+    });
+}
+
+// UPDATE SHARE LINK INPUT
+const shareInput = document.getElementById("shareHospitalLinkInput");
+if (shareInput) shareInput.value = getPatientDirectUrl();
 
 /* =====================================================
-   LOAD HOSPITAL
+   DATA FETCHING & RENDERING
 ===================================================== */
+let allHospitalTokens = [];
+let allHospitalDoctors = [];
+let currentServingTokenObj = null;
 
+// LOAD HOSPITAL INFO
 async function loadHospital() {
-
-    if (
-        !hospitalId ||
-        !hospitalToken
-    ) {
-
-        return;
-
-    }
-
-
     try {
-
-        const response =
-            await fetch(
-                `${API_URL}/hospitals/${hospitalId}`,
-                {
-                    headers:
-                        getHospitalAuthHeaders()
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            if (
-                response.status === 401 ||
-                response.status === 403
-            ) {
-
-                hospitalLogout();
-
-                return;
-
-            }
-
-            throw new Error(
-                data.detail ||
-                "Unable to load hospital information."
-            );
-
-        }
-
-
-        console.log(
-            "Hospital information:",
-            data
-        );
-
-
-        /*
-         * Save latest hospital information.
-         */
-
-        localStorage.setItem(
-            "hospital",
-            JSON.stringify(data)
-        );
-
-
-        localStorage.setItem(
-            "hospital_id",
-            data.id
-        );
-
+        const response = await fetch(`${API_URL}/hospitals/${hospitalId}`, {
+            headers: getHospitalAuthHeaders()
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        storedHospital = data;
+        localStorage.setItem("hospital", JSON.stringify(data));
 
         if (data.name) {
-
-            localStorage.setItem(
-                "hospital_name",
-                data.name
-            );
-
+            document.getElementById("hospitalNameDisplay").textContent = data.name;
         }
 
-
-        if (data.email) {
-
-            localStorage.setItem(
-                "hospital_email",
-                data.email
-            );
-
-        }
-
-
-        if (
-            data.token_fee !==
-            undefined
-        ) {
-
-            localStorage.setItem(
-                "hospital_token_fee",
-                data.token_fee
-            );
-
-        }
-
-
-        if (
-            data.approval_status !==
-            undefined
-        ) {
-
-            localStorage.setItem(
-                "hospital_approval_status",
-                data.approval_status
-            );
-
-        }
-
-
-        if (
-            data.is_published !==
-            undefined
-        ) {
-
-            localStorage.setItem(
-                "hospital_is_published",
-                data.is_published
-            );
-
-        }
-
-
-        /*
-         * Update welcome name.
-         */
-
-        document.getElementById(
-            "hospitalNameDisplay"
-        ).textContent =
-            data.name ||
-            "Hospital";
-
-
-        /*
-         * Update information cards.
-         */
-
-        document.getElementById(
-            "infoHospitalName"
-        ).textContent =
-            data.name ||
-            "-";
-
-
-        document.getElementById(
-            "infoCity"
-        ).textContent =
-            data.city ||
-            "-";
-
-
-        document.getElementById(
-            "infoTokenFee"
-        ).textContent =
-            `₹${Number(
-                data.token_fee || 0
-            )}`;
-
-
-        document.getElementById(
-            "infoApproval"
-        ).textContent =
-            data.approval_status ||
-            "-";
-
-
-        document.getElementById(
-            "infoPublished"
-        ).textContent =
-            data.is_published
-                ? "Published"
-                : "Not Published";
-
-
-        document.getElementById(
-            "infoPayment"
-        ).textContent =
-            data.payment_account_status ||
-            "NOT_ADDED";
-
-
-        hospitalName =
-            data.name ||
-            hospitalName;
-
+        const fee = Number(data.token_fee || 0);
+        document.getElementById("infoTokenFee").textContent = `₹${fee}`;
+        document.getElementById("hospitalMetaSubtitle").textContent = `${data.city || 'City'} • OPD Hours: ${data.operating_hours_12h || '9:00 AM - 9:00 PM'}`;
+    } catch (e) {
+        console.error("Load hospital error:", e);
     }
-    catch (error) {
-
-        console.error(
-            "Hospital loading error:",
-            error
-        );
-
-    }
-
 }
 
-
-/* =====================================================
-   DOCTORS
-===================================================== */
-
-document
-    .getElementById("doctorsButton")
-    .addEventListener(
-        "click",
-        function() {
-
-            window.location.href =
-                "doctors.html";
-
-        }
-    );
-
-
-/* =====================================================
-   QUEUE
-===================================================== */
-
-document
-    .getElementById("queueButton")
-    .addEventListener(
-        "click",
-        function() { window.location.href = "token-queue.html"; }
-    );
-
-
-/* =====================================================
-   PATIENTS
-===================================================== */
-
-document
-    .getElementById("patientsButton")
-    .addEventListener(
-        "click",
-        openPatients
-    );
-
-
-function openPatients() {
-
-    window.location.href =
-        "patients.html";
-
-}
-
-
-/* =====================================================
-   PROFILE
-===================================================== */
-
-document
-    .getElementById("profileButton")
-    .addEventListener(
-        "click",
-        function() {
-
-            window.location.href =
-                "profile.html";
-
-        }
-    );
-
-
-/* =====================================================
-   CALL NEXT PATIENT
-===================================================== */
-
-document
-    .getElementById("nextButton")
-    .addEventListener(
-        "click",
-        callNextPatient
-    );
-
-
-async function callNextPatient() {
-
-    const button =
-        document.getElementById(
-            "nextButton"
-        );
-
-    const message =
-        document.getElementById(
-            "nextMessage"
-        );
-
-
-    button.disabled = true;
-
-    button.textContent =
-        "Calling...";
-
-    message.textContent = "";
-
-
+// LOAD DOCTORS
+async function loadDoctors() {
     try {
-
-        const response =
-            await fetch(
-                `${API_URL}/next-patient`,
-                {
-
-                    method: "POST",
-
-                    headers:
-                        getHospitalAuthHeaders(true),
-
-                    body:
-                        JSON.stringify({
-
-                            hospital_id:
-                                Number(
-                                    hospitalId
-                                )
-
-                        })
-
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            if (
-                response.status === 401 ||
-                response.status === 403
-            ) {
-
-                hospitalLogout();
-
-                return;
-
-            }
-
-            throw new Error(
-                data.detail ||
-                "Unable to call next patient."
-            );
-
-        }
-
-
-        message.style.color =
-            "#15803d";
-
-
-        message.textContent =
-            data.message ||
-            "Next patient called successfully.";
-
-
-        if (
-            data.token_number !==
-            undefined
-        ) {
-
-            document.getElementById(
-                "currentToken"
-            ).textContent =
-                data.token_number;
-
-        }
-
-
-        await loadQueue();
-
-    }
-    catch (error) {
-
-        console.error(
-            "Next patient error:",
-            error
-        );
-
-
-        message.style.color =
-            "#dc2626";
-
-
-        message.textContent =
-            error.message ||
-            "Unable to call next patient.";
-
-    }
-    finally {
-
-        button.disabled = false;
-
-        button.textContent =
-            "ðŸ“¢ Call Next Patient";
-
-    }
-
-}
-
-
-/* =====================================================
-   LOAD QUEUE
-===================================================== */
-
-async function loadQueue() {
-
-    if (
-        !hospitalId ||
-        !hospitalToken
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        /*
-         * Secure hospital-specific queue endpoint.
-         *
-         * GET /hospitals/{hospital_id}/tokens
-         */
-
-        const response =
-            await fetch(
-                `${API_URL}/hospitals/${hospitalId}/tokens`,
-                {
-                    headers:
-                        getHospitalAuthHeaders()
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            if (
-                response.status === 401 ||
-                response.status === 403
-            ) {
-
-                hospitalLogout();
-
-                return;
-
-            }
-
-            throw new Error(
-                data.detail ||
-                "Unable to load queue."
-            );
-
-        }
-
-
-        /*
-         * Backend returns an array.
-         */
-
-        const tokens =
-            Array.isArray(data)
-                ? data
-                : (
-                    Array.isArray(
-                        data.tokens
-                    )
-                        ? data.tokens
-                        : []
-                );
-
-
-        /*
-         * The backend already restricts
-         * this response to the logged-in
-         * hospital.
-         *
-         * We still keep this frontend
-         * filtering as an extra safety
-         * layer.
-         */
-
-        const hospitalTokens =
-            tokens.filter(
-                token => {
-
-                    if (
-                        token.hospital_id !==
-                            undefined &&
-                        token.hospital_id !==
-                            null
-                    ) {
-
-                        return String(
-                            token.hospital_id
-                        ) === String(
-                            hospitalId
-                        );
-
-                    }
-
-
-                    return true;
-
-                }
-            );
-
-
-        /* ---------------------------------------------
-           WAITING
-        --------------------------------------------- */
-
-        const waiting =
-            hospitalTokens.filter(
-                token =>
-                    token.status ===
-                    "waiting"
-            );
-
-
-        document.getElementById(
-            "waitingCount"
-        ).textContent =
-            waiting.length;
-
-
-        /* ---------------------------------------------
-           COMPLETED
-        --------------------------------------------- */
-
-        const completed =
-            hospitalTokens.filter(
-                token =>
-                    token.status ===
-                    "completed"
-            );
-
-
-        document.getElementById(
-            "completedCount"
-        ).textContent =
-            completed.length;
-
-
-        /* ---------------------------------------------
-           CURRENT / SERVING
-        --------------------------------------------- */
-
-        const current =
-            hospitalTokens
-                .filter(
-                    token =>
-                        token.status ===
-                            "serving" ||
-                        token.status ===
-                            "current"
-                )
-                .sort(
-                    (
-                        a,
-                        b
-                    ) =>
-                        Number(
-                            b.token_number
-                        ) -
-                        Number(
-                            a.token_number
-                        )
-                )[0];
-
-
-        if (current) {
-
-            document.getElementById(
-                "currentToken"
-            ).textContent =
-                current.token_number;
-
-        }
-        else {
-
-            document.getElementById(
-                "currentToken"
-            ).textContent =
-                "0";
-
-        }
-
-    }
-    catch (error) {
-
-        console.error(
-            "Queue loading error:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   INITIAL LOAD
-===================================================== */
-
-loadHospital()
-    .then(
-        function() {
-
-            return loadQueue();
-
-        }
-    );
-
-
-
-
-/* =====================================================
-   HOSPITAL ADVERTISEMENT CAMPAIGNS (INR 999 / 30 DAYS)
-===================================================== */
-
-const adModal = document.getElementById("hospitalAdModal");
-const openAdModalBtn = document.getElementById("openAdModalBtn");
-const closeAdModalBtn = document.getElementById("closeAdModalBtn");
-const tabCreateAd = document.getElementById("tabCreateAd");
-const tabMyAds = document.getElementById("tabMyAds");
-const sectionCreateAd = document.getElementById("sectionCreateAd");
-const sectionMyAds = document.getElementById("sectionMyAds");
-const adCampaignForm = document.getElementById("adCampaignForm");
-const adDropzone = document.getElementById("adDropzone");
-const adBannerInput = document.getElementById("adBannerInput");
-const adPreviewWrapper = document.getElementById("adPreviewWrapper");
-const adPreviewImg = document.getElementById("adPreviewImg");
-const adFormAlert = document.getElementById("adFormAlert");
-const submitAdBtn = document.getElementById("submitAdBtn");
-
-function openAdModal(defaultTab = "create") {
-    if (!adModal) return;
-    adModal.classList.add("active");
-    adModal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
-
-    // Pre-fill phone if available
-    const phoneInput = document.getElementById("adPhoneInput");
-    if (phoneInput && !phoneInput.value && storedHospital && storedHospital.phone) {
-        phoneInput.value = storedHospital.phone;
-    }
-
-    if (defaultTab === "list") {
-        switchAdTab("list");
-    } else {
-        switchAdTab("create");
-    }
-}
-
-function closeAdModal() {
-    if (!adModal) return;
-    adModal.classList.remove("active");
-    adModal.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
-}
-
-if (openAdModalBtn) openAdModalBtn.addEventListener("click", () => { window.location.href = "ads.html"; });
-if (closeAdModalBtn) closeAdModalBtn.addEventListener("click", closeAdModal);
-
-if (adModal) {
-    adModal.addEventListener("click", (e) => {
-        if (e.target === adModal) closeAdModal();
-    });
-}
-
-function switchAdTab(tab) {
-    if (tab === "create") {
-        tabCreateAd.classList.add("active");
-        tabMyAds.classList.remove("active");
-        sectionCreateAd.style.display = "block";
-        sectionMyAds.style.display = "none";
-    } else {
-        tabMyAds.classList.add("active");
-        tabCreateAd.classList.remove("active");
-        sectionCreateAd.style.display = "none";
-        sectionMyAds.style.display = "block";
-        loadHospitalAds();
-    }
-}
-
-if (tabCreateAd) tabCreateAd.addEventListener("click", () => switchAdTab("create"));
-if (tabMyAds) tabMyAds.addEventListener("click", () => switchAdTab("list"));
-
-// Image upload & dropzone handlers
-if (adDropzone && adBannerInput) {
-    adDropzone.addEventListener("click", () => adBannerInput.click());
-
-    adDropzone.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        adDropzone.classList.add("dragover");
-    });
-
-    adDropzone.addEventListener("dragleave", () => {
-        adDropzone.classList.remove("dragover");
-    });
-
-    adDropzone.addEventListener("drop", (e) => {
-        e.preventDefault();
-        adDropzone.classList.remove("dragover");
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            adBannerInput.files = e.dataTransfer.files;
-            handleBannerPreview(e.dataTransfer.files[0]);
-        }
-    });
-
-    adBannerInput.addEventListener("change", () => {
-        if (adBannerInput.files && adBannerInput.files[0]) {
-            handleBannerPreview(adBannerInput.files[0]);
-        }
-    });
-}
-
-function handleBannerPreview(file) {
-    if (!file || !file.type.startsWith("image/")) {
-        showAdAlert("Please choose a valid image file (JPG, PNG, or WebP).", "error");
-        return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-        showAdAlert("Photo size must be less than 5 MB.", "error");
-        return;
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        adPreviewImg.src = e.target.result;
-        adPreviewWrapper.style.display = "block";
-    };
-    reader.readAsDataURL(file);
-}
-
-function showAdAlert(msg, type = "error") {
-    if (!adFormAlert) return;
-    adFormAlert.style.display = "block";
-    adFormAlert.textContent = msg;
-    if (type === "error") {
-        adFormAlert.style.background = "#fee2e2";
-        adFormAlert.style.color = "#b91c1c";
-        adFormAlert.style.border = "1px solid #f87171";
-    } else {
-        adFormAlert.style.background = "#dcfce7";
-        adFormAlert.style.color = "#15803d";
-        adFormAlert.style.border = "1px solid #86efac";
-    }
-}
-
-// Submit campaign & launch Cashfree checkout
-if (adCampaignForm) {
-    adCampaignForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const file = adBannerInput.files ? adBannerInput.files[0] : null;
-        const title = document.getElementById("adTitleInput").value.trim();
-        const desc = document.getElementById("adDescInput").value.trim();
-        const phone = document.getElementById("adPhoneInput").value.trim();
-        const link = document.getElementById("adLinkInput").value.trim();
-
-        if (!file) {
-            showAdAlert("Please upload a promotional banner photo.", "error");
-            return;
-        }
-        if (title.length < 3) {
-            showAdAlert("Please enter a campaign title with at least 3 characters.", "error");
-            return;
-        }
-
-        const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId") || (storedHospital && storedHospital.id);
-        const activeToken = hospitalToken || localStorage.getItem("hospitalToken");
-
-        if (!activeHospId || activeHospId === "null" || activeHospId === "undefined") {
-            showAdAlert("Hospital session not found. Please log in again to publish ads.", "error");
-            return;
-        }
-
-        submitAdBtn.disabled = true;
-        submitAdBtn.innerHTML = "⏳ Initiating Cashfree Payment (₹999)...";
-
-        const formData = new FormData();
-        formData.append("photo", file);
-        formData.append("title", title);
-        formData.append("description", desc);
-        formData.append("target_phone", phone);
-        formData.append("target_link", link);
-
-        try {
-            const res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads/create-order`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${activeToken || ""}`
-                },
-                body: formData,
-            });
-
-            const data = await res.json();
-            if (!res.ok || !data.success) {
-                throw new Error(data.detail || data.message || "Failed to initiate payment session.");
-            }
-
-            console.log("CarePath: Ad order created:", data);
-
-            // Open Cashfree Checkout
-            if (typeof Cashfree !== "function") {
-                throw new Error("Cashfree checkout SDK failed to load. Please refresh the page.");
-            }
-
-            const cashfree = Cashfree({ mode: data.cashfree_mode || "sandbox" });
-            localStorage.setItem("pending_ad_order_id", data.order_id);
-            localStorage.setItem("pending_ad_id", String(data.ad_id));
-
-            await cashfree.checkout({
-                paymentSessionId: data.payment_session_id,
-                redirectTarget: "_modal",
-            });
-
-            // If modal completes without full redirect, verify immediately
-            submitAdBtn.innerHTML = "⏳ Verifying Payment with Cashfree...";
-            await verifyAdPayment(data.order_id, data.ad_id);
-
-        } catch (err) {
-            console.error("Ad launch error:", err);
-            const msg = (err instanceof TypeError || (err.message && err.message.toLowerCase().includes("fetch")))
-                ? "Cannot connect to CarePath server or payment gateway. The server may be waking up from sleep—please try again in a few seconds."
-                : (err.message || "Unable to proceed with ad payment.");
-            showAdAlert(msg, "error");
-            submitAdBtn.disabled = false;
-            submitAdBtn.innerHTML = "💳 Pay ₹999 & Launch 30-Day Campaign";
-        }
-    });
-}
-
-async function verifyAdPayment(orderId, adId) {
-    try {
-        const verifyRes = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/verify-payment`, {
-            method: "POST",
-            headers: getHospitalAuthHeaders(true),
-            body: JSON.stringify({
-                cashfree_order_id: orderId,
-                ad_id: parseInt(adId, 10),
-            }),
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/doctors`, {
+            headers: getHospitalAuthHeaders()
         });
-
-        const vData = await verifyRes.json();
-        if (!verifyRes.ok || !vData.success) {
-            throw new Error(vData.detail || "Payment verification pending or failed.");
-        }
-
-        localStorage.removeItem("pending_ad_order_id");
-        localStorage.removeItem("pending_ad_id");
-
-        showAdAlert("🎉 Success! Your advertisement is now ACTIVE in the patient app for 30 days!", "success");
-        if (adCampaignForm) adCampaignForm.reset();
-        if (adPreviewWrapper) adPreviewWrapper.style.display = "none";
-
-        setTimeout(() => {
-            switchAdTab("list");
-        }, 1500);
-
-    } catch (err) {
-        console.error("Verification error:", err);
-        showAdAlert("Payment verification check: " + err.message, "error");
-    } finally {
-        if (submitAdBtn) {
-            submitAdBtn.disabled = false;
-            submitAdBtn.innerHTML = "💳 Pay ₹999 & Launch 30-Day Campaign";
-        }
+        if (!res.ok) return;
+        allHospitalDoctors = await res.json();
+        renderDoctorRoster();
+    } catch (e) {
+        console.error("Load doctors error:", e);
     }
 }
 
-async function loadHospitalAds() {
-    const loading = document.getElementById("myAdsLoading");
-    const list = document.getElementById("myAdsList");
-    const empty = document.getElementById("myAdsEmpty");
-    const countBadge = document.getElementById("adActiveCount");
+function renderDoctorRoster() {
+    const container = document.getElementById("doctorRosterContainer");
+    const countEl = document.getElementById("activeDoctorsCount");
+    if (!container) return;
 
-    if (loading) loading.style.display = "block";
-    if (list) list.style.display = "none";
-    if (empty) empty.style.display = "none";
+    if (!Array.isArray(allHospitalDoctors) || allHospitalDoctors.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--slate-400); padding: 18px 10px; font-size: 13px;">No doctors added yet. <a href="doctors.html" style="color: var(--primary); font-weight: 700;">Add Doctors</a></div>`;
+        if (countEl) countEl.textContent = "0";
+        return;
+    }
 
-    try {
-        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads`, {
-            headers: getHospitalAuthHeaders(false),
-        });
+    const activeDocs = allHospitalDoctors.filter(d => d.is_available !== false);
+    if (countEl) countEl.textContent = `${activeDocs.length} / ${allHospitalDoctors.length}`;
 
-        if (!res.ok) throw new Error("Failed to load campaigns.");
-        const ads = await res.json();
+    container.innerHTML = allHospitalDoctors.map((doc, idx) => {
+        const isOnline = doc.is_available !== false;
+        const statusClass = isOnline ? "badge-consulting" : "badge-offline";
+        const statusText = isOnline ? "🟢 In Session" : "⚪ Offline";
+        const roomNum = doc.room_number || `Rm ${idx + 1}`;
+        const initials = (doc.name || "Doctor").split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
 
-        if (loading) loading.style.display = "none";
-
-        const activeAds = (Array.isArray(ads) ? ads : []).filter(a => a.status === "ACTIVE");
-        if (countBadge) countBadge.textContent = activeAds.length;
-
-        if (!Array.isArray(ads) || ads.length === 0) {
-            if (empty) empty.style.display = "block";
-            return;
-        }
-
-        if (list) {
-            list.style.display = "block";
-            list.innerHTML = ads.map(a => {
-                let badgeClass = "badge-pending";
-                let statusLabel = "Pending";
-                if (a.status === "ACTIVE") {
-                    badgeClass = "badge-active";
-                    statusLabel = `🟢 Active (${a.days_remaining}d left)`;
-                } else if (a.status === "EXPIRED") {
-                    badgeClass = "badge-expired";
-                    statusLabel = "🔴 Expired";
-                }
-
-                const bannerSrc = a.image_url ? (a.image_url.startsWith("http") ? a.image_url : `${API_URL}${a.image_url}`) : "";
-
-                return `
-                <div class="ad-card-item">
-                    ${bannerSrc ? `<img src="${bannerSrc}" alt="Ad" class="ad-card-thumb" onerror="this.style.display='none'">` : ""}
-                    <div class="ad-card-content">
-                        <div class="ad-card-title">${a.title}</div>
-                        <div class="ad-card-meta">
-                            <span class="${badgeClass}">${statusLabel}</span>
-                            <span>Fee: ₹${a.amount_paid || 999}</span>
-                            ${a.expires_at ? `<span>Expires: ${new Date(a.expires_at).toLocaleDateString()}</span>` : ""}
+        return `
+            <div class="doctor-roster-row">
+                <div class="doc-profile-snippet">
+                    <div class="doc-avatar">${initials}</div>
+                    <div>
+                        <div class="doc-name">${escapeHtml(doc.name)}</div>
+                        <div class="doc-meta">
+                            <span>${escapeHtml(doc.department || 'General')}</span>
+                            <span>•</span>
+                            <span style="font-weight: 700; color: #1e40af;">${roomNum}</span>
                         </div>
                     </div>
                 </div>
-                `;
-            }).join("");
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="badge-status-pill ${statusClass}">${statusText}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+// LOAD TOKENS & QUEUE
+async function loadQueue() {
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/tokens`, {
+            headers: getHospitalAuthHeaders()
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const tokens = Array.isArray(data) ? data : (data.tokens || []);
+        allHospitalTokens = tokens;
+
+        const waiting = tokens.filter(t => (t.status || "").toLowerCase() === "waiting");
+        const serving = tokens.filter(t => (t.status || "").toLowerCase() === "serving");
+        const completed = tokens.filter(t => (t.status || "").toLowerCase() === "completed");
+
+        // Metrics
+        document.getElementById("waitingCount").textContent = waiting.length;
+        document.getElementById("queueBadgeTotal").textContent = waiting.length;
+        document.getElementById("completedCount").textContent = completed.length;
+        document.getElementById("completedTokensCount").textContent = `${completed.length} Consultations Done`;
+
+        // Estimated wait (~3 mins per patient)
+        const estMinutes = waiting.length * 3;
+        document.getElementById("estimatedWaitTime").textContent = `~${estMinutes} min estimated wait`;
+
+        // Revenue computation
+        const tokenFee = Number(storedHospital && storedHospital.token_fee ? storedHospital.token_fee : 10);
+        const totalRev = tokens.reduce((sum, t) => sum + Number(t.token_fee || tokenFee || 0), 0);
+        document.getElementById("todayRevenueDisplay").textContent = `₹${totalRev.toLocaleString()}`;
+
+        // Current Serving Token
+        if (serving.length > 0) {
+            const current = serving[serving.length - 1];
+            currentServingTokenObj = current;
+            document.getElementById("currentToken").textContent = `#${current.token_number}`;
+            document.getElementById("heroTokenDisplay").textContent = `#${current.token_number}`;
+            document.getElementById("heroPatientName").textContent = current.patient_name || "Patient in Consultation";
+            document.getElementById("heroDoctorRoom").textContent = `${current.doctor || 'OPD Doctor'} • ${current.department || 'Consultation'}`;
+            document.getElementById("currentServingDoc").textContent = current.doctor || "In Consultation";
+        } else {
+            currentServingTokenObj = null;
+            document.getElementById("currentToken").textContent = "0";
+            document.getElementById("heroTokenDisplay").textContent = "#0";
+            document.getElementById("heroPatientName").textContent = "No Patient in Consultation";
+            document.getElementById("heroDoctorRoom").textContent = waiting.length > 0 ? "Click 'Call Next Patient' below" : "Queue is empty";
+            document.getElementById("currentServingDoc").textContent = "No active consultation";
         }
 
-    } catch (err) {
-        console.error("Load ads error:", err);
-        if (loading) loading.style.display = "none";
-        if (list) {
-            list.style.display = "block";
-            list.innerHTML = `<div style="color: #ef4444; font-size: 13px; text-align: center; padding: 20px;">Failed to load campaigns: ${err.message}</div>`;
+        renderQueueFeed(waiting);
+    } catch (e) {
+        console.error("Load queue error:", e);
+    }
+}
+
+function renderQueueFeed(waitingTokens) {
+    const container = document.getElementById("queueFeedContainer");
+    if (!container) return;
+
+    if (!waitingTokens || waitingTokens.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: var(--slate-400); padding: 35px 10px;">
+                <div style="font-size: 28px; margin-bottom: 6px;">🎉</div>
+                <div style="font-weight: 700; color: var(--slate-600);">No patients waiting in queue</div>
+                <div style="font-size: 12px; margin-top: 4px;">Walk-in and online tokens will appear here automatically.</div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = waitingTokens.map((t, idx) => {
+        const estWait = (idx + 1) * 3;
+        return `
+            <div class="queue-feed-item">
+                <div class="token-chip">#${t.token_number}</div>
+                <div class="patient-snippet-info">
+                    <div class="patient-name-text">${escapeHtml(t.patient_name || 'Patient')}</div>
+                    <div class="patient-sub-meta">
+                        <span>👨‍⚕️ ${escapeHtml(t.doctor || 'OPD')}</span>
+                        <span>•</span>
+                        <span>⏳ ~${estWait} min</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-call-specific" onclick="callSpecificToken(${t.id}, ${t.token_number})">
+                    📢 Call Now
+                </button>
+            </div>
+        `;
+    }).join("");
+}
+
+function filterQueueFeed() {
+    const q = (document.getElementById("queueSearchInput").value || "").toLowerCase().trim();
+    const waiting = allHospitalTokens.filter(t => (t.status || "").toLowerCase() === "waiting");
+    if (!q) {
+        renderQueueFeed(waiting);
+        return;
+    }
+    const filtered = waiting.filter(t => 
+        String(t.token_number).includes(q) ||
+        (t.patient_name || "").toLowerCase().includes(q) ||
+        (t.patient_phone || "").includes(q) ||
+        (t.doctor || "").toLowerCase().includes(q)
+    );
+    renderQueueFeed(filtered);
+}
+
+// CALL NEXT PATIENT
+async function callNextPatient() {
+    const btn = document.getElementById("nextButton");
+    const msg = document.getElementById("nextMessage");
+    const waiting = allHospitalTokens.filter(t => (t.status || "").toLowerCase() === "waiting");
+
+    if (waiting.length === 0) {
+        if (msg) {
+            msg.style.color = "#d97706";
+            msg.textContent = "No patients waiting in queue.";
+        }
+        return;
+    }
+
+    const nextUp = waiting[0];
+    await callSpecificToken(nextUp.id, nextUp.token_number);
+}
+
+async function callSpecificToken(tokenId, tokenNum) {
+    const btn = document.getElementById("nextButton");
+    const msg = document.getElementById("nextMessage");
+    if (btn) { btn.disabled = true; btn.innerHTML = "<span>📢</span> Calling..."; }
+    if (msg) msg.textContent = "";
+
+    try {
+        const res = await fetch(`${API_URL}/tokens/${tokenId}/call`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders(true)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Unable to call token");
+
+        playCallChime();
+        showToast(`Token #${tokenNum} called into consultation!`, "📢");
+
+        if (msg) {
+            msg.style.color = "#15803d";
+            msg.textContent = `✓ Token #${tokenNum} called successfully.`;
+        }
+        await loadQueue();
+    } catch (e) {
+        console.error("Call token error:", e);
+        if (msg) {
+            msg.style.color = "#dc2626";
+            msg.textContent = e.message || "Failed to call token.";
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = "<span>📢</span> Call Next Patient";
         }
     }
 }
 
-// Auto-check on return from Cashfree redirect URL
-(function checkAdRedirect() {
-    const params = new URLSearchParams(window.location.search);
-    const adOrderId = params.get("ad_order_id") || params.get("cashfree_order_id");
-    const storedAdId = localStorage.getItem("pending_ad_id");
-    if (adOrderId && storedAdId) {
-        openAdModal("list");
-        verifyAdPayment(adOrderId, storedAdId);
+async function completeCurrentToken() {
+    if (!currentServingTokenObj) {
+        alert("No patient currently in consultation to complete.");
+        return;
     }
-})();
+    const tokenId = currentServingTokenObj.id;
+    const tokenNum = currentServingTokenObj.token_number;
+
+    try {
+        const res = await fetch(`${API_URL}/tokens/${tokenId}/complete`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders(true)
+        });
+        if (!res.ok) throw new Error("Could not complete consultation");
+
+        showToast(`Token #${tokenNum} completed!`, "✓");
+        await loadQueue();
+    } catch(e) {
+        alert("Complete consultation error: " + e.message);
+    }
+}
 
 /* =====================================================
-   AUTO REFRESH QUEUE
+   ADMIN MESSAGES & PATIENT INQUIRIES
 ===================================================== */
-
-setInterval(
-    loadQueue,
-    10000
-);
-
-/* =====================================================
-   DIRECT COMMUNICATION WITH ADMIN (HOSPITAL SIDE)
-===================================================== */
-
 function openAdminMessagesModal() {
     const modal = document.getElementById("adminMessagesModal");
     if (!modal) return;
@@ -2436,88 +1676,54 @@ function closeAdminMessagesModal() {
     checkAdminMessagesUnreadCount();
 }
 
-const adminMsgModalEl = document.getElementById("adminMessagesModal");
-if (adminMsgModalEl) {
-    adminMsgModalEl.addEventListener("click", function(e) {
-        if (e.target === adminMsgModalEl) closeAdminMessagesModal();
+const adminModalEl = document.getElementById("adminMessagesModal");
+if (adminModalEl) {
+    adminModalEl.addEventListener("click", (e) => {
+        if (e.target === adminModalEl) closeAdminMessagesModal();
     });
 }
 
 async function checkAdminMessagesUnreadCount() {
-    const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId");
-    const activeToken = hospitalToken || localStorage.getItem("hospitalToken");
-    if (!activeHospId || !activeToken) return;
-
     try {
-        const res = await fetch(`${API_URL}/hospitals/${activeHospId}/messages/unread-count`, {
-            headers: {
-                "Authorization": `Bearer ${activeToken}`
-            }
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/messages/unread-count`, {
+            headers: getHospitalAuthHeaders()
         });
         if (!res.ok) return;
         const data = await res.json();
         const unread = data.unread_count || 0;
-
-        const headerBadge = document.getElementById("hospitalAdminMsgBadge");
-        if (headerBadge) {
+        const badge = document.getElementById("hospitalAdminMsgBadge");
+        if (badge) {
             if (unread > 0) {
-                headerBadge.textContent = unread;
-                headerBadge.style.display = "inline-block";
+                badge.textContent = unread;
+                badge.style.display = "inline-block";
             } else {
-                headerBadge.style.display = "none";
+                badge.style.display = "none";
             }
         }
-
-        const cardBadge = document.getElementById("cardAdminMsgBadge");
-        if (cardBadge) {
-            if (unread > 0) {
-                cardBadge.textContent = `${unread} NEW MESSAGE${unread > 1 ? 'S' : ''}`;
-                cardBadge.style.display = "block";
-            } else {
-                cardBadge.style.display = "none";
-            }
-        }
-    } catch (err) {
-        console.warn("Unread check failed:", err);
-    }
+    } catch(e) {}
 }
 
 async function loadHospitalAdminMessages() {
     const container = document.getElementById("hospitalAdminMsgContainer");
     if (!container) return;
-
-    const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId");
-    const activeToken = hospitalToken || localStorage.getItem("hospitalToken");
-
-    if (!activeHospId || !activeToken) {
-        container.innerHTML = `<div style="text-align: center; color: #ef4444; font-size: 13px; padding: 20px;">Hospital session not found. Please log in again.</div>`;
-        return;
-    }
-
-    container.innerHTML = `<div style="text-align: center; color: #64748b; font-size: 13px; padding: 20px;">💬 Loading conversation...</div>`;
-
     try {
-        const res = await fetch(`${API_URL}/hospitals/${activeHospId}/messages`, {
-            headers: {
-                "Authorization": `Bearer ${activeToken}`
-            }
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/messages`, {
+            headers: getHospitalAuthHeaders()
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || data.message || "Failed to load messages");
+        if (!res.ok) throw new Error("Failed to load messages");
+        const messages = await res.json();
 
-        const messages = Array.isArray(data.messages) ? data.messages : [];
+        // Update inquiry sidebar widget
+        renderInquiriesWidget(messages);
 
-        if (messages.length === 0) {
+        if (!Array.isArray(messages) || messages.length === 0) {
             container.innerHTML = `
-                <div style="text-align: center; color: #94a3b8; font-size: 13px; padding: 30px 15px; background: white; border-radius: 10px; border: 1px dashed #cbd5e1;">
-                    <div style="font-size: 28px; margin-bottom: 8px;">📬</div>
-                    <strong style="color: #475569;">No messages from Platform Admin yet</strong>
-                    <div style="font-size: 12px; margin-top: 4px; color: #64748b;">
-                        When Admin contacts your hospital regarding approvals, compliance, or operational notices, they will appear here. You can also send a message below.
-                    </div>
+                <div style="text-align: center; padding: 30px 10px; color: var(--slate-400);">
+                    <div style="font-size: 26px; margin-bottom: 6px;">✉️</div>
+                    <div style="font-weight: 700; color: var(--slate-600);">No messages yet</div>
+                    <div style="font-size: 12px; margin-top: 4px;">Platform Admin notices and patient inquiries will appear here.</div>
                 </div>
             `;
-            checkAdminMessagesUnreadCount();
             return;
         }
 
@@ -2525,50 +1731,76 @@ async function loadHospitalAdminMessages() {
             const role = (msg.sender_role || "").toLowerCase();
             const isMe = role === "hospital";
             const isPatient = role === "patient";
-            const isAdmin = role === "admin";
-
             const align = isMe ? "flex-end" : "flex-start";
-            const bubbleBg = isMe ? "#2563eb" : (isPatient ? "#f0fdf4" : "#ffffff");
+            const bubbleBg = isMe ? "#1d4ed8" : (isPatient ? "#f0fdf4" : "#ffffff");
             const textColor = isMe ? "#ffffff" : "#0f172a";
-            const border = isMe ? "none" : (isPatient ? "1.5px solid #86efac" : "1.5px solid #cbd5e1");
-            const senderTag = isMe 
-                ? "Your Hospital Staff (You)" 
-                : (isPatient ? `👤 Patient Inquiry: ${msg.sender_name || 'Patient'}` : "Platform Admin");
-            const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleString() : "";
-            const isUrgent = msg.priority === "urgent";
-            const isCompliance = msg.priority === "compliance";
-
-            let priorityBadge = "";
-            if (isPatient) {
-                priorityBadge = `<span style="background: #dcfce7; color: #166534; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">👤 PATIENT INQUIRY</span>`;
-            } else if (isUrgent) {
-                priorityBadge = `<span style="background: #fee2e2; color: #b91c1c; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">🚨 URGENT ACTION</span>`;
-            } else if (isCompliance) {
-                priorityBadge = `<span style="background: #fef3c7; color: #b45309; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">⚠️ COMPLIANCE NOTICE</span>`;
-            }
+            const border = isMe ? "none" : (isPatient ? "1px solid #86efac" : "1px solid #cbd5e1");
+            const senderTag = isMe ? "Your Hospital Staff" : (isPatient ? `👤 Patient Inquiry: ${msg.sender_name || 'Patient'}` : "🏛️ Platform Admin");
 
             return `
                 <div style="display: flex; flex-direction: column; align-self: ${align}; max-width: 85%;">
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 3px; display: flex; gap: 6px; align-items: center; justify-content: ${isAdmin ? 'flex-start' : 'flex-end'};">
-                        <strong>${senderTag}</strong>
-                        <span>•</span>
-                        <span>${timeStr}</span>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 3px; display: flex; gap: 6px;">
+                        <strong>${senderTag}</strong> • <span>${msg.created_at ? new Date(msg.created_at).toLocaleTimeString() : ''}</span>
                     </div>
-                    <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 13.5px; line-height: 1.5;">
-                        ${priorityBadge ? `<div style="margin-bottom: 6px;">${priorityBadge}</div>` : ''}
-                        ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 4px; font-size: 14px;">${escapeHtmlHospital(msg.subject)}</div>` : ''}
-                        <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtmlHospital(msg.message || '')}</div>
+                    <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; line-height: 1.45;">
+                        ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 3px;">${escapeHtml(msg.subject)}</div>` : ''}
+                        <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.message || '')}</div>
                     </div>
                 </div>
             `;
         }).join("");
-
         container.scrollTop = container.scrollHeight;
-        checkAdminMessagesUnreadCount();
-    } catch (err) {
-        console.error("Load admin messages error:", err);
-        container.innerHTML = `<div style="color: #ef4444; font-size: 13px; text-align: center; padding: 20px;">Failed to load messages: ${escapeHtmlHospital(err.message)}</div>`;
+    } catch(e) {
+        container.innerHTML = `<div style="color: #ef4444; padding: 20px; text-align: center;">Error loading messages: ${escapeHtml(e.message)}</div>`;
     }
+}
+
+function renderInquiriesWidget(messages) {
+    const container = document.getElementById("patientInquiryContainer");
+    const countBadge = document.getElementById("inquiryCountBadge");
+    if (!container) return;
+
+    const patientMsgs = (Array.isArray(messages) ? messages : []).filter(m => (m.sender_role || "").toLowerCase() === "patient");
+    if (countBadge) countBadge.textContent = patientMsgs.length;
+
+    if (patientMsgs.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: var(--slate-400); padding: 18px 10px; font-size: 12.5px;">
+                No patient inquiries right now. When patients send questions via WhatsApp or App, they appear here.
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = patientMsgs.slice(-4).reverse().map(inq => {
+        const phone = inq.sender_phone || "";
+        const cleanPhone = String(phone).replace(/[^0-9]/g, "");
+        const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
+        const timeStr = inq.created_at ? new Date(inq.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+
+        return `
+            <div class="inquiry-feed-item">
+                <div class="inquiry-header">
+                    <span class="inquiry-sender">${escapeHtml(inq.sender_name || 'Patient')}</span>
+                    <span class="inquiry-time">${timeStr}</span>
+                </div>
+                <div class="inquiry-subject">${escapeHtml(inq.subject || inq.message || 'General OPD Inquiry')}</div>
+                <div class="inquiry-action-row">
+                    ${cleanPhone ? `
+                        <a href="https://wa.me/${waNum}" target="_blank" class="btn-inquiry-wa">
+                            💬 WhatsApp
+                        </a>
+                        <a href="tel:${cleanPhone}" class="btn-inquiry-call">
+                            📞 Call
+                        </a>
+                    ` : ''}
+                    <button type="button" onclick="openAdminMessagesModal()" style="border: none; background: #e2e8f0; color: #475569; font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 6px; cursor: pointer;">
+                        View
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join("");
 }
 
 async function sendHospitalReplyToAdmin() {
@@ -2578,57 +1810,33 @@ async function sendHospitalReplyToAdmin() {
 
     const message = textInput ? textInput.value.trim() : "";
     if (!message) {
-        alert("Please enter a reply message before sending.");
-        if (textInput) textInput.focus();
+        alert("Please enter a reply message.");
         return;
     }
 
-    const subject = subjInput ? subjInput.value.trim() : "";
-    const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId");
-    const activeToken = hospitalToken || localStorage.getItem("hospitalToken");
-
-    if (!activeHospId || !activeToken) {
-        alert("Hospital session not found. Please log in again.");
-        return;
-    }
-
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = "⏳ Sending...";
-    }
+    if (btn) { btn.disabled = true; btn.textContent = "Sending..."; }
 
     try {
-        const res = await fetch(`${API_URL}/hospitals/${activeHospId}/messages/reply`, {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/messages/reply`, {
             method: "POST",
-            headers: {
-                "Authorization": `Bearer ${activeToken}`,
-                "Content-Type": "application/json"
-            },
+            headers: getHospitalAuthHeaders(true),
             body: JSON.stringify({
-                subject: subject || null,
+                subject: subjInput ? subjInput.value.trim() || null : null,
                 message: message
             })
         });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || data.message || "Failed to send reply");
-
+        if (!res.ok) throw new Error("Could not send reply");
         if (textInput) textInput.value = "";
         if (subjInput) subjInput.value = "";
-
         await loadHospitalAdminMessages();
-    } catch (err) {
-        console.error("Send reply error:", err);
-        alert(err.message || "Failed to send reply to Admin");
+    } catch(e) {
+        alert("Send reply error: " + e.message);
     } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = "🚀 Send Reply";
-        }
+        if (btn) { btn.disabled = false; btn.textContent = "🚀 Send Reply"; }
     }
 }
 
-function escapeHtmlHospital(str) {
+function escapeHtml(str) {
     if (!str) return "";
     return String(str)
         .replace(/&/g, "&amp;")
@@ -2638,16 +1846,20 @@ function escapeHtmlHospital(str) {
         .replace(/'/g, "&#039;");
 }
 
+/* =====================================================
+   INITIALIZATION & AUTO-REFRESH (10s)
+===================================================== */
+loadHospital();
+loadDoctors();
+loadQueue();
+loadHospitalAdminMessages();
 checkAdminMessagesUnreadCount();
-setInterval(checkAdminMessagesUnreadCount, 30000);
 
-const __noop = (0
-
-);
-
+setInterval(() => {
+    loadQueue();
+    checkAdminMessagesUnreadCount();
+}, 10000);
 </script>
 
-
 </body>
-
 </html>
