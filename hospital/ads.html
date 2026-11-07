@@ -956,12 +956,22 @@ function generateHospitalDirectLink() {
     if (!activeHospId) return "";
 
     const loc = window.location;
-    const pathname = loc.pathname;
-    let patientPath = "/patient/hospital-details.html";
-    if (pathname.includes("/hospital/")) {
-        patientPath = pathname.substring(0, pathname.lastIndexOf("/hospital/")) + "/patient/hospital-details.html";
+    const isLocal = loc.hostname === "localhost" || loc.hostname === "127.0.0.1";
+
+    let directLink = "";
+    if (isLocal) {
+        // Local developer environment
+        const pathname = loc.pathname;
+        let patientPath = "/patient/hospital-details.html";
+        if (pathname.includes("/hospital/")) {
+            patientPath = pathname.substring(0, pathname.lastIndexOf("/hospital/")) + "/patient/hospital-details.html";
+        }
+        directLink = `${loc.origin}${patientPath}?id=${activeHospId}`;
+    } else {
+        // Production Patient App on Vercel
+        directLink = `https://carepath-patient-mx5v.vercel.app/hospital-details.html?id=${activeHospId}`;
     }
-    const directLink = `${loc.origin}${patientPath}?id=${activeHospId}`;
+
     const input = document.getElementById("hospitalDirectLinkInput");
     if (input) {
         input.value = directLink;

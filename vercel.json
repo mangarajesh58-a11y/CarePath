@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/hospital/patient/:path*",
+      "destination": "https://carepath-patient-mx5v.vercel.app/:path*",
+      "permanent": false
+    }
+  ]
+}
