@@ -47,6 +47,7 @@ from fastapi import (
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -245,6 +246,32 @@ def create_access_token(user_id: int, role: str) -> str:
         JWT_SECRET_KEY,
         algorithm=JWT_ALGORITHM
     )
+
+
+def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+) -> Optional[dict]:
+    if not JWT_SECRET_KEY or not credentials or not credentials.credentials:
+        return None
+    token = credentials.credentials.strip()
+    try:
+        payload = jwt.decode(
+            token,
+            JWT_SECRET_KEY,
+            algorithms=[JWT_ALGORITHM],
+        )
+        user_id = payload.get("sub")
+        role = payload.get("role")
+        if user_id and role in ("patient", "hospital", "admin"):
+            return {
+                "user_id": int(user_id),
+                "role": role,
+                "email": payload.get("email"),
+                "name": payload.get("name"),
+            }
+    except Exception:
+        pass
+    return None
 
 
 def get_current_user(
@@ -1375,7 +1402,7 @@ def get_carepath_ai_fallback(message: str) -> str:
 def carepath_ai_chat(
     data: AIChatRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("patient")),
+    current_user: Optional[dict] = Depends(get_optional_user),
 ):
     message = (data.message or "").strip()
 
