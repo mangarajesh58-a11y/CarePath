@@ -313,24 +313,7 @@
     </div>
 
     <div style="display: flex; align-items: center; gap: 8px;">
-      <!-- MULTILINGUAL LANGUAGE SELECTOR -->
-      <select
-        id="carepathLanguageSelect"
-        onchange="changeCarePathLanguage(this.value)"
-        title="Choose AI Indian Language / భాషను ఎంచుకోండి"
-        style="background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.4); color: white; border-radius: 14px; padding: 4px 6px; font-size: 11px; font-weight: 700; cursor: pointer; outline: none; backdrop-filter: blur(2px);"
-      >
-        <option value="te-IN" style="color: #0f172a; font-weight: 600;">🌐 తెలుగు (Telugu)</option>
-        <option value="hi-IN" style="color: #0f172a; font-weight: 600;">🌐 हिंदी (Hindi)</option>
-        <option value="en-IN" style="color: #0f172a; font-weight: 600;">🌐 English (Indian)</option>
-        <option value="ta-IN" style="color: #0f172a; font-weight: 600;">🌐 தமிழ் (Tamil)</option>
-        <option value="kn-IN" style="color: #0f172a; font-weight: 600;">🌐 ಕನ್ನಡ (Kannada)</option>
-        <option value="ml-IN" style="color: #0f172a; font-weight: 600;">🌐 മലയാളം (Malayalam)</option>
-        <option value="mr-IN" style="color: #0f172a; font-weight: 600;">🌐 मराठी (Marathi)</option>
-        <option value="bn-IN" style="color: #0f172a; font-weight: 600;">🌐 বাংলা (Bengali)</option>
-        <option value="gu-IN" style="color: #0f172a; font-weight: 600;">🌐 ગુજરાતી (Gujarati)</option>
-        <option value="pa-IN" style="color: #0f172a; font-weight: 600;">🌐 ਪੰਜਾਬੀ (Punjabi)</option>
-      </select>
+      <!-- Auto Multilingual Enabled -->
       <button
         type="button"
         id="carepathAIVoiceToggle"
@@ -837,6 +820,10 @@
     loadCarepathVoices();
     window.speechSynthesis.onvoiceschanged = loadCarepathVoices;
   }
+
+  // Multi-Turn Conversation History & Prescription Context
+  let carepathConversationHistory = [];
+  let lastAnalyzedPrescriptionText = "";
 
   // Prime speech & audio channel on user touch (critical for Android autoplay policy)
   let sharedVoiceAudio = null;
@@ -1756,18 +1743,25 @@
     const apiUrl = isLocal ? "http://127.0.0.1:8000/ai/chat" : "https://carepath-3q9q.onrender.com/ai/chat";
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4200);
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
     let replyText = "";
+    let detectedLang = currentAiLang || "en";
 
     try {
       const headers = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = "Bearer " + token;
 
+      const payload = {
+        message: text,
+        history: carepathConversationHistory.slice(-8),
+        prescription_context: lastAnalyzedPrescriptionText || ""
+      };
+
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: headers,
-        body: JSON.stringify({ message: text, language: currentAiLang }),
+        body: JSON.stringify(payload),
         signal: controller.signal
       });
 
@@ -1776,22 +1770,33 @@
 
       if (response.ok) {
         const data = await response.json();
-        replyText = data.reply || getInstantClientCarePathReply(text, currentAiLang);
+        replyText = data.reply || getInstantClientCarePathReply(text, detectedLang);
+        if (data.detected_language) {
+          detectedLang = data.detected_language;
+          currentAiLang = data.detected_language;
+        }
       } else {
-        replyText = getInstantClientCarePathReply(text, currentAiLang);
+        replyText = getInstantClientCarePathReply(text, detectedLang);
       }
     } catch (err) {
       clearTimeout(timeoutId);
-      console.warn("CarePath AI network fetch note (using instant multilingual triage):", err.message);
+      console.warn("CarePath AI network fetch note (using instant clinical triage):", err.message);
       removeThinkingMessage();
-      replyText = getInstantClientCarePathReply(text, currentAiLang);
+      replyText = getInstantClientCarePathReply(text, detectedLang);
+    }
+
+    // Save turn into conversation history
+    carepathConversationHistory.push({ role: "user", content: text });
+    carepathConversationHistory.push({ role: "assistant", content: replyText });
+    if (carepathConversationHistory.length > 12) {
+      carepathConversationHistory = carepathConversationHistory.slice(-12);
     }
 
     addCarePathMessage(replyText, "ai");
 
-    // Speak aloud in the matching language if Auto-Voice is active
+    // Speak aloud in the automatically detected language
     if (autoVoiceOutput) {
-      playAudioVoice(replyText, currentAiLang, null);
+      playAudioVoice(replyText, detectedLang, null);
     }
   }
 
@@ -1945,6 +1950,13 @@
           `ℹ️ *Always verify medicine names and doses with your dispensing pharmacist.*`;
       }
     }
+
+    lastAnalyzedPrescriptionText = explanationText || "";
+    // Save to conversation history so follow-ups ('explain in telugu', dosages, etc.) have full context
+    carepathConversationHistory.push({
+      role: "system",
+      content: "Uploaded Prescription Report: " + lastAnalyzedPrescriptionText.slice(0, 1000)
+    });
 
     const aiReply = document.createElement("div");
     aiReply.className = "carepath-ai-message";

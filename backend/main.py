@@ -1248,7 +1248,9 @@ class RegistrationOTPVerifyRequest(BaseModel):
 
 class AIChatRequest(BaseModel):
     message: str
-    language: Optional[str] = "en-IN" 
+    language: Optional[str] = "en-IN"
+    history: Optional[list] = None
+    prescription_context: Optional[str] = None 
 # ==========================================
 # CAREPATH AI - DATABASE CONTEXT
 # ==========================================
@@ -1445,6 +1447,176 @@ def get_carepath_ai_fallback(message: str) -> str:
 # CAREPATH AI
 # ============================================================
 
+def detect_user_language_preference(message: str, history: Optional[list] = None) -> str:
+    """
+    Automatically detects which language the user is speaking or has explicitly requested.
+    Returns: 'te' (Telugu), 'hi' (Hindi), 'ta' (Tamil), 'kn' (Kannada), 'ml' (Malayalam),
+             'mr' (Marathi), 'bn' (Bengali), 'gu' (Gujarati), 'pa' (Punjabi), or 'en' (English).
+    """
+    msg_lower = (message or "").strip().lower()
+
+    # 1. Explicit language request triggers (e.g. "explain in telugu", "in hindi", "telugulo cheppandi")
+    if any(k in msg_lower for k in ["telugu", "తెలుగు", "tenglish", "telugulo", "telugu lo", "telugula"]):
+        return "te"
+    if any(k in msg_lower for k in ["hindi", "हिंदी", "hinglish", "hindi me", "hindi mein"]):
+        return "hi"
+    if any(k in msg_lower for k in ["tamil", "தமிழ்", "tamilil", "tanglish"]):
+        return "ta"
+    if any(k in msg_lower for k in ["kannada", "ಕನ್ನಡ", "kannadadalli"]):
+        return "kn"
+    if any(k in msg_lower for k in ["malayalam", "മലയാളം"]):
+        return "ml"
+    if any(k in msg_lower for k in ["marathi", "मराठी", "marathit"]):
+        return "mr"
+    if any(k in msg_lower for k in ["bengali", "বাংলা"]):
+        return "bn"
+    if any(k in msg_lower for k in ["gujarati", "ગુજરાતી"]):
+        return "gu"
+    if any(k in msg_lower for k in ["punjabi", "ਪੰਜਾਬੀ"]):
+        return "pa"
+    if any(k in msg_lower for k in ["english", "in english"]):
+        return "en"
+
+    # 2. Native Indic Unicode Script Detection
+    if re.search(r"[\u0C00-\u0C7F]", message):  # Telugu
+        return "te"
+    if re.search(r"[\u0900-\u097F]", message):  # Devanagari (Hindi/Marathi)
+        return "hi"
+    if re.search(r"[\u0B80-\u0BFF]", message):  # Tamil
+        return "ta"
+    if re.search(r"[\u0C80-\u0CFF]", message):  # Kannada
+        return "kn"
+    if re.search(r"[\u0D00-\u0D7F]", message):  # Malayalam
+        return "ml"
+    if re.search(r"[\u0980-\u09FF]", message):  # Bengali
+        return "bn"
+    if re.search(r"[\u0A80-\u0AFF]", message):  # Gujarati
+        return "gu"
+    if re.search(r"[\u0A00-\u0A7F]", message):  # Punjabi
+        return "pa"
+
+    # 3. Contextual Continuity (Look back at recent history for short follow-ups like "which doctor", "fever", "yes")
+    if history and len(msg_lower.split()) <= 4:
+        for prev in reversed(history[-6:]):
+            prev_content = str(prev.get("content", ""))
+            if re.search(r"[\u0C00-\u0C7F]", prev_content) or "telugu" in prev_content.lower():
+                return "te"
+            if re.search(r"[\u0900-\u097F]", prev_content) or "hindi" in prev_content.lower():
+                return "hi"
+            if re.search(r"[\u0B80-\u0BFF]", prev_content) or "tamil" in prev_content.lower():
+                return "ta"
+            if re.search(r"[\u0C80-\u0CFF]", prev_content) or "kannada" in prev_content.lower():
+                return "kn"
+
+    return "en"
+
+
+def check_specialist_routing_intent(message: str, history: Optional[list], target_lang: str) -> Optional[str]:
+    """
+    Directly answers questions like "which doctor", "who should I consult", "who to see for fever"
+    by analyzing current and recent symptoms instead of giving unhelpful generic disclaimers.
+    """
+    msg_clean = message.lower().strip()
+    combined_text = msg_clean
+    if history:
+        for item in reversed(history[-4:]):
+            combined_text = str(item.get("content", "")).lower() + " " + combined_text
+
+    # Is the user asking which doctor/specialist to see?
+    is_asking_which_doctor = any(phrase in msg_clean for phrase in [
+        "which doctor", "what doctor", "who should i consult", "who to consult",
+        "which specialist", "who can i see", "recommend a doctor", "doctor for this",
+        "who do i visit", "which department", "where should i go",
+        "ఏ డాక్టర్", "ఎవరిని కలవాలి", "ఎవరిని సంప్రదించాలి", "డాక్టర్ ఎవరు",
+        "कौन सा डॉक्टर", "किसे दिखाएं", "किस डॉक्टर", "डॉक्टर कौन"
+    ]) or (msg_clean in ["which doctor", "who doctor", "doctor?", "which dr", "which one", "who?"])
+
+    # If asking which doctor OR providing symptoms
+    if is_asking_which_doctor or msg_clean in ["fever", "headache", "jvaram", "bukhar", "cold", "cough"]:
+        # Fever, headache, cold, cough, stomach upset, nausea, flu, general weakness
+        if any(s in combined_text for s in ["fever", "headache", "cold", "cough", "flu", "body pain", "fatigue", "vomit", "stomach", "జ్వరం", "తలనొప్పి", "బుఖార్", "బుఖార"]):
+            if target_lang == "te":
+                return (
+                    "జ్వరం, తలనొప్పి లేదా సాధారణ లక్షణాల కోసం మీరు **జనరల్ ఫిజీషియన్ (సాధారణ వైద్యుడు / Internal Medicine)** ని సంప్రదించాలి. "
+                    "CarePath లో మీరు **జనరల్ మెడిసిన్** విభాగంలో OPD టోకెన్ బుక్ చేసుకుని డాక్టర్‌ను నేరుగా సంప్రదించవచ్చు! 🩺"
+                )
+            elif target_lang == "hi":
+                return (
+                    "बुखार, सिरदर्द या सामान्य कमजोरी के लिए आपको **जनरल फिजिशियन (सामान्य चिकित्सक / Internal Medicine)** से परामर्श करना चाहिए। "
+                    "CarePath पर आप **जनरल मेडिसिन** विभाग में आसानी से OPD टोकन बुक कर सकते हैं! 🩺"
+                )
+            else:
+                return (
+                    "For fever, headache, and general symptoms, you should consult a **General Physician (Internal Medicine specialist)**. "
+                    "On CarePath, you can book an OPD consultation token directly under the **General Medicine** department! 🩺"
+                )
+
+        # Heart, chest pain, palpitations
+        if any(s in combined_text for s in ["chest pain", "heart", "bp", "palpitation", "గుండె", "छाती"]):
+            if target_lang == "te":
+                return (
+                    "గుండె నొప్పి లేదా ఛాతీలో ఒత్తిడి ఉంటే మీరు వెంటనే **కార్డియాలజిస్ట్ (గుండె నిపుణుడు)** ని సంప్రదించాలి. తీవ్రమైన నొప్పి ఉంటే ఆలస్యం చేయకుండా ఎమర్జెన్సీ (108) కి వెళ్లండి! 🚨"
+                )
+            elif target_lang == "hi":
+                return (
+                    "सीने में दर्द या सांस लेने में तकलीफ के लिए तुरंत **कार्डियोलॉजिस्ट (हृदय रोग विशेषज्ञ)** से संपर्क करें या आपातकालीन सेवा (108) में जाएं! 🚨"
+                )
+            else:
+                return (
+                    "For chest pain, heart palpitations, or severe discomfort, you should consult a **Cardiologist**. If the pain is severe or radiating, seek emergency care (108) immediately! 🚨"
+                )
+
+        # Children under 18
+        if any(s in combined_text for s in ["child", "baby", "kid", "infant", "పిల్ల", "बच्चा"]):
+            if target_lang == "te":
+                return (
+                    "పిల్లల అనారోగ్యం లేదా జ్వరానికి **పీడియాట్రిషియన్ (పిల్లల నిపుణుడు)** ని సంప్రదించాలి. CarePath లో పీడియాట్రిక్స్ కింద టోకెన్ బుక్ చేయండి. 👶"
+                )
+            elif target_lang == "hi":
+                return (
+                    "बच्चों के स्वास्थ्य या बुखार के लिए **पीडियाट्रिशियन (बाल रोग विशेषज्ञ)** से परामर्श लें। CarePath पर पीडियाट्रिक्स में टोकन बुक करें। 👶"
+                )
+            else:
+                return (
+                    "For infants and children under 18, you should consult a **Pediatrician (Child Specialist)**. You can select Pediatrics in CarePath to book an OPD token. 👶"
+                )
+
+        # Bones, joints, fractures, back pain
+        if any(s in combined_text for s in ["bone", "joint", "fracture", "knee", "back pain", "నడుము నొప్పి", "కీళ్ల", "हड्डी", "जोड़"]):
+            if target_lang == "te":
+                return (
+                    "ఎముకలు, కీళ్ళు లేదా నడుము నొప్పి కోసం **ఆర్థోపెడిక్ సర్జన్ (ఎముకల నిపుణుడు)** ని సంప్రదించాలి. CarePath లో ఆర్థోపెడిక్స్ కింద టోకెన్ బుక్ చేసుకోవచ్చు. 🦴"
+                )
+            elif target_lang == "hi":
+                return (
+                    "हड्डियों, जोड़ों या पीठ दर्द के लिए **ऑर्थोपेडिक सर्जन (अस्थि रोग विशेषज्ञ)** से परामर्श लें। 🦴"
+                )
+            else:
+                return (
+                    "For bone fractures, joint issues, or severe back pain, you should consult an **Orthopedic Specialist**. 🦴"
+                )
+
+        # Skin, rashes, allergies
+        if any(s in combined_text for s in ["skin", "rash", "itch", "pimples", "చర్మ", "దురద", "त्वचा", "खुजली"]):
+            if target_lang == "te":
+                return "చర్మ సమస్యలు లేదా దురద కోసం **డెర్మటాలజిస్ట్ (చర్మ రోగ నిపుణుడు)** ని సంప్రదించాలి. ✨"
+            elif target_lang == "hi":
+                return "त्वचा के दाने, खुजली या एलर्जी के लिए **डर्मेटोलॉजिस्ट (त्वचा रोग विशेषज्ञ)** से परामर्श लें। ✨"
+            else:
+                return "For skin rashes, allergies, or itching, you should consult a **Dermatologist (Skin Specialist)**. ✨"
+
+        # Eyes
+        if any(s in combined_text for s in ["eye", "vision", "కన్ను", "కంటి", "आंख"]):
+            if target_lang == "te":
+                return "కంటి నొప్పి లేదా చూపు సమస్యలకు **ఆప్తాల్మాలజిస్ట్ (కంటి నిపుణుడు)** ని సంప్రదించండి. 👁️"
+            elif target_lang == "hi":
+                return "आंखों के दर्द या दृष्टि संबंधी समस्या के लिए **नेत्र रोग विशेषज्ञ (ऑप्थल्मोलॉजिस्ट)** से परामर्श लें। 👁️"
+            else:
+                return "For eye pain, redness, or vision problems, you should consult an **Ophthalmologist (Eye Specialist)**. 👁️"
+
+    return None
+
+
 @app.post("/ai/chat")
 def carepath_ai_chat(
     data: AIChatRequest,
@@ -1459,16 +1631,43 @@ def carepath_ai_chat(
             detail="Message cannot be empty.",
         )
 
-    # 1. Instant Intent Engine (< 1ms response for greetings, FAQs, emergencies)
-    instant_reply = check_instant_ai_response(message, data.language or 'en-IN')
+    # 1. Automatic Language Detection (Telugu, Hindi, Tamil, Kannada, English, etc.)
+    target_lang = detect_user_language_preference(message, data.history)
+    lang_names = {
+        "te": "Telugu (తెలుగు)",
+        "hi": "Hindi (हिंदी)",
+        "ta": "Tamil (தமிழ்)",
+        "kn": "Kannada (ಕನ್ನಡ)",
+        "ml": "Malayalam (മലയാളം)",
+        "mr": "Marathi (मराठी)",
+        "bn": "Bengali (বাংলা)",
+        "gu": "Gujarati (ગુજરાતી)",
+        "pa": "Punjabi (ਪੰਜਾਬੀ)",
+        "en": "English",
+    }
+    target_lang_name = lang_names.get(target_lang, "English")
+
+    # 2. Context-Aware Specialist Routing Engine (handles "which doctor", "fever", etc.)
+    specialist_reply = check_specialist_routing_intent(message, data.history, target_lang)
+    if specialist_reply:
+        return {
+            "success": True,
+            "reply": specialist_reply,
+            "detected_language": target_lang,
+            "source": "specialist_router",
+        }
+
+    # 3. Instant Intent Engine (< 1ms response for greetings, FAQs, emergencies)
+    instant_reply = check_instant_ai_response(message, target_lang)
     if instant_reply:
         return {
             "success": True,
             "reply": instant_reply,
+            "detected_language": target_lang,
             "source": "instant_engine",
         }
 
-    # 2. Ultra-Fast Groq Engine (< 500ms response if GROQ_API_KEY is configured)
+    # 4. Ultra-Fast Groq Engine (< 500ms response if GROQ_API_KEY is configured)
     groq_key = os.getenv("GROQ_API_KEY")
     if groq_key:
         groq_models = [
@@ -1477,6 +1676,32 @@ def carepath_ai_chat(
             "llama-3.1-8b-instant",
             "llama-3.3-70b-versatile",
         ]
+
+        system_instruction = (
+            "You are CarePath AI, a friendly, intelligent healthcare assistant on the CarePath platform. "
+            f"CRITICAL MULTILINGUAL MANDATE: The user expects their response strictly in {target_lang_name}. "
+            f"You MUST write your response ONLY in {target_lang_name}. "
+            "If Telugu was requested or spoken, respond in natural, polite Telugu script (తెలుగు). "
+            "If Hindi, respond in Hindi script (हिंदी). If English, respond in English. "
+            "SPECIALIST GUIDANCE: If patient asks 'which doctor' or names symptoms (fever, headache, etc.), recommend the specific specialist/department (e.g. General Physician for fever/headache). "
+            "PRESCRIPTION / LAB REPORT: If the user asks about an uploaded prescription or report ('explain in telugu', 'how to take medicine', 'what does 1-0-1 mean'), thoroughly explain the medicines, dosages, and doctor's advice in the requested language. "
+            "Keep answers concise (2-3 sentences), warm, and reassuring."
+        )
+
+        groq_messages = [{"role": "system", "content": system_instruction}]
+        if data.prescription_context:
+            groq_messages.append({
+                "role": "system",
+                "content": f"Context of Uploaded Medical Prescription / Report:\n{data.prescription_context[:1500]}"
+            })
+        if data.history:
+            for h in data.history[-6:]:
+                r = "assistant" if h.get("role") in ["assistant", "model", "ai"] else "user"
+                c = str(h.get("content", "")).strip()
+                if c:
+                    groq_messages.append({"role": r, "content": c})
+        groq_messages.append({"role": "user", "content": message})
+
         for g_model in groq_models:
             try:
                 groq_res = requests.post(
@@ -1487,35 +1712,21 @@ def carepath_ai_chat(
                     },
                     json={
                         "model": g_model,
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": (
-                                    "You are CarePath AI, a friendly healthcare assistant on the CarePath platform. "
-                                    "CRITICAL MULTILINGUAL RULE: Always respond in the EXACT SAME LANGUAGE the patient used. "
-                                    "If the patient writes or speaks in Telugu (తెలుగు) or Tenglish, reply in natural, polite Telugu. "
-                                    "If in Hindi (हिंदी) or Hinglish, reply in Hindi. "
-                                    "If in Tamil, Kannada, or English, reply in that language. "
-                                    "Keep replies concise (1-2 sentences), reassuring, and helpful. "
-                                    "Never diagnose diseases or prescribe dosages. For severe symptoms advise seeing a doctor or emergency care."
-                                ),
-                            },
-                            {"role": "user", "content": message},
-                        ],
-                        "max_tokens": 120,
-                        "temperature": 0.3,
+                        "messages": groq_messages,
+                        "max_tokens": 250,
+                        "temperature": 0.2,
                     },
-                    timeout=2.0,
+                    timeout=3.0,
                 )
                 if groq_res.ok:
-                    groq_data = groq_res.json()
-                    choices = groq_data.get("choices", [])
+                    choices = groq_res.json().get("choices", [])
                     if choices:
                         reply = choices[0].get("message", {}).get("content", "").strip()
                         if reply:
                             return {
                                 "success": True,
                                 "reply": reply,
+                                "detected_language": target_lang,
                                 "source": "groq_fast",
                                 "model": g_model,
                             }
@@ -1523,68 +1734,75 @@ def carepath_ai_chat(
                 logging.warning("Groq fast model %s error: %s", g_model, groq_err)
                 continue
 
-    if not gemini_client:
-        return {
-            "success": True,
-            "reply": get_carepath_ai_fallback(message),
-            "fallback": True,
-        }
-
-    try:
-        carepath_context = get_carepath_ai_context(db, message)
-    except Exception:
-        carepath_context = []
-
-    compact_system_instruction = (
-        "You are CarePath AI, a helpful healthcare assistant on the CarePath platform. "
-        "CRITICAL MULTILINGUAL RULE: Respond in the EXACT SAME LANGUAGE as the patient's message "
-        "(Telugu, Hindi, English, Tamil, Kannada). If patient asks in Telugu, respond in Telugu. "
-        "Keep answers under 2 sentences, clear, warm, and simple. "
-        "Never diagnose or prescribe dosages. Advise consulting a doctor or emergency care if severe."
-    )
-
-    # Fast sub-second / low-latency Gemini models
-    fast_models = [
-        "gemini-3.5-flash-lite",
-        "gemini-flash-lite-latest",
-        "gemini-3.8-flash",
-    ]
-
-    for model_name in fast_models:
+    # 5. Gemini Multimodal / Multilingual Fallback Engine
+    if gemini_client:
         try:
-            response = gemini_client.models.generate_content(
-                model=model_name,
-                contents=f"""Patient question: {message}
+            carepath_context = get_carepath_ai_context(db, message)
+        except Exception:
+            carepath_context = []
 
-CarePath hospital info: {carepath_context}
+        gemini_instruction = (
+            "You are CarePath AI, a friendly healthcare assistant on the CarePath platform. "
+            f"MANDATORY: Respond ONLY in {target_lang_name}. "
+            "If the user asks 'which doctor' or has fever/headache, suggest a General Physician. "
+            "If an uploaded prescription/medical report is referenced, explain it clearly in the requested language. "
+            "Keep answers under 3 sentences, reassuring, and practical."
+        )
 
-Provide a direct, helpful 1-2 sentence response to the patient.""",
-                config={
-                    "system_instruction": compact_system_instruction,
-                    "max_output_tokens": 120,
-                    "temperature": 0.3,
-                },
-            )
-            reply = response.text.strip() if response and response.text else None
-            if reply:
-                return {
-                    "success": True,
-                    "reply": reply,
-                    "model": model_name,
-                }
-        except Exception as model_err:
-            logging.warning("Fast AI model %s error: %s", model_name, model_err)
-            continue
+        history_summary = ""
+        if data.history:
+            history_summary = "\n".join([f"{h.get('role')}: {h.get('content')}" for h in data.history[-4:]])
 
-    # Graceful instantaneous fallback if API unavailable
+        prompt_body = f"""Patient Question: {message}
+
+Previous Conversation:
+{history_summary}
+
+Uploaded Prescription Report Context:
+{data.prescription_context or 'None'}
+
+Hospital Context: {carepath_context}
+
+Provide a helpful, caring response to the patient in {target_lang_name}:"""
+
+        fast_models = [
+            "gemini-3.5-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-3.8-flash",
+        ]
+
+        for model_name in fast_models:
+            try:
+                response = gemini_client.models.generate_content(
+                    model=model_name,
+                    contents=prompt_body,
+                    config={
+                        "system_instruction": gemini_instruction,
+                        "max_output_tokens": 250,
+                        "temperature": 0.2,
+                    },
+                )
+                reply = response.text.strip() if response and response.text else None
+                if reply:
+                    return {
+                        "success": True,
+                        "reply": reply,
+                        "detected_language": target_lang,
+                        "model": model_name,
+                    }
+            except Exception as model_err:
+                logging.warning("Fast AI model %s error: %s", model_name, model_err)
+                continue
+
+    # 6. Graceful Instant Fallback
+    fallback_text = get_carepath_ai_fallback(message)
     return {
         "success": True,
-        "reply": get_carepath_ai_fallback(message),
+        "reply": fallback_text,
+        "detected_language": target_lang,
         "fallback": True,
     }
 
-
-# ============================================================
 
 # ============================================================
 # CAREPATH AI - MULTILINGUAL AUDIO TTS & TRANSCRIBE ENGINE
