@@ -898,7 +898,7 @@ select:focus-visible {
 
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.28);
 
-  z-index: 999999 !important;
+  z-index: 100000 !important;
 
   display: flex;
   flex-direction: column;
