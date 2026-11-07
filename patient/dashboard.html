@@ -555,27 +555,10 @@
 
   function triggerPrescriptionCamera() {
     closePrescriptionChoiceModal();
-    const hasCamPerm = localStorage.getItem("carepath_perm_camera") === "granted";
-    if (hasCamPerm) {
-      startCarePathCameraInternal();
-    } else {
-      showCarePathPermissionPrompt("camera", startCarePathCameraInternal);
-    }
+    startCarePathCameraInternal();
   }
 
-  async function toggleCarePathVoiceRecognition() {
-    if (isCpListening) {
-      stopCarePathVoiceRecognition();
-      return;
-    }
 
-    const hasMicPerm = localStorage.getItem("carepath_perm_microphone") === "granted";
-    if (hasMicPerm) {
-      startCarePathVoiceRecognitionInternal();
-    } else {
-      showCarePathPermissionPrompt("microphone", startCarePathVoiceRecognitionInternal);
-    }
-  }
 
 
   // 1. OPEN / CLOSE CAREPATH AI
@@ -653,11 +636,16 @@
     window.speechSynthesis.speak(utterance);
   }
 
-  // 3. VOICE RECOGNITION (SPEECH-TO-TEXT) WITH NATIVE PERMISSION PROMPT
-  async function startCarePathVoiceRecognitionInternal() {
+    // 3. VOICE RECOGNITION (SPEECH-TO-TEXT) DIRECTLY ON USER CLICK
+  function toggleCarePathVoiceRecognition() {
+    if (isCpListening) {
+      stopCarePathVoiceRecognition();
+      return;
+    }
+
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) {
-      alert("Voice speech recognition is not supported on your browser. Please use Chrome, Edge, or Safari.");
+      alert("Voice speech recognition is not supported on this browser. Please use Google Chrome, Edge, or Safari.");
       return;
     }
 
@@ -667,30 +655,21 @@
     const input = document.getElementById("carepathAIInput");
 
     try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(t => t.stop());
+      if (cpSpeechRecognition) {
+        try { cpSpeechRecognition.abort(); } catch(e) {}
       }
-    } catch (permErr) {
-      console.warn("Microphone permission denied:", permErr);
-      addCarePathMessage(
-        "🎙️ **Microphone Access Required:** Please tap **Allow** when your browser asks for microphone access, or enable Microphone in your browser site permissions.",
-        "ai"
-      );
-      return;
-    }
 
-    try {
       cpSpeechRecognition = new SpeechRec();
       cpSpeechRecognition.lang = "en-IN";
       cpSpeechRecognition.continuous = false;
       cpSpeechRecognition.interimResults = true;
+      cpSpeechRecognition.maxAlternatives = 1;
 
       cpSpeechRecognition.onstart = function() {
         isCpListening = true;
         if (micBtn) micBtn.classList.add("cp-mic-active");
         if (listeningBar) listeningBar.style.display = "flex";
-        if (listeningText) listeningText.textContent = "Listening... Speak your health question";
+        if (listeningText) listeningText.textContent = "Listening... Speak your question now";
         if (input) input.placeholder = "Listening to you... Speak now";
       };
 
@@ -700,14 +679,26 @@
           transcript += event.results[i][0].transcript;
         }
         if (input) input.value = transcript;
-        if (listeningText) listeningText.textContent = `\"${transcript}\"`;
+        if (listeningText) listeningText.textContent = `"${transcript}"`;
       };
 
       cpSpeechRecognition.onerror = function(err) {
         console.warn("Speech recognition error:", err);
         stopCarePathVoiceRecognition();
-        if (err.error === "not-allowed") {
-          addCarePathMessage("🎙️ Microphone permission was denied. Please allow microphone access in browser settings.", "ai");
+        if (err.error === "not-allowed" || err.error === "service-not-allowed") {
+                    addCarePathMessage(
+            `🎙️ **Microphone Access Blocked in Browser**
+
+To enable voice communication:
+1. Tap the **🔒 lock icon** in the browser address bar at the top.
+2. Tap **Permissions** ➔ **Microphone** ➔ **Allow** (or 'Reset permissions').
+3. Refresh the page and tap 🎙️ to speak!`,
+            "ai"
+          );
+        } else if (err.error === "no-speech") {
+          // Silent timeout
+        } else {
+          console.log("Speech recognition event:", err.error);
         }
       };
 
@@ -718,10 +709,15 @@
         }
       };
 
+      // Native SpeechRecognition start on direct user tap triggers the Android prompt!
       cpSpeechRecognition.start();
     } catch (e) {
       console.error("Speech recognition start failed:", e);
       stopCarePathVoiceRecognition();
+      addCarePathMessage(
+        "🎙️ **Microphone Access Blocked:** Tap the **🔒 lock icon** at top of browser ➔ **Permissions** ➔ **Microphone** ➔ **Allow**.",
+        "ai"
+      );
     }
   }
 
