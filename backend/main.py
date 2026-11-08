@@ -1034,6 +1034,21 @@ def run_database_migration():
         "google_id":
             "VARCHAR(255) NULL",
 
+        "age":
+            "INT NULL",
+
+        "gender":
+            "VARCHAR(50) NULL",
+
+        "blood_group":
+            "VARCHAR(20) NULL",
+
+        "address":
+            "TEXT NULL",
+
+        "emergency_contact":
+            "VARCHAR(50) NULL",
+
         "created_at":
             "TIMESTAMP NULL",
     }
@@ -2568,10 +2583,18 @@ class PatientLogin(BaseModel):
 
 
 class PatientProfileUpdate(BaseModel):
-
-    credential: str
-
+    credential: Optional[str] = None
     phone: str
+
+
+class PatientMeUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    blood_group: Optional[str] = None
+    address: Optional[str] = None
+    emergency_contact: Optional[str] = None
 
 
 class HospitalRegister(BaseModel):
@@ -3493,7 +3516,111 @@ def patient_google_login(
     }
 
 # ============================================================
-# UPDATE PATIENT PROFILE
+# PATIENT PROFILE MANAGEMENT
+# ============================================================
+
+@app.get("/patients/me")
+def get_current_patient_profile(
+    current_user: dict = Depends(require_role("patient")),
+    db: Session = Depends(get_db),
+):
+    patient = db.query(Patient).filter(Patient.id == current_user["user_id"]).first()
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient account not found",
+        )
+
+    return {
+        "success": True,
+        "patient": {
+            "id": patient.id,
+            "full_name": patient.full_name,
+            "email": patient.email,
+            "phone": patient.phone or "",
+            "age": getattr(patient, "age", None),
+            "gender": getattr(patient, "gender", None),
+            "blood_group": getattr(patient, "blood_group", None),
+            "address": getattr(patient, "address", None),
+            "emergency_contact": getattr(patient, "emergency_contact", None),
+            "created_at": patient.created_at.isoformat() if getattr(patient, "created_at", None) else None,
+        }
+    }
+
+
+@app.put("/patients/me")
+def update_current_patient_profile(
+    data: PatientMeUpdateRequest,
+    current_user: dict = Depends(require_role("patient")),
+    db: Session = Depends(get_db),
+):
+    patient = db.query(Patient).filter(Patient.id == current_user["user_id"]).first()
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient account not found",
+        )
+
+    if data.full_name is not None and data.full_name.strip():
+        patient.full_name = data.full_name.strip()
+
+    if data.phone is not None and data.phone.strip():
+        clean_phone = data.phone.strip()
+        existing = db.query(Patient).filter(
+            Patient.phone == clean_phone,
+            Patient.id != patient.id,
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail="Phone number already registered with another account.",
+            )
+        patient.phone = clean_phone
+
+    if data.age is not None:
+        patient.age = data.age
+
+    if data.gender is not None:
+        patient.gender = data.gender.strip()
+
+    if data.blood_group is not None:
+        patient.blood_group = data.blood_group.strip()
+
+    if data.address is not None:
+        patient.address = data.address.strip()
+
+    if data.emergency_contact is not None:
+        patient.emergency_contact = data.emergency_contact.strip()
+
+    try:
+        db.commit()
+        db.refresh(patient)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Database error while saving profile changes",
+        )
+
+    return {
+        "success": True,
+        "message": "Profile updated successfully",
+        "patient": {
+            "id": patient.id,
+            "full_name": patient.full_name,
+            "email": patient.email,
+            "phone": patient.phone or "",
+            "age": getattr(patient, "age", None),
+            "gender": getattr(patient, "gender", None),
+            "blood_group": getattr(patient, "blood_group", None),
+            "address": getattr(patient, "address", None),
+            "emergency_contact": getattr(patient, "emergency_contact", None),
+        }
+    }
+
+
+# ============================================================
+# LEGACY GOOGLE ONBOARDING PATIENT PROFILE
 # ============================================================
 
 @app.put("/patients/profile")

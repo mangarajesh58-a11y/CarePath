@@ -24,6 +24,11 @@ class Patient(Base):
     phone = Column(String(50), nullable=True, unique=True)
     password = Column(String(255), nullable=False)
     google_id = Column(String(255), nullable=True)
+    age = Column(Integer, nullable=True)
+    gender = Column(String(50), nullable=True)
+    blood_group = Column(String(20), nullable=True)
+    address = Column(Text, nullable=True)
+    emergency_contact = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

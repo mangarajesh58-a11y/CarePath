@@ -4,6 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#2563eb">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- Immediate Theme Engine to Prevent FOUC -->
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem("carepath_theme") || "system";
+        let isDark = false;
+        if (theme === "dark") isDark = true;
+        else if (theme === "light") isDark = false;
+        else isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (isDark) {
+          document.documentElement.setAttribute("data-theme", "dark");
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.setAttribute("data-theme", "light");
+          document.documentElement.classList.remove("dark");
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <title>CarePath - Patient Mobile Command Center</title>
 
@@ -691,6 +712,79 @@
       border-radius: var(--radius-pill);
       box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
       margin-top: -6px;
+    }
+
+    
+    /* DARK THEME STYLING OVERRIDES */
+    [data-theme="dark"],
+    :root.dark {
+      --slate-50: #071329;
+      --slate-100: #0d1a33;
+      --slate-200: #223254;
+      --slate-300: #33446b;
+      --slate-400: #64748b;
+      --slate-500: #94a3b8;
+      --slate-600: #cbd5e1;
+      --slate-700: #e2e8f0;
+      --slate-800: #f1f5f9;
+      --slate-900: #f8fafc;
+      color-scheme: dark;
+    }
+
+    [data-theme="dark"] body,
+    :root.dark body {
+      background: #071329 !important;
+      color: #f1f5f9 !important;
+    }
+
+    [data-theme="dark"] .topbar,
+    :root.dark .topbar {
+      background: rgba(13, 26, 51, 0.94) !important;
+      border-bottom-color: #223254 !important;
+    }
+
+    [data-theme="dark"] .mobile-bottom-dock,
+    :root.dark .mobile-bottom-dock {
+      background: rgba(13, 26, 51, 0.95) !important;
+      border-top-color: #223254 !important;
+    }
+
+    [data-theme="dark"] .mobile-feature-card,
+    :root.dark .mobile-feature-card {
+      background: #0d1a33 !important;
+      border-color: #223254 !important;
+    }
+
+    [data-theme="dark"] .search-panel input,
+    :root.dark .search-panel input {
+      background: #111d38 !important;
+      border-color: #2b3d63 !important;
+      color: #f1f5f9 !important;
+    }
+
+    [data-theme="dark"] .filter-chip,
+    :root.dark .filter-chip {
+      background: #0d1a33 !important;
+      border-color: #223254 !important;
+      color: #cbd5e1 !important;
+    }
+
+    [data-theme="dark"] .hospital-card,
+    :root.dark .hospital-card {
+      background: #0d1a33 !important;
+      border-color: #223254 !important;
+    }
+
+    [data-theme="dark"] .brand h1,
+    :root.dark .brand h1 {
+      color: #f1f5f9 !important;
+    }
+
+    [data-theme="dark"] .icon-button,
+    :root.dark .icon-button {
+      background: #0d1a33 !important;
+      border-color: #223254 !important;
+      color: #cbd5e1 !important;
     }
 
     /* Floating AI button is hidden on dashboard because the central 'AI Scan' bottom dock pill & hero card provide access without overlapping the Profile tab */

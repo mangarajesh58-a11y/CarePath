@@ -4,6 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#071329">
+  <meta name="color-scheme" content="light dark">
+  <!-- Immediate Theme Engine to Prevent FOUC -->
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem("carepath_theme") || "system";
+        let isDark = false;
+        if (theme === "dark") isDark = true;
+        else if (theme === "light") isDark = false;
+        else isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (isDark) {
+          document.documentElement.setAttribute("data-theme", "dark");
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.setAttribute("data-theme", "light");
+          document.documentElement.classList.remove("dark");
+        }
+      } catch (e) {}
+    })();
+  </script>
   <title>CarePath - My Booked Tokens</title>
   <link rel="stylesheet" href="./style.css">
   <style>
@@ -363,6 +383,29 @@
       #modalContent { position: absolute; left: 0; top: 0; width: 100%; }
       .no-print { display: none !important; }
     }
+  
+    [data-theme="dark"],
+    :root.dark {
+      color-scheme: dark;
+    }
+    [data-theme="dark"] body,
+    :root.dark body {
+      background: #071329 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .token-card,
+    :root.dark .token-card {
+      background: #0d1a33 !important;
+      border-color: #223254 !important;
+      color: #f1f5f9 !important;
+    }
+    [data-theme="dark"] .empty-state,
+    :root.dark .empty-state {
+      background: #0d1a33 !important;
+      border-color: #223254 !important;
+      color: #f1f5f9 !important;
+    }
+
   </style>
 </head>
 <body>
