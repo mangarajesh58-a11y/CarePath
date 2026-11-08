@@ -872,21 +872,29 @@ consultationHours.appendChild(
     )
 );
 
+// Doctor Room Number
+const doctorRoom = document.createElement("div");
+doctorRoom.className = "detail";
+doctorRoom.innerHTML = "<strong>Consultation Room:</strong> ";
+doctorRoom.appendChild(
+    document.createTextNode(
+        doctor.room_number ? ("🚪 " + doctor.room_number) : "Assigned upon arrival"
+    )
+);
+
 // Doctor status
 const doctorStatus = document.createElement("div");
 doctorStatus.className = "detail";
 
 const isAvailable = doctor.is_available !== false;
 
-doctorStatus.innerHTML = "<strong>Status:</strong> ";
+doctorStatus.innerHTML = "<strong>Today's Status:</strong> ";
 
-doctorStatus.appendChild(
-    document.createTextNode(
-        isAvailable ? "Available" : "Unavailable"
-    )
-);
-
-doctorStatus.style.color = isAvailable ? "green" : "red";
+const statusBadge = document.createElement("span");
+statusBadge.style.fontWeight = "700";
+statusBadge.style.color = isAvailable ? "#15803d" : "#b91c1c";
+statusBadge.textContent = isAvailable ? "🟢 On Duty (Available)" : "🔴 Off Duty (Unavailable)";
+doctorStatus.appendChild(statusBadge);
                         const button =
                             document.createElement("button");
 
@@ -931,6 +939,7 @@ card.appendChild(specialization);
 card.appendChild(experience);
 card.appendChild(availableDays);
 card.appendChild(consultationHours);
+card.appendChild(doctorRoom);
 card.appendChild(doctorStatus);
                         card.appendChild(button);
 
@@ -992,6 +1001,11 @@ card.appendChild(doctorStatus);
             localStorage.setItem(
                 "selectedDoctorHours",
                 doctor.consultation_hours_12h || formatConsultationHours(doctor.start_time, doctor.end_time)
+            );
+
+            localStorage.setItem(
+                "selectedDoctorRoomNumber",
+                doctor.room_number || ""
             );
 
 

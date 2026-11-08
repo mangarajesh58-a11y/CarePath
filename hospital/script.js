@@ -2617,17 +2617,32 @@ async function loadDoctors() {
                         )}
                     </p>
 
-                    <p>
-                        <strong>
-                            Status:
-                        </strong>
-
-                        <span
-                            class="${statusClass}"
+                    <p style="background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; margin: 10px 0;">
+                        <span><strong>🚪 Room / Cabin:</strong> <span style="color: #0284c7; font-weight: 700;">${escapeHtml(doctor.room_number || "Not assigned")}</span></span>
+                        <button
+                            type="button"
+                            onclick="promptEditDoctorRoom(${Number(doctor.id)}, '${escapeHtml(doctor.room_number || '')}')"
+                            style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;"
                         >
-                            ${statusText}
-                        </span>
+                            ✏️ Edit Room
+                        </button>
                     </p>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin: 10px 0; padding: 10px 14px; background: ${available ? '#f0fdf4' : '#fef2f2'}; border-radius: 8px; border: 1px solid ${available ? '#bbf7d0' : '#fecaca'};">
+                        <div>
+                            <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">Today's Availability</div>
+                            <div style="font-size: 14px; font-weight: 700; color: ${available ? '#15803d' : '#b91c1c'}; margin-top: 2px;">
+                                ${available ? '🟢 On Duty (Available)' : '🔴 Off Duty (Unavailable)'}
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onclick="toggleDoctorAvailability(${Number(doctor.id)})"
+                            style="background: ${available ? '#fee2e2' : '#dcfce7'}; color: ${available ? '#b91c1c' : '#15803d'}; border: 1px solid ${available ? '#fca5a5' : '#86efac'}; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; transition: all 0.2s;"
+                        >
+                            ${available ? 'Mark Off Duty' : 'Mark On Duty'}
+                        </button>
+                    </div>
 
                     <div style="display: flex; gap: 8px; margin-top: 12px;">
                         <button
@@ -2826,6 +2841,11 @@ async function addDoctor() {
             "doctorExperience"
         )?.value.trim();
 
+    const roomNumber =
+        document.getElementById(
+            "doctorRoomNumber"
+        )?.value.trim() || "";
+
 
     const availableDays =
         Array.from(
@@ -2947,6 +2967,9 @@ async function addDoctor() {
 
                             experience:
                                 experience || "",
+
+                            room_number:
+                                roomNumber || null,
 
                             available_days:
                                 availableDays.join(","),
@@ -3266,3 +3289,47 @@ async function promptDoctorLeave(doctorId, doctorName) {
     }
 }
 window.promptDoctorLeave = promptDoctorLeave;
+
+async function toggleDoctorAvailability(doctorId) {
+    const hospitalId = requireHospitalLogin();
+    if (!hospitalId) return;
+
+    try {
+        const response = await fetch(`${API}/doctors/${doctorId}/toggle-availability`, {
+            method: "POST",
+            headers: getHospitalAuthHeaders(true)
+        });
+        if (handleHospitalAuthFailure(response)) return;
+        const result = await readJsonResponse(response);
+        if (!response.ok) {
+            throw new Error(getErrorMessage(result, "Failed to toggle doctor availability."));
+        }
+        await loadDoctors();
+    } catch (err) {
+        alert(err.message || "Could not update doctor availability.");
+    }
+}
+
+async function promptEditDoctorRoom(doctorId, currentRoom) {
+    const hospitalId = requireHospitalLogin();
+    if (!hospitalId) return;
+
+    const newRoom = prompt("Enter OPD Consultation Room / Cabin Number (e.g. Room 102, Cabin 3):", currentRoom || "");
+    if (newRoom === null) return;
+
+    try {
+        const response = await fetch(`${API}/doctors/${doctorId}`, {
+            method: "PATCH",
+            headers: getHospitalAuthHeaders(true),
+            body: JSON.stringify({ room_number: newRoom.trim() })
+        });
+        if (handleHospitalAuthFailure(response)) return;
+        const result = await readJsonResponse(response);
+        if (!response.ok) {
+            throw new Error(getErrorMessage(result, "Failed to update room number."));
+        }
+        await loadDoctors();
+    } catch (err) {
+        alert(err.message || "Could not update room number.");
+    }
+}

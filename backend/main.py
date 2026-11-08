@@ -1071,6 +1071,9 @@ def run_database_migration():
         "photo_base64":
             "TEXT NULL",
 
+        "room_number":
+            "VARCHAR(50) NULL",
+
         "created_at":
             "TIMESTAMP NULL",
     }
@@ -1151,6 +1154,9 @@ def run_database_migration():
 
         "notes":
             "TEXT NULL",
+
+        "room_number":
+            "VARCHAR(50) NULL",
 
         "created_at":
             "TIMESTAMP NULL",
@@ -2627,12 +2633,15 @@ class DoctorCreate(BaseModel):
     specialization: Optional[str] = None
 
     experience: Optional[str] = None
+    room_number: Optional[str] = None
+    is_available: bool = True
 
 class HospitalDoctorCreate(BaseModel):
     name: str
     department: str
     specialization: Optional[str] = None
     experience: Optional[str] = None
+    room_number: Optional[str] = None
 
     # Doctor availability
     available_days: Optional[str] = None
@@ -2640,6 +2649,17 @@ class HospitalDoctorCreate(BaseModel):
     end_time: Optional[str] = None
     is_available: bool = True
     image_url: Optional[str] = None
+
+class DoctorUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    department: Optional[str] = None
+    specialization: Optional[str] = None
+    experience: Optional[str] = None
+    room_number: Optional[str] = None
+    is_available: Optional[bool] = None
+    available_days: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
 
 
 class TokenRequest(BaseModel):
@@ -2893,7 +2913,8 @@ def doctor_to_dict(doctor):
         "start_time_12h": start_12h,
         "end_time_12h": end_12h,
         "consultation_hours_12h": hours_12h,
-        "is_available": doctor.is_available,
+        "is_available": getattr(doctor, "is_available", True),
+        "room_number": getattr(doctor, "room_number", None),
     }
 
 # ============================================================
@@ -2943,6 +2964,8 @@ def token_to_dict(token):
         "diagnosis": getattr(token, "diagnosis", None),
         "prescription": getattr(token, "prescription", None),
         "notes": getattr(token, "notes", None),
+        "room_number": getattr(token, "room_number", None),
+        "doctor_room_number": getattr(token, "room_number", None),
     }
 
 
@@ -4431,6 +4454,93 @@ def delete_doctor(
         "success": True,
         "message": "Doctor deleted successfully",
     }
+
+# ============================================================
+# UPDATE DOCTOR (ROOM NUMBER, STATUS, DETAILS)
+# ============================================================
+
+@app.patch("/doctors/{doctor_id}")
+@app.put("/doctors/{doctor_id}")
+def update_doctor(
+    doctor_id: int,
+    data: DoctorUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    if doctor.hospital_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="You do not have permission to manage this doctor.")
+
+    if data.name is not None and data.name.strip():
+        doctor.name = data.name.strip()
+    if data.department is not None and data.department.strip():
+        doctor.department = data.department.strip()
+    if data.specialization is not None:
+        doctor.specialization = data.specialization.strip() or None
+    if data.experience is not None:
+        doctor.experience = data.experience.strip() or None
+    if data.room_number is not None:
+        doctor.room_number = data.room_number.strip() or None
+    if data.is_available is not None:
+        doctor.is_available = bool(data.is_available)
+    if data.available_days is not None:
+        doctor.available_days = data.available_days.strip() or None
+    if data.start_time is not None:
+        doctor.start_time = data.start_time.strip() or None
+    if data.end_time is not None:
+        doctor.end_time = data.end_time.strip() or None
+
+    db.commit()
+    db.refresh(doctor)
+    return {"success": True, "message": "Doctor updated successfully", "doctor": doctor_to_dict(doctor)}
+
+
+@app.post("/doctors/{doctor_id}/toggle-availability")
+def toggle_doctor_availability_endpoint(
+    doctor_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    if doctor.hospital_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="You do not have permission to manage this doctor.")
+
+    doctor.is_available = not bool(doctor.is_available)
+    db.commit()
+    db.refresh(doctor)
+    status_label = "On Duty (Available)" if doctor.is_available else "Off Duty (Unavailable)"
+    return {
+        "success": True,
+        "is_available": doctor.is_available,
+        "message": f"Doctor status changed to {status_label}",
+        "doctor": doctor_to_dict(doctor),
+    }
+
+
+@app.patch("/hospitals/{hospital_id}/doctors/{doctor_id}")
+@app.put("/hospitals/{hospital_id}/doctors/{doctor_id}")
+def update_hospital_doctor(
+    hospital_id: int,
+    doctor_id: int,
+    data: DoctorUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    return update_doctor(doctor_id, data, db, current_user)
+
+
+@app.post("/hospitals/{hospital_id}/doctors/{doctor_id}/toggle-availability")
+def toggle_hospital_doctor_availability(
+    hospital_id: int,
+    doctor_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    return toggle_doctor_availability_endpoint(doctor_id, db, current_user)
 
 # ============================================================
 # UPDATE HOSPITAL PROFILE
@@ -6030,6 +6140,8 @@ def get_queue_status_for_token(db: Session, token: Token) -> dict:
             "doctor_consultation_hours": doc_hours_12h,
             "doctor_on_leave": is_doctor_on_leave,
             "leave_reason": leave_reason,
+            "doctor_room_number": getattr(doctor, "room_number", None) if doctor else getattr(token, "room_number", None),
+            "doctor_is_available": getattr(doctor, "is_available", True) if doctor else True,
         }
     except Exception as err:
         import logging
@@ -7007,6 +7119,7 @@ def add_hospital_doctor(
         start_time=start_time,
         end_time=end_time,
         is_available=data.is_available,
+        room_number=data.room_number.strip() if getattr(data, "room_number", None) else None,
     )
 
     db.add(doctor)

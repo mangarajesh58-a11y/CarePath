@@ -255,6 +255,7 @@
             <div class="row"><span class="label">Hospital</span><span class="value" id="resultHospital">—</span></div>
             <div class="row"><span class="label">Department</span><span class="value" id="resultDepartment">—</span></div>
             <div class="row"><span class="label">Doctor</span><span class="value" id="resultDoctor">—</span></div>
+            <div class="row"><span class="label">Consultation room</span><span class="value" id="resultRoom" style="font-weight: 700; color: #0284c7;">—</span></div>
         </div>
 
         <div class="receipt">
@@ -272,13 +273,53 @@
             <p class="note">Keep this receipt for your records. The hospital manages the consultation queue and token status.</p>
         </div>
 
+        <button type="button" class="no-print" id="whatsappSlipBtn" onclick="shareTokenSlipWhatsApp()" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; margin: 16px 0 10px; padding: 14px; background: #25D366; color: white; border: none; border-radius: 9px; font-weight: 700; font-size: 16px; cursor: pointer; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);">
+            <span style="font-size: 20px;">📲</span> Send / Open WhatsApp Confirmation Slip
+        </button>
         <button type="button" class="print no-print" id="printButton">Print / Save Receipt as PDF</button>
         <a href="my-tokens.html" class="no-print" style="display: block; text-align: center; margin-top: 10px; padding: 14px; background: #0284c7; color: white; text-decoration: none; border-radius: 9px; font-weight: 700; font-size: 16px;">🎟️ View All My Booked Tokens</a>
         <button type="button" class="secondary no-print" id="dashboardButton">Back to Dashboard</button>
     </section>
 </main>
 
-<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js">
+function shareTokenSlipWhatsApp() {
+    const details = window.lastBookedTokenDetails;
+    const tokenNum = (details && details.token && details.token.token_number) || byId("tokenNumber").textContent || "—";
+    const patientName = byId("receiptPatient").textContent || stored("patientName") || "Patient";
+    const doctor = (details && details.doctor) || byId("resultDoctor").textContent || "Consultant";
+    const hospital = (details && details.hospital) || byId("resultHospital").textContent || "CarePath Hospital";
+    const apptDate = byId("resultDate").textContent || "—";
+    const estTime = byId("resultEstimatedTime").textContent || "Check live queue";
+    const rawRoom = (details && details.token && (details.token.doctor_room_number || details.token.room_number)) || stored("selectedDoctorRoomNumber") || "OPD Consultation Room";
+    const room = rawRoom.startsWith("Room") ? rawRoom : ("Room " + rawRoom);
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital)}`;
+    const liveQueueUrl = `https://carepath-patient-mx5v.vercel.app/my-tokens.html`;
+
+    const msg =
+`🏥 *CarePath - OPD Token Confirmation*
+
+🎟️ *Token Number:* #${tokenNum}
+👤 *Patient Name:* ${patientName}
+👨‍⚕️ *Doctor:* Dr. ${doctor}
+🚪 *Consultation Room:* ${room}
+🏢 *Hospital:* ${hospital}
+📅 *Appointment Date:* ${apptDate}
+⏱️ *Estimated Consultation Time:* ${estTime}
+
+📍 *Hospital Directions (Google Maps):*
+${mapsUrl}
+
+📲 *Track Live Queue On Your Phone:*
+${liveQueueUrl}
+
+_Please arrive 15 minutes before your estimated time. Show this token slip at the OPD reception._`;
+
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, "_blank");
+}
+
+</script>
 <script>
 "use strict";
 
@@ -765,6 +806,10 @@ function showReceipt(details) {
     byId("resultHospital").textContent = hospital;
     byId("resultDepartment").textContent = department;
     byId("resultDoctor").textContent = doctor;
+
+    window.lastBookedTokenDetails = details;
+    const roomVal = (token && (token.doctor_room_number || token.room_number)) || stored("selectedDoctorRoomNumber") || "Consultation Room";
+    byId("resultRoom").textContent = roomVal.startsWith("Room") ? roomVal : ("Room " + roomVal);
 
     byId("receiptTokenId").textContent = token.id ?? "—";
     byId("receiptOrderId").textContent = orderId || "—";

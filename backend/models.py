@@ -114,6 +114,7 @@ class Doctor(Base):
     experience = Column(String(100), nullable=True)
     image_url = Column(String(500), nullable=True)
     photo_base64 = Column(Text, nullable=True)
+    room_number = Column(String(50), nullable=True)
 
     # Legacy doctor availability fields
     # Retained for backward compatibility.
@@ -208,6 +209,7 @@ class Token(Base):
 
     department = Column(String(255), nullable=False)
     doctor = Column(String(255), nullable=False)
+    room_number = Column(String(50), nullable=True)
     token_number = Column(Integer, nullable=False)
     appointment_date = Column(Date, nullable=False, index=True)
 
