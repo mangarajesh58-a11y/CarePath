@@ -1856,6 +1856,17 @@ def split_text_into_tts_chunks(text: str, max_chunk_len: int = 180) -> list[str]
     return [c for c in chunks if c]
 
 
+class CarePathTTSRequest(BaseModel):
+    text: str
+    lang: str = "en"
+
+
+@app.post("/ai/tts")
+def carepath_ai_text_to_speech_post(req: CarePathTTSRequest):
+    """Accepts JSON body for extra-long full-chat voice queries without URL limits."""
+    return carepath_ai_text_to_speech(req.text, req.lang)
+
+
 @app.get("/ai/tts")
 def carepath_ai_text_to_speech(text: str, lang: str = "en"):
     """

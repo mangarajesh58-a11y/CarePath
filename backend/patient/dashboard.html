@@ -1029,7 +1029,7 @@
 
         sharedVoiceAudio.onerror = function() {
           activeAudioVoice = null;
-          if (!triedDirect) {
+          if (!triedDirect && toSpeak.length <= 200) {
             triedDirect = true;
             startNativeAudio(directTtsUrl);
           } else {
@@ -1041,7 +1041,7 @@
         if (playPromise !== undefined) {
           playPromise.catch(err => {
             console.warn("Audio play blocked, attempting fallback:", err);
-            if (!triedDirect) {
+            if (!triedDirect && toSpeak.length <= 200) {
               triedDirect = true;
               startNativeAudio(directTtsUrl);
             } else {
@@ -1057,6 +1057,37 @@
     startNativeAudio(backendTtsUrl);
   }
 
+  function getSpeechChunks(text) {
+    if (!text) return [];
+    const sentences = text.split(/(?<=[.!?।\n])\s+/).map(c => c.trim()).filter(Boolean);
+    const chunks = [];
+    for (const s of sentences) {
+      if (s.length <= 180) {
+        chunks.push(s);
+      } else {
+        const parts = s.split(/(?<=[,;:\-])\s+/).map(p => p.trim()).filter(Boolean);
+        for (const p of parts) {
+          if (p.length <= 180) {
+            chunks.push(p);
+          } else {
+            const words = p.split(/\s+/);
+            let buf = "";
+            for (const w of words) {
+              if ((buf + " " + w).trim().length > 180) {
+                if (buf) chunks.push(buf);
+                buf = w;
+              } else {
+                buf = (buf + " " + w).trim();
+              }
+            }
+            if (buf) chunks.push(buf);
+          }
+        }
+      }
+    }
+    return chunks.length > 0 ? chunks : [text];
+  }
+
   let speechQueueActive = false;
 
   function fallbackSpeechSynthesis(toSpeak, detectedLang, msgId) {
@@ -1068,10 +1099,8 @@
       window.speechSynthesis.cancel();
       window.speechSynthesis.resume();
 
-      // Split into natural sentence chunks to prevent browser 15s engine timeout on full-chat explanations
-      const rawChunks = toSpeak.match(/[^.!?।\n]+[.!?।\n]+/g) || [toSpeak];
-      const chunks = rawChunks.map(c => c.trim()).filter(Boolean);
-      if (chunks.length === 0) chunks.push(toSpeak);
+      // Split into natural sentence chunks without dropping trailing sentences
+      const chunks = getSpeechChunks(toSpeak);
 
       let chunkIndex = 0;
       speechQueueActive = true;
