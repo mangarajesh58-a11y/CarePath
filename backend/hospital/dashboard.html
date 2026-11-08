@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>CarePath - Hospital Command Center</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="carepath-ai-small.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
     <script src="./broadcast-banner.js"></script>
 
@@ -46,14 +46,16 @@
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
-            --radius-xl: 20px;
+            --radius-xl: 22px;
             --radius-pill: 9999px;
             --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
-            --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
-            --shadow-elevated: 0 12px 28px -6px rgba(15, 23, 42, 0.08), 0 6px 12px -4px rgba(15, 23, 42, 0.03);
+            --shadow-card: 0 2px 6px -1px rgba(15, 23, 42, 0.04), 0 8px 16px -2px rgba(15, 23, 42, 0.03);
+            --shadow-elevated: 0 12px 28px -6px rgba(15, 23, 42, 0.09), 0 6px 12px -4px rgba(15, 23, 42, 0.04);
             --shadow-glow: 0 0 25px -4px rgba(37, 99, 235, 0.35);
             --transition-fast: 0.15s cubic-bezier(0.16, 1, 0.3, 1);
             --transition-smooth: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         * {
@@ -67,307 +69,444 @@
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f8fafc;
             background-image: 
-                radial-gradient(1000px 600px at 50% -120px, rgba(37, 99, 235, 0.07), transparent),
-                radial-gradient(800px 500px at 90% 400px, rgba(6, 182, 212, 0.05), transparent);
+                radial-gradient(600px 300px at 50% 0px, rgba(37, 99, 235, 0.06), transparent),
+                radial-gradient(400px 300px at 100% 200px, rgba(6, 182, 212, 0.04), transparent);
             background-attachment: fixed;
             color: var(--slate-900);
             min-height: 100vh;
-            padding-bottom: 50px;
+            padding-top: var(--safe-top);
+            padding-bottom: calc(var(--safe-bottom) + 84px); /* Space for bottom dock */
             -webkit-font-smoothing: antialiased;
+            overscroll-behavior-y: contain;
         }
 
         .dashboard-container {
             width: 100%;
-            max-width: 1400px;
+            max-width: 600px; /* Mobile App Primary Constraint */
             margin: 0 auto;
-            padding: 16px;
+            padding: 12px 14px;
         }
 
         @media (min-width: 768px) {
             .dashboard-container {
-                padding: 24px 28px;
+                max-width: 1000px;
+                padding: 20px 24px;
             }
         }
 
         /* =====================================================
-           TOP CONTEXT BAR & HEADER
+           MOBILE NATIVE APP BAR (TOP BAR)
         ===================================================== */
-        .top-navbar {
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: var(--radius-xl);
-            padding: 16px 22px;
-            box-shadow: var(--shadow-card);
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            margin-bottom: 22px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            transition: var(--transition-smooth);
+        .mobile-app-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+            padding: 10px 14px;
+            margin: -12px -14px 14px -14px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
         }
 
-        @media (min-width: 992px) {
-            .top-navbar {
-                flex-direction: row;
-                align-items: center;
-                justify-content: space-between;
-                padding: 18px 26px;
+        @media (min-width: 768px) {
+            .mobile-app-header {
+                margin: -20px -24px 20px -24px;
+                padding: 14px 24px;
             }
         }
 
-        .brand-section {
+        .mobile-app-bar-inner {
             display: flex;
             align-items: center;
-            gap: 14px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
         }
 
-        .brand-icon-box {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
+        .app-brand-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .app-brand-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
             color: #ffffff;
-            font-size: 26px;
-            line-height: 1;
+            font-size: 22px;
             flex-shrink: 0;
         }
 
-        .brand-text h1 {
-            font-size: 21px;
-            font-weight: 800;
-            color: var(--slate-900);
-            line-height: 1.25;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            letter-spacing: -0.4px;
+        .app-title-group {
+            min-width: 0;
+            flex: 1;
         }
 
-        .hospital-subtitle {
-            font-size: 13px;
-            color: var(--slate-500);
-            font-weight: 500;
-            margin-top: 2px;
+        .app-hospital-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--slate-900);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            letter-spacing: -0.3px;
+        }
+
+        .app-status-sub {
             display: flex;
             align-items: center;
             gap: 6px;
+            font-size: 11.5px;
+            color: var(--slate-500);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 2.5px rgba(16, 185, 129, 0.25);
+            animation: livePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            display: inline-block;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
         }
 
         .status-pill {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
+            gap: 5px;
             background: var(--success-light);
             color: var(--success);
-            padding: 4px 12px;
+            padding: 2px 7px;
             border-radius: var(--radius-pill);
-            font-size: 11.5px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
             border: 1px solid var(--success-border);
             text-transform: uppercase;
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
-            animation: livePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        @keyframes livePulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.18); }
-        }
-
-        .header-actions {
+        .app-header-actions {
             display: flex;
             align-items: center;
-            gap: 9px;
-            flex-wrap: wrap;
+            gap: 6px;
+            flex-shrink: 0;
         }
 
-        .btn-action-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 9px 15px;
-            border-radius: var(--radius-md);
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: var(--transition-fast);
-            text-decoration: none;
-            white-space: nowrap;
-            background: #ffffff;
-            box-shadow: var(--shadow-subtle);
-        }
-
-        .btn-action-pill:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-card);
-        }
-
-        .btn-action-pill:active {
-            transform: translateY(0);
-        }
-
-        .btn-copy-link {
-            background: var(--slate-100);
-            color: var(--slate-700);
-            border-color: var(--slate-200);
-        }
-        .btn-copy-link:hover {
-            background: var(--slate-200);
-            color: var(--slate-900);
-        }
-
-        .btn-admin-msgs {
-            background: var(--primary-light);
-            color: var(--primary);
-            border-color: var(--primary-border);
-            position: relative;
-        }
-        .btn-admin-msgs:hover {
-            background: #dbeafe;
-        }
-
-        .btn-logout {
-            background: var(--danger-light);
-            color: var(--danger);
-            border-color: var(--danger-border);
-        }
-        .btn-logout:hover {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .badge-count {
-            background: #ef4444;
-            color: white;
-            font-size: 11px;
-            font-weight: 800;
-            padding: 2px 7px;
-            border-radius: var(--radius-pill);
-            margin-left: 2px;
-            box-shadow: 0 2px 5px rgba(239, 68, 68, 0.35);
-        }
-
-        /* =====================================================
-           QUICK ACTIONS NAVIGATION BAR
-        ===================================================== */
-        .quick-nav-bar {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 22px;
-        }
-
-        @media (min-width: 768px) {
-            .quick-nav-bar {
-                grid-template-columns: repeat(6, 1fr);
-                gap: 12px;
-            }
-        }
-
-        .quick-nav-btn {
-            background: #ffffff;
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            border-radius: var(--radius-lg);
-            padding: 14px 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            text-decoration: none;
-            color: var(--slate-700);
-            font-size: 13px;
-            font-weight: 700;
-            transition: var(--transition-smooth);
-            box-shadow: var(--shadow-subtle);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .quick-nav-btn::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: transparent;
-            transition: var(--transition-fast);
-        }
-
-        .quick-nav-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-card);
-            border-color: var(--primary-border);
-            color: var(--primary);
-        }
-
-        .quick-nav-btn:hover::before {
-            background: var(--primary);
-        }
-
-        .quick-nav-icon-wrap {
+        .icon-btn-round {
             width: 38px;
             height: 38px;
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            border: 1.5px solid var(--slate-200);
+            background: #ffffff;
+            color: var(--slate-700);
+            font-size: 16px;
+            cursor: pointer;
             transition: var(--transition-fast);
+            position: relative;
+            box-shadow: var(--shadow-subtle);
         }
 
-        .quick-nav-btn:hover .quick-nav-icon-wrap {
-            transform: scale(1.08);
+        .icon-btn-round:active {
+            transform: scale(0.92);
         }
 
-        .nav-tag-badge {
-            font-size: 9.5px;
+        .badge-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
             font-weight: 800;
-            text-transform: uppercase;
-            padding: 2px 6px;
+            min-width: 17px;
+            height: 17px;
+            padding: 0 4px;
             border-radius: var(--radius-pill);
-            letter-spacing: 0.3px;
-            margin-top: -2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+            border: 1.5px solid #ffffff;
+        }
+
+        /* QUICK ACTION CHIPS STRIP */
+        .mobile-quick-chips {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding: 2px 0 12px 0;
+            margin-bottom: 2px;
+        }
+        .mobile-quick-chips::-webkit-scrollbar {
+            display: none;
+        }
+
+        .quick-chip-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 12px;
+            font-weight: 700;
+            background: #ffffff;
+            border: 1px solid var(--slate-200);
+            color: var(--slate-700);
+            text-decoration: none;
+            white-space: nowrap;
+            box-shadow: var(--shadow-subtle);
+            transition: var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .quick-chip-pill:active {
+            transform: scale(0.95);
+            background: var(--slate-100);
         }
 
         /* =====================================================
-           TODAY'S VITAL SIGNS (4-METRIC KPI STRIP)
+           HERO NOW CALLING CONSOLE (THUMB ZONE CENTERPIECE)
+        ===================================================== */
+        .hero-caller-box {
+            background: radial-gradient(circle at 100% 0%, #1e3a8a 0%, #0f172a 75%);
+            border-radius: var(--radius-xl);
+            padding: 18px 18px;
+            color: #ffffff;
+            margin-bottom: 16px;
+            box-shadow: 0 16px 32px -10px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-caller-box::before {
+            content: "";
+            position: absolute;
+            top: -40%;
+            right: -20%;
+            width: 240px;
+            height: 240px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.18) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .hero-caller-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-caller-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 700;
+            color: #e0f2fe;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .hero-live-clock {
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: 12px;
+            font-weight: 800;
+            color: #38bdf8;
+            background: rgba(14, 165, 233, 0.14);
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            letter-spacing: 0.5px;
+        }
+
+        .hero-caller-main {
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .token-display-hero {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .token-number-massive {
+            font-size: 46px;
+            font-weight: 900;
+            letter-spacing: -1.5px;
+            line-height: 1;
+            background: linear-gradient(135deg, #ffffff 30%, #93c5fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+            padding: 12px 18px;
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 95px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            flex-shrink: 0;
+        }
+
+        .token-patient-meta {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .token-patient-meta h3 {
+            font-size: 18px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 5px;
+            letter-spacing: -0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .token-patient-meta p {
+            font-size: 12px;
+            color: #38bdf8;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(14, 165, 233, 0.14);
+            padding: 3px 9px;
+            border-radius: var(--radius-pill);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .hero-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .btn-call-next {
+            width: 100%;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            height: 48px;
+            border-radius: 14px;
+            font-size: 15.5px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+            transition: var(--transition-fast);
+            letter-spacing: 0.2px;
+        }
+
+        .btn-call-next:active:not(:disabled) {
+            transform: scale(0.98);
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-call-next:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .hero-sub-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .btn-caller-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            height: 40px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            text-decoration: none;
+            backdrop-filter: blur(6px);
+        }
+
+        .btn-caller-secondary:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .caller-status-msg {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #93c5fd;
+            font-weight: 600;
+            min-height: 18px;
+            text-align: center;
+        }
+
+        /* =====================================================
+           2x2 VITAL SIGNS (MOBILE 4-KPI STRIP)
         ===================================================== */
         .vital-signs-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        @media (min-width: 900px) {
-            .vital-signs-grid {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 16px;
-            }
+            gap: 10px;
+            margin-bottom: 18px;
         }
 
         .vital-card {
             background: #ffffff;
-            border-radius: var(--radius-xl);
-            padding: 20px;
+            border-radius: var(--radius-lg);
+            padding: 14px;
             box-shadow: var(--shadow-card);
             border: 1px solid rgba(226, 232, 240, 0.9);
             position: relative;
@@ -392,286 +531,52 @@
         .vital-card.success::after { background: linear-gradient(90deg, #10b981, #34d399); }
         .vital-card.purple::after  { background: linear-gradient(90deg, #7c3aed, #c084fc); }
 
-        .vital-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-elevated);
-        }
-
         .vital-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .vital-title {
-            font-size: 12.5px;
+            font-size: 11px;
             font-weight: 700;
             color: var(--slate-500);
             text-transform: uppercase;
-            letter-spacing: 0.6px;
-        }
-
-        .vital-icon-badge {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-        }
-
-        .vital-card.primary .vital-icon-badge { background: #eff6ff; color: #2563eb; }
-        .vital-card.warning .vital-icon-badge { background: #fffbeb; color: #d97706; }
-        .vital-card.success .vital-icon-badge { background: #ecfdf5; color: #059669; }
-        .vital-card.purple .vital-icon-badge  { background: #f5f3ff; color: #7c3aed; }
-
-        .vital-value {
-            font-size: 34px;
-            font-weight: 800;
-            color: var(--slate-900);
-            letter-spacing: -1.2px;
-            line-height: 1.1;
-            margin-bottom: 8px;
-        }
-
-        .vital-subtext {
-            font-size: 12.5px;
-            font-weight: 600;
-            color: var(--slate-500);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* =====================================================
-           MAIN 2-COLUMN RESPONSIVE LAYOUT
-        ===================================================== */
-        .dashboard-body-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            align-items: start;
-        }
-
-        @media (min-width: 1024px) {
-            .dashboard-body-grid {
-                grid-template-columns: 66% 34%;
-                gap: 24px;
-            }
-        }
-
-        @media (min-width: 1280px) {
-            .dashboard-body-grid {
-                grid-template-columns: 68% 32%;
-                gap: 24px;
-            }
-        }
-
-        /* =====================================================
-           HERO NOW CALLING CONSOLE (CENTERPIECE)
-        ===================================================== */
-        .hero-caller-box {
-            background: radial-gradient(circle at 100% 0%, #1e3a8a 0%, #0f172a 75%);
-            border-radius: var(--radius-xl);
-            padding: 24px 26px;
-            color: #ffffff;
-            margin-bottom: 22px;
-            box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-caller-box::before {
-            content: "";
-            position: absolute;
-            top: -50%;
-            right: -20%;
-            width: 320px;
-            height: 320px;
-            background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-
-        .hero-caller-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-caller-label {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            padding: 5px 12px;
-            border-radius: var(--radius-pill);
-            font-size: 11.5px;
-            font-weight: 700;
-            color: #e0f2fe;
-            letter-spacing: 0.6px;
-            text-transform: uppercase;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        .hero-live-clock {
-            font-family: 'JetBrains Mono', ui-monospace, monospace;
-            font-size: 13px;
-            font-weight: 700;
-            color: #38bdf8;
-            background: rgba(14, 165, 233, 0.12);
-            padding: 5px 12px;
-            border-radius: var(--radius-sm);
-            border: 1px solid rgba(56, 189, 248, 0.25);
             letter-spacing: 0.5px;
         }
 
-        .hero-caller-main {
-            margin-bottom: 22px;
-            position: relative;
-            z-index: 2;
-        }
-
-        .token-display-hero {
+        .vital-icon-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
             display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        @media (min-width: 600px) {
-            .token-display-hero {
-                flex-direction: row;
-                align-items: center;
-                gap: 24px;
-            }
-        }
-
-        .token-number-massive {
-            font-size: 58px;
-            font-weight: 900;
-            letter-spacing: -2px;
-            line-height: 1;
-            background: linear-gradient(135deg, #ffffff 30%, #93c5fd 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
-            padding: 16px 24px;
-            background-color: rgba(255, 255, 255, 0.08);
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 140px;
-            text-align: center;
-            backdrop-filter: blur(8px);
-        }
-
-        .token-patient-meta h3 {
-            font-size: 23px;
-            font-weight: 800;
-            color: #ffffff;
-            margin-bottom: 8px;
-            letter-spacing: -0.4px;
-        }
-
-        .token-patient-meta p {
-            font-size: 13.5px;
-            color: #38bdf8;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(14, 165, 233, 0.14);
-            padding: 5px 12px;
-            border-radius: var(--radius-pill);
-            border: 1px solid rgba(56, 189, 248, 0.25);
-        }
-
-        .hero-btn-group {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            position: relative;
-            z-index: 2;
-        }
-
-        @media (min-width: 600px) {
-            .hero-btn-group {
-                grid-template-columns: 2fr 1fr 1fr;
-            }
-        }
-
-        .btn-call-next {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            padding: 14px 20px;
-            border-radius: var(--radius-md);
             font-size: 15px;
+        }
+
+        .vital-card.primary .vital-icon-badge { background: #eff6ff; }
+        .vital-card.warning .vital-icon-badge { background: #fffbeb; }
+        .vital-card.success .vital-icon-badge { background: #ecfdf5; }
+        .vital-card.purple .vital-icon-badge  { background: #f5f3ff; }
+
+        .vital-value {
+            font-size: 26px;
             font-weight: 800;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 9px;
-            cursor: pointer;
-            box-shadow: 0 4px 18px rgba(37, 99, 235, 0.45);
-            transition: var(--transition-fast);
-            letter-spacing: 0.2px;
+            color: var(--slate-900);
+            letter-spacing: -0.8px;
+            line-height: 1.1;
+            margin-bottom: 4px;
         }
 
-        .btn-call-next:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.55);
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        }
-
-        .btn-call-next:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .btn-caller-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            padding: 14px 16px;
-            border-radius: var(--radius-md);
-            font-size: 14px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            cursor: pointer;
-            transition: var(--transition-fast);
-            text-decoration: none;
-            backdrop-filter: blur(6px);
-        }
-
-        .btn-caller-secondary:hover {
-            background: rgba(255, 255, 255, 0.18);
-            border-color: rgba(255, 255, 255, 0.28);
-            transform: translateY(-2px);
-        }
-
-        .caller-status-msg {
-            margin-top: 14px;
-            font-size: 13px;
-            color: #93c5fd;
+        .vital-subtext {
+            font-size: 11px;
             font-weight: 600;
-            min-height: 20px;
+            color: var(--slate-500);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* =====================================================
@@ -679,35 +584,30 @@
         ===================================================== */
         .card-panel {
             background: #ffffff;
-            border-radius: var(--radius-xl);
-            padding: 22px 24px;
+            border-radius: var(--radius-lg);
+            padding: 16px;
             box-shadow: var(--shadow-card);
             border: 1px solid rgba(226, 232, 240, 0.9);
-            margin-bottom: 22px;
-            transition: var(--transition-smooth);
-        }
-
-        .card-panel:hover {
-            box-shadow: var(--shadow-elevated);
+            margin-bottom: 16px;
         }
 
         .panel-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 18px;
-            padding-bottom: 14px;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
             border-bottom: 1px solid var(--slate-100);
         }
 
         .panel-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 800;
             color: var(--slate-900);
             display: flex;
             align-items: center;
-            gap: 9px;
-            letter-spacing: -0.3px;
+            gap: 8px;
+            letter-spacing: -0.2px;
         }
 
         /* =====================================================
@@ -715,26 +615,26 @@
         ===================================================== */
         .queue-search-bar {
             position: relative;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .queue-search-icon {
             position: absolute;
-            left: 14px;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--slate-400);
-            font-size: 16px;
+            font-size: 15px;
             pointer-events: none;
         }
 
         .queue-search-input {
             width: 100%;
-            height: 44px;
-            padding: 10px 14px 10px 42px;
+            height: 42px;
+            padding: 8px 12px 8px 38px;
             border-radius: var(--radius-md);
             border: 1.5px solid var(--slate-200);
-            font-size: 13.5px;
+            font-size: 13px;
             font-family: inherit;
             color: var(--slate-900);
             background: var(--slate-50);
@@ -751,44 +651,42 @@
         .queue-feed-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            max-height: 480px;
+            gap: 9px;
+            max-height: 420px;
             overflow-y: auto;
             scrollbar-gutter: stable;
             overscroll-behavior: contain;
-            padding-right: 4px;
         }
 
         .queue-feed-item {
             background: var(--slate-50);
             border: 1px solid var(--slate-200);
-            border-radius: var(--radius-lg);
-            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 14px;
+            gap: 10px;
             transition: var(--transition-fast);
         }
 
-        .queue-feed-item:hover {
+        .queue-feed-item:active {
             background: #ffffff;
             border-color: var(--primary-border);
-            box-shadow: var(--shadow-card);
-            transform: translateY(-1px);
         }
 
         .token-chip {
             background: var(--primary-light);
             color: var(--primary);
             border: 1px solid var(--primary-border);
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 800;
-            padding: 6px 12px;
-            border-radius: 10px;
-            min-width: 54px;
+            padding: 5px 9px;
+            border-radius: 8px;
+            min-width: 48px;
             text-align: center;
             letter-spacing: -0.3px;
+            flex-shrink: 0;
         }
 
         .patient-snippet-info {
@@ -797,44 +695,45 @@
         }
 
         .patient-name-text {
-            font-size: 14.5px;
+            font-size: 13.5px;
             font-weight: 700;
             color: var(--slate-900);
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .patient-sub-meta {
-            font-size: 12px;
+            font-size: 11.5px;
             color: var(--slate-500);
             display: flex;
             align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
+            gap: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .btn-call-specific {
             background: #ffffff;
             color: var(--primary);
             border: 1.5px solid var(--primary-border);
-            padding: 7px 14px;
-            border-radius: var(--radius-sm);
-            font-size: 12.5px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
             font-weight: 700;
             cursor: pointer;
             transition: var(--transition-fast);
             white-space: nowrap;
             box-shadow: var(--shadow-subtle);
+            flex-shrink: 0;
         }
 
-        .btn-call-specific:hover {
+        .btn-call-specific:active {
             background: var(--primary);
             color: #ffffff;
-            border-color: var(--primary);
-            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
-            transform: translateY(-1px);
+            transform: scale(0.95);
         }
 
         /* =====================================================
@@ -843,76 +742,71 @@
         .doctor-roster-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            max-height: 380px;
+            gap: 8px;
+            max-height: 320px;
             overflow-y: auto;
-            scrollbar-gutter: stable;
         }
 
         .doctor-roster-row {
             background: var(--slate-50);
             border: 1px solid var(--slate-200);
-            border-radius: var(--radius-lg);
-            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            transition: var(--transition-fast);
-        }
-
-        .doctor-roster-row:hover {
-            background: #ffffff;
-            border-color: #cbd5e1;
-            box-shadow: var(--shadow-subtle);
+            gap: 10px;
         }
 
         .doc-profile-snippet {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             min-width: 0;
         }
 
         .doc-avatar {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
             color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 800;
             flex-shrink: 0;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
         }
 
         .doc-name {
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 700;
             color: var(--slate-900);
             margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .doc-meta {
-            font-size: 12px;
+            font-size: 11.5px;
             color: var(--slate-500);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
 
         .badge-status-pill {
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: var(--radius-pill);
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .badge-consulting {
@@ -928,52 +822,45 @@
         }
 
         /* =====================================================
-           RIGHT COLUMN (INQUIRIES, PROMOTIONS)
+           INQUIRIES & PROMOTIONS
         ===================================================== */
         .inquiry-feed-item {
             background: var(--slate-50);
             border: 1px solid var(--slate-200);
-            border-radius: var(--radius-lg);
-            padding: 12px 14px;
-            margin-bottom: 10px;
-            transition: var(--transition-fast);
-        }
-
-        .inquiry-feed-item:hover {
-            background: #ffffff;
-            border-color: #cbd5e1;
-            box-shadow: var(--shadow-subtle);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            margin-bottom: 8px;
         }
 
         .inquiry-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .inquiry-sender {
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--slate-900);
         }
 
         .inquiry-time {
-            font-size: 11px;
+            font-size: 10.5px;
             color: var(--slate-400);
             font-weight: 600;
         }
 
         .inquiry-subject {
-            font-size: 12.5px;
+            font-size: 12px;
             color: var(--slate-600);
-            margin-bottom: 10px;
-            line-height: 1.4;
+            margin-bottom: 8px;
+            line-height: 1.35;
         }
 
         .inquiry-action-row {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
         }
 
@@ -981,68 +868,52 @@
             background: #25d366;
             color: white;
             text-decoration: none;
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: 700;
-            padding: 5px 12px;
+            padding: 4px 10px;
             border-radius: var(--radius-sm);
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            transition: var(--transition-fast);
-        }
-
-        .btn-inquiry-wa:hover {
-            background: #1eb857;
-            transform: translateY(-1px);
+            gap: 3px;
         }
 
         .btn-inquiry-call {
             background: #0284c7;
             color: white;
             text-decoration: none;
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: 700;
-            padding: 5px 12px;
+            padding: 4px 10px;
             border-radius: var(--radius-sm);
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            transition: var(--transition-fast);
+            gap: 3px;
         }
 
-        .btn-inquiry-call:hover {
-            background: #0369a1;
-            transform: translateY(-1px);
-        }
-
-        /* PROMOTIONS WIDGET */
         .promotion-box-widget {
             background: radial-gradient(circle at 100% 0%, #581c87 0%, #3b0764 100%);
             color: #ffffff;
-            border-radius: var(--radius-xl);
-            padding: 22px;
-            margin-bottom: 22px;
-            box-shadow: 0 10px 25px -5px rgba(88, 28, 135, 0.35);
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 20px -4px rgba(88, 28, 135, 0.35);
             border: 1px solid rgba(192, 132, 252, 0.3);
-            position: relative;
-            overflow: hidden;
         }
 
         .promotion-box-widget h4 {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 800;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            letter-spacing: -0.2px;
+            gap: 7px;
         }
 
         .promotion-box-widget p {
-            font-size: 12.5px;
+            font-size: 12px;
             color: #e9d5ff;
-            line-height: 1.45;
-            margin-bottom: 16px;
+            line-height: 1.4;
+            margin-bottom: 12px;
         }
 
         .btn-launch-ad-campaign {
@@ -1050,45 +921,107 @@
             background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
             color: #ffffff;
             border: 1px solid rgba(255, 255, 255, 0.25);
-            padding: 12px 16px;
+            padding: 11px 14px;
             border-radius: var(--radius-md);
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 800;
             cursor: pointer;
-            transition: var(--transition-fast);
-            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
         }
 
-        .btn-launch-ad-campaign:hover {
-            background: linear-gradient(135deg, #c084fc 0%, #7c3aed 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(124, 58, 237, 0.45);
+        /* =====================================================
+           FIXED BOTTOM APP NAVIGATION DOCK (NATIVE MOBILE DOCK)
+        ===================================================== */
+        .mobile-bottom-dock {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(226, 232, 240, 0.9);
+            padding: 6px 10px calc(var(--safe-bottom) + 6px) 10px;
+            box-shadow: 0 -4px 18px rgba(15, 23, 42, 0.06);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .dock-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            text-decoration: none;
+            color: var(--slate-500);
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 6px 8px;
+            border-radius: 12px;
+            transition: var(--transition-fast);
+            min-width: 52px;
+            position: relative;
+        }
+
+        .dock-item:active {
+            transform: scale(0.92);
+        }
+
+        .dock-item.active {
+            color: var(--primary);
+        }
+
+        .dock-icon {
+            font-size: 19px;
+            line-height: 1;
+        }
+
+        .dock-badge {
+            position: absolute;
+            top: 2px;
+            right: 8px;
+            background: #ef4444;
+            color: white;
+            font-size: 9.5px;
+            font-weight: 800;
+            min-width: 15px;
+            height: 15px;
+            border-radius: var(--radius-pill);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 3px;
+            border: 1px solid white;
         }
 
         /* TOAST */
         .toast-notification {
             position: fixed;
-            bottom: 28px;
-            right: 28px;
+            bottom: 84px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
             background: var(--slate-900);
             color: #ffffff;
-            padding: 14px 20px;
-            border-radius: var(--radius-md);
+            padding: 11px 18px;
+            border-radius: var(--radius-pill);
             box-shadow: var(--shadow-elevated);
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             z-index: 999999;
-            transform: translateY(100px);
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             border: 1px solid var(--slate-700);
+            white-space: nowrap;
         }
 
         .toast-notification.show {
-            transform: translateY(0);
+            transform: translateX(-50%) translateY(0);
             opacity: 1;
         }
     </style>
@@ -1099,85 +1032,98 @@
 <div class="dashboard-container">
 
     <!-- =====================================================
-         TOP CONTEXT BAR & HEADER
+         MOBILE NATIVE APP BAR
     ===================================================== -->
-    <header class="top-navbar">
-        <div class="brand-section">
-            <div class="brand-icon-box">🏥</div>
-            <div class="brand-text">
-                <h1>
-                    <span id="hospitalNameDisplay">Hospital Command Center</span>
-                    <span class="status-pill" id="opdStatusPill">
-                        <span class="status-dot"></span>
-                        OPD ACTIVE
-                    </span>
-                </h1>
-                <div class="hospital-subtitle" id="hospitalMetaSubtitle">
-                    <span>⚡ Real-Time Patient Queuing</span>
-                    <span>•</span>
-                    <span>OPD Consultation Console</span>
+    <header class="mobile-app-header">
+        <div class="mobile-app-bar-inner">
+            <div class="app-brand-left">
+                <div class="app-brand-avatar">🏥</div>
+                <div class="app-title-group">
+                    <div class="app-hospital-name" id="hospitalNameDisplay">CarePath Hospital</div>
+                    <div class="app-status-sub" id="hospitalMetaSubtitle">
+                        <span class="status-pill" id="opdStatusPill">
+                            <span class="status-dot"></span>
+                            OPD ACTIVE
+                        </span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="header-actions">
-            <button type="button" class="btn-action-pill" onclick="toggleHospitalAudio()" id="btnHospitalAudioToggle" title="Toggle audio chime and patient call announcements" style="background: #f0fdf4; color: #15803d; border: 1.5px solid #86efac; font-weight: 700;">
-                <span id="hospitalAudioIcon">🔊</span> <span id="hospitalAudioText">Audio: ON</span>
-            </button>
-            <button type="button" class="btn-action-pill" onclick="openHospitalBreakModal()" id="btnHospitalBreakTime" style="background: #fefce8; color: #854d0e; border: 1.5px solid #fde047; font-weight: 700;">
-                🍱 Set Break Time
-            </button>
-            <button type="button" class="btn-action-pill btn-copy-link" onclick="copyHospitalPatientLink()" id="btnCopyPatientLink">
-                📋 Copy Patient Link
-            </button>
-            <button type="button" class="btn-action-pill btn-admin-msgs" onclick="openAdminMessagesModal()" id="btnHospitalAdminMessages">
-                💬 Admin Notices
-                <span id="hospitalAdminMsgBadge" class="badge-count" style="display: none;">0</span>
-            </button>
-            <button type="button" class="btn-action-pill btn-logout" id="logoutButton">
-                Logout
-            </button>
+            <div class="app-header-actions">
+                <button type="button" class="icon-btn-round" onclick="toggleHospitalAudio()" id="btnHospitalAudioToggle" title="Audio Chime Toggle" style="color: #15803d; border-color: #86efac; background: #f0fdf4;">
+                    <span id="hospitalAudioIcon">🔊</span>
+                </button>
+                <button type="button" class="icon-btn-round" onclick="openHospitalBreakModal()" id="btnHospitalBreakTime" title="Break Time" style="color: #854d0e; border-color: #fde047; background: #fefce8;">
+                    🍱
+                </button>
+                <button type="button" class="icon-btn-round" onclick="openAdminMessagesModal()" id="btnHospitalAdminMessages" title="Admin Notices" style="color: #2563eb; border-color: #bfdbfe; background: #eff6ff;">
+                    💬
+                    <span id="hospitalAdminMsgBadge" class="badge-count" style="display: none;">0</span>
+                </button>
+                <button type="button" class="icon-btn-round" id="logoutButton" title="Sign Out" style="color: #dc2626; border-color: #fecaca; background: #fef2f2;">
+                    🚪
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- =====================================================
-         QUICK ACTIONS NAVIGATION BAR (1-TAP ON PHONE)
-    ===================================================== -->
-    <div class="quick-nav-bar">
-        <a href="doctors.html" class="quick-nav-btn" id="doctorsButton">
-            <div class="quick-nav-icon-wrap" style="background: #eff6ff; color: #2563eb;">👨‍⚕️</div>
-            <span>Doctors</span>
-            <span class="nav-tag-badge" style="background: #eff6ff; color: #2563eb;">Roster</span>
+    <!-- HIDDEN LABEL FOR AUDIO STATUS COMPATIBILITY -->
+    <span id="hospitalAudioText" style="display: none;">Audio: ON</span>
+
+    <!-- MOBILE QUICK ACTION PILLS STRIP -->
+    <div class="mobile-quick-chips">
+        <button type="button" class="quick-chip-pill" onclick="copyHospitalPatientLink()" id="btnCopyPatientLink" style="background: #f0fdf4; color: #166534; border-color: #bbf7d0;">
+            📋 Copy Patient Link
+        </button>
+        <a href="display.html" target="_blank" class="quick-chip-pill" style="background: #faf5ff; color: #6b21a8; border-color: #e9d5ff;">
+            📺 Open Waiting TV ↗
         </a>
-        <a href="token-queue.html" class="quick-nav-btn" id="queueButton">
-            <div class="quick-nav-icon-wrap" style="background: #fffbeb; color: #d97706;">🎟️</div>
-            <span>Token Queue</span>
-            <span class="nav-tag-badge" style="background: #fffbeb; color: #d97706;">Live</span>
-        </a>
-        <a href="patients.html" class="quick-nav-btn" id="patientsButton">
-            <div class="quick-nav-icon-wrap" style="background: #ecfdf5; color: #059669;">👥</div>
-            <span>Patients</span>
-            <span class="nav-tag-badge" style="background: #ecfdf5; color: #059669;">History</span>
-        </a>
-        <a href="display.html" target="_blank" class="quick-nav-btn">
-            <div class="quick-nav-icon-wrap" style="background: #f5f3ff; color: #7c3aed;">📺</div>
-            <span>Waiting TV</span>
-            <span class="nav-tag-badge" style="background: #f5f3ff; color: #7c3aed;">Live TV ↗</span>
-        </a>
-        <a href="ads.html" class="quick-nav-btn">
-            <div class="quick-nav-icon-wrap" style="background: #faf5ff; color: #9333ea;">📢</div>
-            <span>Promote</span>
-            <span class="nav-tag-badge" style="background: #faf5ff; color: #9333ea;">₹999 / mo</span>
-        </a>
-        <a href="profile.html" class="quick-nav-btn" id="profileButton">
-            <div class="quick-nav-icon-wrap" style="background: #f1f5f9; color: #475569;">🏥</div>
-            <span>Profile</span>
-            <span class="nav-tag-badge" style="background: #f1f5f9; color: #475569;">Verified</span>
+        <a href="ads.html" class="quick-chip-pill" style="background: #eff6ff; color: #1e40af; border-color: #bfdbfe;">
+            📢 Promote (₹999)
         </a>
     </div>
 
     <!-- =====================================================
-         TODAY'S VITAL SIGNS (4-METRIC KPI STRIP)
+         HERO NOW CALLING CONSOLE (THUMB CENTERPIECE)
+    ===================================================== -->
+    <div class="hero-caller-box">
+        <div class="hero-caller-top">
+            <span class="hero-caller-label">
+                <span class="status-dot"></span>
+                NOW CALLING CONSULTATION
+            </span>
+            <span class="hero-live-clock" id="heroLiveClock">--:--:-- --</span>
+        </div>
+
+        <div class="hero-caller-main">
+            <div class="token-display-hero">
+                <div class="token-number-massive" id="heroTokenDisplay">#0</div>
+                <div class="token-patient-meta">
+                    <h3 id="heroPatientName">No Patient in Consultation</h3>
+                    <p id="heroDoctorRoom">Select or call next token</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-btn-group">
+            <button type="button" class="btn-call-next" id="nextButton" onclick="callNextPatient()">
+                <span>📢</span> Call Next Patient
+            </button>
+            <div class="hero-sub-actions">
+                <button type="button" class="btn-caller-secondary" onclick="completeCurrentToken()">
+                    <span>✓</span> Complete
+                </button>
+                <a href="display.html" target="_blank" class="btn-caller-secondary">
+                    <span>📺</span> TV Screen
+                </a>
+            </div>
+        </div>
+
+        <p id="nextMessage" class="caller-status-msg"></p>
+    </div>
+
+    <!-- =====================================================
+         2x2 VITAL SIGNS (4-KPI STRIP)
     ===================================================== -->
     <section class="vital-signs-grid" aria-label="Today's Operational Metrics">
         <!-- 1. CURRENT TOKEN -->
@@ -1187,37 +1133,37 @@
                 <div class="vital-icon-badge">🎟️</div>
             </div>
             <div class="vital-value" id="currentToken">0</div>
-            <div class="vital-subtext" id="currentServingDoc">Dr. Available • In Session</div>
+            <div class="vital-subtext" id="currentServingDoc">Dr. Available</div>
         </div>
 
         <!-- 2. PATIENTS WAITING -->
         <div class="vital-card warning">
             <div class="vital-header">
-                <span class="vital-title">Patients Waiting</span>
+                <span class="vital-title">Waiting Queue</span>
                 <div class="vital-icon-badge">⏳</div>
             </div>
             <div class="vital-value" id="waitingCount">0</div>
-            <div class="vital-subtext" id="estimatedWaitTime">~0 min estimated wait</div>
+            <div class="vital-subtext" id="estimatedWaitTime">~0 min wait</div>
         </div>
 
         <!-- 3. DOCTORS ON DUTY -->
         <div class="vital-card success">
             <div class="vital-header">
-                <span class="vital-title">Doctors On Duty</span>
+                <span class="vital-title">Doctors Active</span>
                 <div class="vital-icon-badge">🩺</div>
             </div>
             <div class="vital-value" id="activeDoctorsCount">0</div>
-            <div class="vital-subtext" id="totalDoctorsSubtext">Active OPD consultation</div>
+            <div class="vital-subtext" id="totalDoctorsSubtext">In Session</div>
         </div>
 
         <!-- 4. TODAY'S COLLECTION -->
         <div class="vital-card purple">
             <div class="vital-header">
-                <span class="vital-title">Today's Collection</span>
+                <span class="vital-title">Collection</span>
                 <div class="vital-icon-badge">💰</div>
             </div>
             <div class="vital-value" id="todayRevenueDisplay">₹0</div>
-            <div class="vital-subtext" id="completedTokensCount">0 Consultations Done</div>
+            <div class="vital-subtext" id="completedTokensCount">0 Consultations</div>
         </div>
     </section>
 
@@ -1234,153 +1180,134 @@
     </div>
 
     <!-- =====================================================
-         MAIN 2-COLUMN RESPONSIVE LAYOUT
+         QUEUE STREAM & DOCTOR ROSTER
     ===================================================== -->
-    <div class="dashboard-body-grid">
+    <!-- 👥 NEXT UP IN QUEUE -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">
+                <span>👥</span> Next Up In Queue (<span id="queueBadgeTotal">0</span>)
+            </h2>
+            <a href="token-queue.html" style="font-size: 12.5px; font-weight: 700; color: var(--primary); text-decoration: none;">
+                Full Queue →
+            </a>
+        </div>
 
-        <!-- =================================================
-             LEFT: LIVE OPD QUEUE COMMAND CONSOLE (68% width)
-        ================================================= -->
-        <main>
-            <!-- 🔊 HERO NOW CALLING CONSOLE -->
-            <div class="hero-caller-box">
-                <div class="hero-caller-top">
-                    <span class="hero-caller-label">
-                        <span class="status-dot"></span>
-                        LIVE OPD CALLING STATION
-                    </span>
-                    <span class="hero-live-clock" id="heroLiveClock">--:--:-- --</span>
-                </div>
+        <div class="queue-search-bar">
+            <span class="queue-search-icon">🔍</span>
+            <input type="text" id="queueSearchInput" class="queue-search-input" placeholder="Search patient name, token #, phone..." oninput="filterQueueFeed()">
+        </div>
 
-                <div class="hero-caller-main">
-                    <div class="token-display-hero">
-                        <div class="token-number-massive" id="heroTokenDisplay">#0</div>
-                        <div class="token-patient-meta">
-                            <h3 id="heroPatientName">No Patient in Consultation</h3>
-                            <p id="heroDoctorRoom">Select or call next token to begin</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="hero-btn-group">
-                    <button type="button" class="btn-call-next" id="nextButton" onclick="callNextPatient()">
-                        <span>📢</span> Call Next Patient
-                    </button>
-                    <button type="button" class="btn-caller-secondary" onclick="completeCurrentToken()">
-                        <span>✓</span> Complete
-                    </button>
-                    <a href="display.html" target="_blank" class="btn-caller-secondary">
-                        <span>📺</span> TV Screen
-                    </a>
-                </div>
-
-                <p id="nextMessage" class="caller-status-msg"></p>
+        <div id="queueFeedContainer" class="queue-feed-list">
+            <div style="text-align: center; color: var(--slate-400); padding: 25px 10px; font-size: 13px;">
+                Loading live queue...
             </div>
+        </div>
+    </div>
 
-            <!-- 👥 NEXT UP IN QUEUE -->
-            <div class="card-panel">
-                <div class="panel-header">
-                    <h2 class="panel-title">
-                        <span>👥</span> Next Up In Queue (<span id="queueBadgeTotal">0</span>)
-                    </h2>
-                    <a href="token-queue.html" style="font-size: 13px; font-weight: 700; color: var(--primary); text-decoration: none;">
-                        Full Queue Table →
-                    </a>
-                </div>
+    <!-- 📋 DOCTOR ROOMS & ACTIVE QUEUE -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">
+                <span>🩺</span> Doctor OPD Rooms & Duty
+            </h2>
+            <a href="doctors.html" style="font-size: 12.5px; font-weight: 700; color: var(--primary); text-decoration: none;">
+                Manage →
+            </a>
+        </div>
 
-                <div class="queue-search-bar">
-                    <span class="queue-search-icon">🔍</span>
-                    <input type="text" id="queueSearchInput" class="queue-search-input" placeholder="Search patient by name, token #, doctor or phone..." oninput="filterQueueFeed()">
-                </div>
-
-                <div id="queueFeedContainer" class="queue-feed-list">
-                    <div style="text-align: center; color: var(--slate-400); padding: 30px 10px; font-size: 13px;">
-                        Loading live queue...
-                    </div>
-                </div>
+        <div id="doctorRosterContainer" class="doctor-roster-list">
+            <div style="text-align: center; color: var(--slate-400); padding: 18px 10px; font-size: 13px;">
+                Loading doctor roster...
             </div>
+        </div>
+    </div>
 
-            <!-- 📋 DOCTOR ROOMS & ACTIVE QUEUE -->
-            <div class="card-panel">
-                <div class="panel-header">
-                    <h2 class="panel-title">
-                        <span>🩺</span> Doctor OPD Rooms & Duty Roster
-                    </h2>
-                    <a href="doctors.html" style="font-size: 13px; font-weight: 700; color: var(--primary); text-decoration: none;">
-                        Manage Doctors →
-                    </a>
-                </div>
+    <!-- 👤 LIVE PATIENT INQUIRIES -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">
+                <span>💬</span> Patient Inquiries (<span id="inquiryCountBadge">0</span>)
+            </h2>
+            <span style="font-size: 10px; background: var(--success-light); color: var(--success); font-weight: 800; padding: 2px 7px; border-radius: var(--radius-pill); border: 1px solid var(--success-border);">
+                LIVE
+            </span>
+        </div>
 
-                <div id="doctorRosterContainer" class="doctor-roster-list">
-                    <div style="text-align: center; color: var(--slate-400); padding: 20px 10px; font-size: 13px;">
-                        Loading doctor roster...
-                    </div>
-                </div>
+        <div id="patientInquiryContainer">
+            <div style="text-align: center; color: var(--slate-400); padding: 16px 10px; font-size: 13px;">
+                No pending inquiries.
             </div>
-        </main>
+        </div>
+    </div>
 
-        <!-- =================================================
-             RIGHT: COMMUNICATIONS & GROWTH (32% width)
-        ================================================= -->
-        <aside>
-            <!-- 👤 LIVE PATIENT INQUIRIES -->
-            <div class="card-panel">
-                <div class="panel-header">
-                    <h2 class="panel-title">
-                        <span>💬</span> Patient Inquiries (<span id="inquiryCountBadge">0</span>)
-                    </h2>
-                    <span style="font-size: 11px; background: var(--success-light); color: var(--success); font-weight: 800; padding: 3px 8px; border-radius: var(--radius-pill); border: 1px solid var(--success-border);">
-                        LIVE
-                    </span>
-                </div>
+    <!-- 🏛️ PLATFORM ADMIN NOTICES -->
+    <div class="card-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">
+                <span>🏛️</span> Admin Direct Channel
+            </h2>
+            <button type="button" onclick="openAdminMessagesModal()" style="background: none; border: none; color: var(--primary); font-size: 12.5px; font-weight: 700; cursor: pointer;">
+                Chat →
+            </button>
+        </div>
 
-                <div id="patientInquiryContainer">
-                    <div style="text-align: center; color: var(--slate-400); padding: 20px 10px; font-size: 13px;">
-                        No pending inquiries.
-                    </div>
-                </div>
-            </div>
+        <div id="adminNoticeSnippet" style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 12px; font-size: 12.5px; color: var(--slate-600); line-height: 1.45;">
+            Connected with Platform Admin for verification and announcements.
+        </div>
 
-            <!-- 🏛️ PLATFORM ADMIN NOTICES -->
-            <div class="card-panel">
-                <div class="panel-header">
-                    <h2 class="panel-title">
-                        <span>🏛️</span> Admin Direct Channel
-                    </h2>
-                    <button type="button" onclick="openAdminMessagesModal()" style="background: none; border: none; color: var(--primary); font-size: 13px; font-weight: 700; cursor: pointer;">
-                        Open Chat →
-                    </button>
-                </div>
+        <button type="button" onclick="openAdminMessagesModal()" style="width: 100%; margin-top: 10px; padding: 10px; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); border-radius: var(--radius-md); font-size: 12.5px; font-weight: 700; cursor: pointer;">
+            ✉️ Reply to Admin
+        </button>
+    </div>
 
-                <div id="adminNoticeSnippet" style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 14px; font-size: 13px; color: var(--slate-600); line-height: 1.5;">
-                    Stay connected with Platform Admin for compliance, verification, and inspection updates.
-                </div>
+    <!-- 📢 PROMOTIONS WIDGET -->
+    <div class="promotion-box-widget">
+        <h4><span>📢</span> Grow Your Hospital OPD</h4>
+        <p>Feature your hospital banner inside the patient app feed for 30 days to reach local patients.</p>
 
-                <button type="button" onclick="openAdminMessagesModal()" style="width: 100%; margin-top: 14px; padding: 11px; background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); border-radius: var(--radius-md); font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--transition-fast);">
-                    ✉️ Reply / Message Admin
-                </button>
-            </div>
+        <div style="font-size: 11.5px; font-weight: 700; color: #f3e8ff; margin-bottom: 5px;">Patient Booking Link:</div>
+        <div class="share-link-input-group" style="display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; width: 100%; box-sizing: border-box; margin-bottom: 12px;">
+            <input type="text" id="shareHospitalLinkInput" readonly value="Loading link..." style="width: 100%; min-width: 0; height: 38px; margin: 0; padding: 6px 10px; border: 1.5px solid rgba(192, 132, 252, 0.4); border-radius: 8px; font-size: 12px; background: rgba(255, 255, 255, 0.95); color: #4c1d95; outline: none; box-sizing: border-box; font-weight: 600;">
+            <button type="button" class="btn-share-copy" onclick="copyHospitalPatientLink()" style="width: auto; min-width: 68px; height: 38px; margin: 0; padding: 0 14px; background: #9333ea; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; white-space: nowrap;">Copy</button>
+        </div>
 
-            <!-- 📢 PROMOTIONS & 30-DAY ADS -->
-            <div class="promotion-box-widget">
-                <h4><span>📢</span> Promote Your Hospital</h4>
-                <p>Reach thousands of patients across your city! Features your hospital banner directly inside the patient app feed.</p>
-
-                <div style="font-size: 12px; font-weight: 700; color: #f3e8ff; margin-bottom: 6px;">Share Direct Patient Booking Link:</div>
-                <div class="share-link-input-group" style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; width: 100%; box-sizing: border-box; margin-bottom: 14px;">
-                    <input type="text" id="shareHospitalLinkInput" readonly value="Loading link..." style="width: 100%; min-width: 0; height: 42px; margin: 0; padding: 8px 12px; border: 1.5px solid rgba(192, 132, 252, 0.4); border-radius: 8px; font-size: 12.5px; background: rgba(255, 255, 255, 0.95); color: #4c1d95; outline: none; box-sizing: border-box; font-weight: 600;">
-                    <button type="button" class="btn-share-copy" onclick="copyHospitalPatientLink()" style="width: auto; min-width: 76px; height: 42px; margin: 0; padding: 0 16px; background: #9333ea; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; white-space: nowrap; transition: var(--transition-fast);">Copy</button>
-                </div>
-
-                <button type="button" class="btn-launch-ad-campaign" onclick="window.location.href='ads.html'" id="openAdModalBtn">
-                    🚀 Launch 30-Day Campaign (₹999)
-                </button>
-            </div>
-        </aside>
-
+        <button type="button" class="btn-launch-ad-campaign" onclick="window.location.href='ads.html'" id="openAdModalBtn">
+            🚀 Launch 30-Day Campaign (₹999)
+        </button>
     </div>
 
 </div>
+
+<!-- =====================================================
+     NATIVE MOBILE BOTTOM NAVIGATION DOCK
+===================================================== -->
+<nav class="mobile-bottom-dock" aria-label="Mobile Navigation">
+    <a href="dashboard.html" class="dock-item active">
+        <span class="dock-icon">🏠</span>
+        <span>Call</span>
+    </a>
+    <a href="token-queue.html" class="dock-item" id="queueButton">
+        <span class="dock-icon">🎟️</span>
+        <span>Queue</span>
+    </a>
+    <a href="doctors.html" class="dock-item" id="doctorsButton">
+        <span class="dock-icon">👨‍⚕️</span>
+        <span>Doctors</span>
+    </a>
+    <a href="patients.html" class="dock-item" id="patientsButton">
+        <span class="dock-icon">👥</span>
+        <span>Patients</span>
+    </a>
+    <a href="display.html" target="_blank" class="dock-item">
+        <span class="dock-icon">📺</span>
+        <span>TV</span>
+    </a>
+    <a href="profile.html" class="dock-item" id="profileButton">
+        <span class="dock-icon">🏥</span>
+        <span>Profile</span>
+    </a>
+</nav>
 
 <!-- TOAST NOTIFICATION -->
 <div id="toastNotification" class="toast-notification">
@@ -1389,38 +1316,38 @@
 </div>
 
 <!-- =====================================================
-     HOSPITAL OPD BREAK TIMING MODAL (HOSPITAL ONLY)
+     HOSPITAL OPD BREAK TIMING MODAL (BOTTOM SHEET STYLE)
 ===================================================== -->
-<div id="hospitalBreakModal" class="ad-modal-backdrop" aria-hidden="true" style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 18px; box-sizing: border-box;">
-    <div style="background: #ffffff; width: 100%; max-width: 460px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0;">
-        <div style="padding: 18px 22px; background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
+<div id="hospitalBreakModal" class="ad-modal-backdrop" aria-hidden="true" style="display: none; position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(8px); align-items: flex-end; justify-content: center; padding: 0; box-sizing: border-box;">
+    <div style="background: #ffffff; width: 100%; max-width: 500px; border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.25); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0; max-height: 90vh;">
+        <div style="padding: 16px 20px; background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 26px;">🍱</span>
+                <span style="font-size: 24px;">🍱</span>
                 <div>
-                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #ffffff;">Set OPD Lunch / Break Timing</h3>
-                    <div style="font-size: 11.5px; opacity: 0.95; margin-top: 2px;">Configured directly by your hospital</div>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #ffffff;">Set OPD Lunch / Break Timing</h3>
+                    <div style="font-size: 11px; opacity: 0.95; margin-top: 1px;">Status shows "OPD ON BREAK" to patients</div>
                 </div>
             </div>
-            <button type="button" onclick="closeHospitalBreakModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 22px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
+            <button type="button" onclick="closeHospitalBreakModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 22px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
         </div>
-        <div style="padding: 22px;">
-            <p style="margin: 0 0 16px; font-size: 13px; color: #64748b; line-height: 1.5;">
-                Enter your hospital's daily lunch or doctor consultation break hours. During break time, your live status will change to <strong>"🟡 OPD ON BREAK"</strong> for patients.
+        <div style="padding: 18px 20px;">
+            <p style="margin: 0 0 14px; font-size: 12.5px; color: #64748b; line-height: 1.45;">
+                Enter your daily lunch or consultation break hours:
             </p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
                 <div>
-                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 6px;">⏰ Break Start</label>
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 5px;">⏰ Break Start</label>
                     <input type="time" id="dashBreakStart" value="13:00" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 15px; font-weight: 700; color: #1e293b; outline: none;">
                 </div>
                 <div>
-                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 6px;">⏰ Break End</label>
+                    <label style="display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 5px;">⏰ Break End</label>
                     <input type="time" id="dashBreakEnd" value="14:00" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 15px; font-weight: 700; color: #1e293b; outline: none;">
                 </div>
             </div>
             <div id="breakModalFeedback" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;"></div>
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button type="button" onclick="closeHospitalBreakModal()" style="padding: 10px 18px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
-                <button type="button" id="btnSaveBreakTime" onclick="saveHospitalBreakTime()" style="padding: 10px 22px; background: #d97706; color: white; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);">💾 Save Break Timing</button>
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px;">
+                <button type="button" onclick="closeHospitalBreakModal()" style="padding: 11px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="button" id="btnSaveBreakTime" onclick="saveHospitalBreakTime()" style="padding: 11px; background: #d97706; color: white; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);">💾 Save Break</button>
             </div>
         </div>
     </div>
@@ -1429,37 +1356,33 @@
 <!-- =====================================================
      ADMIN MESSAGES / DIRECT COMMUNICATION MODAL
 ===================================================== -->
-<div id="adminMessagesModal" class="ad-modal-backdrop" aria-hidden="true" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 18px; box-sizing: border-box;">
-    <div style="background: #ffffff; width: 100%; max-width: 720px; max-height: 90vh; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0;">
+<div id="adminMessagesModal" class="ad-modal-backdrop" aria-hidden="true" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(8px); align-items: flex-end; justify-content: center; padding: 0; box-sizing: border-box;">
+    <div style="background: #ffffff; width: 100%; max-width: 600px; height: 92vh; border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0;">
         
         <!-- MODAL HEADER -->
-        <div style="padding: 18px 24px; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-size: 26px;">💬</span>
+        <div style="padding: 16px 20px; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: white; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">💬</span>
                 <div>
-                    <h3 style="margin: 0; font-size: 17.5px; font-weight: 800; color: #ffffff;">Platform Admin Communication</h3>
-                    <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">Official notices, inquiries, and two-way messaging with CarePath Admin</div>
+                    <h3 style="margin: 0; font-size: 16.5px; font-weight: 800; color: #ffffff;">Platform Admin Messages</h3>
+                    <div style="font-size: 11.5px; opacity: 0.9; margin-top: 1px;">Official announcements & two-way chat</div>
                 </div>
             </div>
-            <button type="button" onclick="closeAdminMessagesModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 22px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
+            <button type="button" onclick="closeAdminMessagesModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 22px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
         </div>
 
         <!-- MESSAGES THREAD -->
-        <div id="hospitalAdminMsgContainer" style="flex: 1; padding: 20px 24px; background: #f8fafc; overflow-y: auto; max-height: 380px; display: flex; flex-direction: column; gap: 12px;">
+        <div id="hospitalAdminMsgContainer" style="flex: 1; padding: 16px 18px; background: #f8fafc; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
             <div style="text-align: center; color: #64748b; font-size: 13px; padding: 20px 0;">Loading conversation...</div>
         </div>
 
         <!-- REPLY FORM -->
-        <div style="padding: 18px 24px; background: #ffffff; border-top: 1px solid #e2e8f0;">
-            <div style="font-weight: 700; font-size: 13px; color: #334155; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                <span>✉️ Reply to Platform Admin</span>
-                <span style="font-size: 11.5px; color: #64748b; font-weight: normal;">Messages deliver directly to Admin dashboard</span>
-            </div>
-            <input type="text" id="hospitalReplySubject" placeholder="Subject (optional)" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 13px; margin-bottom: 8px; outline: none;">
-            <textarea id="hospitalReplyText" rows="3" placeholder="Type your reply to platform admin..." style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 13px; font-family: inherit; margin-bottom: 12px; resize: vertical; outline: none;"></textarea>
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button type="button" onclick="closeAdminMessagesModal()" style="padding: 10px 18px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">Close</button>
-                <button type="button" id="btnHospitalSendReply" onclick="sendHospitalReplyToAdmin()" style="padding: 10px 22px; background: #2563eb; color: white; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);">🚀 Send Reply</button>
+        <div style="padding: 14px 18px; background: #ffffff; border-top: 1px solid #e2e8f0; flex-shrink: 0;">
+            <input type="text" id="hospitalReplySubject" placeholder="Subject (optional)" style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; margin-bottom: 6px; outline: none;">
+            <textarea id="hospitalReplyText" rows="2" placeholder="Type your message to platform admin..." style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; margin-bottom: 8px; resize: none; outline: none;"></textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" onclick="closeAdminMessagesModal()" style="padding: 8px 16px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer;">Close</button>
+                <button type="button" id="btnHospitalSendReply" onclick="sendHospitalReplyToAdmin()" style="padding: 8px 18px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">🚀 Send</button>
             </div>
         </div>
 
