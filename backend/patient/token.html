@@ -424,6 +424,25 @@ function handleAuthRequired() {
     btn.style.background = "#0284c7";
 }
 
+
+async function fetchDynamicPlatformFee() {
+    try {
+        const res = await fetch(`${API}/platform/fee?t=${Date.now()}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (typeof data.platform_fee === "number") {
+                PLATFORM_FEE = data.platform_fee;
+                localStorage.setItem("carepath_platform_fee", String(PLATFORM_FEE));
+                if (byId("platformFee")) byId("platformFee").textContent = money(PLATFORM_FEE);
+                if (byId("totalAmount")) byId("totalAmount").textContent = money(hospitalFee + PLATFORM_FEE);
+                if (byId("receiptPlatformFee")) byId("receiptPlatformFee").textContent = money(PLATFORM_FEE);
+            }
+        }
+    } catch (err) {
+        console.warn("Could not fetch latest platform fee:", err);
+    }
+}
+
 function displayBooking() {
     byId("hospitalName").textContent = getSelectedHospitalName() || "Not selected";
     byId("department").textContent = getSelectedDepartment() || "Not selected";
