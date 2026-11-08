@@ -226,6 +226,22 @@
                     <textarea id="operatingAddress" placeholder="e.g., Plot No 12, Sector 5, Bhubaneswar, Odisha, India - 751024" required></textarea>
                     <span class="field-hint">Full physical business address required by payment gateways (Cashfree / Razorpay).</span>
                 </div>
+
+                <!-- Platform Convenience Fee -->
+                <div class="form-field full-width" style="background: #eff6ff; border: 1.5px solid #bfdbfe; padding: 18px; border-radius: 12px; margin-top: 10px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <label for="platformFee" style="color: #1e40af; font-size: 15px;">⚙️ Platform Convenience Fee per Token (₹) *</label>
+                            <div style="font-size: 12px; color: #475569; margin-top: 2px;">
+                                Dynamic fee added to OPD tokens during checkout. Set to ₹0 to run free booking promotions for new hospitals.
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px; font-weight: 800; color: #1e40af;">₹</span>
+                            <input type="number" id="platformFee" min="0" max="100" style="width: 100px; font-size: 18px; font-weight: 800; text-align: center; color: #1e40af; border: 2px solid #3b82f6;" required>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <button type="submit" id="btnSaveContact" class="btn-save">
@@ -246,6 +262,10 @@
                 <div class="preview-item">
                     <strong>Support Email</strong>
                     <span id="prevSupportEmail">mangarajesh58@gmail.com</span>
+                </div>
+                <div class="preview-item">
+                    <strong>Platform Fee</strong>
+                    <span id="prevPlatformFee" style="font-weight: 700; color: #2563eb;">₹10 per booking</span>
                 </div>
                 <div class="preview-item">
                     <strong>Support Phone</strong>
@@ -282,6 +302,10 @@ fields.forEach(f => {
 
 function updatePreview() {
     document.getElementById("prevBusinessName").textContent = document.getElementById("businessName").value || "—";
+    const feeVal = document.getElementById("platformFee") ? document.getElementById("platformFee").value : "10";
+    if (document.getElementById("prevPlatformFee")) {
+        document.getElementById("prevPlatformFee").textContent = `₹${feeVal} per booking`;
+    }
     document.getElementById("prevSupportEmail").textContent = document.getElementById("supportEmail").value || "—";
     document.getElementById("prevSupportPhone").textContent = document.getElementById("supportPhone").value || "—";
     document.getElementById("prevWorkingHours").textContent = document.getElementById("workingHours").value || "—";
@@ -311,6 +335,9 @@ async function loadContactSettings() {
             document.getElementById("operatingAddress").value = data.operating_address || "";
             document.getElementById("grievanceOfficer").value = data.grievance_officer || "";
             document.getElementById("grievanceEmail").value = data.grievance_email || "";
+            if (document.getElementById("platformFee")) {
+                document.getElementById("platformFee").value = data.platform_fee ?? 10;
+            }
             updatePreview();
         }
     } catch (err) {
@@ -331,7 +358,8 @@ async function handleSaveContact(event) {
         working_hours: document.getElementById("workingHours").value.trim(),
         operating_address: document.getElementById("operatingAddress").value.trim(),
         grievance_officer: document.getElementById("grievanceOfficer").value.trim(),
-        grievance_email: document.getElementById("grievanceEmail").value.trim()
+        grievance_email: document.getElementById("grievanceEmail").value.trim(),
+        platform_fee: parseInt(document.getElementById("platformFee")?.value || "10", 10)
     };
 
     btn.disabled = true;

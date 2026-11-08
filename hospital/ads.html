@@ -912,16 +912,21 @@ async function loadCampaigns() {
             const bannerSrc = a.image_url ? (a.image_url.startsWith("http") ? a.image_url : `${API_URL}${a.image_url}`) : "";
 
             return `
-            <div class="ad-item">
-                ${bannerSrc ? `<img src="${bannerSrc}" alt="Ad" class="ad-thumb" onerror="this.style.display='none'">` : ""}
-                <div class="ad-item-content">
-                    <div class="ad-item-title">${a.title}</div>
-                    <div class="ad-item-meta">
-                        <span class="${badgeClass}">${statusLabel}</span>
-                        <span>Fee: ₹${a.amount_paid || 999}</span>
-                        ${a.expires_at ? `<span>Expires: ${new Date(a.expires_at).toLocaleDateString()}</span>` : ""}
+            <div class="ad-item" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                    ${bannerSrc ? `<img src="${bannerSrc}" alt="Ad" class="ad-thumb" onerror="this.style.display='none'">` : ""}
+                    <div class="ad-item-content">
+                        <div class="ad-item-title">${a.title}</div>
+                        <div class="ad-item-meta">
+                            <span class="${badgeClass}">${statusLabel}</span>
+                            <span>Fee: ₹${a.amount_paid || 999}</span>
+                            ${a.expires_at ? `<span>Expires: ${new Date(a.expires_at).toLocaleDateString()}</span>` : ""}
+                        </div>
                     </div>
                 </div>
+                <button type="button" onclick="deleteHospitalAd(${a.id})" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 0.2s;">
+                    🗑️ Delete
+                </button>
             </div>
             `;
         }).join("");
@@ -1009,6 +1014,26 @@ function useAsAdTargetLink() {
 generateHospitalDirectLink();
 loadHospitalInfo();
 loadCampaigns();
+
+async function deleteHospitalAd(adId) {
+    if (!confirm("Are you sure you want to permanently delete this advertisement campaign?")) return;
+    try {
+        const hospitalId = requireHospitalLogin();
+        if (!hospitalId) return;
+
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/${adId}`, {
+            method: "DELETE",
+            headers: getAuthHeaders(true)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to delete ad.");
+        alert("Advertisement campaign has been deleted.");
+        await loadMyCampaigns();
+    } catch (err) {
+        alert(err.message || "Failed to delete ad.");
+    }
+}
+
 </script>
 
 </body>

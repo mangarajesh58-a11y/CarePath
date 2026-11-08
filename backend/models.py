@@ -358,3 +358,31 @@ class HospitalDirectMessage(Base):
     is_read = Column(Boolean, default=False, index=True, nullable=False)
     sent_via_email = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class HospitalSettlement(Base):
+    __tablename__ = "hospital_settlements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hospital_id = Column(Integer, nullable=False, index=True)
+    amount = Column(Float, nullable=False)
+    utr_reference = Column(String(255), nullable=False, index=True)
+    bank_name = Column(String(255), nullable=True)
+    account_number = Column(String(100), nullable=True)
+    settlement_date = Column(Date, nullable=False)
+    notes = Column(Text, nullable=True)
+    created_by = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AdminAuditLog(Base):
+    __tablename__ = "admin_audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_email = Column(String(255), nullable=False, index=True)
+    action = Column(String(100), nullable=False, index=True)
+    target_type = Column(String(50), nullable=True)
+    target_id = Column(String(100), nullable=True)
+    details = Column(Text, nullable=True)
+    ip_address = Column(String(50), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)

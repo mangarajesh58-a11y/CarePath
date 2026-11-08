@@ -85,6 +85,8 @@ from models import (
     HospitalAdvertisement,
     SystemBroadcast,
     HospitalDirectMessage,
+    HospitalSettlement,
+    AdminAuditLog,
 )
 from fastapi.responses import FileResponse, Response, JSONResponse
 
@@ -2795,6 +2797,41 @@ def resolve_hospital_photo_url(hospital):
     return f"/hospital-photos/hospital_{hospital.id}.jpg" 
 
 
+
+def log_admin_action(
+    db: Session,
+    admin_email: str,
+    action: str,
+    target_type: Optional[str] = None,
+    target_id: Optional[str] = None,
+    details: Optional[str] = None,
+    ip_address: Optional[str] = None,
+):
+    try:
+        log = AdminAuditLog(
+            admin_email=admin_email,
+            action=action,
+            target_type=target_type,
+            target_id=str(target_id) if target_id else None,
+            details=details,
+            ip_address=ip_address,
+        )
+        db.add(log)
+        db.commit()
+    except Exception as err:
+        db.rollback()
+        logging.warning("Audit log write error: %s", err)
+
+
+def get_current_platform_fee(db: Session) -> int:
+    try:
+        contact = db.query(PlatformContact).first()
+        if contact and getattr(contact, "platform_fee", None) is not None:
+            return int(contact.platform_fee)
+    except Exception:
+        pass
+    return PLATFORM_FEE
+
 def hospital_to_dict(hospital):
 
     return {
@@ -2818,6 +2855,17 @@ def hospital_to_dict(hospital):
             if hospital.license_expiry_date
             else None
         ),
+        "license_status": (
+            "EXPIRED" if (hospital.license_expiry_date and hospital.license_expiry_date < date.today())
+            else ("EXPIRING_SOON" if (hospital.license_expiry_date and (hospital.license_expiry_date - date.today()).days <= 30)
+            else "VALID")
+        ),
+        "days_to_license_expiry": (
+            (hospital.license_expiry_date - date.today()).days
+            if hospital.license_expiry_date
+            else None
+        ),
+        "rejection_reason": getattr(hospital, "rejection_reason", None),
 
         "approval_status": hospital.approval_status,
         "is_published": hospital.is_published,
@@ -6301,6 +6349,7 @@ def complete_token(
 
 class PlatformContactUpdateRequest(BaseModel):
     business_name: str | None = None
+    platform_fee: int | None = None
     support_email: str | None = None
     support_phone: str | None = None
     operating_address: str | None = None
@@ -6340,6 +6389,7 @@ def get_platform_contact(db: Session = Depends(get_db)):
         "grievance_officer": contact.grievance_officer,
         "grievance_email": contact.grievance_email,
         "working_hours": contact.working_hours,
+        "platform_fee": getattr(contact, "platform_fee", PLATFORM_FEE),
         "updated_at": contact.updated_at.isoformat() if contact.updated_at else None,
     }
 
@@ -6367,6 +6417,16 @@ def update_platform_contact(
         contact.grievance_email = data.grievance_email.strip()
     if data.working_hours is not None:
         contact.working_hours = data.working_hours.strip()
+    if data.platform_fee is not None:
+        contact.platform_fee = int(data.platform_fee)
+        log_admin_action(
+            db,
+            current_user.get("email", "admin"),
+            "UPDATE_PLATFORM_FEE",
+            target_type="SETTING",
+            target_id="platform_fee",
+            details=f"Platform convenience fee updated to ₹{contact.platform_fee}"
+        )
 
     contact.updated_at = datetime.utcnow()
     db.commit()
@@ -6640,9 +6700,36 @@ def reject_hospital_certificate(
         )
 
     hospital.certificate_verification_status = "REJECTED"
+    hospital.rejection_reason = (data.reason or "Hospital certificate rejected by admin")
 
     db.commit()
     db.refresh(hospital)
+
+    log_admin_action(
+        db,
+        current_user.get("email", "admin"),
+        "REJECT_CERTIFICATE",
+        target_type="HOSPITAL",
+        target_id=str(hospital.id),
+        details=f"Certificate rejection reason: {hospital.rejection_reason}"
+    )
+
+    if hospital.email:
+        subj = f"CarePath Notice: Certificate Rejected for {hospital.name}"
+        body = f"""Dear {hospital.name} Administration,
+
+Your uploaded hospital registration certificate has been reviewed and REJECTED.
+Reason: {hospital.rejection_reason}
+
+Please log in to your Hospital Command Center ({HOSPITAL_FRONTEND_URL}/profile.html) to re-upload a clear and valid document.
+
+Regards,
+CarePath Verification Team
+"""
+        try:
+            send_carepath_email(hospital.email, subj, body)
+        except Exception as err:
+            logging.warning("Certificate rejection email error: %s", err)
 
     return {
         "success": True,
@@ -6842,11 +6929,38 @@ def reject_hospital(
 
     hospital.rejection_reason = (
         data.reason
-        or "Hospital registration rejected"
+        or "Hospital registration rejected by CarePath Admin"
     )
 
     db.commit()
     db.refresh(hospital)
+
+    log_admin_action(
+        db,
+        current_user.get("email", "admin"),
+        "REJECT_HOSPITAL",
+        target_type="HOSPITAL",
+        target_id=str(hospital.id),
+        details=f"Reason: {hospital.rejection_reason}"
+    )
+
+    if hospital.email:
+        subj = f"CarePath Action Required: Hospital Registration Status for {hospital.name}"
+        body = f"""Dear {hospital.name} Administration,
+
+Your CarePath hospital registration review has been updated.
+Status: REJECTED
+Reason: {hospital.rejection_reason}
+
+Please log in to your Hospital Command Center ({HOSPITAL_FRONTEND_URL}) to review your details and re-submit your registration.
+
+Regards,
+CarePath Healthcare Compliance Team
+"""
+        try:
+            send_carepath_email(hospital.email, subj, body)
+        except Exception as err:
+            logging.warning("Rejection email error: %s", err)
 
     return {
         "success": True,
@@ -8961,3 +9075,412 @@ if os.path.exists(PATIENT_STATIC_DIR):
 
 if os.path.exists(HOSPITAL_STATIC_DIR):
     app.mount("/hospital", StaticFiles(directory=HOSPITAL_STATIC_DIR, html=True), name="hospital")
+
+
+# ============================================================
+# ADMIN - HOSPITAL FINANCIAL LEDGER
+# ============================================================
+
+@app.get("/admin/ledger")
+def get_admin_hospital_ledger(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    hospitals = db.query(Hospital).order_by(Hospital.name.asc()).all()
+    ledger = []
+
+    for hosp in hospitals:
+        paid_tokens = db.query(Token).filter(
+            Token.hospital_id == hosp.id,
+            Token.payment_status == "paid"
+        ).all()
+
+        total_opd = sum(int(t.token_fee or 0) for t in paid_tokens)
+        platform_comm = sum(int(t.platform_fee or 0) for t in paid_tokens)
+        total_collected = sum(int(t.total_amount or 0) for t in paid_tokens)
+        net_payable = total_opd
+
+        settlements = db.query(HospitalSettlement).filter(
+            HospitalSettlement.hospital_id == hosp.id
+        ).all()
+        already_settled = sum(float(s.amount or 0.0) for s in settlements)
+        pending_balance = max(0.0, net_payable - already_settled)
+
+        ledger.append({
+            "hospital_id": hosp.id,
+            "hospital_name": hosp.name,
+            "city": hosp.city,
+            "approval_status": hosp.approval_status,
+            "payment_account_status": hosp.payment_account_status,
+            "payment_account_name": hosp.payment_account_name,
+            "payment_account_number": hosp.payment_account_number,
+            "payment_ifsc": hosp.payment_ifsc,
+            "payment_upi": hosp.payment_upi,
+            "paid_tokens_count": len(paid_tokens),
+            "total_opd_collected": total_opd,
+            "platform_commission": platform_comm,
+            "total_collected": total_collected,
+            "net_payable_to_hospital": net_payable,
+            "already_settled": round(already_settled, 2),
+            "pending_balance": round(pending_balance, 2),
+            "settlements_count": len(settlements),
+        })
+
+    return {
+        "success": True,
+        "ledger": ledger,
+        "total_hospitals": len(ledger),
+        "total_pending_payouts": round(sum(item["pending_balance"] for item in ledger), 2),
+        "total_settled_payouts": round(sum(item["already_settled"] for item in ledger), 2),
+    }
+
+
+# ============================================================
+# ADMIN - HOSPITAL SETTLEMENTS & PAYOUTS
+# ============================================================
+
+class HospitalSettlementCreate(BaseModel):
+    amount: float
+    utr_reference: str
+    bank_name: Optional[str] = None
+    account_number: Optional[str] = None
+    settlement_date: Optional[date] = None
+    notes: Optional[str] = None
+
+
+@app.post("/admin/hospitals/{hospital_id}/settle")
+def create_hospital_settlement(
+    hospital_id: int,
+    data: HospitalSettlementCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+    if data.amount <= 0:
+        raise HTTPException(status_code=400, detail="Settlement amount must be greater than zero.")
+    if not data.utr_reference or not data.utr_reference.strip():
+        raise HTTPException(status_code=400, detail="UTR / Bank Reference Number is required.")
+
+    settlement = HospitalSettlement(
+        hospital_id=hospital_id,
+        amount=round(float(data.amount), 2),
+        utr_reference=data.utr_reference.strip(),
+        bank_name=(data.bank_name or hospital.payment_account_name or "Hospital Bank Account").strip(),
+        account_number=(data.account_number or hospital.payment_account_number or "—").strip(),
+        settlement_date=data.settlement_date or date.today(),
+        notes=data.notes.strip() if data.notes else None,
+        created_by=current_user.get("email", "admin"),
+    )
+    db.add(settlement)
+    db.commit()
+    db.refresh(settlement)
+
+    log_admin_action(
+        db,
+        current_user.get("email", "admin"),
+        "SETTLE_PAYOUT",
+        target_type="HOSPITAL",
+        target_id=str(hospital_id),
+        details=f"Settled ₹{settlement.amount} with UTR {settlement.utr_reference} to {hospital.name}"
+    )
+
+    return {
+        "success": True,
+        "message": f"Settlement of ₹{settlement.amount} recorded successfully for {hospital.name}.",
+        "settlement": {
+            "id": settlement.id,
+            "hospital_id": settlement.hospital_id,
+            "amount": settlement.amount,
+            "utr_reference": settlement.utr_reference,
+            "settlement_date": str(settlement.settlement_date),
+            "bank_name": settlement.bank_name,
+            "notes": settlement.notes,
+            "created_at": settlement.created_at.isoformat() if settlement.created_at else None,
+        }
+    }
+
+
+@app.get("/admin/settlements")
+def list_all_settlements(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    settlements = db.query(HospitalSettlement).order_by(HospitalSettlement.settlement_date.desc(), HospitalSettlement.created_at.desc()).all()
+    results = []
+    for s in settlements:
+        hosp = db.query(Hospital).filter(Hospital.id == s.hospital_id).first()
+        results.append({
+            "id": s.id,
+            "hospital_id": s.hospital_id,
+            "hospital_name": hosp.name if hosp else "Unknown Hospital",
+            "amount": s.amount,
+            "utr_reference": s.utr_reference,
+            "bank_name": s.bank_name,
+            "account_number": s.account_number,
+            "settlement_date": str(s.settlement_date),
+            "notes": s.notes,
+            "created_by": s.created_by,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+        })
+    return {"success": True, "settlements": results}
+
+
+@app.get("/admin/hospitals/{hospital_id}/settlements")
+def list_hospital_settlements(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    settlements = db.query(HospitalSettlement).filter(
+        HospitalSettlement.hospital_id == hospital_id
+    ).order_by(HospitalSettlement.settlement_date.desc()).all()
+    return [{
+        "id": s.id,
+        "amount": s.amount,
+        "utr_reference": s.utr_reference,
+        "bank_name": s.bank_name,
+        "account_number": s.account_number,
+        "settlement_date": str(s.settlement_date),
+        "notes": s.notes,
+        "created_by": s.created_by,
+        "created_at": s.created_at.isoformat() if s.created_at else None,
+    } for s in settlements]
+
+
+# ============================================================
+# ADMIN - FAILED REFUNDS & RETRY
+# ============================================================
+
+@app.get("/admin/failed-refunds")
+def list_failed_refunds(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    tokens = db.query(Token).filter(
+        or_(
+            Token.payment_status.in_(["refund_failed", "failed", "refund_pending"]),
+            and_(Token.status == "cancelled", Token.payment_status == "paid")
+        )
+    ).order_by(Token.created_at.desc()).all()
+
+    return [{
+        "id": t.id,
+        "token_number": t.token_number,
+        "patient_name": t.patient_name,
+        "hospital": t.hospital,
+        "hospital_id": t.hospital_id,
+        "total_amount": t.total_amount,
+        "payment_status": t.payment_status,
+        "status": t.status,
+        "cashfree_order_id": t.cashfree_order_id,
+        "cashfree_payment_id": t.cashfree_payment_id,
+        "notes": t.notes,
+        "appointment_date": str(t.appointment_date) if t.appointment_date else None,
+        "created_at": t.created_at.isoformat() if t.created_at else None,
+    } for t in tokens]
+
+
+@app.post("/admin/refunds/{token_id}/retry")
+def retry_refund_endpoint(
+    token_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    token = db.query(Token).filter(Token.id == token_id).first()
+    if not token:
+        raise HTTPException(status_code=404, detail="Token not found")
+
+    token.payment_status = "refunded"
+    token.status = "cancelled"
+    token.notes = (token.notes or "") + " [Refund processed and verified by CarePath Admin]"
+    db.commit()
+    db.refresh(token)
+
+    log_admin_action(
+        db,
+        current_user.get("email", "admin"),
+        "RETRY_REFUND",
+        target_type="TOKEN",
+        target_id=str(token_id),
+        details=f"Refund resolved for Token #{token.token_number} (Patient: {token.patient_name}, Amount: ₹{token.total_amount})"
+    )
+
+    return {
+        "success": True,
+        "message": f"Refund for Token #{token.token_number} has been recorded as REFUNDED.",
+        "token": token_to_dict(token)
+    }
+
+
+# ============================================================
+# ADMIN - PLATFORM ANALYTICS (PEAK HOURS, DEPARTMENTS, QUEUE)
+# ============================================================
+
+@app.get("/admin/analytics")
+def get_admin_analytics(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    all_tokens = db.query(Token).all()
+    today = date.today()
+
+    # 1. Hourly Distribution (0 to 23 in IST)
+    hourly_counts = {h: 0 for h in range(24)}
+    for t in all_tokens:
+        if t.created_at:
+            ist_hour = (t.created_at + timedelta(hours=5, minutes=30)).hour
+            hourly_counts[ist_hour] += 1
+
+    max_hourly = max(hourly_counts.values()) if any(hourly_counts.values()) else 1
+    hourly_distribution = []
+    for h in range(24):
+        dt_sample = datetime(2026, 1, 1, h, 0)
+        label = dt_sample.strftime("%I:%M %p").lstrip("0")
+        hourly_distribution.append({
+            "hour": h,
+            "label": label,
+            "count": hourly_counts[h],
+            "is_peak": hourly_counts[h] >= (max_hourly * 0.7 if max_hourly > 0 else 1),
+        })
+
+    # 2. Daily Trends (last 14 days)
+    daily_trends = []
+    for day_offset in range(13, -1, -1):
+        target_date = today - timedelta(days=day_offset)
+        day_tokens = [t for t in all_tokens if t.appointment_date == target_date]
+        paid_tokens = [t for t in day_tokens if t.payment_status == "paid"]
+        daily_trends.append({
+            "date": target_date.strftime("%b %d"),
+            "full_date": str(target_date),
+            "tokens": len(day_tokens),
+            "revenue": sum(int(t.total_amount or 0) for t in paid_tokens),
+            "platform_revenue": sum(int(t.platform_fee or 0) for t in paid_tokens),
+        })
+
+    # 3. Department Breakdown
+    dept_counts = {}
+    for t in all_tokens:
+        dept = (t.department or "General").strip().title()
+        dept_counts[dept] = dept_counts.get(dept, 0) + 1
+
+    total_tokens_count = len(all_tokens) or 1
+    department_breakdown = sorted([
+        {
+            "department": dept,
+            "count": cnt,
+            "percentage": round((cnt / total_tokens_count) * 100, 1),
+        }
+        for dept, cnt in dept_counts.items()
+    ], key=lambda x: x["count"], reverse=True)[:8]
+
+    # 4. Queue Health & Doctors Status
+    waiting_count = sum(1 for t in all_tokens if t.status == "waiting")
+    serving_count = sum(1 for t in all_tokens if t.status == "serving")
+    completed_count = sum(1 for t in all_tokens if t.status == "completed")
+    cancelled_count = sum(1 for t in all_tokens if t.status == "cancelled")
+
+    all_doctors = db.query(Doctor).all()
+    on_duty_doctors = sum(1 for d in all_doctors if getattr(d, "is_available", True))
+    off_duty_doctors = len(all_doctors) - on_duty_doctors
+
+    hospitals = db.query(Hospital).all()
+    expiring_licenses = 0
+    expired_licenses = 0
+    for h in hospitals:
+        if h.license_expiry_date:
+            diff = (h.license_expiry_date - today).days
+            if diff < 0:
+                expired_licenses += 1
+            elif diff <= 30:
+                expiring_licenses += 1
+
+    return {
+        "success": True,
+        "hourly_distribution": hourly_distribution,
+        "daily_trends": daily_trends,
+        "department_breakdown": department_breakdown,
+        "queue_health": {
+            "total_tokens": len(all_tokens),
+            "waiting": waiting_count,
+            "serving": serving_count,
+            "completed": completed_count,
+            "cancelled": cancelled_count,
+            "estimated_avg_wait_minutes": 15,
+            "on_duty_doctors": on_duty_doctors,
+            "off_duty_doctors": off_duty_doctors,
+            "total_doctors": len(all_doctors),
+            "total_hospitals": len(hospitals),
+            "expiring_licenses_30d": expiring_licenses,
+            "expired_licenses": expired_licenses,
+        }
+    }
+
+
+# ============================================================
+# ADMIN - AUDIT LOGS
+# ============================================================
+
+@app.get("/admin/audit-logs")
+def get_admin_audit_logs(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    logs = db.query(AdminAuditLog).order_by(AdminAuditLog.created_at.desc()).limit(100).all()
+    return [{
+        "id": l.id,
+        "admin_email": l.admin_email,
+        "action": l.action,
+        "target_type": l.target_type,
+        "target_id": l.target_id,
+        "details": l.details,
+        "ip_address": l.ip_address,
+        "created_at": l.created_at.isoformat() if l.created_at else None,
+    } for l in logs]
+
+
+# ============================================================
+# HOSPITAL ADVERTISEMENTS - DELETE ENDPOINTS
+# ============================================================
+
+@app.delete("/hospitals/{hospital_id}/ads/{ad_id}")
+def delete_hospital_ad(
+    hospital_id: int,
+    ad_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    if current_user["user_id"] != hospital_id:
+        raise HTTPException(status_code=403, detail="You cannot delete another hospital's ad.")
+    ad = db.query(HospitalAdvertisement).filter(
+        HospitalAdvertisement.id == ad_id,
+        HospitalAdvertisement.hospital_id == hospital_id
+    ).first()
+    if not ad:
+        raise HTTPException(status_code=404, detail="Advertisement campaign not found.")
+    db.delete(ad)
+    db.commit()
+    return {"success": True, "message": "Advertisement deleted successfully."}
+
+
+@app.delete("/admin/ads/{ad_id}")
+def admin_delete_ad(
+    ad_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    ad = db.query(HospitalAdvertisement).filter(HospitalAdvertisement.id == ad_id).first()
+    if not ad:
+        raise HTTPException(status_code=404, detail="Advertisement not found.")
+    db.delete(ad)
+    db.commit()
+    log_admin_action(
+        db,
+        current_user.get("email", "admin"),
+        "DELETE_AD",
+        target_type="AD",
+        target_id=str(ad_id),
+        details=f"Deleted ad '{ad.title}' for hospital ID {ad.hospital_id}"
+    )
+    return {"success": True, "message": "Advertisement deleted by admin."}

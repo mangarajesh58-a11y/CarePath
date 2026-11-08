@@ -2,197 +2,374 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments & Hospital Settlements - CarePath Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+            flex-wrap: wrap;
+        }
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+        .tab-btn {
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
 
-    <title>Payments - CarePath</title>
+        .tab-btn:hover {
+            border-color: #0284c7;
+            color: #0284c7;
+        }
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+        .tab-btn.active {
+            background: #0284c7;
+            color: white;
+            border-color: #0284c7;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+        }
 
+        .ledger-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .ledger-stat-card {
+            background: white;
+            padding: 18px 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+
+        .ledger-stat-card span {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .ledger-stat-card strong {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        /* Modal Styles */
+        .settle-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+        }
+
+        .settle-card {
+            background: white;
+            width: 100%;
+            max-width: 520px;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .settle-card h3 {
+            margin: 0 0 6px;
+            font-size: 20px;
+            color: #0f172a;
+        }
+
+        .settle-field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 14px;
+        }
+
+        .settle-field label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+
+        .settle-field input, .settle-field textarea {
+            padding: 10px 12px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .settle-field input:focus, .settle-field textarea:focus {
+            border-color: #0284c7;
+        }
+    </style>
 </head>
-
 
 <body>
 
 <div class="page-container">
 
-
     <!-- HEADER -->
-
     <header>
-
         <div>
-
-            <h1>
-                💳 Payments
-            </h1>
-
-            <p>
-                CarePath payment records
-            </p>
-
+            <h1>💳 Financial Command Center</h1>
+            <p>Monitor transactions, settle hospital OPD balances, and manage refunds</p>
         </div>
-
-
-        <button
-            type="button"
-            class="logout"
-            onclick="adminLogout()"
-        >
-            Logout
-        </button>
-
+        <button type="button" class="logout" onclick="adminLogout()">Logout</button>
     </header>
 
-
-
-    <!-- PAYMENT TABLE -->
-
-    <div class="table-card">
-
-
-        <!-- PAGE HEADING -->
-
-        <div class="page-heading">
-
-            <div>
-
-                <h2>
-                    Payment Records
-                </h2>
-
-                <p>
-                    View token fees, platform fees and payment status
-                </p>
-
-            </div>
-
-
-            <button
-                type="button"
-                onclick="loadPayments()"
-            >
-                🔄 Refresh
-            </button>
-
-        </div>
-
-
-
-        <!-- MESSAGE -->
-
-        <div
-            id="message"
-            class="message"
-        ></div>
-
-
-
-        <!-- TABLE -->
-
-        <div class="table-container">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-
-                        <th>
-                            ID
-                        </th>
-
-                        <th>
-                            Patient
-                        </th>
-
-                        <th>
-                            Hospital
-                        </th>
-
-                        <th>
-                            Department
-                        </th>
-
-                        <th>
-                            Doctor
-                        </th>
-
-                        <th>
-                            Token Fee
-                        </th>
-
-                        <th>
-                            Platform Fee
-                        </th>
-
-                        <th>
-                            Total
-                        </th>
-
-                        <th>
-                            Payment Status
-                        </th>
-
-                        <th>
-                            Razorpay Payment ID
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody id="paymentTableBody">
-
-                    <tr>
-
-                        <td
-                            colspan="10"
-                            class="loading"
-                        >
-                            Loading payments...
-                        </td>
-
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
-
+    <!-- TAB NAVIGATION -->
+    <div class="tab-nav">
+        <button type="button" id="tabBtnTransactions" class="tab-btn active" onclick="switchPaymentSection('transactions')">
+            💳 Online Transactions
+        </button>
+        <button type="button" id="tabBtnLedger" class="tab-btn" onclick="switchPaymentSection('ledger')">
+            💸 Hospital Balance Ledger & Settlements
+        </button>
+        <button type="button" id="tabBtnRefunds" class="tab-btn" onclick="switchPaymentSection('refunds')">
+            ⚠️ Failed Refunds & Retry
+        </button>
     </div>
 
+    <!-- GENERAL MESSAGE -->
+    <div id="message" class="message" style="display: none;"></div>
 
+    <!-- SECTION 1: TRANSACTIONS (DEFAULT) -->
+    <div id="sectionTransactions" class="table-card">
+        <div class="page-heading">
+            <div>
+                <h2>Payment Transactions</h2>
+                <p>View all successful token payments and convenience fee splits</p>
+            </div>
+            <button type="button" onclick="loadPayments()">🔄 Refresh</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Patient</th>
+                        <th>Hospital</th>
+                        <th>Department</th>
+                        <th>Doctor</th>
+                        <th>Token Fee</th>
+                        <th>Platform Fee</th>
+                        <th>Total Paid</th>
+                        <th>Status</th>
+                        <th>Cashfree / Ref ID</th>
+                    </tr>
+                </thead>
+                <tbody id="paymentTableBody">
+                    <tr>
+                        <td colspan="10" class="loading">Loading payments...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SECTION 2: HOSPITAL BALANCE LEDGER & SETTLEMENTS -->
+    <div id="sectionLedger" style="display: none;">
+        <!-- STAT STRIP -->
+        <div class="ledger-summary-grid">
+            <div class="ledger-stat-card">
+                <span>Total OPD Fees Collected</span>
+                <strong id="statTotalOpd">₹0</strong>
+            </div>
+            <div class="ledger-stat-card">
+                <span>CarePath Commission Earned</span>
+                <strong id="statPlatformComm" style="color: #0284c7;">₹0</strong>
+            </div>
+            <div class="ledger-stat-card">
+                <span>Total Settled to Hospitals</span>
+                <strong id="statSettledPayouts" style="color: #16a34a;">₹0</strong>
+            </div>
+            <div class="ledger-stat-card" style="border: 2px solid #fed7aa; background: #fffaf5;">
+                <span style="color: #c2410c;">Pending Hospital Payouts</span>
+                <strong id="statPendingPayouts" style="color: #ea580c;">₹0</strong>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="page-heading">
+                <div>
+                    <h2>Hospital Balance Ledger</h2>
+                    <p>Track earnings, platform commissions, and log bank settlements (UTR)</p>
+                </div>
+                <button type="button" onclick="loadHospitalLedger()">🔄 Refresh Ledger</button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hospital</th>
+                            <th>Bank / UPI Details</th>
+                            <th>Paid Tokens</th>
+                            <th>OPD Fee</th>
+                            <th>Commission</th>
+                            <th>Net Payable</th>
+                            <th>Settled</th>
+                            <th>Pending Balance</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerTableBody">
+                        <tr>
+                            <td colspan="9" class="loading">Loading ledger...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RECENT SETTLEMENTS HISTORY -->
+        <div class="table-card" style="margin-top: 24px;">
+            <div class="page-heading">
+                <div>
+                    <h2>Recent Payout Settlement History</h2>
+                    <p>Recorded bank payouts and UTR transfer numbers</p>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Hospital</th>
+                            <th>Settled Amount</th>
+                            <th>UTR / Reference #</th>
+                            <th>Bank Account</th>
+                            <th>Recorded By</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="settlementHistoryTableBody">
+                        <tr>
+                            <td colspan="7" class="loading">Loading settlement history...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: FAILED REFUNDS & RETRY -->
+    <div id="sectionRefunds" class="table-card" style="display: none;">
+        <div class="page-heading">
+            <div>
+                <h2>Failed Refunds & Cancellation Oversight</h2>
+                <p>Monitor cancelled appointments or failed refund webhooks and trigger manual resolution</p>
+            </div>
+            <button type="button" onclick="loadFailedRefunds()">🔄 Refresh Refunds</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Token #</th>
+                        <th>Patient</th>
+                        <th>Hospital</th>
+                        <th>Amount</th>
+                        <th>Payment Status</th>
+                        <th>Order / Payment ID</th>
+                        <th>Cancellation Reason</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="failedRefundsTableBody">
+                    <tr>
+                        <td colspan="8" class="loading">Checking for refund exceptions...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <!-- BACK BUTTON -->
-
-    <button
-        type="button"
-        class="back-button"
-        onclick="goDashboard()"
-    >
+    <button type="button" class="back-button" onclick="goDashboard()">
         ← Back to Dashboard
     </button>
 
-
 </div>
 
+<!-- RECORD SETTLEMENT MODAL -->
+<div id="settleModal" class="settle-modal" style="display: none;" onclick="if(event.target===this)closeSettlementModal()">
+    <div class="settle-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3>💸 Record Hospital Payout Settlement</h3>
+            <button type="button" onclick="closeSettlementModal()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
 
+        <div style="background: #f8fafc; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px;">
+            <div><strong>Hospital:</strong> <span id="modalHospName">—</span></div>
+            <div style="color: #64748b; margin-top: 4px;"><strong>Bank / UPI:</strong> <span id="modalBankDetails">—</span></div>
+            <div style="margin-top: 4px; color: #ea580c; font-weight: 700;"><strong>Unsettled Balance:</strong> <span id="modalPendingBal">₹0</span></div>
+        </div>
 
-<!-- ADMIN JAVASCRIPT -->
+        <form id="settlementForm" onsubmit="submitSettlement(event)">
+            <input type="hidden" id="modalHospId">
+
+            <div class="settle-field">
+                <label for="settleAmount">Settlement Amount (₹) *</label>
+                <input type="number" id="settleAmount" step="0.01" min="1" required>
+            </div>
+
+            <div class="settle-field">
+                <label for="settleUtr">UTR / Bank Reference / Transaction Number *</label>
+                <input type="text" id="settleUtr" placeholder="e.g., HDFC0001928347 or UPI Ref ID" required>
+            </div>
+
+            <div class="settle-field">
+                <label for="settleDate">Settlement Date *</label>
+                <input type="date" id="settleDate" required>
+            </div>
+
+            <div class="settle-field">
+                <label for="settleNotes">Notes / Remittance Info (Optional)</label>
+                <textarea id="settleNotes" placeholder="e.g. Weekly OPD consultation payout" rows="2"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" id="btnSubmitSettle" style="flex: 1; padding: 12px; background: #16a34a; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                    ✓ Record Settlement
+                </button>
+                <button type="button" onclick="closeSettlementModal()" style="padding: 12px 20px; background: #e2e8f0; color: #475569; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script src="script.js"></script>
 
 </body>
-
 </html>

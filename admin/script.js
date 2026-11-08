@@ -500,6 +500,7 @@ async function loadDashboard() {
     try {
         await loadDashboardHospitals();
         await loadRevenue();
+        await loadAnalytics();
 
     } catch (error) {
         console.error(
@@ -766,6 +767,23 @@ async function loadHospitals() {
             return;
         }
 
+        // Check clinical license expiry across hospitals
+        const alertBanner = document.getElementById("licenseExpiryAlertBanner");
+        if (alertBanner) {
+            const expCount = hospitals.filter(h => h.license_status === "EXPIRED" || h.license_status === "EXPIRING_SOON").length;
+            if (expCount > 0) {
+                const expiredCount = hospitals.filter(h => h.license_status === "EXPIRED").length;
+                const soonCount = hospitals.filter(h => h.license_status === "EXPIRING_SOON").length;
+                document.getElementById("licenseAlertText").textContent =
+                    `${expiredCount > 0 ? `${expiredCount} license(s) EXPIRED! ` : ''}${soonCount > 0 ? `${soonCount} license(s) expiring within 30 days.` : ''} Clinical Establishment compliance required.`;
+                alertBanner.style.display = "block";
+            } else {
+                alertBanner.style.display = "none";
+            }
+        }
+
+        window.allLoadedHospitals = hospitals;
+
         tableBody.innerHTML = "";
 
         hospitals.forEach(
@@ -888,10 +906,14 @@ async function loadHospitals() {
                     </td>
 
                     <td>
-                        ${escapeHtml(
-                            hospital.license_id ||
-                            "Not provided"
-                        )}
+                        <div><strong>${escapeHtml(hospital.license_id || "Not provided")}</strong></div>
+                        ${hospital.license_status === "EXPIRED" ? `
+                            <span style="display: inline-block; background: #fee2e2; color: #b91c1c; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-top: 4px;">⚠️ EXPIRED (${Math.abs(hospital.days_to_license_expiry)}d ago)</span>
+                        ` : (hospital.license_status === "EXPIRING_SOON" ? `
+                            <span style="display: inline-block; background: #fef3c7; color: #b45309; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-top: 4px;">⏳ Expiring in ${hospital.days_to_license_expiry}d</span>
+                        ` : (hospital.license_expiry_date ? `
+                            <span style="display: inline-block; background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-top: 4px;">✓ Valid (${hospital.license_expiry_date})</span>
+                        ` : ""))}
                     </td>
 
                     <td>
@@ -906,6 +928,11 @@ async function loadHospitals() {
                         >
                             ${escapeHtml(status)}
                         </span>
+                        ${hospital.rejection_reason ? `
+                            <div style="font-size: 11px; color: #b91c1c; margin-top: 4px; max-width: 140px; line-height: 1.2; word-break: break-word;">
+                                <strong>Reason:</strong> ${escapeHtml(hospital.rejection_reason)}
+                            </div>
+                        ` : ""}
                     </td>
 
                     <td>
@@ -3258,3 +3285,432 @@ window.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
+
+
+// =====================================================
+// LICENSE EXPIRY FILTER (HOSPITALS PAGE)
+// =====================================================
+
+function filterExpiringLicenses() {
+    const list = window.allLoadedHospitals || [];
+    const expiring = list.filter(h => h.license_status === "EXPIRED" || h.license_status === "EXPIRING_SOON");
+    if (expiring.length === 0) {
+        alert("No expired or expiring licenses found.");
+        return;
+    }
+    alert(`Found ${expiring.length} hospital(s) with expiring/expired licenses. Reviewing compliance...`);
+}
+window.filterExpiringLicenses = filterExpiringLicenses;
+
+// =====================================================
+// PAYMENT TABS & HOSPITAL BALANCE LEDGER
+// =====================================================
+
+let currentPaymentTab = "transactions";
+
+function switchPaymentSection(section) {
+    currentPaymentTab = section;
+    const transSec = document.getElementById("sectionTransactions");
+    const ledgerSec = document.getElementById("sectionLedger");
+    const refundsSec = document.getElementById("sectionRefunds");
+
+    const btnTrans = document.getElementById("tabBtnTransactions");
+    const btnLedger = document.getElementById("tabBtnLedger");
+    const btnRefunds = document.getElementById("tabBtnRefunds");
+
+    if (btnTrans) btnTrans.classList.toggle("active", section === "transactions");
+    if (btnLedger) btnLedger.classList.toggle("active", section === "ledger");
+    if (btnRefunds) btnRefunds.classList.toggle("active", section === "refunds");
+
+    if (transSec) transSec.style.display = section === "transactions" ? "block" : "none";
+    if (ledgerSec) ledgerSec.style.display = section === "ledger" ? "block" : "none";
+    if (refundsSec) refundsSec.style.display = section === "refunds" ? "block" : "none";
+
+    if (section === "transactions") loadPayments();
+    if (section === "ledger") loadHospitalLedger();
+    if (section === "refunds") loadFailedRefunds();
+}
+window.switchPaymentSection = switchPaymentSection;
+
+async function loadHospitalLedger() {
+    const tableBody = document.getElementById("ledgerTableBody");
+    if (!tableBody) return;
+
+    tableBody.innerHTML = `<tr><td colspan="9" class="loading">Loading hospital balance ledger...</td></tr>`;
+
+    try {
+        const response = await fetchWithRetry(`${API}/admin/ledger`, {
+            headers: getAdminAuthHeaders()
+        });
+        if (response.status === 401) { requireAdminLogin(); return; }
+        const data = await readResponse(response);
+        if (!response.ok) throw new Error(getErrorMessage(data, "Could not load hospital ledger."));
+
+        const ledger = data.ledger || [];
+        
+        let totalOpd = 0, totalComm = 0, totalSettled = 0, totalPending = 0;
+        ledger.forEach(item => {
+            totalOpd += (item.total_opd_collected || 0);
+            totalComm += (item.platform_commission || 0);
+            totalSettled += (item.already_settled || 0);
+            totalPending += (item.pending_balance || 0);
+        });
+
+        if (document.getElementById("statTotalOpd")) document.getElementById("statTotalOpd").textContent = `₹${totalOpd.toLocaleString()}`;
+        if (document.getElementById("statPlatformComm")) document.getElementById("statPlatformComm").textContent = `₹${totalComm.toLocaleString()}`;
+        if (document.getElementById("statSettledPayouts")) document.getElementById("statSettledPayouts").textContent = `₹${totalSettled.toLocaleString()}`;
+        if (document.getElementById("statPendingPayouts")) document.getElementById("statPendingPayouts").textContent = `₹${totalPending.toLocaleString()}`;
+
+        if (ledger.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="9" class="loading">No hospitals found in ledger.</td></tr>`;
+            return;
+        }
+
+        tableBody.innerHTML = ledger.map(item => {
+            const hasAcct = item.payment_account_status === "ACTIVE" || Boolean(item.payment_account_number || item.payment_upi);
+            const acctDetails = item.payment_upi 
+                ? `UPI: ${escapeHtml(item.payment_upi)}` 
+                : (item.payment_account_number ? `${escapeHtml(item.payment_account_name || 'Bank')}: ${escapeHtml(item.payment_account_number)} (${escapeHtml(item.payment_ifsc || 'IFSC')})` : "Not Provided");
+
+            const pending = item.pending_balance || 0;
+            const bankParam = encodeURIComponent(acctDetails);
+            const hospNameParam = encodeURIComponent(item.hospital_name || 'Hospital');
+
+            return `
+            <tr>
+                <td>
+                    <strong>${escapeHtml(item.hospital_name || 'Hospital')}</strong>
+                    <div style="font-size: 11px; color: #64748b;">${escapeHtml(item.city || '—')}</div>
+                </td>
+                <td style="font-size: 12px; color: #334155;">
+                    <span style="display: inline-block; font-size: 11px; font-weight: 700; color: ${hasAcct ? '#15803d' : '#b45309'};">${hasAcct ? '✓ Verified' : '⚠️ Pending Details'}</span>
+                    <div>${acctDetails}</div>
+                </td>
+                <td>${item.paid_tokens_count || 0}</td>
+                <td>₹${(item.total_opd_collected || 0).toLocaleString()}</td>
+                <td style="color: #0284c7; font-weight: 600;">₹${(item.platform_commission || 0).toLocaleString()}</td>
+                <td style="font-weight: 700;">₹${(item.net_payable_to_hospital || 0).toLocaleString()}</td>
+                <td style="color: #16a34a; font-weight: 700;">₹${(item.already_settled || 0).toLocaleString()}</td>
+                <td style="color: ${pending > 0 ? '#ea580c' : '#64748b'}; font-weight: 800; font-size: 15px;">
+                    ₹${pending.toLocaleString()}
+                </td>
+                <td>
+                    ${pending > 0 ? `
+                        <button type="button" onclick="openSettlementModal(${item.hospital_id}, '${hospNameParam}', ${pending}, '${bankParam}')" style="background: #16a34a; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                            💸 Settle (UTR)
+                        </button>
+                    ` : `
+                        <span style="font-size: 11px; color: #16a34a; font-weight: 700;">✓ All Settled</span>
+                    `}
+                </td>
+            </tr>
+            `;
+        }).join("");
+
+        loadSettlementsHistory();
+
+    } catch (err) {
+        console.error("Ledger error:", err);
+        tableBody.innerHTML = `<tr><td colspan="9" style="color: #ef4444; padding: 20px; text-align: center;">Error loading ledger: ${err.message}</td></tr>`;
+    }
+}
+window.loadHospitalLedger = loadHospitalLedger;
+
+async function loadSettlementsHistory() {
+    const historyBody = document.getElementById("settlementHistoryTableBody");
+    if (!historyBody) return;
+
+    try {
+        const response = await fetchWithRetry(`${API}/admin/settlements`, {
+            headers: getAdminAuthHeaders()
+        });
+        const data = await readResponse(response);
+        const list = data.settlements || [];
+        if (list.length === 0) {
+            historyBody.innerHTML = `<tr><td colspan="7" class="loading">No payout settlements recorded yet.</td></tr>`;
+            return;
+        }
+
+        historyBody.innerHTML = list.slice(0, 15).map(s => `
+            <tr>
+                <td><strong>${s.settlement_date || '—'}</strong></td>
+                <td>${escapeHtml(s.hospital_name || 'Hospital')}</td>
+                <td style="color: #16a34a; font-weight: 700;">₹${Number(s.amount).toLocaleString()}</td>
+                <td><code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${escapeHtml(s.utr_reference)}</code></td>
+                <td style="font-size: 12px;">${escapeHtml(s.bank_name || '—')}</td>
+                <td style="font-size: 12px; color: #64748b;">${escapeHtml(s.created_by || 'Admin')}</td>
+                <td style="font-size: 12px; color: #64748b;">${escapeHtml(s.notes || '—')}</td>
+            </tr>
+        `).join("");
+    } catch(e) {
+        console.warn("Settlements history error:", e);
+    }
+}
+window.loadSettlementsHistory = loadSettlementsHistory;
+
+function openSettlementModal(hospId, hospNameParam, pendingBal, bankParam) {
+    const hospName = decodeURIComponent(hospNameParam);
+    const bankDetails = decodeURIComponent(bankParam);
+
+    document.getElementById("modalHospId").value = hospId;
+    document.getElementById("modalHospName").textContent = hospName;
+    document.getElementById("modalBankDetails").textContent = bankDetails;
+    document.getElementById("modalPendingBal").textContent = `₹${pendingBal.toLocaleString()}`;
+    document.getElementById("settleAmount").value = pendingBal;
+    document.getElementById("settleUtr").value = "";
+    document.getElementById("settleDate").value = new Date().toISOString().split("T")[0];
+    document.getElementById("settleNotes").value = "";
+
+    document.getElementById("settleModal").style.display = "flex";
+}
+window.openSettlementModal = openSettlementModal;
+
+function closeSettlementModal() {
+    const modal = document.getElementById("settleModal");
+    if (modal) modal.style.display = "none";
+}
+window.closeSettlementModal = closeSettlementModal;
+
+async function submitSettlement(event) {
+    event.preventDefault();
+    const btn = document.getElementById("btnSubmitSettle");
+    const hospId = document.getElementById("modalHospId").value;
+    const amount = parseFloat(document.getElementById("settleAmount").value);
+    const utr = document.getElementById("settleUtr").value.trim();
+    const sDate = document.getElementById("settleDate").value;
+    const notes = document.getElementById("settleNotes").value.trim();
+
+    if (!amount || amount <= 0 || !utr) {
+        alert("Please enter a valid settlement amount and UTR reference number.");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Recording...";
+
+    try {
+        const response = await fetch(`${API}/admin/hospitals/${hospId}/settle`, {
+            method: "POST",
+            headers: {
+                ...getAdminAuthHeaders(),
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                amount: amount,
+                utr_reference: utr,
+                settlement_date: sDate,
+                notes: notes
+            })
+        });
+
+        const data = await readResponse(response);
+        if (!response.ok) throw new Error(getErrorMessage(data, "Failed to record settlement."));
+
+        alert(`✓ Settlement of ₹${amount} recorded successfully with UTR ${utr}!`);
+        closeSettlementModal();
+        await loadHospitalLedger();
+    } catch (err) {
+        alert(err.message || "Failed to record settlement.");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "✓ Record Settlement";
+    }
+}
+window.submitSettlement = submitSettlement;
+
+async function loadFailedRefunds() {
+    const tableBody = document.getElementById("failedRefundsTableBody");
+    if (!tableBody) return;
+
+    tableBody.innerHTML = `<tr><td colspan="8" class="loading">Loading failed & pending refunds...</td></tr>`;
+
+    try {
+        const response = await fetchWithRetry(`${API}/admin/failed-refunds`, {
+            headers: getAdminAuthHeaders()
+        });
+        const list = await readResponse(response);
+        if (!Array.isArray(list) || list.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="8" class="loading" style="color: #16a34a;">✓ No failed or pending refunds! All patient cancellations are reconciled.</td></tr>`;
+            return;
+        }
+
+        tableBody.innerHTML = list.map(t => `
+            <tr>
+                <td><strong>#${t.token_number}</strong></td>
+                <td>${escapeHtml(t.patient_name || 'Patient')}</td>
+                <td>${escapeHtml(t.hospital || 'Hospital')}</td>
+                <td style="font-weight: 700;">₹${t.total_amount || 0}</td>
+                <td><span style="background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${escapeHtml(t.payment_status || 'Unresolved')}</span></td>
+                <td><code style="font-size: 11px;">${escapeHtml(t.cashfree_order_id || '—')}</code></td>
+                <td style="font-size: 12px; color: #64748b;">${escapeHtml(t.notes || 'Doctor on leave / slot cancelled')}</td>
+                <td>
+                    <button type="button" onclick="retryFailedRefund(${t.id})" style="background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                        🔄 Resolve / Retry
+                    </button>
+                </td>
+            </tr>
+        `).join("");
+    } catch (err) {
+        console.error("Failed refunds error:", err);
+        tableBody.innerHTML = `<tr><td colspan="8" style="color: #ef4444; padding: 20px; text-align: center;">Error loading refunds: ${err.message}</td></tr>`;
+    }
+}
+window.loadFailedRefunds = loadFailedRefunds;
+
+async function retryFailedRefund(tokenId) {
+    if (!confirm(`Are you sure you want to mark refund as resolved and processed for Token #${tokenId}?`)) return;
+
+    try {
+        const response = await fetch(`${API}/admin/refunds/${tokenId}/retry`, {
+            method: "POST",
+            headers: getAdminAuthHeaders()
+        });
+        const data = await readResponse(response);
+        if (!response.ok) throw new Error(getErrorMessage(data, "Failed to resolve refund."));
+
+        alert("✓ Refund has been successfully marked as resolved and REFUNDED!");
+        await loadFailedRefunds();
+    } catch (err) {
+        alert(err.message || "Failed to retry refund.");
+    }
+}
+window.retryFailedRefund = retryFailedRefund;
+
+// =====================================================
+// PLATFORM ANALYTICS & AUDIT LOGS
+// =====================================================
+
+async function loadAnalytics() {
+    const hourlyContainer = document.getElementById("hourlyChartContainer");
+    const deptContainer = document.getElementById("deptBreakdownContainer");
+    if (!hourlyContainer && !deptContainer) return;
+
+    try {
+        const response = await fetchWithRetry(`${API}/admin/analytics`, {
+            headers: getAdminAuthHeaders()
+        });
+        if (response.status === 401) return;
+        const data = await readResponse(response);
+        if (!response.ok) return;
+
+        const qh = data.queue_health || {};
+        const alertBanner = document.getElementById("dashLicenseAlert");
+        if (alertBanner) {
+            const exp30 = qh.expiring_licenses_30d || 0;
+            const expired = qh.expired_licenses || 0;
+            if (exp30 > 0 || expired > 0) {
+                document.getElementById("dashLicenseAlertText").textContent =
+                    `${expired > 0 ? `${expired} hospital license(s) EXPIRED! ` : ''}${exp30 > 0 ? `${exp30} hospital license(s) expiring within 30 days.` : ''} Clinical Establishment compliance required.`;
+                alertBanner.style.display = "block";
+            } else {
+                alertBanner.style.display = "none";
+            }
+        }
+
+        if (document.getElementById("statServing")) document.getElementById("statServing").textContent = qh.serving || 0;
+        if (document.getElementById("statWaiting")) document.getElementById("statWaiting").textContent = qh.waiting || 0;
+        if (document.getElementById("statCompleted")) document.getElementById("statCompleted").textContent = qh.completed || 0;
+        if (document.getElementById("statDoctorsOnDuty")) document.getElementById("statDoctorsOnDuty").textContent = qh.on_duty_doctors || 0;
+
+        const hourly = data.hourly_distribution || [];
+        const maxVal = Math.max(...hourly.map(h => h.count), 1);
+
+        const peakHours = hourly.filter(h => h.is_peak && h.count > 0);
+        if (peakHours.length > 0 && document.getElementById("peakWindowBadge")) {
+            const first = peakHours[0].label;
+            const last = peakHours[peakHours.length - 1].label;
+            document.getElementById("peakWindowBadge").textContent = `🔥 Peak Hours: ${first} – ${last}`;
+        } else if (document.getElementById("peakWindowBadge")) {
+            document.getElementById("peakWindowBadge").textContent = "🔥 Regular Booking Flow";
+        }
+
+        if (hourlyContainer) {
+            hourlyContainer.innerHTML = hourly.map(h => {
+                const heightPct = Math.max(6, Math.round((h.count / maxVal) * 100));
+                return `
+                <div class="hourly-col" title="${h.label}: ${h.count} tokens booked">
+                    <span style="font-size: 8px; font-weight: 700; color: ${h.is_peak ? '#1d4ed8' : '#64748b'}; margin-bottom: 2px;">${h.count > 0 ? h.count : ''}</span>
+                    <div class="hourly-bar ${h.is_peak ? 'peak' : ''}" style="height: ${heightPct}%;"></div>
+                    <span class="hourly-lbl">${h.hour % 3 === 0 ? h.label.replace(' AM','A').replace(' PM','P') : ''}</span>
+                </div>
+                `;
+            }).join("");
+        }
+
+        if (deptContainer) {
+            const depts = data.department_breakdown || [];
+            if (depts.length === 0) {
+                deptContainer.innerHTML = `<p style="font-size: 13px; color: #94a3b8;">No token bookings by department yet.</p>`;
+            } else {
+                deptContainer.innerHTML = depts.map(d => `
+                <div class="dept-bar-row">
+                    <div class="dept-bar-meta">
+                        <span>${escapeHtml(d.department)}</span>
+                        <span>${d.count} patients (${d.percentage}%)</span>
+                    </div>
+                    <div class="dept-bar-track">
+                        <div class="dept-bar-fill" style="width: ${d.percentage}%;"></div>
+                    </div>
+                </div>
+                `).join("");
+            }
+        }
+
+    } catch (err) {
+        console.warn("Analytics load error:", err);
+    }
+}
+window.loadAnalytics = loadAnalytics;
+
+async function openAuditLogModal() {
+    const modal = document.getElementById("auditLogModal");
+    const body = document.getElementById("auditLogBody");
+    if (!modal || !body) return;
+
+    modal.style.display = "flex";
+    body.innerHTML = `<p style="text-align: center; color: #94a3b8;">Loading audit activity trail...</p>`;
+
+    try {
+        const response = await fetchWithRetry(`${API}/admin/audit-logs`, {
+            headers: getAdminAuthHeaders()
+        });
+        const logs = await readResponse(response);
+        if (!Array.isArray(logs) || logs.length === 0) {
+            body.innerHTML = `<p style="text-align: center; color: #64748b; padding: 20px;">No audit log events recorded yet.</p>`;
+            return;
+        }
+
+        body.innerHTML = logs.map(l => {
+            let badgeBg = "#e2e8f0", badgeColor = "#334155";
+            if (l.action.includes("APPROVE")) { badgeBg = "#dcfce7"; badgeColor = "#15803d"; }
+            else if (l.action.includes("REJECT")) { badgeBg = "#fee2e2"; badgeColor = "#b91c1c"; }
+            else if (l.action.includes("SETTLE")) { badgeBg = "#dbeafe"; badgeColor = "#1d4ed8"; }
+            else if (l.action.includes("FEE")) { badgeBg = "#fef3c7"; badgeColor = "#b45309"; }
+
+            const timeStr = l.created_at ? new Date(l.created_at).toLocaleString() : '—';
+
+            return `
+            <div class="audit-log-item">
+                <span class="audit-badge" style="background: ${badgeBg}; color: ${badgeColor};">${escapeHtml(l.action)}</span>
+                <div style="flex: 1;">
+                    <div style="font-weight: 700; color: #0f172a;">${escapeHtml(l.details || l.action)}</div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 3px;">
+                        By: <strong>${escapeHtml(l.admin_email || 'Admin')}</strong> &bull; Target: ${escapeHtml(l.target_type || 'Platform')}${l.target_id ? ` #${l.target_id}` : ''} &bull; ${timeStr}
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join("");
+
+    } catch (err) {
+        console.error("Audit log error:", err);
+        body.innerHTML = `<p style="color: #ef4444; text-align: center;">Error loading audit logs: ${err.message}</p>`;
+    }
+}
+window.openAuditLogModal = openAuditLogModal;
+
+function closeAuditLogModal() {
+    const modal = document.getElementById("auditLogModal");
+    if (modal) modal.style.display = "none";
+}
+window.closeAuditLogModal = closeAuditLogModal;

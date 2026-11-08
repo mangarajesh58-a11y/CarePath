@@ -31,6 +31,22 @@
             </button>
         </header>
 
+                <!-- LICENSE EXPIRY ALERT BANNER -->
+        <div id="licenseExpiryAlertBanner" style="display: none; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; color: #92400e; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 26px;">⚠️</span>
+                    <div>
+                        <strong style="font-size: 15px; color: #b45309;" id="licenseAlertTitle">Clinical Establishment License Expiry Notice</strong>
+                        <div style="font-size: 13px; color: #78350f; margin-top: 2px;" id="licenseAlertText">1 or more hospitals have licenses expiring within 30 days or already expired.</div>
+                    </div>
+                </div>
+                <button type="button" onclick="filterExpiringLicenses()" style="background: #d97706; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    View Expiring Hospitals
+                </button>
+            </div>
+        </div>
+
         <!-- HOSPITAL TABLE -->
         <div class="table-card">
 

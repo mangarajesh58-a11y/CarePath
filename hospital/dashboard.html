@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1386,6 +1386,7 @@ function updateLiveClock() {
         clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 }
+
 setInterval(updateLiveClock, 1000);
 updateLiveClock();
 
