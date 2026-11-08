@@ -495,6 +495,9 @@ if not os.path.exists(PATIENT_STATIC_DIR):
 HOSPITAL_STATIC_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "hospital")
 )
+ADMIN_STATIC_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "admin")
+)
 
 
 # ============================================================
@@ -9057,27 +9060,6 @@ You can view and reply to this inquiry directly on your CarePath Hospital Dashbo
 
 
 # ============================================================
-# STATIC FILES SERVING (Render Direct Full-Stack Deployment)
-# ============================================================
-from fastapi.staticfiles import StaticFiles
-
-if os.path.exists(PATIENT_STATIC_DIR):
-    @app.get("/dashboard.html", include_in_schema=False)
-    def serve_root_dashboard():
-        return FileResponse(os.path.join(PATIENT_STATIC_DIR, "dashboard.html"))
-
-    @app.get("/patient/dashboard.html", include_in_schema=False)
-    def serve_sub_dashboard():
-        return FileResponse(os.path.join(PATIENT_STATIC_DIR, "dashboard.html"))
-
-    app.mount("/patient", StaticFiles(directory=PATIENT_STATIC_DIR, html=True), name="patient")
-    app.mount("/", StaticFiles(directory=PATIENT_STATIC_DIR, html=True), name="patient_root")
-
-if os.path.exists(HOSPITAL_STATIC_DIR):
-    app.mount("/hospital", StaticFiles(directory=HOSPITAL_STATIC_DIR, html=True), name="hospital")
-
-
-# ============================================================
 # ADMIN - HOSPITAL FINANCIAL LEDGER
 # ============================================================
 
@@ -9484,3 +9466,28 @@ def admin_delete_ad(
         details=f"Deleted ad '{ad.title}' for hospital ID {ad.hospital_id}"
     )
     return {"success": True, "message": "Advertisement deleted by admin."}
+
+# ============================================================
+# STATIC FILES SERVING (Render Direct Full-Stack Deployment)
+# Note: Root mount ("/") must ALWAYS be mounted AFTER all API routes
+# ============================================================
+from fastapi.staticfiles import StaticFiles
+
+if os.path.exists(ADMIN_STATIC_DIR):
+    app.mount("/admin-portal", StaticFiles(directory=ADMIN_STATIC_DIR, html=True), name="admin_portal")
+
+if os.path.exists(HOSPITAL_STATIC_DIR):
+    app.mount("/hospital", StaticFiles(directory=HOSPITAL_STATIC_DIR, html=True), name="hospital")
+
+if os.path.exists(PATIENT_STATIC_DIR):
+    @app.get("/dashboard.html", include_in_schema=False)
+    def serve_root_dashboard():
+        return FileResponse(os.path.join(PATIENT_STATIC_DIR, "dashboard.html"))
+
+    @app.get("/patient/dashboard.html", include_in_schema=False)
+    def serve_sub_dashboard():
+        return FileResponse(os.path.join(PATIENT_STATIC_DIR, "dashboard.html"))
+
+    app.mount("/patient", StaticFiles(directory=PATIENT_STATIC_DIR, html=True), name="patient")
+    app.mount("/", StaticFiles(directory=PATIENT_STATIC_DIR, html=True), name="patient_root")
+
