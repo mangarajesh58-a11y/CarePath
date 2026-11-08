@@ -3520,6 +3520,7 @@ def patient_google_login(
 # ============================================================
 
 @app.get("/patients/me")
+@app.get("/patients/me/")
 def get_current_patient_profile(
     current_user: dict = Depends(require_role("patient")),
     db: Session = Depends(get_db),
@@ -3549,6 +3550,11 @@ def get_current_patient_profile(
 
 
 @app.put("/patients/me")
+@app.post("/patients/me")
+@app.patch("/patients/me")
+@app.put("/patients/me/")
+@app.post("/patients/me/")
+@app.patch("/patients/me/")
 def update_current_patient_profile(
     data: PatientMeUpdateRequest,
     current_user: dict = Depends(require_role("patient")),
@@ -3624,9 +3630,15 @@ def update_current_patient_profile(
 # ============================================================
 
 @app.put("/patients/profile")
+@app.post("/patients/profile")
+@app.patch("/patients/profile")
+@app.put("/patients/profile/")
+@app.post("/patients/profile/")
+@app.patch("/patients/profile/")
 def update_patient_profile(
     data: PatientProfileUpdate,
     db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
 ):
     # Verify the Google credential
     google_data = verify_google_credential(
