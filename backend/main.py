@@ -1219,6 +1219,22 @@ def run_database_migration():
                 error,
             )
 
+    # --------------------------------------------------------
+    # PLATFORM CONTACTS
+    # --------------------------------------------------------
+    platform_contact_columns = {
+        "platform_fee": f"INT NOT NULL DEFAULT {PLATFORM_FEE}",
+    }
+    for column_name, definition in platform_contact_columns.items():
+        try:
+            add_column_if_missing(
+                "platform_contacts",
+                column_name,
+                definition,
+            )
+        except Exception as error:
+            print(f"Platform contacts migration warning ({column_name}):", error)
+
 
 try:
 
@@ -5228,7 +5244,7 @@ def create_cashfree_order(
         )
 
     token_fee = int(hospital.token_fee or 0)
-    platform_fee = PLATFORM_FEE
+    platform_fee = get_current_platform_fee(db)
     total_amount = token_fee + platform_fee
 
     if total_amount <= 0:
@@ -5476,7 +5492,7 @@ def create_token(
         raise HTTPException(status_code=404, detail="Doctor not found.")
 
     token_fee = int(hospital.token_fee or 0)
-    platform_fee = PLATFORM_FEE
+    platform_fee = get_current_platform_fee(db)
     total_amount = token_fee + platform_fee
 
     try:
@@ -6372,11 +6388,18 @@ def get_or_create_contact_settings(db: Session) -> PlatformContact:
             grievance_officer="Rajesh Mangaraj",
             grievance_email="mangarajesh58@gmail.com",
             working_hours="Mon - Sat: 9:00 AM - 7:00 PM IST",
+            platform_fee=PLATFORM_FEE,
         )
         db.add(contact)
         db.commit()
         db.refresh(contact)
     return contact
+
+
+@app.get("/platform/fee")
+def get_platform_fee_public(db: Session = Depends(get_db)):
+    fee = get_current_platform_fee(db)
+    return {"success": True, "platform_fee": fee}
 
 
 @app.get("/platform/contact")

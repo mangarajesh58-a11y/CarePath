@@ -324,7 +324,7 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
 "use strict";
 
 const API = "https://carepath-3q9q.onrender.com";
-const PLATFORM_FEE = 10;
+let PLATFORM_FEE = parseInt(localStorage.getItem("carepath_platform_fee") || "10", 10);
 
 const byId = id => document.getElementById(id);
 const stored = (...keys) => {
@@ -467,6 +467,7 @@ function displayBooking() {
 
     validateAppointmentDate();
     refreshButton();
+    fetchDynamicPlatformFee();
 }
 
 let currentHospitalClosures = [];

@@ -296,6 +296,7 @@ class PlatformContact(Base):
     grievance_officer = Column(String(255), default="Rajesh Mangaraj")
     grievance_email = Column(String(255), default="mangarajesh58@gmail.com")
     working_hours = Column(String(100), default="Mon - Sat: 9:00 AM - 7:00 PM IST")
+    platform_fee = Column(Integer, default=10, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class HospitalClosure(Base):

@@ -5,7 +5,7 @@
 const API = "https://carepath-3q9q.onrender.com";
 const FRONTEND = "https://carepath-patient-mx5v.vercel.app";
 
-const PLATFORM_FEE = 10;
+let PLATFORM_FEE = parseInt(localStorage.getItem("carepath_platform_fee") || "10", 10);
 
 
 // =========================================================
@@ -1018,6 +1018,26 @@ function getTokenFee() {
 
 
 // =========================================================
+
+async function fetchDynamicPlatformFee() {
+    try {
+        const res = await fetch(`${API}/platform/fee?t=${Date.now()}`);
+        if (res.ok) {
+            const data = await res.json();
+            if (typeof data.platform_fee === "number") {
+                PLATFORM_FEE = data.platform_fee;
+                localStorage.setItem("carepath_platform_fee", String(PLATFORM_FEE));
+                if (typeof updateFeeDisplay === "function") {
+                    updateFeeDisplay();
+                }
+            }
+        }
+    } catch (err) {
+        console.warn("Could not fetch latest platform fee:", err);
+    }
+}
+fetchDynamicPlatformFee();
+
 // PLATFORM FEE
 // =========================================================
 
