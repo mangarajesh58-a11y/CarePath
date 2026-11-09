@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
     <script src="./broadcast-banner.js"></script>
+    <script src="./carepath-permissions.js"></script>
 
     <style>
         :root {
@@ -1056,9 +1057,12 @@
                 <button type="button" class="icon-btn-round" onclick="openHospitalBreakModal()" id="btnHospitalBreakTime" title="Break Time" style="color: #854d0e; border-color: #fde047; background: #fefce8;">
                     🍱
                 </button>
-                <button type="button" class="icon-btn-round" onclick="openAdminMessagesModal()" id="btnHospitalAdminMessages" title="Admin Notices" style="color: #2563eb; border-color: #bfdbfe; background: #eff6ff;">
+                <button type="button" class="icon-btn-round" onclick="openAdminMessagesModal()" id="btnHospitalAdminMessages" title="Admin Notices & Patient Inquiries" style="color: #2563eb; border-color: #bfdbfe; background: #eff6ff;">
                     💬
                     <span id="hospitalAdminMsgBadge" class="badge-count" style="display: none;">0</span>
+                </button>
+                <button type="button" class="icon-btn-round" onclick="CarePathPermissions.requestNotificationPermission()" id="btnHospitalNotifBell" title="Enable Live Alerts for New Inquiries" style="color: #0284c7; border-color: #bae6fd; background: #f0f9ff;">
+                    🔔
                 </button>
                 <button type="button" class="icon-btn-round" id="logoutButton" title="Sign Out" style="color: #dc2626; border-color: #fecaca; background: #fef2f2;">
                     🚪
@@ -2124,6 +2128,20 @@ function renderInquiriesWidget(messages) {
     });
 
     if (countBadge) countBadge.textContent = patientMsgs.length;
+
+    // Trigger native browser notification on new incoming inquiry
+    if (window.CarePathPermissions && patientMsgs.length > (window.lastInquiriesCount || 0) && window.lastInquiriesCount !== undefined) {
+        const latest = patientMsgs[0];
+        window.CarePathPermissions.sendNotification("📥 New Patient Inquiry", {
+            body: `From ${latest.sender_name || 'Patient'}: ${latest.subject || latest.message || 'New OPD inquiry'}`,
+            tag: `hosp-inq-${latest.id}`,
+            onClick: () => {
+                window.focus();
+                openAdminMessagesModal();
+            }
+        });
+    }
+    window.lastInquiriesCount = patientMsgs.length;
 
     if (patientMsgs.length === 0) {
         container.innerHTML = `

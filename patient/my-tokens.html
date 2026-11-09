@@ -485,6 +485,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 
+  <script src="./carepath-permissions.js"></script>
   <script>
     "use strict";
 
@@ -533,6 +534,15 @@
           const prevStatus = previousTokenStatuses[t.id];
           if (prevStatus === "waiting" && t.status === "serving") {
             triggerPatientPhoneAlert(t);
+          } else if (t.status === "waiting" && t.tokens_ahead !== undefined && t.tokens_ahead <= 2 && t.tokens_ahead > 0) {
+            const lastNearing = window[`notif_near_${t.id}`];
+            if (lastNearing !== t.tokens_ahead && window.CarePathPermissions) {
+              window[`notif_near_${t.id}`] = t.tokens_ahead;
+              window.CarePathPermissions.sendNotification("⏳ Your Turn Is Near!", {
+                body: `Token #${t.token_number}: Only ${t.tokens_ahead} patient(s) ahead of you for Dr. ${t.doctor}. Please stay near the room.`,
+                tag: `token-near-${t.id}`
+              });
+            }
           }
           previousTokenStatuses[t.id] = t.status;
         });
@@ -948,6 +958,18 @@
 
       // 1. Play high-attention chime
       playPatientCallChime();
+
+      // Trigger native browser/Google Chrome notification
+      if (window.CarePathPermissions) {
+        window.CarePathPermissions.sendNotification("🚨 DOCTOR IS CALLING YOU NOW!", {
+          body: `Token #${t.token_number}: Please proceed to Dr. ${t.doctor || 'Doctor'}'s ${rawRoom || 'Consultation Room'} immediately.`,
+          tag: `token-called-${t.id}`,
+          urgent: true,
+          onClick: () => {
+            window.focus();
+          }
+        });
+      }
 
       // 2. Vibrate phone
       if ("vibrate" in navigator) {

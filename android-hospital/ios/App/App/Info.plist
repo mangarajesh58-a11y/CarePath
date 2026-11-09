@@ -66,9 +66,13 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+
+	<!-- iOS Permissions -->
 	<key>NSCameraUsageDescription</key>
-	<string>CarePath requires access to the camera to upload medical certificates and documents.</string>
+	<string>CarePath requires access to the camera to upload medical certificates and hospital license documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>CarePath requires access to your photo library to select and upload documents.</string>
+	<string>CarePath requires access to your photo library to select and upload verification documents.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>CarePath requires permission to save reports and appointment receipts to your photos.</string>
 </dict>
 </plist>

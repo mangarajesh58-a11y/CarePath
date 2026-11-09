@@ -66,9 +66,15 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+
+	<!-- iOS Permissions -->
 	<key>NSCameraUsageDescription</key>
-	<string>CarePath requires access to the camera to upload medical records and documents.</string>
+	<string>CarePath requires camera access to scan doctor prescriptions and take photos of medical documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>CarePath requires access to your photo library to select and upload documents.</string>
+	<string>CarePath requires access to your photo library to select and upload prescription documents.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>CarePath requires permission to save prescription receipts, OPD tokens, and summaries to your photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>CarePath requires microphone access for two-way AI voice consultations in Telugu, Hindi, English, and other Indian languages.</string>
 </dict>
 </plist>

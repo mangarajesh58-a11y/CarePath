@@ -40,6 +40,7 @@
   <script src="./script.js" defer></script>
   <script src="./dashboard-ui.js"></script>
   <script src="./broadcast-banner.js"></script>
+  <script src="./carepath-permissions.js"></script>
 
   <style>
     :root {
@@ -238,6 +239,26 @@
       position: relative;
       white-space: nowrap;
     }
+    .btn-notif-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-pill);
+      background: #eff6ff;
+      border: 1px solid var(--primary-border);
+      color: var(--primary);
+      font-size: 14.5px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      box-shadow: var(--shadow-subtle);
+    }
+    .btn-notif-pill:active {
+      transform: scale(0.92);
+      background: #dbeafe;
+    }
+
     .btn-hospital-chat-pill:active {
       transform: scale(0.95);
       filter: brightness(0.95);
@@ -999,6 +1020,16 @@
           <span class="chat-pill-icon">💬</span>
           <span>Messages</span>
           <span id="patientChatUnreadBadge" class="chat-unread-badge" style="display: none;">0</span>
+        </button>
+
+        <button
+          type="button"
+          id="btnNotifBell"
+          class="btn-notif-pill"
+          onclick="CarePathPermissions.requestNotificationPermission()"
+          title="Enable Live Alerts (Token Calls & Messages)"
+        >
+          <span>🔔</span>
         </button>
 
         <button
@@ -2513,6 +2544,9 @@
       }
     } catch (err) {
       console.warn("Camera stream access failed:", err);
+      if (window.CarePathPermissions && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+        window.CarePathPermissions.showBlockedModal('camera');
+      }
       if (statusBox) statusBox.style.display = "flex";
       if (guide) guide.style.display = "none";
     }
@@ -3392,9 +3426,21 @@ async function checkPatientChatUnread() {
         if (unread > 0) {
             badge.textContent = unread;
             badge.style.display = "inline-flex";
+
+            if (unread > (window.lastKnownPatientUnread || 0) && window.CarePathPermissions) {
+                window.CarePathPermissions.sendNotification("💬 New Hospital Reply", {
+                    body: "You have a new message from the hospital helpdesk. Tap to view.",
+                    tag: "hospital-reply-alert",
+                    onClick: () => {
+                        window.focus();
+                        openPatientHospitalChatModal();
+                    }
+                });
+            }
         } else {
             badge.style.display = "none";
         }
+        window.lastKnownPatientUnread = unread;
     } catch(e) {}
 }
 

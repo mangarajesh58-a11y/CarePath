@@ -66,5 +66,13 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+
+	<!-- iOS Permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>CarePath requires access to the camera to scan and inspect verification documents.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>CarePath requires access to your photo library to review submitted verification documents.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>CarePath requires permission to save audit receipts and verification records to photos.</string>
 </dict>
 </plist>
