@@ -488,10 +488,11 @@
 
         async function submitPatientInquiryForm(e) {
             e.preventDefault();
+            const urlParams = new URLSearchParams(window.location.search);
             const hosp = currentLoadedHospital || {};
-            const hospId = hosp.id || hosp.hospital_id || localStorage.getItem("selectedHospitalId");
+            const hospId = hosp.id || hosp.hospital_id || urlParams.get("id") || urlParams.get("hospital_id") || urlParams.get("hospitalId") || localStorage.getItem("selectedHospitalId") || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId");
             if (!hospId) {
-                alert("Hospital ID not found.");
+                alert("Hospital ID not found. Please refresh the page or return to the hospital list.");
                 return;
             }
 
@@ -501,15 +502,31 @@
             const subject = document.getElementById("inquirySubject").value.trim() || "General Inquiry";
             const message = document.getElementById("inquiryMessage").value.trim();
             const btn = document.getElementById("btnSubmitInquiry");
+            const alertBox = document.getElementById("inquiryModalAlert");
 
             if (!name || !phone || !message) {
-                alert("Please fill in your name, phone, and inquiry message.");
+                if (alertBox) {
+                    alertBox.style.display = "block";
+                    alertBox.style.background = "#fef2f2";
+                    alertBox.style.color = "#b91c1c";
+                    alertBox.style.border = "1px solid #fecaca";
+                    alertBox.textContent = "Please fill in your name, phone number, and inquiry message.";
+                } else {
+                    alert("Please fill in your name, phone, and inquiry message.");
+                }
                 return;
             }
 
             if (btn) {
                 btn.disabled = true;
                 btn.textContent = "⏳ Submitting...";
+            }
+            if (alertBox) {
+                alertBox.style.display = "block";
+                alertBox.style.background = "#eff6ff";
+                alertBox.style.color = "#1d4ed8";
+                alertBox.style.border = "1px solid #bfdbfe";
+                alertBox.textContent = "Sending your inquiry directly to hospital desk...";
             }
 
             try {
@@ -528,10 +545,27 @@
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.detail || data.message || "Failed to submit inquiry");
 
+                if (alertBox) {
+                    alertBox.style.display = "block";
+                    alertBox.style.background = "#f0fdf4";
+                    alertBox.style.color = "#15803d";
+                    alertBox.style.border = "1px solid #bbf7d0";
+                    alertBox.textContent = "✓ Inquiry delivered! The hospital staff has received your message on their dashboard and will contact you.";
+                }
                 alert("✓ Your inquiry has been submitted directly to the hospital helpdesk! The hospital staff will review it on their dashboard and contact you.");
                 document.getElementById("inquiryMessage").value = "";
-                closePatientInquiryModal();
+                setTimeout(() => {
+                    closePatientInquiryModal();
+                    if (alertBox) alertBox.style.display = "none";
+                }, 1200);
             } catch (err) {
+                if (alertBox) {
+                    alertBox.style.display = "block";
+                    alertBox.style.background = "#fef2f2";
+                    alertBox.style.color = "#b91c1c";
+                    alertBox.style.border = "1px solid #fecaca";
+                    alertBox.textContent = "Inquiry submission error: " + err.message;
+                }
                 alert("Inquiry submission error: " + err.message);
             } finally {
                 if (btn) {

@@ -9026,10 +9026,11 @@ def admin_send_hospital_message(
 @app.get("/hospitals/{hospital_id}/messages")
 def hospital_get_direct_messages(
     hospital_id: int,
+    mark_read: bool = False,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
 ):
-    """Hospital: Retrieve conversation history with Admin."""
+    """Hospital: Retrieve conversation history with Admin and Patients."""
     if hospital_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -9040,27 +9041,37 @@ def hospital_get_direct_messages(
         .all()
     )
 
-    # Mark incoming admin messages as read
+    # Mark incoming admin and patient messages as read when requested
+    if mark_read:
+        for m in messages:
+            if m.sender_role in ["admin", "patient"] and not m.is_read:
+                m.is_read = True
+        db.commit()
+
+    import re
+    result_messages = []
     for m in messages:
-        if m.sender_role == "admin" and not m.is_read:
-            m.is_read = True
-    db.commit()
+        sender_phone = None
+        if m.sender_name:
+            phone_match = re.search(r'\(([^)]+)\)', m.sender_name)
+            if phone_match:
+                sender_phone = phone_match.group(1).strip()
+
+        result_messages.append({
+            "id": m.id,
+            "sender_role": m.sender_role,
+            "sender_name": m.sender_name,
+            "sender_phone": sender_phone,
+            "subject": m.subject,
+            "message": m.message,
+            "priority": m.priority,
+            "is_read": m.is_read,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        })
 
     return {
         "success": True,
-        "messages": [
-            {
-                "id": m.id,
-                "sender_role": m.sender_role,
-                "sender_name": m.sender_name,
-                "subject": m.subject,
-                "message": m.message,
-                "priority": m.priority,
-                "is_read": m.is_read,
-                "created_at": m.created_at.isoformat() if m.created_at else None,
-            }
-            for m in messages
-        ],
+        "messages": result_messages,
     }
 
 
@@ -9070,7 +9081,7 @@ def hospital_get_unread_message_count(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
 ):
-    """Hospital: Get count of unread messages from Admin."""
+    """Hospital: Get count of unread messages from Admin and Patients."""
     if hospital_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Access denied")
 
@@ -9078,7 +9089,7 @@ def hospital_get_unread_message_count(
         db.query(HospitalDirectMessage)
         .filter(
             HospitalDirectMessage.hospital_id == hospital_id,
-            HospitalDirectMessage.sender_role == "admin",
+            HospitalDirectMessage.sender_role.in_(["admin", "patient"]),
             HospitalDirectMessage.is_read == False,
         )
         .count()

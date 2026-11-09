@@ -1948,7 +1948,7 @@ function openAdminMessagesModal() {
     modal.style.display = "flex";
     modal.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
-    loadHospitalAdminMessages();
+    loadHospitalAdminMessages(true);
 }
 
 function closeAdminMessagesModal() {
@@ -1987,20 +1987,23 @@ async function checkAdminMessagesUnreadCount() {
     } catch(e) {}
 }
 
-async function loadHospitalAdminMessages() {
+async function loadHospitalAdminMessages(markRead = false) {
     const container = document.getElementById("hospitalAdminMsgContainer");
-    if (!container) return;
     try {
-        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/messages`, {
+        const url = `${API_URL}/hospitals/${hospitalId}/messages${markRead ? '?mark_read=true' : ''}`;
+        const res = await fetch(url, {
             headers: getHospitalAuthHeaders()
         });
         if (!res.ok) throw new Error("Failed to load messages");
-        const messages = await res.json();
+        const data = await res.json();
+        const messages = Array.isArray(data) ? data : (data.messages || []);
 
         // Update inquiry sidebar widget
         renderInquiriesWidget(messages);
 
-        if (!Array.isArray(messages) || messages.length === 0) {
+        if (!container) return;
+
+        if (messages.length === 0) {
             container.innerHTML = `
                 <div style="text-align: center; padding: 30px 10px; color: var(--slate-400);">
                     <div style="font-size: 26px; margin-bottom: 6px;">✉️</div>
@@ -2018,24 +2021,40 @@ async function loadHospitalAdminMessages() {
             const align = isMe ? "flex-end" : "flex-start";
             const bubbleBg = isMe ? "#1d4ed8" : (isPatient ? "#f0fdf4" : "#ffffff");
             const textColor = isMe ? "#ffffff" : "#0f172a";
-            const border = isMe ? "none" : (isPatient ? "1px solid #86efac" : "1px solid #cbd5e1");
+            const border = isMe ? "none" : (isPatient ? "1.5px solid #86efac" : "1px solid #cbd5e1");
             const senderTag = isMe ? "Your Hospital Staff" : (isPatient ? `👤 Patient Inquiry: ${msg.sender_name || 'Patient'}` : "🏛️ Platform Admin");
+
+            let phone = msg.sender_phone || "";
+            if (!phone && msg.sender_name) {
+                const phoneMatch = msg.sender_name.match(/\(([^)]+)\)/);
+                if (phoneMatch) phone = phoneMatch[1];
+            }
+            const cleanPhone = String(phone).replace(/[^0-9]/g, "");
+            const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
 
             return `
                 <div style="display: flex; flex-direction: column; align-self: ${align}; max-width: 85%;">
                     <div style="font-size: 11px; color: #64748b; margin-bottom: 3px; display: flex; gap: 6px;">
                         <strong>${senderTag}</strong> • <span>${msg.created_at ? new Date(msg.created_at).toLocaleTimeString() : ''}</span>
                     </div>
-                    <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; line-height: 1.45;">
-                        ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 3px;">${escapeHtml(msg.subject)}</div>` : ''}
+                    <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; line-height: 1.45; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 4px; color: ${isMe ? '#ffffff' : (isPatient ? '#166534' : '#0f172a')}">${escapeHtml(msg.subject)}</div>` : ''}
                         <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.message || '')}</div>
+                        ${(isPatient && cleanPhone) ? `
+                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(22, 101, 52, 0.2); display: flex; gap: 8px; flex-wrap: wrap;">
+                                <a href="https://wa.me/${waNum}" target="_blank" style="text-decoration: none; background: #25D366; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">💬 WhatsApp</a>
+                                <a href="tel:${cleanPhone}" style="text-decoration: none; background: #0284c7; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">📞 Call</a>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
         }).join("");
         container.scrollTop = container.scrollHeight;
     } catch(e) {
-        container.innerHTML = `<div style="color: #ef4444; padding: 20px; text-align: center;">Error loading messages: ${escapeHtml(e.message)}</div>`;
+        if (container) {
+            container.innerHTML = `<div style="color: #ef4444; padding: 20px; text-align: center;">Error loading messages: ${escapeHtml(e.message)}</div>`;
+        }
     }
 }
 
@@ -2044,7 +2063,8 @@ function renderInquiriesWidget(messages) {
     const countBadge = document.getElementById("inquiryCountBadge");
     if (!container) return;
 
-    const patientMsgs = (Array.isArray(messages) ? messages : []).filter(m => (m.sender_role || "").toLowerCase() === "patient");
+    const list = Array.isArray(messages) ? messages : (messages && messages.messages ? messages.messages : []);
+    const patientMsgs = list.filter(m => (m.sender_role || "").toLowerCase() === "patient");
     if (countBadge) countBadge.textContent = patientMsgs.length;
 
     if (patientMsgs.length === 0) {
@@ -2056,8 +2076,12 @@ function renderInquiriesWidget(messages) {
         return;
     }
 
-    container.innerHTML = patientMsgs.slice(-4).reverse().map(inq => {
-        const phone = inq.sender_phone || "";
+    container.innerHTML = patientMsgs.slice(-6).reverse().map(inq => {
+        let phone = inq.sender_phone || "";
+        if (!phone && inq.sender_name) {
+            const phoneMatch = inq.sender_name.match(/\(([^)]+)\)/);
+            if (phoneMatch) phone = phoneMatch[1];
+        }
         const cleanPhone = String(phone).replace(/[^0-9]/g, "");
         const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
         const timeStr = inq.created_at ? new Date(inq.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
@@ -2069,6 +2093,7 @@ function renderInquiriesWidget(messages) {
                     <span class="inquiry-time">${timeStr}</span>
                 </div>
                 <div class="inquiry-subject">${escapeHtml(inq.subject || inq.message || 'General OPD Inquiry')}</div>
+                <div style="font-size: 12px; color: var(--slate-600); margin: 4px 0 8px; line-height: 1.4; white-space: pre-wrap; word-break: break-word;">${escapeHtml(inq.message || '')}</div>
                 <div class="inquiry-action-row">
                     ${cleanPhone ? `
                         <a href="https://wa.me/${waNum}" target="_blank" class="btn-inquiry-wa">
@@ -2079,7 +2104,7 @@ function renderInquiriesWidget(messages) {
                         </a>
                     ` : ''}
                     <button type="button" onclick="openAdminMessagesModal()" style="border: none; background: #e2e8f0; color: #475569; font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 6px; cursor: pointer;">
-                        View
+                        Thread View →
                     </button>
                 </div>
             </div>
@@ -2142,6 +2167,7 @@ checkAdminMessagesUnreadCount();
 setInterval(() => {
     loadQueue();
     checkAdminMessagesUnreadCount();
+    loadHospitalAdminMessages(false);
 }, 10000);
 
 /* =====================================================
