@@ -1024,16 +1024,6 @@
 
         <button
           type="button"
-          id="btnNotifBell"
-          class="btn-notif-pill"
-          onclick="CarePathPermissions.requestNotificationPermission()"
-          title="Enable Live Alerts (Token Calls & Messages)"
-        >
-          <span>🔔</span>
-        </button>
-
-        <button
-          type="button"
           id="logoutButton"
           class="icon-button"
           aria-label="Logout"
@@ -1676,7 +1666,9 @@
   window.cpMessageTextMap = window.cpMessageTextMap || {};
 
   // Default to Telugu or Hindi if in India or user preference, fallback to English
-  let currentAiLang = localStorage.getItem("carepath_lang") || "te-IN";
+  // Default to English on open
+  let currentAiLang = "en-IN";
+  localStorage.setItem("carepath_lang", "en-IN");
 
   const CP_LANG_CONFIG = {
     "te-IN": {
@@ -1937,7 +1929,7 @@
 
   // Detect which Indian language a given piece of text is written in
   function detectTextLanguage(text, defaultLang) {
-    if (!text) return defaultLang || currentAiLang || "te-IN";
+    if (!text) return defaultLang || currentAiLang || "en-IN";
     if (/[\u0C00-\u0C7F]/.test(text)) return "te-IN"; // Telugu
     if (/[\u0900-\u097F]/.test(text)) {
       // Check Marathi specific words or default to Hindi
@@ -1956,7 +1948,7 @@
   // Switch Active Language
   function changeCarePathLanguage(newLang) {
     primeSpeechSynthesis();
-    if (!CP_LANG_CONFIG[newLang]) newLang = "te-IN";
+    if (!CP_LANG_CONFIG[newLang]) newLang = "en-IN";
     currentAiLang = newLang;
     localStorage.setItem("carepath_lang", newLang);
 
@@ -2007,7 +1999,7 @@
   }
 
   function handleDosageChipClick() {
-    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
+    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
     quickAskAI(conf.dosageQuery);
   }
 
@@ -2257,7 +2249,7 @@
 
     overlay.style.display = "flex";
 
-    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
+    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
 
     if (state === "unsupported") {
       if (statusText) statusText.textContent = conf.unsupported;
@@ -2298,7 +2290,7 @@
     if (val.length > 0) {
       sendCarePathMessage();
     } else {
-      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
+      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
       quickAskAI(conf.dosageQuery);
     }
   }
@@ -2358,7 +2350,7 @@
         cpSpeechRecognition = null;
       }
 
-      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
+      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
 
       let speechSilenceTimer = null;
       cpSpeechRecognition = new SpeechRec();
@@ -2462,11 +2454,12 @@
 
     const isCurrentlyHidden = (chat.style.display === "none" || chat.hidden);
     if (isCurrentlyHidden) {
+      // Always show English when opening CarePath AI
+      changeCarePathLanguage("en-IN");
       chat.style.display = "flex";
       chat.hidden = false;
       const input = document.getElementById("carepathAIInput");
       if (input) setTimeout(() => input.focus(), 120);
-      // Language is auto-detected
     } else {
       chat.style.display = "none";
       chat.hidden = true;
@@ -3042,7 +3035,7 @@
 
     const formData = new FormData();
     formData.append("photo", file);
-    formData.append("notes", userNotes || "Explain this doctor prescription clearly in " + currentAiLang);
+    formData.append("notes", userNotes ? `${userNotes}. Explain clearly in English first.` : "Explain this doctor prescription clearly in English first.");
 
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
     const primaryUrl = isLocal ? "http://127.0.0.1:8000/ai/analyze-prescription" : "https://carepath-3q9q.onrender.com/ai/analyze-prescription";
@@ -3081,44 +3074,19 @@
     }
 
     if (!explanationText) {
-      if (currentAiLang.startsWith("te")) {
-        explanationText = `📋 **డాక్టర్ ప్రిస్క్రిప్షన్ వివరణ (CarePath AI)**\n\n` +
-          `మీ ప్రిస్క్రిప్షన్ ఫోటో స్వీకరించబడింది! భారతీయ వైద్యుల చేతివ్రాత మరియు మందుల మోతాదు సంక్షిప్త పదాలు:\n\n` +
-          `💊 **మందులు ఎలా వేసుకోవాలి:**\n` +
-          `• **1-0-1**: ఉదయం 1 టాబ్లెట్ మరియు రాత్రి 1 టాబ్లెట్ భోజనం తర్వాత తీసుకోవాలి.\n` +
-          `• **1-0-0**: ఉదయం మాత్రమే 1 టాబ్లెట్.\n` +
-          `• **0-0-1**: రాత్రి పడుకునే ముందు మాత్రమే 1 టాబ్లెట్ (HS).\n` +
-          `• **1-1-1 / TDS**: రోజుకు 3 సార్లు (ఉదయం, మధ్యాహ్నం, రాత్రి).\n` +
-          `• **BBF**: టిఫిన్ ముందు (ఖాళీ కడుపుతో).\n` +
-          `• **PC**: భోజనం తర్వాత.\n` +
-          `• **SOS**: అవసరమైనప్పుడు మాత్రమే (నొప్పి లేదా అధిక జ్వరం ఉన్నప్పుడు).\n\n` +
-          `🥗 **ఆరోగ్య సలహా:** రోజుకు 2.5-3 లీటర్ల నీరు తాగండి మరియు తేలికపాటి ఆహారం తీసుకోండి. మందుల పేర్లను మీ ఫార్మసిస్ట్‌తో సరిచూసుకోండి.`;
-      } else if (currentAiLang.startsWith("hi")) {
-        explanationText = `📋 **डॉक्टर की पर्ची का विवरण (CarePath AI)**\n\n` +
-          `आपकी पर्ची प्राप्त हो गई है! यहाँ दवाइयों की खुराक का विवरण दिया गया है:\n\n` +
-          `💊 **दवाई लेने का सही तरीका:**\n` +
-          `• **1-0-1**: 1 गोली सुबह और 1 गोली रात को भोजन के बाद लें।\n` +
-          `• **1-0-0**: केवल सुबह 1 गोली।\n` +
-          `• **0-0-1**: केवल रात को सोते समय 1 गोली।\n` +
-          `• **1-1-1 / TDS**: दिन में 3 बार (सुबह, दोपहर, रात)।\n` +
-          `• **BBF**: नाश्ते से पहले (खाली पेट)।\n` +
-          `• **PC**: भोजन के बाद।\n` +
-          `• **SOS**: केवल जरूरत पड़ने पर (दर्द या बुखार होने पर)।\n\n` +
-          `🥗 **देखभाल सलाह:** खूब पानी पिएं और आराम करें। कृपया दवाई लेने से पहले फार्मासिस्ट से भी पुष्टि करें।`;
-      } else {
-        explanationText = `📋 **Doctor's Prescription & Medical Decoder (CarePath AI)**\n\n` +
-          `Your prescription photo has been received! Here is how to read Indian doctor handwriting and medical dosage abbreviations:\n\n` +
-          `💊 **HOW TO TAKE PRESCRIBED MEDICINES:**\n` +
-          `• **1-0-1**: Take 1 tablet in the Morning and 1 tablet at Night.\n` +
-          `• **1-0-0**: Take 1 tablet only in the Morning.\n` +
-          `• **0-0-1**: Take 1 tablet only at Bedtime (HS).\n` +
-          `• **1-1-1 / TDS**: Take 3 times daily (Morning, Afternoon, Night).\n` +
-          `• **BBF**: Before Breakfast (empty stomach).\n` +
-          `• **PC**: After meals (with water).\n` +
-          `• **SOS**: Only take when needed in severe pain or high fever.\n\n` +
-          `🥗 **RECOVERY ADVICE:** Drink 2.5–3 liters of water daily, consume warm light food, and complete the full antibiotic course even if you feel better.\n\n` +
-          `ℹ️ *Always verify medicine names and doses with your dispensing pharmacist.*`;
-      }
+      // Primary explanation is always in English first
+      explanationText = `📋 **Doctor's Prescription & Medical Decoder (CarePath AI)**\n\n` +
+        `Your prescription photo has been received! Here is how to read Indian doctor handwriting and medical dosage abbreviations in English:\n\n` +
+        `💊 **HOW TO TAKE PRESCRIBED MEDICINES:**\n` +
+        `• **1-0-1**: Take 1 tablet in the Morning and 1 tablet at Night after meals.\n` +
+        `• **1-0-0**: Take 1 tablet only in the Morning after breakfast.\n` +
+        `• **0-0-1**: Take 1 tablet only at Bedtime (HS) with water.\n` +
+        `• **1-1-1 / TDS**: Take 3 times daily (Morning, Afternoon, Night).\n` +
+        `• **BBF**: Before Breakfast (take on an empty stomach).\n` +
+        `• **PC**: Post Coenam (take after meals).\n` +
+        `• **SOS**: Take only when required (e.g. for sudden fever or severe pain).\n\n` +
+        `🥗 **HEALTH & RECOVERY ADVICE:** Drink 2.5–3 liters of clean water daily, eat light easy-to-digest food, and complete the prescribed course.\n\n` +
+        `ℹ️ *Always verify specific medicine names and dosages with your dispensing hospital pharmacist.*`;
     }
 
     lastAnalyzedPrescriptionText = explanationText || "";
@@ -3160,7 +3128,7 @@
     carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
 
     if (autoVoiceOutput) {
-      playAudioVoice(explanationText, currentAiLang, null);
+      playAudioVoice(explanationText, "en-IN", null);
     }
   }
 
@@ -3207,7 +3175,7 @@
   }
 
   // Set initial language from saved preference (default: Telugu or saved choice)
-  setTimeout(() => changeCarePathLanguage(currentAiLang), 100);
+  setTimeout(() => changeCarePathLanguage("en-IN"), 100);
 
   // Footer year
   const footerYear = document.getElementById("footerYear");

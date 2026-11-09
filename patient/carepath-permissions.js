@@ -335,11 +335,8 @@
     getStatus: () => CarePathNotifications.getStatus(),
   };
 
-  // Auto-init banner when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => CarePathNotifications.initBanner());
-  } else {
-    CarePathNotifications.initBanner();
-  }
+  // Auto-init banner disabled per user preference to remove persistent notification symbol on screen
+  // Notification engine remains active in the background for token calls and hospital replies
+  // CarePathNotifications.initBanner();
 
 })(window);

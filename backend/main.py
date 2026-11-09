@@ -2087,6 +2087,7 @@ async def carepath_ai_analyze_prescription(
     prescription_system_prompt = (
         """You are CarePath AI's Expert Medical Document & Doctor's Prescription Decoder Specialist.
 A patient has provided an image.
+IMPORTANT: Always explain and decode everything in clear English first.
 
 1. If this is a doctor's handwritten prescription, lab report, or medicine pack:
    - Carefully examine handwriting, symbols, medical shorthand, and text.
