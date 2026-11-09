@@ -1394,6 +1394,43 @@
     </div>
 </div>
 
+<!-- =====================================================
+     DIRECT PATIENT INQUIRY REPLY MODAL
+===================================================== -->
+<div id="hospitalPatientReplyModal" class="ad-modal-backdrop" aria-hidden="true" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.7); z-index: 100000; backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;">
+    <div style="background: #ffffff; width: 100%; max-width: 500px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="padding: 16px 20px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">💬</span>
+                <div>
+                    <h4 style="margin: 0; font-size: 15px; font-weight: 800;">Direct Reply to Patient</h4>
+                    <p style="margin: 0; font-size: 11.5px; opacity: 0.9;" id="replyModalPatientSubtitle">Patient Inquiry Response</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeHospitalPatientReplyModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 20px; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
+        </div>
+        <form onsubmit="submitHospitalPatientReply(event)" style="padding: 20px; display: flex; flex-direction: column; gap: 14px; margin: 0;">
+            <input type="hidden" id="replyInquiryId" value="" />
+            <input type="hidden" id="replyPatientPhone" value="" />
+            
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 12.5px;">
+                <div style="font-weight: 700; color: #475569; margin-bottom: 2px;">Subject: <span id="replyInquirySubject" style="color: #0f172a;">General Inquiry</span></div>
+                <div style="font-size: 11.5px; color: #64748b;">The patient can view your reply directly in their CarePath chat box.</div>
+            </div>
+
+            <div>
+                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 6px;">Hospital Response Message *</label>
+                <textarea id="hospitalPatientReplyText" rows="4" required placeholder="Type your response to the patient (e.g. Dr. Ramesh OPD is active till 1 PM, token #15 is currently called)..." style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 13px; outline: none; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px;">
+                <button type="button" onclick="closeHospitalPatientReplyModal()" style="padding: 9px 16px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="submit" id="btnSubmitPatientReply" style="padding: 9px 20px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">🚀 Send to Patient</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 /* =====================================================
    API CONFIGURATION
@@ -2045,10 +2082,15 @@ async function loadHospitalAdminMessages(markRead = false) {
                     <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; line-height: 1.45; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                         ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 4px; color: ${isMe ? '#ffffff' : (isPatient ? '#166534' : '#0f172a')}">${escapeHtml(msg.subject)}</div>` : ''}
                         <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.message || '')}</div>
-                        ${(isPatient && cleanPhone) ? `
-                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(22, 101, 52, 0.2); display: flex; gap: 8px; flex-wrap: wrap;">
-                                <a href="https://wa.me/${waNum}" target="_blank" style="text-decoration: none; background: #25D366; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">💬 WhatsApp</a>
-                                <a href="tel:${cleanPhone}" style="text-decoration: none; background: #0284c7; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">📞 Call</a>
+                        ${isPatient ? `
+                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(22, 101, 52, 0.2); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                                <button type="button" onclick="openHospitalPatientReplyModal(${msg.id}, '${escapeHtml(msg.sender_name || 'Patient')}', '${escapeHtml(cleanPhone || '')}', '${escapeHtml(msg.subject || '')}')" style="border: none; background: #0284c7; color: white; padding: 5px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);">
+                                    💬 Direct Reply
+                                </button>
+                                ${cleanPhone ? `
+                                    <a href="https://wa.me/${waNum}" target="_blank" style="text-decoration: none; background: #25D366; color: white; padding: 5px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">WhatsApp</a>
+                                    <a href="tel:${cleanPhone}" style="text-decoration: none; background: #475569; color: white; padding: 5px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">Call</a>
+                                ` : ''}
                             </div>
                         ` : ''}
                     </div>
@@ -2124,12 +2166,15 @@ function renderInquiriesWidget(messages) {
                 <div class="inquiry-subject">${escapeHtml(inq.subject || inq.message || 'General OPD Inquiry')}</div>
                 <div style="font-size: 12px; color: var(--slate-600); margin: 4px 0 8px; line-height: 1.4; white-space: pre-wrap; word-break: break-word;">${escapeHtml(inq.message || '')}</div>
                 <div class="inquiry-action-row">
+                    <button type="button" onclick="openHospitalPatientReplyModal(${inq.id}, '${escapeHtml(inq.sender_name || 'Patient')}', '${escapeHtml(cleanPhone || '')}', '${escapeHtml(inq.subject || '')}')" style="border: none; background: #0284c7; color: white; font-size: 11.5px; font-weight: 700; padding: 5px 11px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(2,132,199,0.3);">
+                        💬 Direct Reply
+                    </button>
                     ${cleanPhone ? `
                         <a href="https://wa.me/${waNum}" target="_blank" class="btn-inquiry-wa">
-                            💬 WhatsApp
+                            WhatsApp
                         </a>
                         <a href="tel:${cleanPhone}" class="btn-inquiry-call">
-                            📞 Call
+                            Call
                         </a>
                     ` : ''}
                     <button type="button" onclick="openAdminMessagesModal()" style="border: none; background: #e2e8f0; color: #475569; font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 6px; cursor: pointer;">
@@ -2171,6 +2216,63 @@ async function sendHospitalReplyToAdmin() {
         alert("Send reply error: " + e.message);
     } finally {
         if (btn) { btn.disabled = false; btn.textContent = "🚀 Send Reply"; }
+    }
+}
+
+function openHospitalPatientReplyModal(inquiryId, patientName, patientPhone, subject) {
+    const modal = document.getElementById("hospitalPatientReplyModal");
+    if (!modal) return;
+    document.getElementById("replyInquiryId").value = inquiryId || "";
+    document.getElementById("replyPatientPhone").value = patientPhone || "";
+    document.getElementById("replyModalPatientSubtitle").textContent = `Replying to: ${patientName || 'Patient'}${patientPhone ? ' (' + patientPhone + ')' : ''}`;
+    document.getElementById("replyInquirySubject").textContent = subject || "General OPD Inquiry";
+    const textInput = document.getElementById("hospitalPatientReplyText");
+    if (textInput) {
+        textInput.value = "";
+        setTimeout(() => textInput.focus(), 150);
+    }
+    modal.style.display = "flex";
+}
+
+function closeHospitalPatientReplyModal() {
+    const modal = document.getElementById("hospitalPatientReplyModal");
+    if (modal) modal.style.display = "none";
+}
+
+async function submitHospitalPatientReply(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const inqId = document.getElementById("replyInquiryId").value;
+    const phone = document.getElementById("replyPatientPhone").value;
+    const textInput = document.getElementById("hospitalPatientReplyText");
+    const message = textInput ? textInput.value.trim() : "";
+    const btn = document.getElementById("btnSubmitPatientReply");
+
+    if (!message) {
+        alert("Please enter a reply message.");
+        return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = "Sending..."; }
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/patient-inquiry/reply`, {
+            method: "POST",
+            headers: getHospitalAuthHeaders(true),
+            body: JSON.stringify({
+                inquiry_id: parseInt(inqId, 10),
+                reply_message: message,
+                patient_phone: phone || null
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.message || "Failed to send reply");
+        alert("✓ Reply delivered directly to the patient's CarePath chat box!");
+        closeHospitalPatientReplyModal();
+        await loadHospitalAdminMessages();
+    } catch(err) {
+        alert("Reply failed: " + err.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "🚀 Send to Patient"; }
     }
 }
 

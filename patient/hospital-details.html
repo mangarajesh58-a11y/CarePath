@@ -529,6 +529,10 @@
                 alertBox.textContent = "Sending your inquiry directly to hospital desk...";
             }
 
+            // Persist patient details so they can access replies in their dashboard chat box
+            localStorage.setItem("patientName", name);
+            localStorage.setItem("patientPhone", phone);
+
             try {
                 const response = await fetch(`${API}/hospitals/${hospId}/patient-inquiry`, {
                     method: "POST",
@@ -550,9 +554,9 @@
                     alertBox.style.background = "#f0fdf4";
                     alertBox.style.color = "#15803d";
                     alertBox.style.border = "1px solid #bbf7d0";
-                    alertBox.textContent = "✓ Inquiry delivered! The hospital staff has received your message on their dashboard and will contact you.";
+                    alertBox.textContent = "✓ Inquiry delivered! When the hospital replies, you can view it directly in your Dashboard Messages chat box.";
                 }
-                alert("✓ Your inquiry has been submitted directly to the hospital helpdesk! The hospital staff will review it on their dashboard and contact you.");
+                alert("✓ Your inquiry has been submitted directly to the hospital helpdesk! When the hospital staff replies, you will see their response in your Dashboard Messages chat box.");
                 document.getElementById("inquiryMessage").value = "";
                 setTimeout(() => {
                     closePatientInquiryModal();

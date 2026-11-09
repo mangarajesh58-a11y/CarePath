@@ -221,6 +221,171 @@
       background: #dbeafe;
     }
 
+    .btn-hospital-chat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 13px;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);
+      transition: var(--transition-fast);
+      position: relative;
+      white-space: nowrap;
+    }
+    .btn-hospital-chat-pill:active {
+      transform: scale(0.95);
+      filter: brightness(0.95);
+    }
+    .chat-unread-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 10.5px;
+      font-weight: 900;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
+      animation: tokenLivePulse 2s infinite;
+    }
+
+    /* Separate Patient-Hospital Chat Modal */
+    .patient-chat-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 2500000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .patient-chat-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .patient-chat-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 500px;
+      height: 82vh;
+      max-height: 640px;
+      background: #ffffff;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      animation: patientChatPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes patientChatPop {
+      0% { opacity: 0; transform: scale(0.92) translateY(20px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .patient-chat-header {
+      padding: 14px 18px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .patient-chat-header-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .patient-chat-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .patient-chat-title {
+      margin: 0;
+      font-size: 15.5px;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .patient-chat-subtitle {
+      margin: 2px 0 0;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .patient-chat-close-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #ffffff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .patient-chat-body {
+      flex: 1;
+      padding: 16px;
+      background: #f8fafc;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .patient-chat-footer {
+      padding: 12px 14px;
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      flex-shrink: 0;
+    }
+    .chat-bubble-patient {
+      align-self: flex-end;
+      max-width: 82%;
+      background: #0284c7;
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 16px 16px 4px 16px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+    }
+    .chat-bubble-hospital {
+      align-self: flex-start;
+      max-width: 85%;
+      background: #ffffff;
+      color: #0f172a;
+      padding: 11px 14px;
+      border-radius: 16px 16px 16px 4px;
+      border: 1.5px solid #86efac;
+      font-size: 13.5px;
+      line-height: 1.45;
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.12);
+    }
+
     .live-token-dot {
       width: 7px;
       height: 7px;
@@ -824,10 +989,17 @@
       </div>
 
       <div class="topbar-actions">
-        <a href="my-tokens.html" id="btnMyTokens" class="btn-my-tokens-pill">
-          <span class="live-token-dot"></span>
-          🎟️ My Tokens
-        </a>
+        <button
+          type="button"
+          id="btnHospitalChat"
+          class="btn-hospital-chat-pill"
+          onclick="openPatientHospitalChatModal()"
+          title="Hospital Helpdesk & Direct Replies"
+        >
+          <span class="chat-pill-icon">💬</span>
+          <span>Messages</span>
+          <span id="patientChatUnreadBadge" class="chat-unread-badge" style="display: none;">0</span>
+        </button>
 
         <button
           type="button"
@@ -1400,6 +1572,53 @@
       <button type="button" id="btnConfirmDecodePrescription" onclick="submitPrescriptionForAnalysis()" style="flex: 1.6; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 13.5px; cursor: pointer; box-shadow: 0 4px 12px rgba(2,132,199,0.3);">
         🚀 Decode Prescription
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- =====================================================
+     SEPARATE PATIENT HOSPITAL CHAT MODAL
+===================================================== -->
+<div id="patientHospitalChatModal" class="patient-chat-modal" style="display: none;">
+  <div class="patient-chat-backdrop" onclick="closePatientHospitalChatModal()"></div>
+  <div class="patient-chat-card">
+    <div class="patient-chat-header">
+      <div class="patient-chat-header-info">
+        <div class="patient-chat-avatar">🏥</div>
+        <div>
+          <h3 class="patient-chat-title">Hospital Helpdesk & Replies</h3>
+          <p class="patient-chat-subtitle">Direct messages with hospital desks • 24h retention</p>
+        </div>
+      </div>
+      <button type="button" class="patient-chat-close-btn" onclick="closePatientHospitalChatModal()" aria-label="Close">&times;</button>
+    </div>
+
+    <!-- Chat Messages Container -->
+    <div id="patientChatMessagesBody" class="patient-chat-body">
+      <div style="text-align: center; color: #64748b; font-size: 13px; padding: 25px 0;">Loading conversation...</div>
+    </div>
+
+    <!-- Compose / Send Direct Follow-up -->
+    <div class="patient-chat-footer">
+      <div id="patientChatRecipientInfo" style="font-size: 11.5px; color: #64748b; margin-bottom: 6px; display: none;">
+        Replying to: <strong id="patientChatRecipientName" style="color: #0369a1;">Hospital</strong>
+      </div>
+      <form id="patientChatReplyForm" onsubmit="handlePatientSendFollowup(event)" style="display: flex; gap: 8px; align-items: center; width: 100%; margin: 0;">
+        <input 
+          type="text" 
+          id="patientChatInput" 
+          placeholder="Type an inquiry or reply to hospital..." 
+          autocomplete="off"
+          style="flex: 1; padding: 10px 14px; border-radius: 24px; border: 1.5px solid #cbd5e1; outline: none; font-size: 13px; background: #f8fafc;"
+        />
+        <button 
+          type="submit" 
+          id="patientChatSendBtn"
+          style="width: 40px; height: 40px; border-radius: 50%; background: #0284c7; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);"
+        >
+          ➤
+        </button>
+      </form>
     </div>
   </div>
 </div>
@@ -2920,6 +3139,278 @@
   if (footerYear) {
     footerYear.textContent = new Date().getFullYear();
   }
+
+// =====================================================
+// PATIENT HOSPITAL CHAT BOX & DIRECT MESSAGING (24H)
+// =====================================================
+let patientChatLoadedMessages = [];
+let patientChatActiveHospitalId = null;
+
+function openPatientHospitalChatModal() {
+    const modal = document.getElementById("patientHospitalChatModal");
+    if (!modal) return;
+    modal.style.display = "flex";
+    document.body.style.overflow = "hidden";
+    loadPatientHospitalChat();
+    markPatientChatAsRead();
+}
+
+function closePatientHospitalChatModal() {
+    const modal = document.getElementById("patientHospitalChatModal");
+    if (!modal) return;
+    modal.style.display = "none";
+    document.body.style.overflow = "";
+    checkPatientChatUnread();
+}
+
+function getActivePatientPhone() {
+    return (
+        localStorage.getItem("patientPhone") ||
+        localStorage.getItem("patient_phone") ||
+        localStorage.getItem("phone") ||
+        ""
+    ).trim();
+}
+
+function getActivePatientName() {
+    return (
+        localStorage.getItem("patientName") ||
+        localStorage.getItem("patient_name") ||
+        localStorage.getItem("full_name") ||
+        "CarePath Patient"
+    ).trim();
+}
+
+async function loadPatientHospitalChat() {
+    const container = document.getElementById("patientChatMessagesBody");
+    if (!container) return;
+    const phone = getActivePatientPhone();
+
+    if (!phone) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 24px 12px; color: #64748b;">
+                <div style="font-size: 32px; margin-bottom: 8px;">📱</div>
+                <div style="font-weight: 700; color: #0f172a; font-size: 14.5px; margin-bottom: 4px;">Enter your mobile number</div>
+                <p style="font-size: 12.5px; margin: 0 0 16px; line-height: 1.4;">To view replies from hospitals to your inquiries, please confirm your phone number:</p>
+                <div style="display: flex; gap: 8px; max-width: 280px; margin: 0 auto;">
+                    <input type="tel" id="patientChatPhoneInput" placeholder="10-digit mobile" style="flex: 1; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;" />
+                    <button type="button" onclick="savePatientChatPhoneAndReload()" style="padding: 9px 14px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer;">Save</button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <div style="text-align: center; padding: 30px 10px; color: #64748b; font-size: 13px;">
+            <div style="font-size: 24px; margin-bottom: 6px;">⏳</div>
+            <div>Loading messages from hospital helpdesk...</div>
+        </div>
+    `;
+
+    try {
+        const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+        const res = await fetch(`${apiBase}/patients/messages?phone=${encodeURIComponent(phone)}`);
+        if (!res.ok) throw new Error("Failed to load messages");
+        const data = await res.json();
+        const msgs = data.messages || [];
+        patientChatLoadedMessages = msgs;
+
+        renderPatientChatMessages(msgs);
+    } catch(err) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 24px 10px; color: #ef4444; font-size: 13px;">
+                Failed to load messages: ${escapeHtml(err.message)}
+                <div style="margin-top: 10px;">
+                    <button type="button" onclick="loadPatientHospitalChat()" style="padding: 6px 12px; background: #0284c7; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Retry</button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function savePatientChatPhoneAndReload() {
+    const input = document.getElementById("patientChatPhoneInput");
+    if (!input || !input.value.trim()) {
+        alert("Please enter a valid mobile number.");
+        return;
+    }
+    const clean = input.value.trim().replace(/[^0-9]/g, "");
+    if (clean.length < 10) {
+        alert("Please enter a 10-digit mobile number.");
+        return;
+    }
+    localStorage.setItem("patientPhone", clean);
+    loadPatientHospitalChat();
+}
+
+function renderPatientChatMessages(messages) {
+    const container = document.getElementById("patientChatMessagesBody");
+    const recipientInfo = document.getElementById("patientChatRecipientInfo");
+    const recipientName = document.getElementById("patientChatRecipientName");
+    if (!container) return;
+
+    if (!messages || messages.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 36px 16px; color: #64748b;">
+                <div style="font-size: 34px; margin-bottom: 8px;">💬</div>
+                <div style="font-weight: 800; color: #0f172a; font-size: 15px; margin-bottom: 6px;">No Hospital Messages Yet</div>
+                <p style="font-size: 12.5px; line-height: 1.45; margin: 0 0 16px; color: #64748b;">
+                    When you send an inquiry to a hospital, their direct replies will appear right here in this chat box.<br>Inquiries and replies are saved for 24 hours.
+                </p>
+                <a href="index.html" style="display: inline-block; padding: 9px 16px; background: #eff6ff; color: #0284c7; border: 1px solid #bfdbfe; border-radius: 8px; font-size: 12.5px; font-weight: 700; text-decoration: none;">
+                    Explore Hospitals to Send Inquiry →
+                </a>
+            </div>
+        `;
+        if (recipientInfo) recipientInfo.style.display = "none";
+        return;
+    }
+
+    // Identify active hospital
+    const lastHospitalMsg = [...messages].reverse().find(m => m.hospital_id);
+    if (lastHospitalMsg) {
+        patientChatActiveHospitalId = lastHospitalMsg.hospital_id;
+        if (recipientInfo && recipientName) {
+            recipientInfo.style.display = "block";
+            recipientName.textContent = lastHospitalMsg.hospital_name || "Hospital Helpdesk";
+        }
+    }
+
+    container.innerHTML = messages.map(msg => {
+        const isMe = (msg.sender_role || "").toLowerCase() === "patient";
+        const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+
+        if (isMe) {
+            return `
+                <div style="display: flex; flex-direction: column; align-self: flex-end; max-width: 84%;">
+                    <div style="font-size: 10.5px; color: #64748b; margin-bottom: 3px; text-align: right;">
+                        You → <strong>${escapeHtml(msg.hospital_name || 'Hospital')}</strong> • <span>${timeStr}</span>
+                    </div>
+                    <div class="chat-bubble-patient">
+                        ${msg.subject && msg.subject !== 'Patient Inquiry' ? `<div style="font-weight: 700; font-size: 12px; margin-bottom: 3px; opacity: 0.95;">${escapeHtml(msg.subject)}</div>` : ''}
+                        <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.message || '')}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div style="display: flex; flex-direction: column; align-self: flex-start; max-width: 86%;">
+                    <div style="font-size: 10.5px; color: #166534; margin-bottom: 3px; display: flex; align-items: center; gap: 4px;">
+                        <strong>🏥 ${escapeHtml(msg.hospital_name || 'Hospital')}</strong>
+                        ${msg.hospital_city ? `<span style="color: #64748b;">(${escapeHtml(msg.hospital_city)})</span>` : ''}
+                        • <span>${timeStr}</span>
+                        ${!msg.is_read ? `<span style="background: #dcfce7; color: #15803d; font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 800;">NEW REPLY</span>` : ''}
+                    </div>
+                    <div class="chat-bubble-hospital">
+                        ${msg.subject ? `<div style="font-weight: 800; font-size: 12.5px; color: #15803d; margin-bottom: 4px;">${escapeHtml(msg.subject)}</div>` : ''}
+                        <div style="white-space: pre-wrap; word-break: break-word; color: #0f172a;">${escapeHtml(msg.message || '')}</div>
+                        <div style="margin-top: 6px; font-size: 10px; color: #16a34a; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                            <span>✓ Verified Hospital Response</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }).join("");
+
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 100);
+}
+
+async function handlePatientSendFollowup(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const input = document.getElementById("patientChatInput");
+    const sendBtn = document.getElementById("patientChatSendBtn");
+    const message = input ? input.value.trim() : "";
+    if (!message) return;
+
+    const phone = getActivePatientPhone();
+    const name = getActivePatientName();
+    const hospId = patientChatActiveHospitalId || localStorage.getItem("selectedHospitalId") || 1;
+
+    if (!phone) {
+        alert("Please save your mobile number first to send messages.");
+        return;
+    }
+
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = "⏳"; }
+
+    try {
+        const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+        const res = await fetch(`${apiBase}/hospitals/${hospId}/patient-inquiry`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                patient_name: name,
+                patient_phone: phone,
+                subject: "Follow-up Inquiry",
+                message: message
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.message || "Failed to send message");
+        if (input) input.value = "";
+        await loadPatientHospitalChat();
+    } catch(err) {
+        alert("Send error: " + err.message);
+    } finally {
+        if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = "➤"; }
+    }
+}
+
+async function markPatientChatAsRead() {
+    const phone = getActivePatientPhone();
+    if (!phone) return;
+    try {
+        const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+        await fetch(`${apiBase}/patients/messages/mark-read`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: phone })
+        });
+        const badge = document.getElementById("patientChatUnreadBadge");
+        if (badge) badge.style.display = "none";
+    } catch(e) {}
+}
+
+async function checkPatientChatUnread() {
+    const phone = getActivePatientPhone();
+    const badge = document.getElementById("patientChatUnreadBadge");
+    if (!phone || !badge) return;
+    try {
+        const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+        const res = await fetch(`${apiBase}/patients/messages?phone=${encodeURIComponent(phone)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const unread = data.unread_count || 0;
+        if (unread > 0) {
+            badge.textContent = unread;
+            badge.style.display = "inline-flex";
+        } else {
+            badge.style.display = "none";
+        }
+    } catch(e) {}
+}
+
+// Auto poll every 12 seconds for replies
+setInterval(checkPatientChatUnread, 12000);
+setTimeout(checkPatientChatUnread, 1500);
+
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 </script>
 </body>
 </html>

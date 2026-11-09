@@ -356,8 +356,11 @@ class HospitalDirectMessage(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     hospital_id = Column(Integer, nullable=False, index=True)
-    sender_role = Column(String(50), nullable=False)  # 'admin' or 'hospital'
+    sender_role = Column(String(50), nullable=False)  # 'admin', 'hospital', or 'patient'
     sender_name = Column(String(255), nullable=True)
+    patient_phone = Column(String(50), nullable=True, index=True)
+    patient_id = Column(Integer, nullable=True, index=True)
+    reply_to_id = Column(Integer, nullable=True)
     subject = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     priority = Column(String(50), default="normal", nullable=False)  # 'normal', 'urgent', 'compliance'

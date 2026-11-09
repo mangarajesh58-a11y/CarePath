@@ -14,7 +14,7 @@ import logging
 from email.message import EmailMessage
 
 from datetime import datetime,date, timedelta
-from typing import Optional
+from typing import Optional, List
 
 import razorpay
 import requests
@@ -1249,6 +1249,24 @@ def run_database_migration():
             )
         except Exception as error:
             print(f"Platform contacts migration warning ({column_name}):", error)
+
+    # --------------------------------------------------------
+    # HOSPITAL DIRECT MESSAGES (Patient Inquiries & Direct Replies)
+    # --------------------------------------------------------
+    hdm_columns = {
+        "patient_phone": "VARCHAR(50) NULL",
+        "patient_id": "INT NULL",
+        "reply_to_id": "INT NULL",
+    }
+    for column_name, definition in hdm_columns.items():
+        try:
+            add_column_if_missing(
+                "hospital_direct_messages",
+                column_name,
+                definition,
+            )
+        except Exception as error:
+            print(f"Hospital direct messages migration warning ({column_name}):", error)
 
 
 try:
@@ -9024,11 +9042,15 @@ def admin_send_hospital_message(
 
 
 def purge_expired_patient_inquiries(db: Session, hospital_id: Optional[int] = None):
-    """Automatically delete patient direct inquiries older than 24 hours."""
+    """Automatically delete patient direct inquiries and hospital direct replies older than 24 hours."""
     try:
         cutoff = datetime.utcnow() - timedelta(hours=24)
         query = db.query(HospitalDirectMessage).filter(
-            HospitalDirectMessage.sender_role == "patient",
+            or_(
+                HospitalDirectMessage.sender_role == "patient",
+                HospitalDirectMessage.reply_to_id.isnot(None),
+                HospitalDirectMessage.patient_phone.isnot(None),
+            ),
             HospitalDirectMessage.created_at < cutoff,
         )
         if hospital_id is not None:
@@ -9190,9 +9212,22 @@ def hospital_reply_to_admin(
 class PatientInquiryRequest(BaseModel):
     patient_name: str
     patient_phone: Optional[str] = None
+    patient_id: Optional[int] = None
     patient_email: Optional[str] = None
     subject: Optional[str] = "Patient Inquiry"
     message: str
+
+
+class HospitalPatientReplyRequest(BaseModel):
+    inquiry_id: int
+    reply_message: str
+    patient_phone: Optional[str] = None
+    patient_name: Optional[str] = None
+
+
+class PatientMarkReadRequest(BaseModel):
+    phone: Optional[str] = None
+    message_ids: Optional[List[int]] = None
 
 
 @app.post("/hospitals/{hospital_id}/patient-inquiry")
@@ -9214,9 +9249,10 @@ def submit_patient_inquiry(
         raise HTTPException(status_code=400, detail="Inquiry message cannot be empty")
 
     patient_name = (data.patient_name or "CarePath Patient").strip()
+    clean_phone = (data.patient_phone or "").strip()
     sender_info = patient_name
-    if data.patient_phone:
-        sender_info += f" ({data.patient_phone.strip()})"
+    if clean_phone:
+        sender_info += f" ({clean_phone})"
 
     subj = (data.subject or f"Patient Inquiry from {patient_name}").strip()
 
@@ -9224,6 +9260,8 @@ def submit_patient_inquiry(
         hospital_id=hospital_id,
         sender_role="patient",
         sender_name=sender_info,
+        patient_phone=clean_phone if clean_phone else None,
+        patient_id=data.patient_id if hasattr(data, "patient_id") else None,
         subject=subj,
         message=message_text,
         priority="normal",
@@ -9270,6 +9308,182 @@ You can view and reply to this inquiry directly on your CarePath Hospital Dashbo
             "created_at": msg.created_at.isoformat() if msg.created_at else None,
         },
     }
+
+
+@app.post("/hospitals/{hospital_id}/patient-inquiry/reply")
+def hospital_reply_to_patient_inquiry(
+    hospital_id: int,
+    data: HospitalPatientReplyRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Hospital: Send direct in-app reply to a patient inquiry."""
+    if hospital_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found")
+
+    reply_text = (data.reply_message or "").strip()
+    if not reply_text:
+        raise HTTPException(status_code=400, detail="Reply message cannot be empty")
+
+    inquiry = (
+        db.query(HospitalDirectMessage)
+        .filter(
+            HospitalDirectMessage.id == data.inquiry_id,
+            HospitalDirectMessage.hospital_id == hospital_id,
+        )
+        .first()
+    )
+    if not inquiry:
+        raise HTTPException(status_code=404, detail="Inquiry not found")
+
+    # Extract target patient phone
+    target_phone = (data.patient_phone or inquiry.patient_phone or "").strip()
+    if not target_phone and inquiry.sender_name:
+        import re
+        pm = re.search(r'\(([^)]+)\)', inquiry.sender_name)
+        if pm:
+            target_phone = pm.group(1).strip()
+
+    reply_msg = HospitalDirectMessage(
+        hospital_id=hospital_id,
+        sender_role="hospital",
+        sender_name=hospital.name,
+        patient_phone=target_phone if target_phone else None,
+        patient_id=inquiry.patient_id,
+        reply_to_id=inquiry.id,
+        subject=f"Reply: {inquiry.subject}",
+        message=reply_text,
+        priority="normal",
+        is_read=False,  # Unread for the patient
+        sent_via_email=False,
+        created_at=datetime.utcnow(),
+    )
+    # Mark the original inquiry as resolved/read by hospital
+    inquiry.is_read = True
+
+    db.add(reply_msg)
+    db.commit()
+    db.refresh(reply_msg)
+
+    return {
+        "success": True,
+        "message": "Reply sent to patient successfully.",
+        "reply": {
+            "id": reply_msg.id,
+            "reply_to_id": reply_msg.reply_to_id,
+            "hospital_name": hospital.name,
+            "message": reply_msg.message,
+            "created_at": reply_msg.created_at.isoformat() if reply_msg.created_at else None,
+        },
+    }
+
+
+@app.get("/patients/messages")
+def get_patient_messages(
+    phone: Optional[str] = None,
+    patient_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    """Patient: Fetch inquiries and hospital direct replies from the last 24 hours."""
+    purge_expired_patient_inquiries(db)
+
+    clean_phone = (phone or "").strip()
+    if not clean_phone and not patient_id:
+        return {"success": True, "messages": [], "unread_count": 0}
+
+    cutoff_24h = datetime.utcnow() - timedelta(hours=24)
+    query = (
+        db.query(
+            HospitalDirectMessage,
+            Hospital.name.label("hospital_name"),
+            Hospital.city.label("hospital_city"),
+        )
+        .outerjoin(Hospital, Hospital.id == HospitalDirectMessage.hospital_id)
+        .filter(HospitalDirectMessage.created_at >= cutoff_24h)
+    )
+
+    phone_filter = None
+    if clean_phone:
+        digits = "".join(filter(str.isdigit, clean_phone))
+        last10 = digits[-10:] if len(digits) >= 10 else digits
+        conds = [HospitalDirectMessage.patient_phone == clean_phone]
+        if last10:
+            conds.append(HospitalDirectMessage.patient_phone.like(f"%{last10}%"))
+            conds.append(HospitalDirectMessage.sender_name.like(f"%{last10}%"))
+        phone_filter = or_(*conds)
+
+    if phone_filter is not None and patient_id:
+        query = query.filter(or_(phone_filter, HospitalDirectMessage.patient_id == patient_id))
+    elif phone_filter is not None:
+        query = query.filter(phone_filter)
+    elif patient_id:
+        query = query.filter(HospitalDirectMessage.patient_id == patient_id)
+
+    raw_msgs = query.order_by(HospitalDirectMessage.created_at.asc()).all()
+
+    messages_list = []
+    unread_count = 0
+    for hdm, h_name, h_city in raw_msgs:
+        is_from_hospital = (hdm.sender_role or "").lower() == "hospital"
+        if is_from_hospital and not hdm.is_read:
+            unread_count += 1
+        messages_list.append({
+            "id": hdm.id,
+            "hospital_id": hdm.hospital_id,
+            "hospital_name": h_name or "Hospital Helpdesk",
+            "hospital_city": h_city or "",
+            "sender_role": hdm.sender_role,
+            "sender_name": hdm.sender_name,
+            "patient_phone": hdm.patient_phone,
+            "subject": hdm.subject,
+            "message": hdm.message,
+            "reply_to_id": hdm.reply_to_id,
+            "is_read": hdm.is_read,
+            "created_at": hdm.created_at.isoformat() if hdm.created_at else None,
+        })
+
+    return {
+        "success": True,
+        "unread_count": unread_count,
+        "messages": messages_list,
+    }
+
+
+@app.post("/patients/messages/mark-read")
+def patient_mark_messages_read(
+    data: PatientMarkReadRequest,
+    db: Session = Depends(get_db),
+):
+    """Patient: Mark hospital reply messages as read."""
+    if data.message_ids:
+        db.query(HospitalDirectMessage).filter(
+            HospitalDirectMessage.id.in_(data.message_ids),
+            HospitalDirectMessage.sender_role == "hospital",
+        ).update({HospitalDirectMessage.is_read: True}, synchronize_session=False)
+        db.commit()
+    elif data.phone:
+        clean_phone = data.phone.strip()
+        digits = "".join(filter(str.isdigit, clean_phone))
+        last10 = digits[-10:] if len(digits) >= 10 else digits
+        query = db.query(HospitalDirectMessage).filter(
+            HospitalDirectMessage.sender_role == "hospital",
+            HospitalDirectMessage.is_read == False,
+        )
+        if last10:
+            query = query.filter(
+                or_(
+                    HospitalDirectMessage.patient_phone == clean_phone,
+                    HospitalDirectMessage.patient_phone.like(f"%{last10}%"),
+                )
+            )
+        query.update({HospitalDirectMessage.is_read: True}, synchronize_session=False)
+        db.commit()
+
+    return {"success": True, "message": "Messages marked as read"}
 
 
 # ============================================================
