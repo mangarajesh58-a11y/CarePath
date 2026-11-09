@@ -2082,12 +2082,61 @@ async def carepath_ai_analyze_prescription(
         raise HTTPException(status_code=400, detail="Image size exceeds maximum limit of 10 MB.")
 
     b64_image = base64.b64encode(image_bytes).decode("utf-8")
-    patient_note_context = f"Additional patient note: {notes}" if notes else ""
+    user_note_str = (notes or "").strip()
+    note_lower = user_note_str.lower()
 
-    prescription_system_prompt = (
-        """You are CarePath AI's Expert Medical Document & Doctor's Prescription Decoder Specialist.
+    # Detect user requested language in the note
+    detected_target_lang = None
+    if any(k in note_lower for k in ["telugu", "తెలుగు"]):
+        detected_target_lang = "Telugu"
+    elif any(k in note_lower for k in ["hindi", "हिंदी"]):
+        detected_target_lang = "Hindi"
+    elif any(k in note_lower for k in ["tamil", "தமிழ்"]):
+        detected_target_lang = "Tamil"
+    elif any(k in note_lower for k in ["kannada", "ಕನ್ನಡ"]):
+        detected_target_lang = "Kannada"
+    elif any(k in note_lower for k in ["marathi", "मराठी"]):
+        detected_target_lang = "Marathi"
+    elif any(k in note_lower for k in ["bengali", "বাংলা"]):
+        detected_target_lang = "Bengali"
+    elif any(k in note_lower for k in ["gujarati", "ગુજરાતી"]):
+        detected_target_lang = "Gujarati"
+    elif any(k in note_lower for k in ["malayalam", "മലയാളം"]):
+        detected_target_lang = "Malayalam"
+    elif any(k in note_lower for k in ["punjabi", "ਪੰਜਾਬੀ"]):
+        detected_target_lang = "Punjabi"
+    elif any(k in note_lower for k in ["urdu", "اردو"]):
+        detected_target_lang = "Urdu"
+    elif any(k in note_lower for k in ["odia", "oriya", "ଓଡ଼ిଆ"]):
+        detected_target_lang = "Odia"
+    elif "explain in " in note_lower:
+        detected_target_lang = note_lower.split("explain in ")[1].strip()
+    elif "in " in note_lower:
+        detected_target_lang = note_lower.split("in ")[1].strip()
+
+    if detected_target_lang:
+        lang_directive = (
+            f"CRITICAL LANGUAGE MANDATE: The user explicitly requested in the note: \"{user_note_str}\". "
+            f"You MUST write your entire response, headings, explanations, dosage instructions, and warnings in {detected_target_lang}. "
+            f"Do NOT use English unless English was requested; generate all text naturally and fluently in {detected_target_lang}."
+        )
+    elif user_note_str:
+        lang_directive = (
+            f"LANGUAGE MANDATE: The patient provided this note: \"{user_note_str}\". "
+            "If this note asks for a specific language, write in that language; otherwise write in clear English."
+        )
+    else:
+        lang_directive = (
+            "LANGUAGE MANDATE: The patient entered no note. "
+            "You MUST explain and decode everything in clear English."
+        )
+
+    patient_note_context = f"Patient Note: {user_note_str}" if user_note_str else ""
+
+    prescription_system_prompt = f"""You are CarePath AI's Expert Medical Document & Doctor's Prescription Decoder Specialist.
 A patient has provided an image.
-IMPORTANT: Always explain and decode everything in clear English first.
+
+{lang_directive}
 
 1. If this is a doctor's handwritten prescription, lab report, or medicine pack:
    - Carefully examine handwriting, symbols, medical shorthand, and text.
@@ -2098,11 +2147,12 @@ IMPORTANT: Always explain and decode everything in clear English first.
    - ⚠️ RED FLAG WARNINGS (When to visit emergency)
    - ℹ️ PATIENT SAFETY NOTE: 'Always verify medicines with your pharmacist.'
 
-2. If this image is NOT a medical prescription (e.g. academic notes, whiteboard, screenshot, or personal photo):
-   - Clearly and politely explain what is written/shown in the image.
+2. If this image is NOT a medical prescription (e.g. academic notes, math/formula sheet, student notes, whiteboard, screenshot, or personal photo):
+   - Clearly and politely explain what is written/shown in the image (strictly honoring the {detected_target_lang if detected_target_lang else 'English'} language requirement above).
    - Remind the patient to upload a photo of their physical doctor's prescription or hospital report for medicine analysis.
-""" + ("\n" + patient_note_context if patient_note_context else "")
-    )
+
+{patient_note_context}
+"""
 
     # --- 1. Primary Engine: Ultra-Fast Groq Multimodal Vision (< 2s) ---
     groq_key = os.getenv("GROQ_API_KEY")

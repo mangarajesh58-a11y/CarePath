@@ -3035,7 +3035,28 @@
 
     const formData = new FormData();
     formData.append("photo", file);
-    formData.append("notes", userNotes ? `${userNotes}. Explain clearly in English first.` : "Explain this doctor prescription clearly in English first.");
+    // Detect requested language from user note
+    const noteLower = (userNotes || "").toLowerCase();
+    let requestedLangCode = "en-IN";
+    if (noteLower.includes("telugu") || /[\u0C00-\u0C7F]/.test(userNotes)) {
+      requestedLangCode = "te-IN";
+    } else if (noteLower.includes("hindi") || /[\u0900-\u097F]/.test(userNotes)) {
+      requestedLangCode = "hi-IN";
+    } else if (noteLower.includes("tamil") || /[\u0B80-\u0BFF]/.test(userNotes)) {
+      requestedLangCode = "ta-IN";
+    } else if (noteLower.includes("kannada") || /[\u0C80-\u0CFF]/.test(userNotes)) {
+      requestedLangCode = "kn-IN";
+    } else if (noteLower.includes("marathi")) {
+      requestedLangCode = "mr-IN";
+    } else if (noteLower.includes("bengali")) {
+      requestedLangCode = "bn-IN";
+    } else if (noteLower.includes("gujarati")) {
+      requestedLangCode = "gu-IN";
+    } else if (noteLower.includes("malayalam")) {
+      requestedLangCode = "ml-IN";
+    }
+
+    formData.append("notes", userNotes || "");
 
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
     const primaryUrl = isLocal ? "http://127.0.0.1:8000/ai/analyze-prescription" : "https://carepath-3q9q.onrender.com/ai/analyze-prescription";
@@ -3074,19 +3095,44 @@
     }
 
     if (!explanationText) {
-      // Primary explanation is always in English first
-      explanationText = `📋 **Doctor's Prescription & Medical Decoder (CarePath AI)**\n\n` +
-        `Your prescription photo has been received! Here is how to read Indian doctor handwriting and medical dosage abbreviations in English:\n\n` +
-        `💊 **HOW TO TAKE PRESCRIBED MEDICINES:**\n` +
-        `• **1-0-1**: Take 1 tablet in the Morning and 1 tablet at Night after meals.\n` +
-        `• **1-0-0**: Take 1 tablet only in the Morning after breakfast.\n` +
-        `• **0-0-1**: Take 1 tablet only at Bedtime (HS) with water.\n` +
-        `• **1-1-1 / TDS**: Take 3 times daily (Morning, Afternoon, Night).\n` +
-        `• **BBF**: Before Breakfast (take on an empty stomach).\n` +
-        `• **PC**: Post Coenam (take after meals).\n` +
-        `• **SOS**: Take only when required (e.g. for sudden fever or severe pain).\n\n` +
-        `🥗 **HEALTH & RECOVERY ADVICE:** Drink 2.5–3 liters of clean water daily, eat light easy-to-digest food, and complete the prescribed course.\n\n` +
-        `ℹ️ *Always verify specific medicine names and dosages with your dispensing hospital pharmacist.*`;
+      if (requestedLangCode.startsWith("te")) {
+        explanationText = `📋 **డాక్టర్ ప్రిస్క్రిప్షన్ వివరణ (CarePath AI)**\n\n` +
+          `మీ ప్రిస్క్రిప్షన్ ఫోటో స్వీకరించబడింది! భారతీయ వైద్యుల చేతివ్రాత మరియు మందుల మోతాదు సంక్షిప్త పదాలు:\n\n` +
+          `💊 **మందులు ఎలా వేసుకోవాలి:**\n` +
+          `• **1-0-1**: ఉదయం 1 టాబ్లెట్ మరియు రాత్రి 1 టాబ్లెట్ భోజనం తర్వాత తీసుకోవాలి.\n` +
+          `• **1-0-0**: ఉదయం మాత్రమే 1 టాబ్లెట్ భోజనం తర్వాత.\n` +
+          `• **0-0-1**: రాత్రి పడుకునే ముందు మాత్రమే 1 టాబ్లెట్ (HS).\n` +
+          `• **1-1-1 / TDS**: రోజుకు 3 సార్లు (ఉదయం, మధ్యాహ్నం, రాత్రి).\n` +
+          `• **BBF**: టిఫిన్ ముందు (ఖాళీ కడుపుతో).\n` +
+          `• **PC**: భోజనం తర్వాత.\n` +
+          `• **SOS**: అవసరమైనప్పుడు మాత్రమే (నొప్పి లేదా అధిక జ్వరం ఉన్నప్పుడు).\n\n` +
+          `🥗 **ఆరోగ్య సలహా:** రోజుకు 2.5-3 లీటర్ల నీరు తాగండి మరియు తేలికపాటి ఆహారం తీసుకోండి. మందుల పేర్లను మీ ఫార్మసిస్ట్‌తో సరిచూసుకోండి.`;
+      } else if (requestedLangCode.startsWith("hi")) {
+        explanationText = `📋 **डॉक्टर की पर्ची का विवरण (CarePath AI)**\n\n` +
+          `आपकी पर्ची प्राप्त हो गई है! यहाँ दवाइयों की खुराक का विवरण दिया गया है:\n\n` +
+          `💊 **दवाई लेने का सही तरीका:**\n` +
+          `• **1-0-1**: 1 गोली सुबह और 1 गोली रात को भोजन के बाद लें।\n` +
+          `• **1-0-0**: केवल सुबह 1 गोली।\n` +
+          `• **0-0-1**: केवल रात को सोते समय 1 गोली।\n` +
+          `• **1-1-1 / TDS**: दिन में 3 बार (सुबह, दोपहर, रात)।\n` +
+          `• **BBF**: नाश्ते से पहले (खाली पेट)।\n` +
+          `• **PC**: भोजन के बाद।\n` +
+          `• **SOS**: केवल जरूरत पड़ने पर (दर्द या बुखार होने पर)।\n\n` +
+          `🥗 **देखभाल सलाह:** खूब पानी पिएं और आराम करें। कृपया दवाई लेने से पहले फार्मासिस्ट से भी पुष्टि करें।`;
+      } else {
+        explanationText = `📋 **Doctor's Prescription & Medical Decoder (CarePath AI)**\n\n` +
+          `Your prescription photo has been received! Here is how to read Indian doctor handwriting and medical dosage abbreviations in English:\n\n` +
+          `💊 **HOW TO TAKE PRESCRIBED MEDICINES:**\n` +
+          `• **1-0-1**: Take 1 tablet in the Morning and 1 tablet at Night after meals.\n` +
+          `• **1-0-0**: Take 1 tablet only in the Morning after breakfast.\n` +
+          `• **0-0-1**: Take 1 tablet only at Bedtime (HS) with water.\n` +
+          `• **1-1-1 / TDS**: Take 3 times daily (Morning, Afternoon, Night).\n` +
+          `• **BBF**: Before Breakfast (take on an empty stomach).\n` +
+          `• **PC**: Post Coenam (take after meals).\n` +
+          `• **SOS**: Take only when required (e.g. for sudden fever or severe pain).\n\n` +
+          `🥗 **HEALTH & RECOVERY ADVICE:** Drink 2.5–3 liters of clean water daily, eat light easy-to-digest food, and complete the prescribed course.\n\n` +
+          `ℹ️ *Always verify specific medicine names and dosages with your dispensing hospital pharmacist.*`;
+      }
     }
 
     lastAnalyzedPrescriptionText = explanationText || "";
@@ -3128,7 +3174,7 @@
     carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
 
     if (autoVoiceOutput) {
-      playAudioVoice(explanationText, "en-IN", null);
+      playAudioVoice(explanationText, requestedLangCode, null);
     }
   }
 
