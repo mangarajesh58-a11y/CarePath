@@ -1526,7 +1526,10 @@
         <div style="font-size: 28px; margin-bottom: 6px;">📷⚠️</div>
         <strong style="color: #fca5a5; font-size: 14px;">Camera Permission Needed</strong>
         <p style="margin: 8px 0; color: #cbd5e1; font-size: 12px; line-height: 1.45;">Please tap <strong>Allow</strong> when your browser asks for camera access, or enable camera in browser settings.</p>
-        <button type="button" onclick="triggerPrescriptionGallery(); closeCarePathCameraModal();" style="margin-top: 6px; padding: 8px 16px; background: #16a34a; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 12.5px; cursor: pointer;">🖼️ Choose from Gallery Instead</button>
+        <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; justify-content: center;">
+          <button type="button" onclick="triggerNativeCameraFallback()" style="padding: 8px 14px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">📸 Open Camera App</button>
+          <button type="button" onclick="triggerPrescriptionGallery(); closeCarePathCameraModal();" style="padding: 8px 14px; background: #16a34a; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">🖼️ Choose from Gallery</button>
+        </div>
       </div>
     </div>
 
@@ -2507,6 +2510,33 @@
   }
 
   // 4. LIVE CAMERA SCANNER WITH PERMISSION REQUEST
+  async function triggerPrescriptionCamera() {
+    closePrescriptionChoiceModal();
+    const cameraModal = document.getElementById("carepathAICameraModal");
+    const video = document.getElementById("carepathAIVideo");
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && cameraModal && video) {
+      try {
+        await startCarePathCameraInternal();
+      } catch (e) {
+        console.warn("Live camera init error, falling back to device camera:", e);
+        triggerNativeCameraFallback();
+      }
+    } else {
+      triggerNativeCameraFallback();
+    }
+  }
+
+  function triggerNativeCameraFallback() {
+    closeCarePathCameraModal();
+    const cameraInput = document.getElementById("carepathAICameraInput");
+    if (cameraInput) {
+      cameraInput.click();
+    } else {
+      alert("Camera access is not available on this device.");
+    }
+  }
+
   async function startCarePathCameraInternal() {
     const cameraModal = document.getElementById("carepathAICameraModal");
     const video = document.getElementById("carepathAIVideo");
@@ -2514,8 +2544,7 @@
     const guide = document.getElementById("carepathAICamGuide");
 
     if (!cameraModal) {
-      const cameraInput = document.getElementById("carepathAICameraInput");
-      if (cameraInput) cameraInput.click();
+      triggerNativeCameraFallback();
       return;
     }
 
@@ -2525,9 +2554,7 @@
     if (video) video.style.display = "block";
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      closeCarePathCameraModal();
-      const cameraInput = document.getElementById("carepathAICameraInput");
-      if (cameraInput) cameraInput.click();
+      triggerNativeCameraFallback();
       return;
     }
 
@@ -2540,7 +2567,10 @@
       });
       if (video) {
         video.srcObject = cpCameraStream;
-        video.play();
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(e => console.warn("Video play error:", e));
+        }
       }
     } catch (err) {
       console.warn("Camera stream access failed:", err);
@@ -2554,13 +2584,21 @@
 
   function switchCarePathCameraFacing() {
     cpCameraFacing = (cpCameraFacing === "environment") ? "user" : "environment";
-    triggerPrescriptionCamera();
+    startCarePathCameraInternal();
   }
 
   function captureCarePathPrescriptionSnapshot() {
     const video = document.getElementById("carepathAIVideo");
     const canvas = document.getElementById("carepathAICanvas");
-    if (!video || !canvas) return;
+    if (!video || !canvas) {
+      triggerNativeCameraFallback();
+      return;
+    }
+
+    if (!video.videoWidth || !video.videoHeight) {
+      triggerNativeCameraFallback();
+      return;
+    }
 
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
@@ -2568,7 +2606,10 @@
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob(function(blob) {
-      if (!blob) return;
+      if (!blob) {
+        triggerNativeCameraFallback();
+        return;
+      }
       const file = new File([blob], "prescription_camera_scan.jpg", { type: "image/jpeg" });
       closeCarePathCameraModal();
       handlePrescriptionFileSelected(file);
