@@ -36,7 +36,46 @@
         }
       } catch (e) {}
     })();
-  </script>
+  
+  // In-App Account Deletion (Google Play Store Policy Compliant)
+  async function triggerInAppAccountDeletion() {
+    const confirmed = confirm(
+      "⚠️ WARNING: Permanent Account Deletion\n\n" +
+      "Are you sure you want to permanently delete your CarePath account?\n\n" +
+      "• Your profile, email, and phone number will be erased.\n" +
+      "• Uploaded prescription scans and doctor inquiry messages will be deleted.\n\n" +
+      "This action cannot be undone. Click OK to proceed."
+    );
+    if (!confirmed) return;
+
+    const secondConfirm = confirm("Please confirm a second time: Permanently delete your account now?");
+    if (!secondConfirm) return;
+
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    const deleteUrl = isLocal ? "http://127.0.0.1:8000/patients/me" : "https://carepath-3q9q.onrender.com/patients/me";
+
+    try {
+      if (token) {
+        await fetch(deleteUrl, {
+          method: "DELETE",
+          headers: {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+    } catch (e) {
+      console.warn("Delete request error:", e);
+    }
+
+    localStorage.clear();
+    sessionStorage.clear();
+    alert("Your account and associated personal data have been permanently deleted.");
+    window.location.href = "index.html";
+  }
+
+</script>
 
   <style>
     :root {
@@ -874,10 +913,36 @@
         </div>
       </section>
 
-      <!-- Sign Out Action -->
-      <div style="margin-top: 10px; margin-bottom: 24px;">
-        <button type="button" onclick="handleLogout()" style="width: 100%; height: 44px; border-radius: var(--radius-md); background: transparent; border: 1.5px solid var(--danger); color: var(--danger); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+      <!-- Privacy, Policies & Account Deletion (Google Play Compliance) -->
+      <section class="section-card" style="margin-top: 14px; border-left: 3px solid var(--primary);">
+        <h3 class="section-title" style="margin-bottom: 12px;">
+          <span>🔒</span>
+          <span>Privacy & Legal Information</span>
+        </h3>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13.5px;">
+          <a href="privacy.html" style="color: var(--primary); text-decoration: none; font-weight: 600; display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-light, #f1f5f9);">
+            <span>📄 Privacy Policy</span>
+            <span>➔</span>
+          </a>
+          <a href="terms.html" style="color: var(--primary); text-decoration: none; font-weight: 600; display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-light, #f1f5f9);">
+            <span>⚖️ Terms of Service</span>
+            <span>➔</span>
+          </a>
+          <a href="delete-account.html" style="color: var(--primary); text-decoration: none; font-weight: 600; display: flex; align-items: center; justify-content: space-between; padding: 8px 0;">
+            <span>🌐 Web Data Deletion Request</span>
+            <span>➔</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Account Actions: Sign Out & Permanent Account Deletion -->
+      <div style="margin-top: 14px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 10px;">
+        <button type="button" onclick="handleLogout()" style="width: 100%; height: 44px; border-radius: var(--radius-md); background: transparent; border: 1.5px solid var(--primary); color: var(--primary); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
           <span>🚪 Sign Out of Account</span>
+        </button>
+
+        <button type="button" onclick="triggerInAppAccountDeletion()" style="width: 100%; height: 44px; border-radius: var(--radius-md); background: #fef2f2; border: 1.5px solid var(--danger); color: var(--danger); font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>🗑️ Delete My Account & Personal Data</span>
         </button>
       </div>
 

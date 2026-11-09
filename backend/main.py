@@ -3588,6 +3588,58 @@ def patient_google_login(
 # PATIENT PROFILE MANAGEMENT
 # ============================================================
 
+class PatientDeletionRequest(BaseModel):
+    identifier: str
+    reason: Optional[str] = ""
+
+@app.post("/patients/request-account-deletion")
+@app.post("/patients/request-account-deletion/")
+def request_patient_account_deletion_public(
+    data: PatientDeletionRequest,
+    db: Session = Depends(get_db),
+):
+    """Google Play Store compliant web endpoint for patient account deletion requests."""
+    ident = data.identifier.strip().lower()
+    patient = db.query(Patient).filter(
+        (Patient.email == ident) | (Patient.phone == ident)
+    ).first()
+    if patient:
+        try:
+            db.query(PatientInquiry).filter(PatientInquiry.patient_id == patient.id).delete(synchronize_session=False)
+        except Exception as e:
+            logging.warning("Error deleting inquiries for patient %s: %s", patient.id, e)
+        db.delete(patient)
+        db.commit()
+    return {
+        "success": True,
+        "message": "Account deletion request received and processed successfully."
+    }
+
+@app.delete("/patients/me")
+@app.delete("/patients/me/")
+def delete_current_patient_account(
+    current_user: dict = Depends(require_role("patient")),
+    db: Session = Depends(get_db),
+):
+    """Permanently delete patient account and all personal health data in-app."""
+    patient_id = current_user["user_id"]
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient account not found")
+
+    try:
+        db.query(PatientInquiry).filter(PatientInquiry.patient_id == patient_id).delete(synchronize_session=False)
+    except Exception as e:
+        logging.warning("Error deleting inquiries: %s", e)
+
+    db.delete(patient)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Your CarePath account and personal data have been permanently deleted."
+    }
+
 @app.get("/patients/me")
 @app.get("/patients/me/")
 def get_current_patient_profile(

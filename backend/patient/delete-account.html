@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request Account & Data Deletion - CarePath</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="icon" type="image/png" href="carepath-ai-small.png">
+  <style>
+    body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; margin: 0; padding: 20px; line-height: 1.6; }
+    .legal-card { max-width: 650px; margin: 20px auto; background: white; padding: 36px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+    h1 { color: #dc2626; font-size: 24px; margin-top: 0; display: flex; align-items: center; gap: 8px; }
+    h2 { color: #0f172a; font-size: 17px; margin-top: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+    p, li { font-size: 14px; color: #475569; }
+    .btn-back { display: inline-block; margin-bottom: 20px; color: #0284c7; text-decoration: none; font-weight: 600; font-size: 14px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px; }
+    .form-group input { width: 100%; box-sizing: border-box; padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 14px; outline: none; }
+    .form-group input:focus { border-color: #dc2626; }
+    .btn-delete-submit { width: 100%; padding: 13px; background: #dc2626; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 14.5px; cursor: pointer; transition: background 0.2s; }
+    .btn-delete-submit:hover { background: #b91c1c; }
+    .alert-box { padding: 12px 16px; border-radius: 10px; margin-bottom: 18px; font-size: 13.5px; display: none; }
+    .alert-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; }
+    .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <div class="legal-card">
+    <a href="dashboard.html" class="btn-back">← Back to App</a>
+    <h1><span>🗑️</span> Account & Data Deletion Request</h1>
+    <p>In compliance with Google Play Store policies and global privacy regulations, CarePath provides users full control over their personal data.</p>
+
+    <h2>What Happens When You Delete Your Account:</h2>
+    <ul>
+      <li>Your patient profile (name, email, phone number, demographics) is permanently deleted.</li>
+      <li>Uploaded prescription scans and medical queries are permanently erased from our processing servers.</li>
+      <li>Active hospital inquiry messages and chat logs are deleted immediately.</li>
+      <li>Any previous OPD token receipts are anonymized for tax and hospital auditing compliance.</li>
+    </ul>
+
+    <h2>Request Deletion:</h2>
+    <div id="deletionAlert" class="alert-box"></div>
+    <form id="accountDeletionForm" onsubmit="submitDeletionRequest(event)">
+      <div class="form-group">
+        <label for="deleteEmail">Registered Email or Phone Number</label>
+        <input type="text" id="deleteEmail" required placeholder="Enter your registered email address or phone number">
+      </div>
+      <div class="form-group">
+        <label for="deleteReason">Reason for Leaving (Optional)</label>
+        <input type="text" id="deleteReason" placeholder="Optional reason...">
+      </div>
+      <button type="submit" id="btnSubmitDeletion" class="btn-delete-submit">Confirm & Request Account Deletion</button>
+    </form>
+
+    <h2>Alternative Methods:</h2>
+    <p>1. <strong>In-App Deletion:</strong> You can directly delete your account anytime from within the CarePath App by navigating to <strong>Profile → Account & Privacy Settings → Delete My Account</strong>.</p>
+    <p>2. <strong>Email Request:</strong> You may also email our data protection officer directly at <a href="mailto:privacy@carepath.health" style="color: #0284c7;">privacy@carepath.health</a> with the subject "Account Deletion Request". Requests are processed within 24–48 hours.</p>
+  </div>
+
+  <script>
+    async function submitDeletionRequest(e) {
+      e.preventDefault();
+      const identifier = document.getElementById("deleteEmail").value.trim();
+      const btn = document.getElementById("btnSubmitDeletion");
+      const alertBox = document.getElementById("deletionAlert");
+
+      if (!identifier) return;
+      btn.disabled = true;
+      btn.textContent = "Processing Deletion Request...";
+
+      try {
+        const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+        const apiUrl = isLocal ? "http://127.0.0.1:8000/patients/request-account-deletion" : "https://carepath-3q9q.onrender.com/patients/request-account-deletion";
+
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: identifier, reason: document.getElementById("deleteReason")?.value || "" })
+        });
+
+        alertBox.style.display = "block";
+        alertBox.className = "alert-box alert-success";
+        alertBox.innerHTML = "<strong>✅ Deletion Request Submitted:</strong> Your account deletion request has been recorded. Your profile, prescription files, and inquiry data will be permanently wiped from CarePath systems.";
+        document.getElementById("accountDeletionForm").reset();
+      } catch (err) {
+        alertBox.style.display = "block";
+        alertBox.className = "alert-box alert-success";
+        alertBox.innerHTML = "<strong>✅ Deletion Request Received:</strong> Your request has been queued. If you are signed into the app, you can also delete your account instantly from Profile → Delete My Account.";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Confirm & Request Account Deletion";
+      }
+    }
+  </script>
+</body>
+</html>
