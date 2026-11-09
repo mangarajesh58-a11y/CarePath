@@ -9023,6 +9023,25 @@ def admin_send_hospital_message(
     }
 
 
+def purge_expired_patient_inquiries(db: Session, hospital_id: Optional[int] = None):
+    """Automatically delete patient direct inquiries older than 24 hours."""
+    try:
+        cutoff = datetime.utcnow() - timedelta(hours=24)
+        query = db.query(HospitalDirectMessage).filter(
+            HospitalDirectMessage.sender_role == "patient",
+            HospitalDirectMessage.created_at < cutoff,
+        )
+        if hospital_id is not None:
+            query = query.filter(HospitalDirectMessage.hospital_id == hospital_id)
+        deleted = query.delete(synchronize_session=False)
+        if deleted > 0:
+            db.commit()
+            logging.info("Auto-deleted %d expired patient inquiry message(s) older than 24 hours", deleted)
+    except Exception as e:
+        db.rollback()
+        logging.warning("Error auto-deleting expired patient inquiries: %s", e)
+
+
 @app.get("/hospitals/{hospital_id}/messages")
 def hospital_get_direct_messages(
     hospital_id: int,
@@ -9030,13 +9049,23 @@ def hospital_get_direct_messages(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
 ):
-    """Hospital: Retrieve conversation history with Admin and Patients."""
+    """Hospital: Retrieve conversation history with Admin and Patients (patient inquiries auto-delete after 24h)."""
     if hospital_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Access denied")
 
+    # Automatically purge patient inquiries older than 24 hours
+    purge_expired_patient_inquiries(db, hospital_id=hospital_id)
+
+    cutoff_24h = datetime.utcnow() - timedelta(hours=24)
     messages = (
         db.query(HospitalDirectMessage)
-        .filter(HospitalDirectMessage.hospital_id == hospital_id)
+        .filter(
+            HospitalDirectMessage.hospital_id == hospital_id,
+            or_(
+                HospitalDirectMessage.sender_role != "patient",
+                HospitalDirectMessage.created_at >= cutoff_24h,
+            ),
+        )
         .order_by(HospitalDirectMessage.created_at.asc())
         .all()
     )
@@ -9081,16 +9110,24 @@ def hospital_get_unread_message_count(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
 ):
-    """Hospital: Get count of unread messages from Admin and Patients."""
+    """Hospital: Get count of unread messages from Admin and Patients (patient inquiries auto-delete after 24h)."""
     if hospital_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Access denied")
 
+    # Automatically purge patient inquiries older than 24 hours
+    purge_expired_patient_inquiries(db, hospital_id=hospital_id)
+
+    cutoff_24h = datetime.utcnow() - timedelta(hours=24)
     unread_count = (
         db.query(HospitalDirectMessage)
         .filter(
             HospitalDirectMessage.hospital_id == hospital_id,
             HospitalDirectMessage.sender_role.in_(["admin", "patient"]),
             HospitalDirectMessage.is_read == False,
+            or_(
+                HospitalDirectMessage.sender_role != "patient",
+                HospitalDirectMessage.created_at >= cutoff_24h,
+            ),
         )
         .count()
     )
@@ -9164,7 +9201,10 @@ def submit_patient_inquiry(
     data: PatientInquiryRequest,
     db: Session = Depends(get_db),
 ):
-    """Patient: Directly send inquiry to a hospital helpdesk."""
+    """Patient: Directly send inquiry to a hospital helpdesk (auto-deleted after 24 hours)."""
+    # Clean up expired inquiries first
+    purge_expired_patient_inquiries(db, hospital_id=hospital_id)
+
     hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
     if not hospital:
         raise HTTPException(status_code=404, detail="Hospital not found")

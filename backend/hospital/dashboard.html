@@ -1229,9 +1229,14 @@
             <h2 class="panel-title">
                 <span>💬</span> Patient Inquiries (<span id="inquiryCountBadge">0</span>)
             </h2>
-            <span style="font-size: 10px; background: var(--success-light); color: var(--success); font-weight: 800; padding: 2px 7px; border-radius: var(--radius-pill); border: 1px solid var(--success-border);">
-                LIVE
-            </span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 9.5px; background: #eff6ff; color: #1d4ed8; font-weight: 700; padding: 2px 7px; border-radius: var(--radius-pill); border: 1px solid #bfdbfe;" title="Inquiries automatically delete after 24 hours">
+                    ⏱️ AUTO-DELETES IN 24H
+                </span>
+                <span style="font-size: 10px; background: var(--success-light); color: var(--success); font-weight: 800; padding: 2px 7px; border-radius: var(--radius-pill); border: 1px solid var(--success-border);">
+                    LIVE
+                </span>
+            </div>
         </div>
 
         <div id="patientInquiryContainer">
@@ -2063,14 +2068,25 @@ function renderInquiriesWidget(messages) {
     const countBadge = document.getElementById("inquiryCountBadge");
     if (!container) return;
 
+    const now = Date.now();
     const list = Array.isArray(messages) ? messages : (messages && messages.messages ? messages.messages : []);
-    const patientMsgs = list.filter(m => (m.sender_role || "").toLowerCase() === "patient");
+    
+    // Automatically purge & exclude inquiries older than 24 hours
+    const patientMsgs = list.filter(m => {
+        if ((m.sender_role || "").toLowerCase() !== "patient") return false;
+        if (m.created_at) {
+            const ageMs = now - new Date(m.created_at).getTime();
+            if (ageMs >= 24 * 60 * 60 * 1000) return false;
+        }
+        return true;
+    });
+
     if (countBadge) countBadge.textContent = patientMsgs.length;
 
     if (patientMsgs.length === 0) {
         container.innerHTML = `
             <div style="text-align: center; color: var(--slate-400); padding: 18px 10px; font-size: 12.5px;">
-                No patient inquiries right now. When patients send questions via WhatsApp or App, they appear here.
+                No patient inquiries right now. Inquiries automatically delete after 24 hours.
             </div>
         `;
         return;
@@ -2086,11 +2102,24 @@ function renderInquiriesWidget(messages) {
         const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
         const timeStr = inq.created_at ? new Date(inq.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
 
+        // Remaining time until 24-hour auto-deletion
+        let expiryBadge = "";
+        if (inq.created_at) {
+            const ageMs = now - new Date(inq.created_at).getTime();
+            const leftMs = Math.max(0, (24 * 60 * 60 * 1000) - ageMs);
+            const hrs = Math.floor(leftMs / (1000 * 60 * 60));
+            const mins = Math.floor((leftMs % (1000 * 60 * 60)) / (1000 * 60));
+            expiryBadge = hrs > 0 ? `${hrs}h ${mins}m left` : `${mins}m left`;
+        }
+
         return `
             <div class="inquiry-feed-item">
                 <div class="inquiry-header">
                     <span class="inquiry-sender">${escapeHtml(inq.sender_name || 'Patient')}</span>
-                    <span class="inquiry-time">${timeStr}</span>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="inquiry-time">${timeStr}</span>
+                        ${expiryBadge ? `<span style="font-size: 9.5px; background: #fef3c7; color: #b45309; padding: 1px 5px; border-radius: 4px; font-weight: 700; border: 1px solid #fde68a;" title="Inquiry auto-deletes 24 hours after arrival">⏱️ ${expiryBadge}</span>` : ''}
+                    </div>
                 </div>
                 <div class="inquiry-subject">${escapeHtml(inq.subject || inq.message || 'General OPD Inquiry')}</div>
                 <div style="font-size: 12px; color: var(--slate-600); margin: 4px 0 8px; line-height: 1.4; white-space: pre-wrap; word-break: break-word;">${escapeHtml(inq.message || '')}</div>
