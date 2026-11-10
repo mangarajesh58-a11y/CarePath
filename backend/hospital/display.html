@@ -500,6 +500,9 @@
                         <option value="en-IN+gu-IN">🇮🇳 English + Gujarati</option>
                     </optgroup>
                 </select>
+                <button type="button" class="btn-ctrl" id="btnTestVoice" onclick="testDisplayVoice()" title="Test TV audio announcement" style="padding: 6px 12px; font-size: 12px;">
+                    <span>▶️</span> Test
+                </button>
             </div>
             <button class="btn-ctrl active" id="btnAudio" title="Toggle audio announcements">
                 <span id="audioIcon">🔊</span> Audio Alert
@@ -578,7 +581,11 @@
     <script src="./broadcast-banner.js"></script>
     <script>
         const API = "https://carepath-3q9q.onrender.com";
-        const hospitalId = localStorage.getItem("hospital_id") || "15";
+        const urlParams = new URLSearchParams(window.location.search);
+        const hospitalId = urlParams.get("hospital_id") || urlParams.get("id") || localStorage.getItem("hospital_id") || "15";
+        if (hospitalId) localStorage.setItem("hospital_id", hospitalId);
+        const urlLang = urlParams.get("lang");
+        if (urlLang) localStorage.setItem("carepath_announcement_lang", urlLang);
         let lastAnnouncedToken = null;
         let lastAnnouncedCallKey = null;
         let audioEnabled = true;
@@ -686,7 +693,7 @@
                 langCode: "en-IN",
                 format: (num, name, doc) => {
                     const p = name ? `${name}, ` : "";
-                    const d = doc ? `doctor ${doc}` : "consultation room";
+                    const d = doc ? `Dr. ${doc}` : "consultation";
                     return `Attention please: Token number ${num}. ${p}please proceed to ${d}.`;
                 }
             },
@@ -792,7 +799,7 @@
         };
 
         function getDisplayLanguage() {
-            return localStorage.getItem("carepath_announcement_lang") || "en-IN";
+            return urlParams.get("lang") || localStorage.getItem("carepath_announcement_lang") || "en-IN";
         }
 
         function changeDisplayLanguage(langKey) {
@@ -812,18 +819,30 @@
             const voices = window.speechSynthesis.getVoices();
             if (!voices || voices.length === 0) return null;
 
+            const targetBase = (langCode || "en-IN").split("-")[0].toLowerCase();
+
+            // 1. Exact match e.g. "en-IN", "hi-IN", "te-IN"
             let match = voices.find(v => v.lang && v.lang.toLowerCase() === langCode.toLowerCase());
             if (match) return match;
 
-            const base = langCode.split("-")[0].toLowerCase();
-            match = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(base));
+            // 2. For English: prefer Indian English voice names
+            if (targetBase === "en") {
+                match = voices.find(v => v.lang && v.lang.toLowerCase() === "en-in");
+                if (match) return match;
+                match = voices.find(v => /india|ravi|heera|veena|priya|neerja|rishi|sangeeta/i.test(v.name));
+                if (match) return match;
+                return voices.find(v => v.lang && v.lang.toLowerCase().startsWith("en")) || null;
+            }
+
+            // 3. For regional languages, only pick a voice that truly supports that language base!
+            match = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(targetBase));
             if (match) return match;
 
-            match = voices.find(v => v.lang && v.lang.toLowerCase() === "en-in");
-            if (match) return match;
-
-            return voices.find(v => v.lang && v.lang.toLowerCase().startsWith("en")) || null;
+            // DO NOT assign an English voice to non-English scripts, returning null allows native TTS fallback
+            return null;
         }
+
+        window._displaySpeechUtterance = null;
 
         function speakDisplaySingle(text, langCode, callback) {
             if (!("speechSynthesis" in window)) {
@@ -831,32 +850,67 @@
                 return;
             }
             try {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = 0.90;
-                utterance.pitch = 1.0;
-                utterance.lang = langCode;
+                // Cancel any stuck previous synthesis
+                window.speechSynthesis.cancel();
 
-                const voice = findDisplayBestVoice(langCode);
+                let utteranceText = text;
+                let targetLang = langCode || "en-IN";
+                const targetBase = targetLang.split("-")[0].toLowerCase();
+
+                const voice = findDisplayBestVoice(targetLang);
+
+                // If non-English language requested but OS has no voice for it, fallback to Indian English text & voice
+                if (!voice && targetBase !== "en") {
+                    console.log(`No native voice installed for ${targetLang}, falling back to Indian English announcement`);
+                    const enDef = ANNOUNCEMENT_LANGUAGES["en-IN"];
+                    // Fallback to English phrasing
+                    targetLang = "en-IN";
+                    const enVoice = findDisplayBestVoice("en-IN");
+                    const utterance = new SpeechSynthesisUtterance(utteranceText);
+                    utterance.rate = 0.88;
+                    utterance.pitch = 1.0;
+                    utterance.lang = "en-IN";
+                    if (enVoice) utterance.voice = enVoice;
+
+                    window._displaySpeechUtterance = utterance;
+                    utterance.onend = () => { window._displaySpeechUtterance = null; if (callback) callback(); };
+                    utterance.onerror = () => { window._displaySpeechUtterance = null; if (callback) callback(); };
+
+                    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                    window.speechSynthesis.speak(utterance);
+                    return;
+                }
+
+                const utterance = new SpeechSynthesisUtterance(utteranceText);
+                utterance.rate = 0.88;
+                utterance.pitch = 1.0;
+                utterance.lang = targetLang;
                 if (voice) utterance.voice = voice;
 
-                utterance.onend = () => { if (callback) callback(); };
-                utterance.onerror = () => { if (callback) callback(); };
+                window._displaySpeechUtterance = utterance;
+                utterance.onend = () => { window._displaySpeechUtterance = null; if (callback) callback(); };
+                utterance.onerror = (e) => {
+                    console.warn("Display speech error:", e);
+                    window._displaySpeechUtterance = null;
+                    if (callback) callback();
+                };
 
                 if (window.speechSynthesis.paused) window.speechSynthesis.resume();
                 window.speechSynthesis.speak(utterance);
             } catch(e) {
-                console.warn("Display speech error:", e);
+                console.warn("Display speech exception:", e);
                 if (callback) callback();
             }
         }
 
         function announceToken(tokenNumber, patientName, doctor) {
             if (!audioEnabled) return;
+            unlockDisplayAutoplay();
             playChime();
+
             setTimeout(() => {
                 if (!audioEnabled) return;
                 if (!("speechSynthesis" in window)) return;
-                window.speechSynthesis.cancel();
 
                 const selectedSetting = getDisplayLanguage();
                 const langCodes = selectedSetting.split("+");
@@ -879,6 +933,22 @@
 
                 executeStep(0);
             }, 650);
+        }
+
+        function testDisplayVoice() {
+            unlockDisplayAutoplay();
+            playChime();
+            setTimeout(() => {
+                announceToken("101", "Ramesh Kumar", "Sharma");
+            }, 650);
+        }
+
+        // Warm up voices on TV load
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+            window.speechSynthesis.getVoices();
         }
 
         initDisplayLanguage();
@@ -915,8 +985,13 @@
                 document.getElementById("statWaiting").textContent = stats.waiting || 0;
                 document.getElementById("waitingCountBadge").textContent = `${stats.waiting || 0} waiting`;
 
-                // Currently Serving
-                const serving = data.currently_serving || [];
+                // Currently Serving (sort so most recently called token is primary)
+                const rawServing = data.currently_serving || [];
+                const serving = rawServing.sort((a, b) => {
+                    const timeA = new Date(a.called_at || a.created_at || 0).getTime();
+                    const timeB = new Date(b.called_at || b.created_at || 0).getTime();
+                    return timeB - timeA;
+                });
                 const heroSection = document.getElementById("heroServingSection");
                 const multiSection = document.getElementById("multiDoctorSection");
                 const servingGrid = document.getElementById("servingGrid");

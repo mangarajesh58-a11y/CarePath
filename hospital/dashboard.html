@@ -1312,7 +1312,7 @@
         <button type="button" class="quick-chip-pill" onclick="copyHospitalPatientLink()" id="btnCopyPatientLink" style="background: #f0fdf4; color: #166534; border-color: #bbf7d0;">
             📋 Copy Patient Link
         </button>
-        <a href="display.html" target="_blank" class="quick-chip-pill" style="background: #faf5ff; color: #6b21a8; border-color: #e9d5ff;">
+        <a href="display.html" target="_blank" id="quickChipTvLink" class="quick-chip-pill" style="background: #faf5ff; color: #6b21a8; border-color: #e9d5ff;">
             📺 Open Waiting TV ↗
         </a>
         <a href="ads.html" class="quick-chip-pill" style="background: #eff6ff; color: #1e40af; border-color: #bfdbfe;">
@@ -1394,7 +1394,7 @@
                 <button type="button" class="btn-caller-secondary" onclick="completeCurrentToken()" title="Mark consultation completed">
                     <span>✓</span> Complete
                 </button>
-                <a href="display.html" target="_blank" class="btn-caller-secondary" title="Open TV Screen for waiting room">
+                <a href="display.html" target="_blank" id="heroTvLink" class="btn-caller-secondary" title="Open TV Screen for waiting room">
                     <span>📺</span> TV Screen
                 </a>
             </div>
@@ -1693,7 +1693,7 @@
         <span class="dock-icon">👥</span>
         <span>Patients</span>
     </a>
-    <a href="display.html" target="_blank" class="dock-item">
+    <a href="display.html" target="_blank" id="dockTvLink" class="dock-item">
         <span class="dock-icon">📺</span>
         <span>TV</span>
     </a>
@@ -2110,18 +2110,33 @@ function getSavedAnnouncementLanguage() {
     return localStorage.getItem("carepath_announcement_lang") || "en-IN";
 }
 
+function getDisplayTvUrl() {
+    const lang = getSavedAnnouncementLanguage();
+    return `display.html?hospital_id=${encodeURIComponent(hospitalId || '')}&lang=${encodeURIComponent(lang)}`;
+}
+
+function updateTvLinks() {
+    const url = getDisplayTvUrl();
+    ["quickChipTvLink", "heroTvLink", "dockTvLink"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.href = url;
+    });
+}
+
 function changeAnnouncementLanguage(langKey) {
     localStorage.setItem("carepath_announcement_lang", langKey);
     const sel = document.getElementById("announcementLangSelect");
     if (sel && sel.value !== langKey) sel.value = langKey;
     const label = sel ? sel.options[sel.selectedIndex]?.text : langKey;
     showToast(`Voice set to: ${label}`, "🗣️");
+    updateTvLinks();
 }
 
 function initAnnouncementLanguage() {
     const saved = getSavedAnnouncementLanguage();
     const sel = document.getElementById("announcementLangSelect");
     if (sel) sel.value = saved;
+    updateTvLinks();
 }
 
 function findBestVoice(langCode) {

@@ -6570,9 +6570,11 @@ def get_hospital_live_queue(
         .all()
     )
 
-    serving_tokens = [
-        token_to_dict(t) for t in today_tokens if t.status == "serving"
-    ]
+    serving_tokens = sorted(
+        [token_to_dict(t) for t in today_tokens if t.status == "serving"],
+        key=lambda t: (t.get("called_at") or "", t.get("token_number") or 0),
+        reverse=True,
+    )
     waiting_tokens = [
         token_to_dict(t) for t in today_tokens if t.status == "waiting"
     ]
