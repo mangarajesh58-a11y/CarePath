@@ -104,6 +104,10 @@ class Hospital(Base):
     break_start_time = Column(String(10), default="13:00", nullable=True)
     break_end_time = Column(String(10), default="14:00", nullable=True)
 
+    # Daily patient capacity limit and emergency ambulance
+    daily_token_limit = Column(Integer, default=100, nullable=True)
+    ambulance_phone = Column(String(50), nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -120,6 +124,7 @@ class Doctor(Base):
     image_url = Column(String(500), nullable=True)
     photo_base64 = Column(Text, nullable=True)
     room_number = Column(String(50), nullable=True)
+    daily_token_limit = Column(Integer, default=50, nullable=True)
 
     # Legacy doctor availability fields
     # Retained for backward compatibility.

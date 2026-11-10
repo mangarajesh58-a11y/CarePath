@@ -1325,6 +1325,9 @@
                 <button type="button" class="icon-btn-round" onclick="toggleHospitalAudio()" id="btnHospitalAudioToggle" title="Audio Chime Toggle" style="color: #15803d; border-color: #86efac; background: #f0fdf4;">
                     <span id="hospitalAudioIcon">🔊</span>
                 </button>
+                <button type="button" class="icon-btn-round" onclick="openHospitalSettingsModal()" id="btnHospitalSettings" title="Patient Quota & Ambulance Settings" style="color: #dc2626; border-color: #fca5a5; background: #fef2f2;">
+                    🚑
+                </button>
                 <button type="button" class="icon-btn-round" onclick="openHospitalBreakModal()" id="btnHospitalBreakTime" title="Break Time" style="color: #854d0e; border-color: #fde047; background: #fefce8;">
                     🍱
                 </button>
@@ -1349,6 +1352,9 @@
     <div class="mobile-quick-chips">
         <button type="button" class="quick-chip-pill" onclick="scrollToWalkInCard()" style="background: #ecfdf5; color: #065f46; border-color: #a7f3d0; font-weight: 800;">
             ➕ Add Walk-in
+        </button>
+        <button type="button" class="quick-chip-pill" onclick="openHospitalSettingsModal()" style="background: #fef2f2; color: #991b1b; border-color: #fecaca; font-weight: 800;">
+            🚑 Ambulance & Capacity
         </button>
         <button type="button" class="quick-chip-pill" onclick="copyHospitalPatientLink()" id="btnCopyPatientLink" style="background: #f0fdf4; color: #166534; border-color: #bbf7d0;">
             📋 Copy Patient Link
@@ -1785,6 +1791,58 @@
             <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px;">
                 <button type="button" onclick="closeHospitalBreakModal()" style="padding: 11px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
                 <button type="button" id="btnSaveBreakTime" onclick="saveHospitalBreakTime()" style="padding: 11px; background: #d97706; color: white; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);">💾 Save Break</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     HOSPITAL CAPACITY & AMBULANCE SETTINGS MODAL
+===================================================== -->
+<div id="hospitalSettingsModal" class="ad-modal-backdrop" aria-hidden="true" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;">
+    <div style="background: #ffffff; width: 100%; max-width: 480px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); overflow: hidden; border: 1px solid #e2e8f0; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+        
+        <!-- HEADER -->
+        <div style="padding: 16px 20px; background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 22px;">🚑</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #ffffff;">Hospital Capacity & Ambulance</h3>
+                    <div style="font-size: 11.5px; opacity: 0.9; margin-top: 1px;">Daily Token Limit & Emergency Ambulance Line</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeHospitalSettingsModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 20px; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
+        </div>
+
+        <!-- BODY -->
+        <div style="padding: 20px;">
+            <div style="margin-bottom: 16px;">
+                <label style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+                    <span>👥 Daily Patient Capacity Quota</span>
+                    <span style="font-size: 11px; font-weight: 600; color: #64748b;">(Max tokens / day)</span>
+                </label>
+                <input type="number" id="dashDailyTokenLimit" min="1" max="1000" placeholder="100" style="width: 100%; box-sizing: border-box; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 15px; font-weight: 700; color: #1e293b; outline: none;">
+                <div style="font-size: 11.5px; color: #64748b; margin-top: 5px;">
+                    e.g. 100 for normal days, 80 for weekends, or 10 for half-days. Prevents overbooking.
+                </div>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+                    <span>🚑 Own Ambulance Calling Number</span>
+                    <span style="font-size: 11px; font-weight: 600; color: #94a3b8;">(Optional)</span>
+                </label>
+                <input type="tel" id="dashAmbulancePhone" placeholder="e.g. +91 9876543210 (Leave blank if none)" style="width: 100%; box-sizing: border-box; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 14.5px; font-weight: 600; color: #1e293b; outline: none;">
+                <div style="font-size: 11.5px; color: #64748b; margin-top: 5px;">
+                    Patients will see a dedicated one-tap <strong>"🚑 Call Hospital Ambulance"</strong> button. If your hospital does not have an ambulance, <strong>leave this empty</strong> and nothing will be displayed.
+                </div>
+            </div>
+
+            <div id="settingsModalFeedback" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;"></div>
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px;">
+                <button type="button" onclick="closeHospitalSettingsModal()" style="padding: 11px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="button" id="btnSaveHospitalSettings" onclick="saveHospitalSettings()" style="padding: 11px; background: #dc2626; color: white; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);">💾 Save Settings</button>
             </div>
         </div>
     </div>
@@ -2464,7 +2522,16 @@ async function loadHospital() {
         const fee = Number(data.token_fee || 0);
         document.getElementById("infoTokenFee").textContent = `₹${fee}`;
         const breakStr = data.break_hours_12h || '1:00 PM - 2:00 PM';
-        document.getElementById("hospitalMetaSubtitle").textContent = `${data.city || 'City'} • OPD Hours: ${data.operating_hours_12h || '9:00 AM - 9:00 PM'} • Lunch Break: ${breakStr}`;
+        const cap = Number(data.daily_token_limit || 100);
+        const amb = data.ambulance_phone ? ` • 🚑 Amb: ${data.ambulance_phone}` : '';
+        document.getElementById("hospitalMetaSubtitle").textContent = `${data.city || 'City'} • OPD Hours: ${data.operating_hours_12h || '9:00 AM - 9:00 PM'} • Cap: ${cap}/day • Lunch Break: ${breakStr}${amb}`;
+
+        if (document.getElementById("dashDailyTokenLimit") && data.daily_token_limit !== undefined && data.daily_token_limit !== null) {
+            document.getElementById("dashDailyTokenLimit").value = data.daily_token_limit;
+        }
+        if (document.getElementById("dashAmbulancePhone") && data.ambulance_phone !== undefined) {
+            document.getElementById("dashAmbulancePhone").value = data.ambulance_phone || "";
+        }
 
         // Live OPD Break & Operational Status
         const opdStatus = data.opd_status || {};
@@ -3819,6 +3886,81 @@ async function saveHospitalBreakTime() {
         if (btn) {
             btn.disabled = false;
             btn.textContent = "💾 Save Break Timing";
+        }
+    }
+}
+
+/* =====================================================
+   HOSPITAL CAPACITY & AMBULANCE SETTINGS
+===================================================== */
+function openHospitalSettingsModal() {
+    const modal = document.getElementById("hospitalSettingsModal");
+    if (!modal) return;
+    if (storedHospital) {
+        if (storedHospital.daily_token_limit !== undefined && storedHospital.daily_token_limit !== null) {
+            document.getElementById("dashDailyTokenLimit").value = storedHospital.daily_token_limit;
+        } else {
+            document.getElementById("dashDailyTokenLimit").value = 100;
+        }
+        document.getElementById("dashAmbulancePhone").value = storedHospital.ambulance_phone || "";
+    }
+    const fb = document.getElementById("settingsModalFeedback");
+    if (fb) fb.style.display = "none";
+    modal.style.display = "flex";
+}
+
+function closeHospitalSettingsModal() {
+    const modal = document.getElementById("hospitalSettingsModal");
+    if (modal) modal.style.display = "none";
+}
+
+async function saveHospitalSettings() {
+    const limitInput = document.getElementById("dashDailyTokenLimit");
+    const ambInput = document.getElementById("dashAmbulancePhone");
+    const btn = document.getElementById("btnSaveHospitalSettings");
+    const fb = document.getElementById("settingsModalFeedback");
+
+    const dailyLimit = parseInt(limitInput.value, 10);
+    if (isNaN(dailyLimit) || dailyLimit < 1) {
+        alert("Please enter a valid daily patient limit (minimum 1).");
+        return;
+    }
+
+    const ambulancePhone = (ambInput.value || "").trim();
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                daily_token_limit: dailyLimit,
+                ambulance_phone: ambulancePhone ? ambulancePhone : null
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to update hospital settings");
+
+        showToast("✓ Capacity & Ambulance settings updated!", "🚑");
+        closeHospitalSettingsModal();
+        await loadHospital();
+    } catch (err) {
+        if (fb) {
+            fb.style.display = "block";
+            fb.style.background = "#fee2e2";
+            fb.style.color = "#991b1b";
+            fb.textContent = "Error: " + err.message;
+        } else {
+            alert(err.message);
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "💾 Save Settings";
         }
     }
 }

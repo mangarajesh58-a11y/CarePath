@@ -996,6 +996,12 @@ def run_database_migration():
         "break_end_time":
             "VARCHAR(10) DEFAULT '14:00' NULL",
 
+        "daily_token_limit":
+            "INTEGER DEFAULT 100 NULL",
+
+        "ambulance_phone":
+            "VARCHAR(50) NULL",
+
         "created_at":
             "TIMESTAMP NULL",
     }
@@ -1095,6 +1101,9 @@ def run_database_migration():
         "room_number":
             "VARCHAR(50) NULL",
 
+        "daily_token_limit":
+            "INTEGER DEFAULT 50 NULL",
+
         "created_at":
             "TIMESTAMP NULL",
     }
@@ -1178,6 +1187,9 @@ def run_database_migration():
 
         "room_number":
             "VARCHAR(50) NULL",
+
+        "daily_token_limit":
+            "INTEGER DEFAULT 50 NULL",
 
         "created_at":
             "TIMESTAMP NULL",
@@ -2740,6 +2752,8 @@ class DoctorLeaveRequest(BaseModel):
 class HospitalUpdate(BaseModel):
 
     phone: Optional[str] = None
+    ambulance_phone: Optional[str] = None
+    daily_token_limit: Optional[int] = None
     opening_time: Optional[str] = None
     closing_time: Optional[str] = None
     break_start_time: Optional[str] = None
@@ -3031,6 +3045,8 @@ def hospital_to_dict(hospital):
         "break_start_time": getattr(hospital, "break_start_time", None) or "13:00",
         "break_end_time": getattr(hospital, "break_end_time", None) or "14:00",
         "break_hours_12h": f"{format_time_12h(getattr(hospital, 'break_start_time', None) or '13:00')} - {format_time_12h(getattr(hospital, 'break_end_time', None) or '14:00')}",
+        "daily_token_limit": getattr(hospital, "daily_token_limit", None) or 100,
+        "ambulance_phone": getattr(hospital, "ambulance_phone", None),
         "is_on_break": check_is_on_break(getattr(hospital, "break_start_time", None) or "13:00", getattr(hospital, "break_end_time", None) or "14:00"),
         "opd_status": get_hospital_opd_status(hospital),
         "certificate_uploaded": bool(
@@ -3070,6 +3086,8 @@ def public_hospital_to_dict(hospital):
         "break_start_time": getattr(hospital, "break_start_time", None) or "13:00",
         "break_end_time": getattr(hospital, "break_end_time", None) or "14:00",
         "break_hours_12h": f"{format_time_12h(getattr(hospital, 'break_start_time', None) or '13:00')} - {format_time_12h(getattr(hospital, 'break_end_time', None) or '14:00')}",
+        "daily_token_limit": getattr(hospital, "daily_token_limit", None) or 100,
+        "ambulance_phone": getattr(hospital, "ambulance_phone", None),
         "is_on_break": check_is_on_break(getattr(hospital, "break_start_time", None) or "13:00", getattr(hospital, "break_end_time", None) or "14:00"),
         "opd_status": get_hospital_opd_status(hospital),
     }
@@ -5038,11 +5056,17 @@ def update_hospital(
             detail="You cannot update another hospital's profile.",
         )
 
-    if hospital.certificate_verification_status != "VERIFIED":
-        raise HTTPException(
-            status_code=400,
-            detail="Verify the hospital certificate before approval",
-        )
+    if hasattr(data, "ambulance_phone") and data.ambulance_phone is not None:
+        amb_str = data.ambulance_phone.strip()
+        hospital.ambulance_phone = amb_str if amb_str else None
+
+    if hasattr(data, "daily_token_limit") and data.daily_token_limit is not None:
+        if data.daily_token_limit <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Daily token capacity limit must be greater than 0",
+            )
+        hospital.daily_token_limit = data.daily_token_limit
 
     if data.phone is not None:
 
@@ -5640,6 +5664,27 @@ def create_cashfree_order(
             detail=f"Dr. {doctor.name} is on leave on {target_appt_date} ({doc_leave.reason or 'Unavailable'}). Please select another date or doctor."
         )
 
+    # Check Daily Token Capacity Limit
+    hosp_limit = getattr(hospital, "daily_token_limit", None) or 100
+    daily_cap = getattr(doctor, "daily_token_limit", None) or hosp_limit
+
+    existing_active_tokens = (
+        db.query(func.count(Token.id))
+        .filter(
+            Token.hospital_id == hospital.id,
+            Token.doctor == doctor.name,
+            Token.appointment_date == target_appt_date,
+            Token.status != "cancelled",
+        )
+        .scalar() or 0
+    )
+
+    if existing_active_tokens >= daily_cap:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Daily patient booking capacity of {daily_cap} reached for Dr. {doctor.name} on {target_appt_date}. Please choose another date or doctor.",
+        )
+
     token_fee = int(hospital.token_fee or 0)
     platform_fee = get_current_platform_fee(db)
     total_amount = token_fee + platform_fee
@@ -5926,6 +5971,27 @@ def create_token(
 
 
 
+    # Check Daily Token Capacity Limit
+    hosp_limit = getattr(hospital, "daily_token_limit", None) or 100
+    daily_cap = getattr(doctor, "daily_token_limit", None) or hosp_limit
+
+    existing_active_tokens = (
+        db.query(func.count(Token.id))
+        .filter(
+            Token.hospital_id == hospital.id,
+            Token.doctor == data.doctor.strip(),
+            Token.appointment_date == appointment_date,
+            Token.status != "cancelled",
+        )
+        .scalar() or 0
+    )
+
+    if existing_active_tokens >= daily_cap:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Daily patient booking capacity of {daily_cap} reached for Dr. {data.doctor.strip()} on {appointment_date}. Please choose another date or doctor.",
+        )
+
     next_token_number = allocate_token_number(
         db=db,
         hospital_id=hospital.id,
@@ -6121,6 +6187,28 @@ def create_walk_in_token(
         )
 
     appointment_date = get_ist_today()
+
+    # Check Daily Token Capacity Limit
+    hosp_limit = getattr(hospital, "daily_token_limit", None) or 100
+    daily_cap = getattr(doctor, "daily_token_limit", None) or hosp_limit
+
+    existing_active_tokens = (
+        db.query(func.count(Token.id))
+        .filter(
+            Token.hospital_id == authenticated_hospital_id,
+            Token.doctor == doctor_name,
+            Token.appointment_date == appointment_date,
+            Token.status != "cancelled",
+        )
+        .scalar() or 0
+    )
+
+    if existing_active_tokens >= daily_cap:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Daily patient capacity of {daily_cap} reached for Dr. {doctor_name} today. Update hospital daily capacity in settings if you wish to accept more walk-in patients.",
+        )
+
     manual_token_number = data.token_number
 
     if manual_token_number is not None and manual_token_number <= 0:

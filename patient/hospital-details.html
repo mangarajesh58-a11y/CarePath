@@ -392,6 +392,9 @@
                 const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
                 const hospName = hospitalData.name || hospitalData.hospital_name || "Hospital";
 
+                const rawAmbulance = hospitalData.ambulance_phone || "";
+                const cleanAmbulance = String(rawAmbulance).replace(/[^0-9+]/g, "").trim();
+
                 const commCard = document.createElement("div");
                 commCard.className = "patient-direct-comm-card";
                 commCard.setAttribute("style", "margin: 22px 0 16px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);");
@@ -409,6 +412,11 @@
                         Have questions about OPD schedules, doctor availability, or emergency care? Contact this hospital directly:
                     </p>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        ${cleanAmbulance ? `
+                            <a href="tel:${cleanAmbulance}" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(220,38,38,0.35);">
+                                🚑 Call Hospital Ambulance (${cleanAmbulance})
+                            </a>
+                        ` : ''}
                         ${cleanPhone ? `
                             <a href="https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hospName}, I have an inquiry from CarePath regarding doctor appointments and OPD.`)}" target="_blank" rel="noopener noreferrer" style="background: #25D366; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,211,102,0.3);">
                                 🟢 Chat on WhatsApp

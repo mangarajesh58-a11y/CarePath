@@ -170,6 +170,13 @@
 
 
             <!-- =================================================
+                 HOSPITAL AMBULANCE EMERGENCY CALL
+            ================================================== -->
+            <div id="hospitalAmbulanceBox" style="display: none; margin: 16px 0 20px;"></div>
+
+
+
+            <!-- =================================================
                  DOCTORS
             ================================================== -->
 
@@ -372,6 +379,28 @@
 
                 hospitalTokenFee.textContent =
                     `₹${tokenFee}`;
+
+
+
+                /* =========================================
+                   HOSPITAL AMBULANCE (IF PROVIDED)
+                ========================================== */
+                const ambPhone = (hospital.ambulance_phone || "").trim();
+                const ambBox = document.getElementById("hospitalAmbulanceBox");
+                if (ambBox) {
+                    if (ambPhone) {
+                        const cleanAmb = ambPhone.replace(/[^0-9+]/g, "");
+                        ambBox.style.display = "block";
+                        ambBox.innerHTML = `
+                            <a href="tel:${cleanAmb}" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; text-decoration: none; padding: 12px 18px; border-radius: 12px; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35); width: 100%; box-sizing: border-box;">
+                                <span style="font-size: 18px;">🚑</span> Call Hospital Ambulance (${ambPhone})
+                            </a>
+                        `;
+                    } else {
+                        ambBox.style.display = "none";
+                        ambBox.innerHTML = "";
+                    }
+                }
 
 
 
