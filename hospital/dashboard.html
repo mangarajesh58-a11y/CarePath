@@ -614,6 +614,112 @@
         /* =====================================================
            QUEUE SEARCH & FEED
         ===================================================== */
+        /* =====================================================
+           OFFLINE WALK-IN PATIENT CARD
+        ===================================================== */
+        .walkin-panel {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-top: 3.5px solid #10b981;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .walkin-field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+
+        .walkin-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--slate-600);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .walkin-input, .walkin-select {
+            width: 100%;
+            height: 42px;
+            padding: 8px 12px;
+            border: 1.5px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            font-family: inherit;
+            color: var(--slate-800);
+            background: var(--slate-50);
+            transition: var(--transition-fast);
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .walkin-input:focus, .walkin-select:focus {
+            border-color: #10b981;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        .walkin-select:disabled {
+            background: var(--slate-100);
+            color: var(--slate-400);
+            cursor: not-allowed;
+        }
+
+        .btn-walkin-submit {
+            width: 100%;
+            height: 44px;
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+            margin-top: 4px;
+        }
+
+        .btn-walkin-submit:hover {
+            background: linear-gradient(135deg, #047857 0%, #059669 100%);
+            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-walkin-submit:active {
+            transform: scale(0.98);
+        }
+
+        .btn-walkin-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .walkin-result-card {
+            margin-top: 14px;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+            border: 1.5px solid #86efac;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+            animation: fadeInScale 0.25s ease-out;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
         .queue-search-bar {
             position: relative;
             margin-bottom: 12px;
@@ -1076,6 +1182,9 @@
 
     <!-- MOBILE QUICK ACTION PILLS STRIP -->
     <div class="mobile-quick-chips">
+        <button type="button" class="quick-chip-pill" onclick="scrollToWalkInCard()" style="background: #ecfdf5; color: #065f46; border-color: #a7f3d0; font-weight: 800;">
+            ➕ Add Walk-in
+        </button>
         <button type="button" class="quick-chip-pill" onclick="copyHospitalPatientLink()" id="btnCopyPatientLink" style="background: #f0fdf4; color: #166534; border-color: #bbf7d0;">
             📋 Copy Patient Link
         </button>
@@ -1181,6 +1290,114 @@
         <span id="infoPublished">-</span>
         <span id="infoPayment">-</span>
         <span id="cardAdminMsgBadge"></span>
+    </div>
+
+    <!-- =====================================================
+         OFFLINE WALK-IN PATIENT REGISTRATION CARD
+    ===================================================== -->
+    <div class="card-panel walkin-panel" id="walkInPatientCard">
+        <div class="panel-header" style="border-bottom: none; margin-bottom: 4px; padding-bottom: 0;">
+            <h2 class="panel-title" style="color: #065f46;">
+                <span style="font-size: 18px;">➕</span> Add Offline Walk-in Patient
+            </h2>
+            <span style="font-size: 10px; background: #dcfce7; color: #166534; font-weight: 800; padding: 3px 8px; border-radius: var(--radius-pill); border: 1px solid #86efac;">
+                OPD COUNTER
+            </span>
+        </div>
+        <p style="font-size: 12.5px; color: var(--slate-500); margin-bottom: 14px; line-height: 1.4;">
+            Register a patient who visits the hospital directly.
+        </p>
+
+        <form id="dashWalkInForm" onsubmit="handleDashboardWalkInSubmit(event)" autocomplete="off">
+            <div class="walkin-field-group">
+                <label for="walkInPatientName" class="walkin-label">
+                    Patient Full Name <span style="color:#dc2626;">*</span>
+                </label>
+                <input
+                    type="text"
+                    id="walkInPatientName"
+                    class="walkin-input"
+                    placeholder="Enter patient full name"
+                    required
+                    maxlength="150">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div class="walkin-field-group">
+                    <label for="walkInDepartment" class="walkin-label">
+                        Department <span style="color:#dc2626;">*</span>
+                    </label>
+                    <select id="walkInDepartment" class="walkin-select" required onchange="onWalkInDepartmentChange()">
+                        <option value="">Loading departments...</option>
+                    </select>
+                </div>
+
+                <div class="walkin-field-group">
+                    <label for="walkInDoctor" class="walkin-label">
+                        Consulting Doctor <span style="color:#dc2626;">*</span>
+                    </label>
+                    <select id="walkInDoctor" class="walkin-select" required disabled>
+                        <option value="">Select department first</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                <div class="walkin-field-group">
+                    <label for="walkInPhone" class="walkin-label">
+                        Phone Number <span style="font-size: 10px; font-weight: 500; color: var(--slate-400);">(Optional)</span>
+                    </label>
+                    <input
+                        type="tel"
+                        id="walkInPhone"
+                        class="walkin-input"
+                        placeholder="10-digit mobile"
+                        maxlength="15">
+                </div>
+
+                <div class="walkin-field-group">
+                    <label for="walkInManualToken" class="walkin-label">
+                        Token # <span style="font-size: 10px; font-weight: 500; color: var(--slate-400);">(Auto if blank)</span>
+                    </label>
+                    <input
+                        type="number"
+                        id="walkInManualToken"
+                        class="walkin-input"
+                        placeholder="Auto-assigned"
+                        min="1">
+                </div>
+            </div>
+
+            <button type="submit" id="dashWalkInSubmitBtn" class="btn-walkin-submit">
+                <span>➕</span> Register Walk-in Patient
+            </button>
+        </form>
+
+        <p id="walkInResultMsg" style="display: none; font-size: 12.5px; font-weight: 600; padding: 10px 12px; border-radius: var(--radius-md); margin-top: 12px;"></p>
+
+        <!-- ASSIGNED WALK-IN TOKEN DISPLAY CARD -->
+        <div id="walkInTokenDisplay" class="walkin-result-card" style="display: none;" role="status" aria-live="polite">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+                <span style="font-size: 20px;">🎉</span>
+                <h3 style="color: #166534; font-size: 16px; font-weight: 800; margin: 0;">Walk-in Registration Successful!</h3>
+            </div>
+            <p style="color: #475569; font-size: 12px; margin: 4px 0 2px;">Assigned Token Number</p>
+            <div id="assignedWalkInToken" style="font-size: 56px; font-weight: 800; line-height: 1.1; color: #15803d; margin: 6px 0;">--</div>
+            <p id="walkInPatientDisplay" style="color: #1e293b; font-size: 15px; font-weight: 700; margin: 4px 0;"></p>
+            <p id="walkInDoctorDisplay" style="color: #475569; font-size: 12.5px; margin: 2px 0 10px;"></p>
+            <p style="color: #15803d; font-size: 12px; font-weight: 600; margin-bottom: 12px;">Please ask the patient to wait for their turn.</p>
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                <button type="button" onclick="printWalkInSlip()" style="padding: 8px 16px; border: 1.5px solid #86efac; background: #ffffff; color: #166534; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                    🖨️ Print Slip
+                </button>
+                <button type="button" id="btnWalkInCallNow" onclick="callAssignedWalkIn()" style="padding: 8px 16px; border: none; background: #0284c7; color: #ffffff; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                    📢 Call Now
+                </button>
+                <button type="button" onclick="resetWalkInForm()" style="padding: 8px 16px; border: none; background: #16a34a; color: #ffffff; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                    ➕ Next Walk-in
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- =====================================================
@@ -2305,10 +2522,336 @@ function escapeHtml(str) {
 }
 
 /* =====================================================
+   OFFLINE WALK-IN PATIENT REGISTRATION
+===================================================== */
+let lastRegisteredWalkInToken = null;
+
+function scrollToWalkInCard() {
+    const card = document.getElementById("walkInPatientCard");
+    if (card) {
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        const nameInput = document.getElementById("walkInPatientName");
+        if (nameInput) setTimeout(() => nameInput.focus(), 350);
+    }
+}
+
+async function loadWalkInDepartments() {
+    const deptSelect = document.getElementById("walkInDepartment");
+    const docSelect = document.getElementById("walkInDoctor");
+    if (!deptSelect) return;
+
+    deptSelect.innerHTML = '<option value="">Loading departments...</option>';
+    if (docSelect) {
+        docSelect.innerHTML = '<option value="">Select a department first</option>';
+        docSelect.disabled = true;
+    }
+
+    try {
+        let depts = [];
+        try {
+            const res = await fetch(`${API_URL}/hospitals/${encodeURIComponent(hospitalId)}/departments`);
+            if (res.ok) {
+                depts = await res.json();
+            }
+        } catch (e) {
+            console.warn("Could not fetch departments endpoint, falling back to doctors roster:", e);
+        }
+
+        // If departments endpoint didn't yield an array or was empty, derive from allHospitalDoctors
+        if (!Array.isArray(depts) || depts.length === 0) {
+            if (Array.isArray(allHospitalDoctors) && allHospitalDoctors.length > 0) {
+                depts = [...new Set(allHospitalDoctors.map(d => d.department || "General").filter(Boolean))].sort();
+            }
+        }
+
+        if (!Array.isArray(depts) || depts.length === 0) {
+            deptSelect.innerHTML = '<option value="General">General OPD</option>';
+            onWalkInDepartmentChange();
+            return;
+        }
+
+        deptSelect.innerHTML = '<option value="">Select Department</option>' +
+            depts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join("");
+
+    } catch (err) {
+        console.error("Load walkin departments error:", err);
+        deptSelect.innerHTML = '<option value="">Unable to load departments</option>';
+    }
+}
+
+async function onWalkInDepartmentChange() {
+    const deptSelect = document.getElementById("walkInDepartment");
+    const docSelect = document.getElementById("walkInDoctor");
+    if (!deptSelect || !docSelect) return;
+
+    const selectedDept = deptSelect.value;
+    docSelect.innerHTML = '<option value="">Loading doctors...</option>';
+    docSelect.disabled = true;
+
+    if (!selectedDept) {
+        docSelect.innerHTML = '<option value="">Select a department first</option>';
+        return;
+    }
+
+    try {
+        let docs = [];
+        // First check in-memory allHospitalDoctors
+        if (Array.isArray(allHospitalDoctors) && allHospitalDoctors.length > 0) {
+            docs = allHospitalDoctors.filter(d => (d.department || "General").toLowerCase() === selectedDept.toLowerCase());
+        }
+
+        // Fallback fetch from API if empty
+        if (docs.length === 0) {
+            try {
+                const res = await fetch(`${API_URL}/hospitals/${encodeURIComponent(hospitalId)}/doctors?department=${encodeURIComponent(selectedDept)}`);
+                if (res.ok) {
+                    docs = await res.json();
+                }
+            } catch (e) {
+                console.warn("Doctor department query error:", e);
+            }
+        }
+
+        if (!Array.isArray(docs) || docs.length === 0) {
+            docSelect.innerHTML = '<option value="">No doctors in this department</option>';
+            return;
+        }
+
+        docSelect.innerHTML = '<option value="">Select Doctor</option>' +
+            docs.map(doc => {
+                const room = doc.room_number ? ` (Rm ${doc.room_number})` : "";
+                const avail = doc.is_available === false ? " [Offline]" : "";
+                return `<option value="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}${room}${avail}</option>`;
+            }).join("");
+
+        docSelect.disabled = false;
+        if (docs.length === 1) {
+            docSelect.selectedIndex = 1;
+        }
+    } catch (err) {
+        console.error("Load walk-in doctors error:", err);
+        docSelect.innerHTML = '<option value="">Unable to load doctors</option>';
+    }
+}
+
+async function handleDashboardWalkInSubmit(event) {
+    if (event && event.preventDefault) event.preventDefault();
+
+    const nameInput = document.getElementById("walkInPatientName");
+    const deptSelect = document.getElementById("walkInDepartment");
+    const docSelect = document.getElementById("walkInDoctor");
+    const phoneInput = document.getElementById("walkInPhone");
+    const manualTokenInput = document.getElementById("walkInManualToken");
+    const submitBtn = document.getElementById("dashWalkInSubmitBtn");
+    const resultMsg = document.getElementById("walkInResultMsg");
+    const tokenDisplay = document.getElementById("walkInTokenDisplay");
+
+    const patientName = (nameInput?.value || "").trim();
+    const department = (deptSelect?.value || "").trim();
+    const doctor = (docSelect?.value || "").trim();
+    const patientPhone = (phoneInput?.value || "").trim();
+    const manualTokenVal = manualTokenInput?.value ? parseInt(manualTokenInput.value, 10) : null;
+
+    if (!patientName || !department || !doctor) {
+        if (resultMsg) {
+            resultMsg.style.display = "block";
+            resultMsg.style.background = "#fee2e2";
+            resultMsg.style.color = "#991b1b";
+            resultMsg.textContent = "Please fill in patient name, department, and doctor.";
+        }
+        return;
+    }
+
+    if (tokenDisplay) tokenDisplay.style.display = "none";
+    if (resultMsg) resultMsg.style.display = "none";
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span>⏳</span> Registering Walk-in...`;
+    }
+
+    try {
+        const payload = {
+            patient_name: patientName,
+            department: department,
+            doctor: doctor,
+        };
+        if (manualTokenVal && !isNaN(manualTokenVal) && manualTokenVal > 0) {
+            payload.token_number = manualTokenVal;
+        }
+        if (patientPhone) {
+            payload.patient_phone = patientPhone;
+        }
+
+        const res = await fetch(`${API_URL}/hospital/walk-in-tokens`, {
+            method: "POST",
+            headers: getHospitalAuthHeaders(true),
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || data.message || "Failed to register walk-in patient.");
+        }
+
+        const tokenObj = data.token || {};
+        const assignedTokenNumber = tokenObj.token_number;
+        if (assignedTokenNumber === undefined || assignedTokenNumber === null) {
+            throw new Error("Server did not return an assigned token number.");
+        }
+
+        lastRegisteredWalkInToken = tokenObj;
+
+        // Populate success display
+        const assignedEl = document.getElementById("assignedWalkInToken");
+        const patientEl = document.getElementById("walkInPatientDisplay");
+        const doctorEl = document.getElementById("walkInDoctorDisplay");
+        if (assignedEl) assignedEl.textContent = `#${assignedTokenNumber}`;
+        if (patientEl) patientEl.textContent = `Patient: ${patientName}${patientPhone ? ' (' + patientPhone + ')' : ''}`;
+        if (doctorEl) doctorEl.textContent = `Dr. ${doctor} • ${department}`;
+
+        if (tokenDisplay) {
+            tokenDisplay.style.display = "block";
+            tokenDisplay.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+
+        // Chime & Toast
+        playCallChime();
+        showToast(`✓ Walk-in Token #${assignedTokenNumber} registered!`, "🎟️");
+
+        // Clear patient name & phone so user can enter next
+        if (nameInput) nameInput.value = "";
+        if (phoneInput) phoneInput.value = "";
+        if (manualTokenInput) manualTokenInput.value = "";
+
+        // Reload queue to update counters and show new token in feed immediately
+        await loadQueue();
+
+    } catch (err) {
+        console.error("Walk-in registration error:", err);
+        if (resultMsg) {
+            resultMsg.style.display = "block";
+            resultMsg.style.background = "#fee2e2";
+            resultMsg.style.color = "#991b1b";
+            resultMsg.textContent = err.message || "Walk-in registration failed.";
+        }
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>➕</span> Register Walk-in Patient`;
+        }
+    }
+}
+
+function resetWalkInForm() {
+    const tokenDisplay = document.getElementById("walkInTokenDisplay");
+    const resultMsg = document.getElementById("walkInResultMsg");
+    const nameInput = document.getElementById("walkInPatientName");
+    if (tokenDisplay) tokenDisplay.style.display = "none";
+    if (resultMsg) resultMsg.style.display = "none";
+    if (nameInput) {
+        nameInput.value = "";
+        nameInput.focus();
+    }
+    const phoneInput = document.getElementById("walkInPhone");
+    if (phoneInput) phoneInput.value = "";
+}
+
+function callAssignedWalkIn() {
+    if (!lastRegisteredWalkInToken) {
+        alert("No walk-in token registered yet.");
+        return;
+    }
+    callSpecificToken(
+        lastRegisteredWalkInToken.id,
+        lastRegisteredWalkInToken.token_number,
+        lastRegisteredWalkInToken.patient_name,
+        lastRegisteredWalkInToken.doctor
+    );
+}
+
+function printWalkInSlip() {
+    if (!lastRegisteredWalkInToken) {
+        alert("No walk-in token available to print.");
+        return;
+    }
+    const t = lastRegisteredWalkInToken;
+    const hName = hospitalName || "CarePath Hospital";
+    const dateStr = new Date().toLocaleDateString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: true
+    });
+    const roomStr = t.room_number ? `Room: ${escapeHtml(t.room_number)}` : "";
+
+    const printWin = window.open('', '_blank', 'width=380,height=520');
+    if (!printWin) {
+        alert("Please allow popups to print OPD slip.");
+        return;
+    }
+
+    printWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>OPD Token #${t.token_number} - ${escapeHtml(hName)}</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+                    margin: 0;
+                    padding: 18px 14px;
+                    color: #000;
+                    text-align: center;
+                    width: 280px;
+                    margin: 0 auto;
+                }
+                .h-title { font-size: 16px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; }
+                .h-sub { font-size: 11px; color: #555; margin-bottom: 12px; letter-spacing: 0.5px; }
+                .divider { border-top: 1px dashed #444; margin: 10px 0; }
+                .badge { display: inline-block; padding: 2px 8px; border: 1px solid #000; font-size: 10px; font-weight: bold; border-radius: 4px; margin-bottom: 6px; }
+                .token-num { font-size: 58px; font-weight: 900; line-height: 1; margin: 8px 0; }
+                .patient-name { font-size: 15px; font-weight: 700; margin: 4px 0; }
+                .meta-row { font-size: 12px; margin: 4px 0; }
+                .footer { font-size: 10px; color: #666; margin-top: 14px; }
+                @media print {
+                    @page { margin: 0; }
+                    body { padding: 10px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="h-title">${escapeHtml(hName)}</div>
+            <div class="h-sub">Outpatient Department (OPD)</div>
+            <div class="divider"></div>
+            <div class="badge">OFFLINE WALK-IN TOKEN</div>
+            <div class="token-num">#${t.token_number}</div>
+            <div class="patient-name">${escapeHtml(t.patient_name)}</div>
+            <div class="meta-row"><strong>Doctor:</strong> Dr. ${escapeHtml(t.doctor)}</div>
+            <div class="meta-row"><strong>Department:</strong> ${escapeHtml(t.department || "General")}</div>
+            ${roomStr ? `<div class="meta-row"><strong>${roomStr}</strong></div>` : ''}
+            <div class="divider"></div>
+            <div class="meta-row" style="font-size: 11px;">${dateStr}</div>
+            <div class="meta-row" style="font-size: 11px; font-weight: bold;">Status: Paid at Counter</div>
+            <div class="footer">
+                Please wait for your token to be announced on the waiting TV screen.<br>
+                Powered by CarePath Queue Management
+            </div>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 800);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWin.document.close();
+}
+
+/* =====================================================
    INITIALIZATION & AUTO-REFRESH (10s)
 ===================================================== */
 loadHospital();
-loadDoctors();
+loadDoctors().then(() => loadWalkInDepartments());
 loadQueue();
 loadHospitalAdminMessages();
 checkAdminMessagesUnreadCount();

@@ -2824,6 +2824,8 @@ class WalkInTokenRequest(BaseModel):
     department: str
     doctor: str
     token_number: Optional[int] = None
+    patient_phone: Optional[str] = None
+    notes: Optional[str] = None
 # ============================================================
 # HELPER - HOSPITAL OPD & BREAK TIMINGS
 # ============================================================
@@ -6079,6 +6081,13 @@ def create_walk_in_token(
                 },
             )
 
+        notes_parts = []
+        if getattr(data, "patient_phone", None) and str(data.patient_phone).strip():
+            notes_parts.append(f"Phone: {str(data.patient_phone).strip()}")
+        if getattr(data, "notes", None) and str(data.notes).strip():
+            notes_parts.append(str(data.notes).strip())
+        walkin_notes = " | ".join(notes_parts) if notes_parts else None
+
         token = Token(
             patient_id=None,
             patient_name=patient_name,
@@ -6086,6 +6095,8 @@ def create_walk_in_token(
             hospital_id=authenticated_hospital_id,
             department=department,
             doctor=doctor_name,
+            doctor_id=doctor.id if doctor else None,
+            room_number=doctor.room_number if doctor and doctor.room_number else None,
             token_number=next_token_number,
             appointment_date=appointment_date,
             platform=PLATFORM_NAME,
@@ -6095,6 +6106,7 @@ def create_walk_in_token(
             total_amount=0,
             payment_status="not_required",
             status="waiting",
+            notes=walkin_notes,
         )
 
         db.add(token)
