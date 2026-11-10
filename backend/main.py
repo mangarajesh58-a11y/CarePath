@@ -3486,10 +3486,18 @@ def register_patient(
             detail="Patient registration failed. Please try again.",
         )
 
-    # Return registration response
+    # Generate JWT access token for immediate authenticated session
+    access_token = create_access_token(
+        user_id=patient.id,
+        role="patient",
+    )
+
+    # Return registration response with access token
     return {
         "success": True,
         "message": "Patient registered successfully",
+        "access_token": access_token,
+        "token_type": "bearer",
         "patient": {
             "id": patient.id,
             "full_name": patient.full_name,
@@ -3886,6 +3894,77 @@ def update_patient_profile(
             "phone": patient.phone,
         },
     }
+
+# ============================================================
+# UNIVERSAL JWT TOKEN VERIFICATION & CURRENT USER PROFILE
+# ============================================================
+
+@app.get("/auth/me")
+@app.get("/auth/verify")
+def get_authenticated_user_profile(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Universal JWT Verification endpoint.
+    Accepts: Authorization: Bearer <token>
+    Returns: Validated user_id, role ('hospital', 'patient', 'admin'), and full account object.
+    """
+    user_id = current_user["user_id"]
+    role = current_user["role"]
+
+    if role == "hospital":
+        hospital = db.query(Hospital).filter(Hospital.id == user_id).first()
+        if not hospital:
+            raise HTTPException(status_code=404, detail="Hospital account not found.")
+        return {
+            "success": True,
+            "authenticated": True,
+            "role": "hospital",
+            "user_id": hospital.id,
+            "hospital": hospital_to_dict(hospital),
+        }
+    elif role == "patient":
+        patient = db.query(Patient).filter(Patient.id == user_id).first()
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient account not found.")
+        return {
+            "success": True,
+            "authenticated": True,
+            "role": "patient",
+            "user_id": patient.id,
+            "patient": {
+                "id": patient.id,
+                "full_name": patient.full_name,
+                "email": patient.email,
+                "phone": patient.phone,
+                "age": patient.age,
+                "gender": patient.gender,
+                "blood_group": patient.blood_group,
+            },
+        }
+    elif role == "admin":
+        admin = db.query(Admin).filter(Admin.id == user_id).first()
+        if not admin:
+            raise HTTPException(status_code=404, detail="Admin account not found.")
+        return {
+            "success": True,
+            "authenticated": True,
+            "role": "admin",
+            "user_id": admin.id,
+            "admin": {
+                "id": admin.id,
+                "email": admin.email,
+            },
+        }
+
+    return {
+        "success": True,
+        "authenticated": True,
+        "role": role,
+        "user_id": user_id,
+    }
+
 # ============================================================
 # GENERIC GOOGLE LOGIN
 #

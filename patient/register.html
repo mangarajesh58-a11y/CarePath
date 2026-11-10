@@ -1442,25 +1442,30 @@
                         // SUCCESS
                         // -------------------------------------
 
+                        // -------------------------------------
+                        // SUCCESS: STORE JWT TOKEN & REDIRECT
+                        // -------------------------------------
+                        if (data.access_token) {
+                            localStorage.setItem("patientToken", data.access_token);
+                        }
+                        if (data.patient) {
+                            if (data.patient.id) localStorage.setItem("patientId", data.patient.id);
+                            if (data.patient.full_name) localStorage.setItem("patientName", data.patient.full_name);
+                            if (data.patient.email) localStorage.setItem("patientEmail", data.patient.email);
+                            if (data.patient.phone) localStorage.setItem("patientPhone", data.patient.phone);
+                        }
+
                         showMessage(
-
-                            "Registration successful. Redirecting to login...",
-
+                            "Registration successful! Redirecting...",
                             "success"
-
                         );
-
 
                         // -------------------------------------
                         // REDIRECT
                         // -------------------------------------
-
                         setTimeout(
                             function() {
-
-                                window.location.href =
-                                    "index.html";
-
+                                window.location.href = data.access_token ? "dashboard.html" : "index.html";
                             },
                             1200
                         );
