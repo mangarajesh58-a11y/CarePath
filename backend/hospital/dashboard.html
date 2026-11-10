@@ -290,6 +290,74 @@
         /* =====================================================
            HERO NOW CALLING CONSOLE (THUMB ZONE CENTERPIECE)
         ===================================================== */
+        .hero-voice-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.22);
+            padding: 7px 10px;
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .voice-picker-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #cbd5e1;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .hero-lang-select {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: var(--radius-sm);
+            padding: 5px 8px;
+            font-size: 11.5px;
+            font-weight: 700;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            flex: 1;
+            min-width: 0;
+            max-width: 230px;
+        }
+
+        .hero-lang-select option, .hero-lang-select optgroup {
+            background: #0f172a;
+            color: #ffffff;
+        }
+
+        .btn-voice-test {
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 5px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .btn-voice-test:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        .btn-voice-test:active {
+            transform: scale(0.95);
+        }
+
         .hero-caller-box {
             background: radial-gradient(circle at 100% 0%, #1e3a8a 0%, #0f172a 75%);
             border-radius: var(--radius-xl);
@@ -1264,6 +1332,42 @@
             <span class="hero-live-clock" id="heroLiveClock">--:--:-- --</span>
         </div>
 
+        <!-- VOICE ANNOUNCEMENT LANGUAGE SELECTOR -->
+        <div class="hero-voice-bar">
+            <div class="voice-picker-label">
+                <span>🗣️ Voice:</span>
+                <select id="announcementLangSelect" class="hero-lang-select" onchange="changeAnnouncementLanguage(this.value)" title="Choose Voice Announcement Language">
+                    <optgroup label="Single Indian Language">
+                        <option value="en-IN" selected>🇮🇳 Indian English (Default)</option>
+                        <option value="hi-IN">🇮🇳 Hindi (हिंदी)</option>
+                        <option value="te-IN">🇮🇳 Telugu (తెలుగు)</option>
+                        <option value="ta-IN">🇮🇳 Tamil (தமிழ்)</option>
+                        <option value="kn-IN">🇮🇳 Kannada (ಕನ್ನಡ)</option>
+                        <option value="ml-IN">🇮🇳 Malayalam (മലയാളം)</option>
+                        <option value="mr-IN">🇮🇳 Marathi (मराठी)</option>
+                        <option value="bn-IN">🇮🇳 Bengali (বাংলা)</option>
+                        <option value="gu-IN">🇮🇳 Gujarati (ગુજરાતી)</option>
+                        <option value="pa-IN">🇮🇳 Punjabi (ਪੰਜਾਬੀ)</option>
+                        <option value="or-IN">🇮🇳 Odia (ଓଡ଼ିଆ)</option>
+                        <option value="ur-IN">🇮🇳 Urdu (اردو)</option>
+                    </optgroup>
+                    <optgroup label="Bilingual Dual Announcement">
+                        <option value="en-IN+hi-IN">🇮🇳 English + Hindi</option>
+                        <option value="en-IN+te-IN">🇮🇳 English + Telugu</option>
+                        <option value="en-IN+ta-IN">🇮🇳 English + Tamil</option>
+                        <option value="en-IN+kn-IN">🇮🇳 English + Kannada</option>
+                        <option value="en-IN+ml-IN">🇮🇳 English + Malayalam</option>
+                        <option value="en-IN+bn-IN">🇮🇳 English + Bengali</option>
+                        <option value="en-IN+mr-IN">🇮🇳 English + Marathi</option>
+                        <option value="en-IN+gu-IN">🇮🇳 English + Gujarati</option>
+                    </optgroup>
+                </select>
+            </div>
+            <button type="button" class="btn-voice-test" onclick="testAnnouncementVoice()" title="Listen to a voice preview">
+                <span>▶️</span> Test Voice
+            </button>
+        </div>
+
         <div class="hero-caller-main">
             <div class="token-display-hero">
                 <div class="token-number-massive" id="heroTokenDisplay">#0</div>
@@ -1888,34 +1992,241 @@ function playChimeNodes(ctx) {
     } catch(e) {}
 }
 
+/* =====================================================
+   INDIAN MULTILINGUAL ANNOUNCEMENT SYSTEM
+===================================================== */
+const ANNOUNCEMENT_LANGUAGES = {
+    "en-IN": {
+        name: "Indian English",
+        langCode: "en-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Attention please: Token number ${num}. ${p}please proceed to ${d}.`;
+        }
+    },
+    "hi-IN": {
+        name: "Hindi (हिंदी)",
+        langCode: "hi-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `डॉक्टर ${doc}` : "परामर्श कक्ष";
+            return `कृपया ध्यान दें: टोकन नंबर ${num}. ${p}कृपया ${d} के पास जाएं।`;
+        }
+    },
+    "te-IN": {
+        name: "Telugu (తెలుగు)",
+        langCode: "te-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `డాక్టర్ ${doc}` : "కన్సల్టేషన్ గది";
+            return `దయచేసి వినండి: టోకెన్ నంబర్ ${num}. ${p}దయచేసి ${d} వద్దకు వెళ్లండి.`;
+        }
+    },
+    "ta-IN": {
+        name: "Tamil (தமிழ்)",
+        langCode: "ta-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `மருத்துவர் ${doc}` : "பரிசோதனை அறைக்கு";
+            return `கவனிக்கவும்: டோக்கன் எண் ${num}. ${p}தயவுசெய்து ${d} செல்லவும்.`;
+        }
+    },
+    "kn-IN": {
+        name: "Kannada (ಕನ್ನಡ)",
+        langCode: "kn-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ಡಾಕ್ಟರ್ ${doc}` : "ಪರೀಕ್ಷಾ ಕೊಠಡಿಗೆ";
+            return `ದಯವಿಟ್ಟು ಗಮನಿಸಿ: ಟೋಕನ್ ಸಂಖ್ಯೆ ${num}. ${p}ದಯವಿಟ್ಟು ${d} ಅವರ ಬಳಿ ಹೋಗಿ.`;
+        }
+    },
+    "ml-IN": {
+        name: "Malayalam (മലയാളം)",
+        langCode: "ml-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ഡോക്ടർ ${doc}` : "കൺസൾട്ടേഷൻ റൂമിലേക്ക്";
+            return `ദയവായി ശ്രദ്ധിക്കുക: ടോക്കൺ നമ്പർ ${num}. ${p}ദയവായി ${d} അടുത്തേക്ക് പോകുക.`;
+        }
+    },
+    "mr-IN": {
+        name: "Marathi (मराठी)",
+        langCode: "mr-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `डॉक्टर ${doc}` : "सल्लागार कक्षात";
+            return `कृपया लक्ष द्या: टोकन क्रमांक ${num}. ${p}कृपया ${d} यांच्याकडे जावे।`;
+        }
+    },
+    "bn-IN": {
+        name: "Bengali (বাংলা)",
+        langCode: "bn-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ডাক্তার ${doc}` : "পরামর্শ কক্ষে";
+            return `অনুগ্রহ করে মনোযোগ দিন: টোকেন নম্বর ${num}। ${p}অনুগ্রহ করে ${d}-এর কাছে যান।`;
+        }
+    },
+    "gu-IN": {
+        name: "Gujarati (ગુજરાતી)",
+        langCode: "gu-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ડૉક્ટર ${doc}` : "કન્સલ્ટેશન રૂમમાં";
+            return `કૃપા કરીને ધ્યાન આપો: ટોકન નંબર ${num}. ${p}કૃપા કરીને ${d} પાસે જાઓ.`;
+        }
+    },
+    "pa-IN": {
+        name: "Punjabi (ਪੰਜਾਬੀ)",
+        langCode: "pa-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ਡਾਕਟਰ ${doc}` : "ਕੰਸਲਟੇਸ਼ਨ ਰੂਮ";
+            return `ਕਿਰਪਾ ਕਰਕੇ ਧਿਆਨ ਦਿਓ: ਟੋਕਨ ਨੰਬਰ ${num}। ${p}ਕਿਰਪਾ ਕਰਕੇ ${d} ਕੋਲ ਜਾਓ।`;
+        }
+    },
+    "or-IN": {
+        name: "Odia (ଓଡ଼ିଆ)",
+        langCode: "or-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ଡାକ୍ତର ${doc}` : "ପରାମର୍ଶ କକ୍ଷକୁ";
+            return `ଦୟାକରି ଧ୍ୟାନ ଦିଅନ୍ତୁ: ଟୋକନ ନମ୍ବର ${num}। ${p}ଦୟାକରି ${d} ପାଖକୁ ଯାଆନ୍ତୁ।`;
+        }
+    },
+    "ur-IN": {
+        name: "Urdu (اردو)",
+        langCode: "ur-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}، ` : "";
+            const d = doc ? `ڈاکٹر ${doc}` : "کمرۂ معائنہ";
+            return `براہ کرم توجہ فرمائیں: ٹوکن نمبر ${num}۔ ${p}براہ کرم ${d} کے پاس تشریف لے جائیں۔`;
+        }
+    }
+};
+
+function getSavedAnnouncementLanguage() {
+    return localStorage.getItem("carepath_announcement_lang") || "en-IN";
+}
+
+function changeAnnouncementLanguage(langKey) {
+    localStorage.setItem("carepath_announcement_lang", langKey);
+    const sel = document.getElementById("announcementLangSelect");
+    if (sel && sel.value !== langKey) sel.value = langKey;
+    const label = sel ? sel.options[sel.selectedIndex]?.text : langKey;
+    showToast(`Voice set to: ${label}`, "🗣️");
+}
+
+function initAnnouncementLanguage() {
+    const saved = getSavedAnnouncementLanguage();
+    const sel = document.getElementById("announcementLangSelect");
+    if (sel) sel.value = saved;
+}
+
+function findBestVoice(langCode) {
+    if (!("speechSynthesis" in window)) return null;
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    // 1. Exact match e.g. "en-IN", "hi-IN", "te-IN"
+    let match = voices.find(v => v.lang && v.lang.toLowerCase() === langCode.toLowerCase());
+    if (match) return match;
+
+    // 2. Base tag match e.g. "hi", "te", "ta"
+    const base = langCode.split("-")[0].toLowerCase();
+    match = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(base));
+    if (match) return match;
+
+    // 3. Indian English fallback
+    match = voices.find(v => v.lang && v.lang.toLowerCase() === "en-in");
+    if (match) return match;
+
+    // 4. Any English voice
+    return voices.find(v => v.lang && v.lang.toLowerCase().startsWith("en")) || null;
+}
+
+function speakSingleUtterance(text, langCode, callback) {
+    if (!("speechSynthesis" in window)) {
+        if (callback) callback();
+        return;
+    }
+    try {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.90;
+        utterance.pitch = 1.0;
+        utterance.lang = langCode;
+
+        const voice = findBestVoice(langCode);
+        if (voice) utterance.voice = voice;
+
+        utterance.onend = () => { if (callback) callback(); };
+        utterance.onerror = (e) => {
+            console.warn("Speech utterance error:", e);
+            if (callback) callback();
+        };
+
+        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+        window.speechSynthesis.speak(utterance);
+    } catch(e) {
+        console.warn("Speech synthesis error:", e);
+        if (callback) callback();
+    }
+}
+
+function playVoiceSequence(tokenNum, patientName, doctor) {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+
+    const selectedSetting = getSavedAnnouncementLanguage();
+    const langCodes = selectedSetting.split("+");
+
+    const safeName = (patientName && patientName !== "Patient" && patientName !== "No Patient in Consultation") ? patientName : "";
+    const safeDoc = (doctor && doctor !== "OPD" && doctor !== "No active consultation") ? doctor : "";
+
+    const executeStep = (idx) => {
+        if (idx >= langCodes.length) return;
+        const code = langCodes[idx];
+        const langDef = ANNOUNCEMENT_LANGUAGES[code] || ANNOUNCEMENT_LANGUAGES["en-IN"];
+        const phrase = langDef.format(tokenNum, safeName, safeDoc);
+
+        speakSingleUtterance(phrase, langDef.langCode, () => {
+            if (idx + 1 < langCodes.length) {
+                setTimeout(() => executeStep(idx + 1), 380);
+            }
+        });
+    };
+
+    executeStep(0);
+}
+
 function announceCalledToken(tokenNum, patientName, doctor) {
     if (!hospitalAudioEnabled) return;
     playCallChime();
 
-    // Spoken patient announcement after chime with autoplay unfreeze
     setTimeout(() => {
         if (!hospitalAudioEnabled) return;
-        if ("speechSynthesis" in window) {
-            try {
-                window.speechSynthesis.cancel();
-                const safeName = patientName && patientName !== "Patient" && patientName !== "No Patient in Consultation" ? `${patientName}` : "";
-                const docText = doctor && doctor !== "OPD" && doctor !== "No active consultation" ? `doctor ${doctor}` : "consultation";
-                const text = `Attention please: Token number ${tokenNum}. ${safeName ? safeName + ', ' : ''}please proceed to ${docText}.`;
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = 0.92;
-                utterance.pitch = 1.0;
-                utterance.lang = "en-IN";
-                const voices = window.speechSynthesis.getVoices();
-                const inVoice = voices.find(v => v.lang === "en-IN") || voices.find(v => v.lang && v.lang.startsWith("en"));
-                if (inVoice) utterance.voice = inVoice;
-
-                if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-                window.speechSynthesis.speak(utterance);
-            } catch(e) {
-                console.warn("Speech announcement error:", e);
-            }
-        }
+        playVoiceSequence(tokenNum, patientName, doctor);
     }, 650);
+}
+
+function testAnnouncementVoice() {
+    unlockHospitalAutoplay();
+    playCallChime();
+    const sel = document.getElementById("announcementLangSelect");
+    const langLabel = sel ? sel.options[sel.selectedIndex]?.text : "Indian English";
+    showToast(`Testing voice: ${langLabel}`, "🔊");
+
+    setTimeout(() => {
+        playVoiceSequence("105", "Ramesh Kumar", "Sharma");
+    }, 650);
+}
+
+// Warm up voices on load
+if ("speechSynthesis" in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+    };
 }
 
 // TOAST NOTIFICATION
@@ -2981,6 +3292,7 @@ function printWalkInSlip() {
 /* =====================================================
    INITIALIZATION & AUTO-REFRESH (10s)
 ===================================================== */
+initAnnouncementLanguage();
 loadHospital();
 loadDoctors().then(() => loadWalkInDepartments());
 loadQueue();
