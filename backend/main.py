@@ -1269,6 +1269,40 @@ def run_database_migration():
             print(f"Hospital direct messages migration warning ({column_name}):", error)
 
 
+    # Ensure token_sequences table exists for concurrent safe token allocation
+    try:
+        with engine.begin() as connection:
+            if engine.dialect.name == "postgresql":
+                connection.execute(
+                    text("""
+                        CREATE TABLE IF NOT EXISTS token_sequences (
+                            id SERIAL PRIMARY KEY,
+                            hospital_id INT NOT NULL,
+                            department VARCHAR(255) NOT NULL,
+                            doctor VARCHAR(255) NOT NULL,
+                            appointment_date DATE NOT NULL,
+                            last_token_number INT NOT NULL DEFAULT 0,
+                            CONSTRAINT uq_token_sequences UNIQUE (hospital_id, department, doctor, appointment_date)
+                        )
+                    """)
+                )
+            else:
+                connection.execute(
+                    text("""
+                        CREATE TABLE IF NOT EXISTS token_sequences (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            hospital_id INT NOT NULL,
+                            department VARCHAR(255) NOT NULL,
+                            doctor VARCHAR(255) NOT NULL,
+                            appointment_date DATE NOT NULL,
+                            last_token_number INT NOT NULL DEFAULT 0,
+                            UNIQUE (hospital_id, department, doctor, appointment_date)
+                        )
+                    """)
+                )
+    except Exception as error:
+        print("token_sequences table creation notice:", error)
+
 try:
 
     run_database_migration()
@@ -3130,6 +3164,11 @@ def token_to_dict(token):
     }
 
 
+def get_ist_today() -> date:
+    """Returns today's date in Indian Standard Time (UTC+5:30)."""
+    return (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+
+
 def allocate_token_number(
     db,
     hospital_id: int,
@@ -3137,58 +3176,74 @@ def allocate_token_number(
     doctor: str,
     appointment_date: date,
 ) -> int:
-    result = db.execute(
-        text("""
-            INSERT INTO token_sequences (
-                hospital_id,
-                department,
-                doctor,
-                appointment_date,
-                last_token_number
-            )
-            VALUES (
-                :hospital_id,
-                :department,
-                :doctor,
-                :appointment_date,
-                (
-                    SELECT COALESCE(MAX(token_number), 0) + 1
-                    FROM tokens
-                    WHERE hospital_id = :hospital_id
-                      AND department = :department
-                      AND doctor = :doctor
-                      AND appointment_date = :appointment_date
+    clean_dept = (department or "").strip()
+    clean_doc = (doctor or "").strip()
+
+    try:
+        result = db.execute(
+            text("""
+                INSERT INTO token_sequences (
+                    hospital_id,
+                    department,
+                    doctor,
+                    appointment_date,
+                    last_token_number
                 )
-            )
-            ON CONFLICT (
-                hospital_id,
-                department,
-                doctor,
-                appointment_date
-            )
-            DO UPDATE SET
-                last_token_number = GREATEST(
-                    token_sequences.last_token_number,
+                VALUES (
+                    :hospital_id,
+                    :department,
+                    :doctor,
+                    :appointment_date,
                     (
-                        SELECT COALESCE(MAX(token_number), 0)
+                        SELECT COALESCE(MAX(token_number), 0) + 1
                         FROM tokens
                         WHERE hospital_id = :hospital_id
                           AND department = :department
                           AND doctor = :doctor
                           AND appointment_date = :appointment_date
                     )
-                ) + 1
-            RETURNING last_token_number
-        """),
-        {
-            "hospital_id": hospital_id,
-            "department": department,
-            "doctor": doctor,
-            "appointment_date": appointment_date,
-        },
-    )
-
-    return result.scalar_one()
+                )
+                ON CONFLICT (
+                    hospital_id,
+                    department,
+                    doctor,
+                    appointment_date
+                )
+                DO UPDATE SET
+                    last_token_number = GREATEST(
+                        COALESCE(token_sequences.last_token_number, 0),
+                        (
+                            SELECT COALESCE(MAX(token_number), 0)
+                            FROM tokens
+                            WHERE hospital_id = :hospital_id
+                              AND department = :department
+                              AND doctor = :doctor
+                              AND appointment_date = :appointment_date
+                        )
+                    ) + 1
+                RETURNING last_token_number
+            """),
+            {
+                "hospital_id": hospital_id,
+                "department": clean_dept,
+                "doctor": clean_doc,
+                "appointment_date": appointment_date,
+            },
+        )
+        return int(result.scalar_one())
+    except Exception as e:
+        logging.warning("Atomic sequence allocation warning, using max token fallback: %s", e)
+        max_token = (
+            db.query(func.max(Token.token_number))
+            .filter(
+                Token.hospital_id == hospital_id,
+                Token.department == clean_dept,
+                Token.doctor == clean_doc,
+                Token.appointment_date == appointment_date,
+            )
+            .scalar()
+        )
+        return int((max_token or 0) + 1)
 
 # ============================================================
 # GOOGLE VERIFICATION
@@ -5774,7 +5829,7 @@ def create_token(
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Invalid Cashfree payment amount.")
 
-    appointment_date = data.appointment_date or date.today()
+    appointment_date = data.appointment_date or get_ist_today()
 
     latest_token = (
         db.query(Token)
@@ -5985,7 +6040,7 @@ def create_walk_in_token(
             detail="Doctor not found in this hospital and department",
         )
 
-    appointment_date = date.today()
+    appointment_date = get_ist_today()
     manual_token_number = data.token_number
 
     if manual_token_number is not None and manual_token_number <= 0:

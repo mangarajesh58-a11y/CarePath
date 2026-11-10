@@ -2044,8 +2044,27 @@ const ANNOUNCEMENT_LANGUAGES = {
         langCode: "en-IN",
         format: (num, name, doc) => {
             const p = name ? `${name}, ` : "";
-            const d = doc ? `doctor ${doc}` : "consultation room";
+            const d = doc ? `Dr. ${doc}` : "consultation room";
             return `Attention please: Token number ${num}. ${p}please proceed to ${d}.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `Dr. ${doc}` : "consultation room";
+            return `Attention please: Token number ${num}. ${p}please proceed to ${d}.`;
+        }
+    },
+    "te-IN": {
+        name: "Telugu (తెలుగు)",
+        langCode: "te-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `డాక్టర్ ${doc}` : "కన్సల్టేషన్ గది";
+            return `దయచేసి వినండి: టోకెన్ నంబర్ ${num}. ${p}దయచేసి ${d} వద్దకు వెళ్ళండి.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Dayachesi vinandi: Token number ${num}. ${p}dayachesi ${d} vaddaku vellandi.`;
         }
     },
     "hi-IN": {
@@ -2055,15 +2074,11 @@ const ANNOUNCEMENT_LANGUAGES = {
             const p = name ? `${name}, ` : "";
             const d = doc ? `डॉक्टर ${doc}` : "परामर्श कक्ष";
             return `कृपया ध्यान दें: टोकन नंबर ${num}. ${p}कृपया ${d} के पास जाएं।`;
-        }
-    },
-    "te-IN": {
-        name: "Telugu (తెలుగు)",
-        langCode: "te-IN",
-        format: (num, name, doc) => {
+        },
+        phoneticFormat: (num, name, doc) => {
             const p = name ? `${name}, ` : "";
-            const d = doc ? `డాక్టర్ ${doc}` : "కన్సల్టేషన్ గది";
-            return `దయచేసి వినండి: టోకెన్ నంబర్ ${num}. ${p}దయచేసి ${d} వద్దకు వెళ్లండి.`;
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Kripya dhyan dein: Token number ${num}. ${p}kripya ${d} ke paas jaayein.`;
         }
     },
     "ta-IN": {
@@ -2071,8 +2086,13 @@ const ANNOUNCEMENT_LANGUAGES = {
         langCode: "ta-IN",
         format: (num, name, doc) => {
             const p = name ? `${name}, ` : "";
-            const d = doc ? `மருத்துவர் ${doc}` : "பரிசோதனை அறைக்கு";
+            const d = doc ? `மருத்துவர் ${doc}` : "மருத்துவ அறைக்கு";
             return `கவனிக்கவும்: டோக்கன் எண் ${num}. ${p}தயவுசெய்து ${d} செல்லவும்.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Kavanikkavum: Token number ${num}. ${p}dayavuseidhu ${d} araikku sellavum.`;
         }
     },
     "kn-IN": {
@@ -2080,8 +2100,13 @@ const ANNOUNCEMENT_LANGUAGES = {
         langCode: "kn-IN",
         format: (num, name, doc) => {
             const p = name ? `${name}, ` : "";
-            const d = doc ? `ಡಾಕ್ಟರ್ ${doc}` : "ಪರೀಕ್ಷಾ ಕೊಠಡಿಗೆ";
-            return `ದಯವಿಟ್ಟು ಗಮನಿಸಿ: ಟೋಕನ್ ಸಂಖ್ಯೆ ${num}. ${p}ದಯವಿಟ್ಟು ${d} ಅವರ ಬಳಿ ಹೋಗಿ.`;
+            const d = doc ? `ವೈದ್ಯರಾದ ${doc}` : "ಪರೀಕ್ಷಾ ಕೊಠಡಿಗೆ";
+            return `ದಯವಿಟ್ಟು ಗಮನಿಸಿ: ಟೋಕನ್ ಸಂಖ್ಯೆ ${num}. ${p}ದಯವಿಟ್ಟು ${d} ಬಳಿ ತೆರಳಿ.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Dayavittu gamanisi: Token number ${num}. ${p}dayavittu ${d} kothadige therali.`;
         }
     },
     "ml-IN": {
@@ -2090,7 +2115,12 @@ const ANNOUNCEMENT_LANGUAGES = {
         format: (num, name, doc) => {
             const p = name ? `${name}, ` : "";
             const d = doc ? `ഡോക്ടർ ${doc}` : "കൺസൾട്ടേഷൻ റൂമിലേക്ക്";
-            return `ദയവായി ശ്രദ്ധിക്കുക: ടോക്കൺ നമ്പർ ${num}. ${p}ദയവായി ${d} അടുത്തേക്ക് പോകുക.`;
+            return `ദയവായി ശ്രദ്ധിക്കുക: ടോക്കൺ നമ്പർ ${num}. ${p}ദയവായി ${d} എത്തുക.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Dayavayi sredhdhikkoo: Token number ${num}. ${p}dayavayi ${d} muriyilekku pokuka.`;
         }
     },
     "mr-IN": {
@@ -2098,8 +2128,13 @@ const ANNOUNCEMENT_LANGUAGES = {
         langCode: "mr-IN",
         format: (num, name, doc) => {
             const p = name ? `${name}, ` : "";
-            const d = doc ? `डॉक्टर ${doc}` : "सल्लागार कक्षात";
-            return `कृपया लक्ष द्या: टोकन क्रमांक ${num}. ${p}कृपया ${d} यांच्याकडे जावे।`;
+            const d = doc ? `डॉक्टर ${doc}` : "तपासणी खोलीत";
+            return `कृपया लक्ष द्या: टोकन क्रमांक ${num}. ${p}कृपया ${d} यांच्याकडे जावे.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Kripaya lakshya dya: Token kramank ${num}. ${p}kripaya ${d} kade jaave.`;
         }
     },
     "bn-IN": {
@@ -2108,7 +2143,12 @@ const ANNOUNCEMENT_LANGUAGES = {
         format: (num, name, doc) => {
             const p = name ? `${name}, ` : "";
             const d = doc ? `ডাক্তার ${doc}` : "পরামর্শ কক্ষে";
-            return `অনুগ্রহ করে মনোযোগ দিন: টোকেন নম্বর ${num}। ${p}অনুগ্রহ করে ${d}-এর কাছে যান।`;
+            return `অনুগ্রহ করে শুনবেন: টোকেন নম্বর ${num}। ${p}অনুগ্রহ করে ${d}-এর কাছে যান।`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Onugroho kore shunun: Token number ${num}. ${p}onugroho kore ${d}-er kache jaan.`;
         }
     },
     "gu-IN": {
@@ -2116,8 +2156,13 @@ const ANNOUNCEMENT_LANGUAGES = {
         langCode: "gu-IN",
         format: (num, name, doc) => {
             const p = name ? `${name}, ` : "";
-            const d = doc ? `ડૉક્ટર ${doc}` : "કન્સલ્ટેશન રૂમમાં";
+            const d = doc ? `ડોક્ટર ${doc}` : "કન્સલ્ટેશન રૂમમાં";
             return `કૃપા કરીને ધ્યાન આપો: ટોકન નંબર ${num}. ${p}કૃપા કરીને ${d} પાસે જાઓ.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Krupa kari dhyan aapo: Token number ${num}. ${p}krupa kari ${d} paase jaav.`;
         }
     },
     "pa-IN": {
@@ -2127,6 +2172,11 @@ const ANNOUNCEMENT_LANGUAGES = {
             const p = name ? `${name}, ` : "";
             const d = doc ? `ਡਾਕਟਰ ${doc}` : "ਕੰਸਲਟੇਸ਼ਨ ਰੂਮ";
             return `ਕਿਰਪਾ ਕਰਕੇ ਧਿਆਨ ਦਿਓ: ਟੋਕਨ ਨੰਬਰ ${num}। ${p}ਕਿਰਪਾ ਕਰਕੇ ${d} ਕੋਲ ਜਾਓ।`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Kripa karke dhyan diyo: Token number ${num}. ${p}kripa karke ${d} kol jaao.`;
         }
     },
     "or-IN": {
@@ -2134,8 +2184,13 @@ const ANNOUNCEMENT_LANGUAGES = {
         langCode: "or-IN",
         format: (num, name, doc) => {
             const p = name ? `${name}, ` : "";
-            const d = doc ? `ଡାକ୍ତର ${doc}` : "ପରାମର୍ଶ କକ୍ଷକୁ";
+            const d = doc ? `ଡାକ୍ତର ${doc}` : "ପରାମର୍ଶ କୋଠରୀକୁ";
             return `ଦୟାକରି ଧ୍ୟାନ ଦିଅନ୍ତୁ: ଟୋକନ ନମ୍ବର ${num}। ${p}ଦୟାକରି ${d} ପାଖକୁ ଯାଆନ୍ତୁ।`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Dayakari dhyana diantu: Token number ${num}. ${p}dayakari ${d} paakhaku jaantu.`;
         }
     },
     "ur-IN": {
@@ -2143,8 +2198,13 @@ const ANNOUNCEMENT_LANGUAGES = {
         langCode: "ur-IN",
         format: (num, name, doc) => {
             const p = name ? `${name}، ` : "";
-            const d = doc ? `ڈاکٹر ${doc}` : "کمرۂ معائنہ";
+            const d = doc ? `ڈاکٹر ${doc}` : "معائنہ روم";
             return `براہ کرم توجہ فرمائیں: ٹوکن نمبر ${num}۔ ${p}براہ کرم ${d} کے پاس تشریف لے جائیں۔`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Barahe karam tawajjoh farmaein: Token number ${num}. ${p}barahe karam ${d} ke paas tashreef le jayein.`;
         }
     }
 };
@@ -2182,40 +2242,83 @@ function initAnnouncementLanguage() {
     updateTvLinks();
 }
 
-function findBestVoice(langCode) {
-    if (!("speechSynthesis" in window)) return null;
-    const voices = window.speechSynthesis.getVoices();
-    if (!voices || voices.length === 0) return null;
+function getVoiceAndPhrase(langCode, num, name, doc) {
+    const langDef = ANNOUNCEMENT_LANGUAGES[langCode] || ANNOUNCEMENT_LANGUAGES["en-IN"];
+    const targetBase = (langDef.langCode || "en-IN").split("-")[0].toLowerCase();
+    const voices = ("speechSynthesis" in window) ? (window.speechSynthesis.getVoices() || []) : [];
 
-    // 1. Exact match e.g. "en-IN", "hi-IN", "te-IN"
-    let match = voices.find(v => v.lang && v.lang.toLowerCase() === langCode.toLowerCase());
-    if (match) return match;
+    // 1. Check for native regional voice
+    let nativeVoice = null;
+    if (targetBase !== "en") {
+        nativeVoice = voices.find(v => v.lang && v.lang.toLowerCase() === langDef.langCode.toLowerCase());
+        if (!nativeVoice) {
+            nativeVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(targetBase));
+        }
+        if (!nativeVoice) {
+            const langKeywords = {
+                "te": ["telugu"],
+                "hi": ["hindi", "kalpana", "hemant"],
+                "ta": ["tamil", "valluvar"],
+                "kn": ["kannada"],
+                "ml": ["malayalam"],
+                "mr": ["marathi"],
+                "bn": ["bengali", "bangla"],
+                "gu": ["gujarati"],
+                "pa": ["punjabi"],
+                "ur": ["urdu"]
+            };
+            const kws = langKeywords[targetBase] || [];
+            for (const kw of kws) {
+                nativeVoice = voices.find(v => (v.name || "").toLowerCase().includes(kw));
+                if (nativeVoice) break;
+            }
+        }
+    }
 
-    // 2. Base tag match e.g. "hi", "te", "ta"
-    const base = langCode.split("-")[0].toLowerCase();
-    match = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(base));
-    if (match) return match;
+    if (nativeVoice) {
+        return {
+            phrase: langDef.format(num, name, doc),
+            lang: langDef.langCode,
+            voice: nativeVoice,
+            isNative: true
+        };
+    }
 
-    // 3. Indian English fallback
-    match = voices.find(v => v.lang && v.lang.toLowerCase() === "en-in");
-    if (match) return match;
+    // 2. If no native voice, use Indian English or fallback English voice with phonetic pronunciation
+    let fallbackVoice = voices.find(v => v.lang && v.lang.toLowerCase() === "en-in");
+    if (!fallbackVoice) {
+        fallbackVoice = voices.find(v => /india|ravi|heera|veena|priya|neerja|rishi|sangeeta/i.test(v.name || ""));
+    }
+    if (!fallbackVoice) {
+        fallbackVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith("en")) || voices[0] || null;
+    }
 
-    // 4. Any English voice
-    return voices.find(v => v.lang && v.lang.toLowerCase().startsWith("en")) || null;
+    const phrase = (langDef.phoneticFormat && targetBase !== "en")
+        ? langDef.phoneticFormat(num, name, doc)
+        : langDef.format(num, name, doc);
+
+    return {
+        phrase: phrase,
+        lang: "en-IN",
+        voice: fallbackVoice,
+        isNative: false
+    };
 }
 
-function speakSingleUtterance(text, langCode, callback) {
+function speakSingleUtterance(speechConfig, callback) {
     if (!("speechSynthesis" in window)) {
         if (callback) callback();
         return;
     }
     try {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.90;
-        utterance.pitch = 1.0;
-        utterance.lang = langCode;
+        const text = typeof speechConfig === "string" ? speechConfig : speechConfig.phrase;
+        const lang = typeof speechConfig === "string" ? "en-IN" : speechConfig.lang;
+        const voice = typeof speechConfig === "object" ? speechConfig.voice : null;
 
-        const voice = findBestVoice(langCode);
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.88;
+        utterance.pitch = 1.0;
+        utterance.lang = lang || "en-IN";
         if (voice) utterance.voice = voice;
 
         utterance.onend = () => { if (callback) callback(); };
@@ -2245,10 +2348,9 @@ function playVoiceSequence(tokenNum, patientName, doctor) {
     const executeStep = (idx) => {
         if (idx >= langCodes.length) return;
         const code = langCodes[idx];
-        const langDef = ANNOUNCEMENT_LANGUAGES[code] || ANNOUNCEMENT_LANGUAGES["en-IN"];
-        const phrase = langDef.format(tokenNum, safeName, safeDoc);
+        const speechConfig = getVoiceAndPhrase(code, tokenNum, safeName, safeDoc);
 
-        speakSingleUtterance(phrase, langDef.langCode, () => {
+        speakSingleUtterance(speechConfig, () => {
             if (idx + 1 < langCodes.length) {
                 setTimeout(() => executeStep(idx + 1), 380);
             }
