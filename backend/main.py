@@ -6520,6 +6520,26 @@ def call_token(
             detail="Token not found",
         )
 
+    # When calling/recalling this token, manage any existing serving token for the same doctor/hospital
+    other_serving = (
+        db.query(Token)
+        .filter(
+            Token.hospital_id == current_user["user_id"],
+            Token.doctor == token.doctor,
+            Token.status == "serving",
+            Token.id != token.id,
+        )
+        .all()
+    )
+    for other in other_serving:
+        # If recalling an earlier token, revert higher token number to waiting so it is not lost
+        if other.token_number > token.token_number:
+            other.status = "waiting"
+        else:
+            other.status = "completed"
+            if not other.completed_at:
+                other.completed_at = datetime.utcnow()
+
     token.status = "serving"
     token.called_at = datetime.utcnow()
 
@@ -6564,11 +6584,25 @@ def get_hospital_live_queue(
         db.query(Token)
         .filter(
             Token.hospital_id == hospital_id,
-            Token.appointment_date == today,
+            or_(
+                Token.appointment_date == today,
+                func.date(Token.created_at) == today,
+            ),
         )
         .order_by(Token.token_number.asc())
         .all()
     )
+
+    # Fallback to recent tokens if date match is empty (avoids blank TV on boundary dates)
+    if not today_tokens:
+        today_tokens = (
+            db.query(Token)
+            .filter(Token.hospital_id == hospital_id)
+            .order_by(Token.id.desc())
+            .limit(50)
+            .all()
+        )
+        today_tokens = sorted(today_tokens, key=lambda t: t.token_number)
 
     serving_tokens = sorted(
         [token_to_dict(t) for t in today_tokens if t.status == "serving"],
@@ -6578,7 +6612,11 @@ def get_hospital_live_queue(
     waiting_tokens = [
         token_to_dict(t) for t in today_tokens if t.status == "waiting"
     ]
-    completed_count = sum(1 for t in today_tokens if t.status == "completed")
+    completed_tokens = sorted(
+        [token_to_dict(t) for t in today_tokens if t.status == "completed"],
+        key=lambda t: (t.get("completed_at") or t.get("called_at") or t.get("created_at") or "", t.get("token_number") or 0),
+        reverse=True,
+    )
 
     return {
         "success": True,
@@ -6588,12 +6626,14 @@ def get_hospital_live_queue(
         "appointment_date": str(today),
         "stats": {
             "total_today": len(today_tokens),
-            "completed": completed_count,
+            "completed": len(completed_tokens),
             "serving": len(serving_tokens),
             "waiting": len(waiting_tokens),
         },
         "currently_serving": serving_tokens,
         "upcoming_waiting": waiting_tokens[:20],
+        "previous_patients": completed_tokens[:10],
+        "recently_completed": completed_tokens[:10],
     }
 @app.put("/tokens/{token_id}/complete")
 def complete_token(

@@ -1867,10 +1867,10 @@
 /* =====================================================
    API CONFIGURATION
 ===================================================== */
-const API_URL =
-    (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost")
-        ? "http://127.0.0.1:8000"
-        : "https://carepath-3q9q.onrender.com";
+const _urlParams = new URLSearchParams(window.location.search);
+const API_URL = (_urlParams.get("api") === "local" || localStorage.getItem("carepath_api_mode") === "local")
+    ? "http://127.0.0.1:8000"
+    : "https://carepath-3q9q.onrender.com";
 
 let hospitalId = localStorage.getItem("hospital_id");
 let hospitalName = localStorage.getItem("hospital_name");
@@ -2461,9 +2461,15 @@ async function loadQueue() {
         const totalRev = tokens.reduce((sum, t) => sum + Number(t.token_fee || tokenFee || 0), 0);
         document.getElementById("todayRevenueDisplay").textContent = `₹${totalRev.toLocaleString()}`;
 
-        // Current Serving Token
-        if (serving.length > 0) {
-            const current = serving[serving.length - 1];
+        // Current Serving Token (sort so most recently called/recalled token is primary)
+        const sortedServing = [...serving].sort((a, b) => {
+            const timeA = new Date(a.called_at || a.created_at || 0).getTime();
+            const timeB = new Date(b.called_at || b.created_at || 0).getTime();
+            return timeB - timeA;
+        });
+
+        if (sortedServing.length > 0) {
+            const current = sortedServing[0];
             currentServingTokenObj = current;
             document.getElementById("currentToken").textContent = `#${current.token_number}`;
             document.getElementById("heroTokenDisplay").textContent = `#${current.token_number}`;
@@ -2557,6 +2563,10 @@ async function callPreviousPatient() {
     const msg = document.getElementById("nextMessage");
 
     if (!Array.isArray(allHospitalTokens) || allHospitalTokens.length === 0) {
+        await loadQueue();
+    }
+
+    if (!Array.isArray(allHospitalTokens) || allHospitalTokens.length === 0) {
         showToast("No patient queue available.", "⚠️");
         if (msg) {
             msg.style.color = "#fef08a";
@@ -2574,7 +2584,8 @@ async function callPreviousPatient() {
             .filter(t => t.id !== currentServingTokenObj.id)
             .filter(t => {
                 const s = (t.status || "").toLowerCase();
-                return s === "completed" || (s !== "cancelled" && Number(t.token_number) < currentTokenNum);
+                const num = Number(t.token_number);
+                return s === "completed" || (s !== "cancelled" && num < currentTokenNum);
             })
             .sort((a, b) => {
                 const numA = Number(a.token_number);
@@ -2624,21 +2635,24 @@ async function callPreviousPatient() {
         btn.innerHTML = "<span>⏳</span> Recalling...";
     }
     if (msg) {
-        msg.style.color = "#fef08a";
+        msg.style.color = "#93c5fd";
         msg.textContent = `Recalling previous patient Token #${previousToken.token_number}...`;
     }
 
     try {
-        await callSpecificToken(
+        const ok = await callSpecificToken(
             previousToken.id,
             previousToken.token_number,
             previousToken.patient_name,
-            previousToken.doctor
+            previousToken.doctor,
+            btn
         );
-        showToast(`Token #${previousToken.token_number} recalled into consultation!`, "⏮️");
-        if (msg) {
-            msg.style.color = "#86efac";
-            msg.textContent = `✓ Recalled previous patient Token #${previousToken.token_number} (${previousToken.patient_name || 'Patient'}).`;
+        if (ok) {
+            showToast(`Token #${previousToken.token_number} recalled into consultation!`, "⏮️");
+            if (msg) {
+                msg.style.color = "#86efac";
+                msg.textContent = `✓ Recalled previous patient Token #${previousToken.token_number} (${previousToken.patient_name || 'Patient'}).`;
+            }
         }
     } catch (e) {
         console.error("Call previous patient error:", e);
@@ -2670,57 +2684,108 @@ async function callNextPatient() {
     }
 
     const nextUp = waiting[0];
-    await callSpecificToken(nextUp.id, nextUp.token_number, nextUp.patient_name, nextUp.doctor);
+    await callSpecificToken(nextUp.id, nextUp.token_number, nextUp.patient_name, nextUp.doctor, btn);
 }
 
-async function callSpecificToken(tokenId, tokenNum, patientName, doctor) {
+async function callSpecificToken(tokenId, tokenNum, patientName, doctor, triggerBtn = null) {
     // Synchronously prime audio context BEFORE async fetch (preserves browser user activation context)
     unlockHospitalAutoplay();
 
-    const btn = document.getElementById("nextButton");
+    const nextBtn = document.getElementById("nextButton");
+    const activeBtn = triggerBtn || nextBtn;
     const msg = document.getElementById("nextMessage");
-    if (btn) { btn.disabled = true; btn.innerHTML = "<span>📢</span> Calling..."; }
-    if (msg) msg.textContent = "";
 
-    try {
-        const res = await fetch(`${API_URL}/tokens/${tokenId}/call`, {
-            method: "PUT",
-            headers: getHospitalAuthHeaders(true)
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Unable to call token");
-
-        // Lookup patient metadata if not passed directly
-        let pName = patientName;
-        let dRoom = doctor;
-        if (!pName || !dRoom) {
-            const found = allHospitalTokens.find(t => Number(t.id) === Number(tokenId));
-            if (found) {
-                pName = pName || found.patient_name;
-                dRoom = dRoom || found.doctor;
-            }
-        }
-
-        announceCalledToken(tokenNum, pName, dRoom);
-        showToast(`Token #${tokenNum} called into consultation!`, "📢");
-
-        if (msg) {
-            msg.style.color = "#15803d";
-            msg.textContent = `✓ Token #${tokenNum} called successfully.`;
-        }
-        await loadQueue();
-    } catch (e) {
-        console.error("Call token error:", e);
-        if (msg) {
-            msg.style.color = "#dc2626";
-            msg.textContent = e.message || "Failed to call token.";
-        }
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = "<span>📢</span> Call Next Patient";
+    if (activeBtn) {
+        activeBtn.disabled = true;
+        if (activeBtn === nextBtn) {
+            activeBtn.innerHTML = "<span>📢</span> Calling...";
         }
     }
+    if (msg) {
+        msg.style.color = "#93c5fd";
+        msg.textContent = `Calling Token #${tokenNum}...`;
+    }
+
+    let success = false;
+    let lastError = null;
+
+    // Retry loop for network resilience (e.g. Render wake-up or connection drop)
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+            const res = await fetch(`${API_URL}/tokens/${tokenId}/call`, {
+                method: "PUT",
+                headers: getHospitalAuthHeaders(true),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!res.ok) {
+                let errText = "Unable to call token";
+                try {
+                    const errData = await res.json();
+                    errText = errData.detail || errText;
+                } catch (_) {
+                    errText = await res.text() || errText;
+                }
+                throw new Error(errText);
+            }
+
+            const data = await res.json();
+            success = true;
+            break;
+        } catch (e) {
+            lastError = e;
+            if (attempt === 1) {
+                if (msg) msg.textContent = "Connecting to server...";
+                await new Promise(r => setTimeout(r, 1200));
+            }
+        }
+    }
+
+    if (!success) {
+        console.error("Call token failed:", lastError);
+        const friendlyMsg = lastError?.name === "AbortError"
+            ? "Server request timed out. Please try again."
+            : (lastError?.message === "Failed to fetch"
+                ? "Unable to connect to server. Please check your connection or retry."
+                : (lastError?.message || "Failed to call token."));
+        if (msg) {
+            msg.style.color = "#f87171";
+            msg.textContent = friendlyMsg;
+        }
+        showToast(friendlyMsg, "⚠️");
+        if (activeBtn) activeBtn.disabled = false;
+        if (nextBtn) nextBtn.innerHTML = "<span>📢</span> Call Next";
+        return false;
+    }
+
+    // Lookup patient metadata if not passed directly
+    let pName = patientName;
+    let dRoom = doctor;
+    if (!pName || !dRoom) {
+        const found = allHospitalTokens.find(t => Number(t.id) === Number(tokenId));
+        if (found) {
+            pName = pName || found.patient_name;
+            dRoom = dRoom || found.doctor;
+        }
+    }
+
+    announceCalledToken(tokenNum, pName, dRoom);
+    showToast(`Token #${tokenNum} called into consultation!`, "📢");
+
+    if (msg) {
+        msg.style.color = "#86efac";
+        msg.textContent = `✓ Token #${tokenNum} (${pName || 'Patient'}) called successfully.`;
+    }
+
+    await loadQueue();
+
+    if (activeBtn) activeBtn.disabled = false;
+    if (nextBtn) nextBtn.innerHTML = "<span>📢</span> Call Next";
+    return true;
 }
 
 // REPEAT CALL CURRENT PATIENT IN CONSULTATION
