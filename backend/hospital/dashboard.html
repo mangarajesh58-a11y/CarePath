@@ -493,6 +493,47 @@
             z-index: 2;
         }
 
+        .hero-main-actions {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .btn-call-prev {
+            background: rgba(56, 189, 248, 0.16);
+            color: #ffffff;
+            border: 1.5px solid rgba(56, 189, 248, 0.4);
+            height: 48px;
+            border-radius: 14px;
+            font-size: 13.5px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(6px);
+        }
+
+        .btn-call-prev:hover {
+            background: rgba(56, 189, 248, 0.28);
+            border-color: rgba(56, 189, 248, 0.7);
+        }
+
+        .btn-call-prev:active:not(:disabled) {
+            transform: scale(0.97);
+            background: rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-call-prev:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-call-next {
             width: 100%;
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
@@ -500,12 +541,12 @@
             border: 1px solid rgba(255, 255, 255, 0.25);
             height: 48px;
             border-radius: 14px;
-            font-size: 15.5px;
+            font-size: 14.5px;
             font-weight: 800;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 9px;
+            gap: 8px;
             cursor: pointer;
             box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
             transition: var(--transition-fast);
@@ -1334,9 +1375,9 @@
 
         <!-- VOICE ANNOUNCEMENT LANGUAGE SELECTOR -->
         <div class="hero-voice-bar">
-            <div class="voice-picker-label">
-                <span>🗣️ Voice:</span>
-                <select id="announcementLangSelect" class="hero-lang-select" onchange="changeAnnouncementLanguage(this.value)" title="Choose Voice Announcement Language">
+            <div class="voice-picker-label" style="width: 100%;">
+                <span>🗣️ Voice Language:</span>
+                <select id="announcementLangSelect" class="hero-lang-select" onchange="changeAnnouncementLanguage(this.value)" title="Choose Voice Announcement Language" style="max-width: 100%;">
                     <optgroup label="Single Indian Language">
                         <option value="en-IN" selected>🇮🇳 Indian English (Default)</option>
                         <option value="hi-IN">🇮🇳 Hindi (हिंदी)</option>
@@ -1363,9 +1404,6 @@
                     </optgroup>
                 </select>
             </div>
-            <button type="button" class="btn-voice-test" onclick="testAnnouncementVoice()" title="Listen to a voice preview">
-                <span>▶️</span> Test Voice
-            </button>
         </div>
 
         <div class="hero-caller-main">
@@ -1384,9 +1422,14 @@
         </div>
 
         <div class="hero-btn-group">
-            <button type="button" class="btn-call-next" id="nextButton" onclick="callNextPatient()">
-                <span>📢</span> Call Next Patient
-            </button>
+            <div class="hero-main-actions">
+                <button type="button" class="btn-call-prev" id="btnPrevPatient" onclick="callPreviousPatient()" title="Call previous patient back into consultation">
+                    <span>⏮️</span> Previous
+                </button>
+                <button type="button" class="btn-call-next" id="nextButton" onclick="callNextPatient()" title="Call next waiting patient">
+                    <span>📢</span> Call Next
+                </button>
+            </div>
             <div class="hero-sub-actions">
                 <button type="button" class="btn-caller-repeat" id="btnRepeatCall" onclick="repeatCallCurrentPatient()" title="Repeat call announcement and chime for currently called patient">
                     <span>🔁</span> Repeat Call
@@ -2505,6 +2548,110 @@ function filterQueueFeed() {
         (t.doctor || "").toLowerCase().includes(q)
     );
     renderQueueFeed(filtered);
+}
+
+// CALL PREVIOUS PATIENT
+async function callPreviousPatient() {
+    unlockHospitalAutoplay();
+    const btn = document.getElementById("btnPrevPatient");
+    const msg = document.getElementById("nextMessage");
+
+    if (!Array.isArray(allHospitalTokens) || allHospitalTokens.length === 0) {
+        showToast("No patient queue available.", "⚠️");
+        if (msg) {
+            msg.style.color = "#fef08a";
+            msg.textContent = "No patient queue available.";
+        }
+        return;
+    }
+
+    let previousToken = null;
+
+    if (currentServingTokenObj) {
+        const currentTokenNum = Number(currentServingTokenObj.token_number);
+        // Look for completed or earlier tokens strictly below current serving number
+        const candidates = allHospitalTokens
+            .filter(t => t.id !== currentServingTokenObj.id)
+            .filter(t => {
+                const s = (t.status || "").toLowerCase();
+                return s === "completed" || (s !== "cancelled" && Number(t.token_number) < currentTokenNum);
+            })
+            .sort((a, b) => {
+                const numA = Number(a.token_number);
+                const numB = Number(b.token_number);
+                if (numA < currentTokenNum && numB < currentTokenNum) {
+                    return numB - numA;
+                }
+                const timeA = new Date(a.completed_at || a.called_at || a.created_at || 0).getTime();
+                const timeB = new Date(b.completed_at || b.called_at || b.created_at || 0).getTime();
+                return timeB - timeA;
+            });
+
+        if (candidates.length > 0) {
+            previousToken = candidates[0];
+        }
+    } else {
+        // When no token is active, recall the most recently completed token
+        const completed = allHospitalTokens
+            .filter(t => (t.status || "").toLowerCase() === "completed")
+            .sort((a, b) => {
+                const timeA = new Date(a.completed_at || a.called_at || a.created_at || 0).getTime();
+                const timeB = new Date(b.completed_at || b.called_at || b.created_at || 0).getTime();
+                return timeB - timeA;
+            });
+
+        if (completed.length > 0) {
+            previousToken = completed[0];
+        } else {
+            const nonWaiting = allHospitalTokens
+                .filter(t => (t.status || "").toLowerCase() !== "waiting" && (t.status || "").toLowerCase() !== "cancelled")
+                .sort((a, b) => Number(b.token_number) - Number(a.token_number));
+            if (nonWaiting.length > 0) previousToken = nonWaiting[0];
+        }
+    }
+
+    if (!previousToken) {
+        showToast("No previous patient found to recall.", "⚠️");
+        if (msg) {
+            msg.style.color = "#fef08a";
+            msg.textContent = "No previous patient found in today's queue.";
+        }
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = "<span>⏳</span> Recalling...";
+    }
+    if (msg) {
+        msg.style.color = "#fef08a";
+        msg.textContent = `Recalling previous patient Token #${previousToken.token_number}...`;
+    }
+
+    try {
+        await callSpecificToken(
+            previousToken.id,
+            previousToken.token_number,
+            previousToken.patient_name,
+            previousToken.doctor
+        );
+        showToast(`Token #${previousToken.token_number} recalled into consultation!`, "⏮️");
+        if (msg) {
+            msg.style.color = "#86efac";
+            msg.textContent = `✓ Recalled previous patient Token #${previousToken.token_number} (${previousToken.patient_name || 'Patient'}).`;
+        }
+    } catch (e) {
+        console.error("Call previous patient error:", e);
+        if (msg) {
+            msg.style.color = "#f87171";
+            msg.textContent = e.message || "Failed to recall previous patient.";
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = "<span>⏮️</span> Previous";
+        }
+    }
 }
 
 // CALL NEXT PATIENT
