@@ -512,33 +512,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def get_cors_headers(request: Request) -> dict:
+    origin = request.headers.get("origin")
+    headers = {
+        "Access-Control-Allow-Methods": "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT",
+        "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Origin, X-Requested-With",
+    }
+    if origin and origin != "null":
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    else:
+        headers["Access-Control-Allow-Origin"] = "*"
+    return headers
+
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
-    origin = request.headers.get("origin") or "*"
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail, "success": False},
-        headers={
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        }
+        headers=get_cors_headers(request)
     )
 
 @app.exception_handler(Exception)
 async def custom_general_exception_handler(request: Request, exc: Exception):
     logging.exception("Unhandled Server Exception on %s: %s", request.url.path, exc)
-    origin = request.headers.get("origin") or "*"
     return JSONResponse(
         status_code=500,
         content={"detail": f"Internal Server Error: {str(exc)}", "success": False},
-        headers={
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        }
+        headers=get_cors_headers(request)
     )
 
 def send_carepath_email(to_email: str, subject: str, text: str, html: str) -> bool:
@@ -6667,7 +6668,9 @@ def call_token(
     )
     for other in other_serving:
         # If recalling an earlier token, revert higher token number to waiting so it is not lost
-        if other.token_number > token.token_number:
+        other_num = other.token_number or 0
+        curr_num = token.token_number or 0
+        if other_num > curr_num:
             other.status = "waiting"
         else:
             other.status = "completed"

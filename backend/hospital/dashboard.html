@@ -1874,14 +1874,29 @@ const API_URL = (_urlParams.get("api") === "local" || localStorage.getItem("care
 
 let hospitalId = localStorage.getItem("hospital_id");
 let hospitalName = localStorage.getItem("hospital_name");
-const hospitalToken = localStorage.getItem("hospitalToken");
+let hospitalToken = localStorage.getItem("hospitalToken");
 
 function getHospitalAuthHeaders(includeJson = false) {
+    const currentToken = localStorage.getItem("hospitalToken") || hospitalToken || "";
     const headers = {
-        "Authorization": `Bearer ${hospitalToken || ""}`
+        "Authorization": `Bearer ${currentToken}`
     };
-    if (includeJson) headers["Content-Type"] = "application/json";
+    if (includeJson) {
+        if (typeof includeJson === "object" && includeJson !== null) {
+            Object.assign(headers, includeJson);
+        } else {
+            headers["Content-Type"] = "application/json";
+        }
+    }
     return headers;
+}
+
+function handleHospitalAuthExpired() {
+    showToast("Hospital session expired. Please log in again.", "⚠️");
+    localStorage.removeItem("hospitalToken");
+    setTimeout(() => {
+        window.location.replace("index.html");
+    }, 1200);
 }
 
 // Read stored hospital session
@@ -2760,7 +2775,9 @@ async function callPreviousPatient() {
         console.error("Call previous patient error:", e);
         if (msg) {
             msg.style.color = "#f87171";
-            msg.textContent = e.message || "Failed to recall previous patient.";
+            msg.textContent = (e?.message === "Failed to fetch"
+                ? "Unable to connect to server. Please check your connection or retry."
+                : (e?.message || "Failed to recall previous patient."));
         }
     } finally {
         if (btn) {
@@ -2823,6 +2840,11 @@ async function callSpecificToken(tokenId, tokenNum, patientName, doctor, trigger
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
+
+            if (res.status === 401) {
+                handleHospitalAuthExpired();
+                return false;
+            }
 
             if (!res.ok) {
                 let errText = "Unable to call token";
@@ -2910,67 +2932,166 @@ async function repeatCallCurrentPatient() {
     const patientName = currentServingTokenObj.patient_name || "Patient";
     const doctor = currentServingTokenObj.doctor || "OPD Doctor";
 
+    // 1. Immediately trigger chime & multilingual voice announcement
+    // Running synchronously guarantees active user-gesture audio playback with 0 delay
+    announceCalledToken(tokenNum, patientName, doctor);
+    showToast(`Token #${tokenNum} called again!`, "🔄");
+
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = "<span>⏳</span> Calling...";
     }
     if (msg) {
-        msg.style.color = "#fef08a";
-        msg.textContent = `Repeating call for Token #${tokenNum}...`;
+        msg.style.color = "#93c5fd";
+        msg.textContent = `Broadcasting repeat call for Token #${tokenNum}...`;
     }
 
-    try {
-        const res = await fetch(`${API_URL}/tokens/${tokenId}/call`, {
-            method: "PUT",
-            headers: getHospitalAuthHeaders(true)
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Unable to repeat call");
+    let success = false;
+    let lastError = null;
 
-        // Play dual chime and speech announcement immediately
-        announceCalledToken(tokenNum, patientName, doctor);
-        showToast(`Token #${tokenNum} called again!`, "🔁");
+    // 2. Resilient background sync with server to sync TV screen and other clients
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
 
+            const res = await fetch(`${API_URL}/tokens/${tokenId}/call`, {
+                method: "PUT",
+                headers: getHospitalAuthHeaders(true),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (res.status === 401) {
+                handleHospitalAuthExpired();
+                return;
+            }
+
+            if (!res.ok) {
+                let errText = "Unable to repeat call";
+                try {
+                    const errData = await res.json();
+                    errText = errData.detail || errText;
+                } catch (_) {
+                    errText = await res.text() || errText;
+                }
+                throw new Error(errText);
+            }
+
+            const data = await res.json();
+            success = true;
+            break;
+        } catch (e) {
+            lastError = e;
+            if (attempt === 1) {
+                if (msg) msg.textContent = "Connecting to server...";
+                await new Promise(r => setTimeout(r, 1200));
+            }
+        }
+    }
+
+    if (!success) {
+        console.warn("Repeat call server sync notice:", lastError);
+        const friendlyMsg = lastError?.name === "AbortError"
+            ? "Server response timed out. The repeat call has been announced locally."
+            : (lastError?.message === "Failed to fetch"
+                ? "Server connection offline/slow. Repeat announcement broadcasted locally."
+                : (lastError?.message || "Repeat call announced locally."));
+        if (msg) {
+            msg.style.color = "#fef08a";
+            msg.textContent = friendlyMsg;
+        }
+    } else {
         if (msg) {
             msg.style.color = "#86efac";
             msg.textContent = `✓ Repeat call sent for Token #${tokenNum} (${patientName}).`;
         }
-
         await loadQueue();
-    } catch (e) {
-        console.error("Repeat call error:", e);
-        if (msg) {
-            msg.style.color = "#f87171";
-            msg.textContent = e.message || "Failed to repeat call.";
-        }
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = "<span>🔁</span> Repeat Call";
-        }
+    }
+
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = "<span>🔄</span> Repeat Call";
     }
 }
 
 async function completeCurrentToken() {
     if (!currentServingTokenObj) {
-        alert("No patient currently in consultation to complete.");
+        showToast("No patient currently in consultation to complete.", "⚠️");
         return;
     }
     const tokenId = currentServingTokenObj.id;
     const tokenNum = currentServingTokenObj.token_number;
+    const msg = document.getElementById("nextMessage");
 
-    try {
-        const res = await fetch(`${API_URL}/tokens/${tokenId}/complete`, {
-            method: "PUT",
-            headers: getHospitalAuthHeaders(true)
-        });
-        if (!res.ok) throw new Error("Could not complete consultation");
-
-        showToast(`Token #${tokenNum} completed!`, "✓");
-        await loadQueue();
-    } catch(e) {
-        alert("Complete consultation error: " + e.message);
+    if (msg) {
+        msg.style.color = "#93c5fd";
+        msg.textContent = `Completing consultation for Token #${tokenNum}...`;
     }
+
+    let success = false;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+            const res = await fetch(`${API_URL}/tokens/${tokenId}/complete`, {
+                method: "PUT",
+                headers: getHospitalAuthHeaders(true),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (res.status === 401) {
+                handleHospitalAuthExpired();
+                return;
+            }
+
+            if (!res.ok) {
+                let errText = "Could not complete consultation";
+                try {
+                    const errData = await res.json();
+                    errText = errData.detail || errText;
+                } catch (_) {
+                    errText = await res.text() || errText;
+                }
+                throw new Error(errText);
+            }
+
+            success = true;
+            break;
+        } catch (e) {
+            lastError = e;
+            if (attempt === 1) {
+                if (msg) msg.textContent = "Connecting to server...";
+                await new Promise(r => setTimeout(r, 1200));
+            }
+        }
+    }
+
+    if (!success) {
+        console.error("Complete consultation error:", lastError);
+        const friendlyMsg = lastError?.name === "AbortError"
+            ? "Server request timed out. Please try again."
+            : (lastError?.message === "Failed to fetch"
+                ? "Unable to connect to server. Please check your connection or retry."
+                : (lastError?.message || "Failed to complete consultation."));
+        if (msg) {
+            msg.style.color = "#f87171";
+            msg.textContent = friendlyMsg;
+        }
+        showToast(friendlyMsg, "⚠️");
+        return;
+    }
+
+    showToast(`Token #${tokenNum} completed!`, "✓");
+    if (msg) {
+        msg.style.color = "#86efac";
+        msg.textContent = `✓ Token #${tokenNum} completed successfully.`;
+    }
+    await loadQueue();
 }
 
 /* =====================================================
