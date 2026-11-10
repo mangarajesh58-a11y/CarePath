@@ -527,6 +527,7 @@
         const API = "https://carepath-3q9q.onrender.com";
         const hospitalId = localStorage.getItem("hospital_id") || "15";
         let lastAnnouncedToken = null;
+        let lastAnnouncedCallKey = null;
         let audioEnabled = true;
 
         // 1. Digital Clock
@@ -726,8 +727,10 @@
                         </div>
                     `;
 
-                    // Check if new token should be announced
-                    if (lastAnnouncedToken !== primary.id) {
+                    // Check if new token should be announced or repeat called
+                    const callKey = `${primary.id}_${primary.called_at || ''}`;
+                    if (lastAnnouncedCallKey !== callKey) {
+                        lastAnnouncedCallKey = callKey;
                         lastAnnouncedToken = primary.id;
                         announceToken(primary.token_number, primary.patient_name, primary.doctor);
                     }

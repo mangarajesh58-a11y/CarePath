@@ -458,8 +458,64 @@
 
         .hero-sub-actions {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            grid-template-columns: 1.15fr 1fr 1fr;
+            gap: 7px;
+        }
+
+        .btn-caller-repeat {
+            background: rgba(245, 158, 11, 0.22);
+            color: #fef08a;
+            border: 1px solid rgba(251, 191, 36, 0.45);
+            height: 40px;
+            border-radius: var(--radius-md);
+            font-size: 12.5px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            text-decoration: none;
+            backdrop-filter: blur(6px);
+            white-space: nowrap;
+        }
+
+        .btn-caller-repeat:hover {
+            background: rgba(245, 158, 11, 0.35);
+            border-color: rgba(251, 191, 36, 0.7);
+            color: #ffffff;
+        }
+
+        .btn-caller-repeat:active {
+            transform: scale(0.97);
+            background: rgba(245, 158, 11, 0.5);
+        }
+
+        .btn-caller-repeat:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .badge-recall-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            background: rgba(254, 240, 138, 0.18);
+            color: #fef08a;
+            border: 1px solid rgba(254, 240, 138, 0.35);
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .badge-recall-pill:hover {
+            background: rgba(254, 240, 138, 0.32);
+            color: #ffffff;
         }
 
         .btn-caller-secondary {
@@ -1214,6 +1270,11 @@
                 <div class="token-patient-meta">
                     <h3 id="heroPatientName">No Patient in Consultation</h3>
                     <p id="heroDoctorRoom">Select or call next token</p>
+                    <div id="heroServingRecallRow" style="margin-top: 6px; display: none;">
+                        <button type="button" class="badge-recall-pill" onclick="repeatCallCurrentPatient()" title="Call patient again">
+                            <span>🔁</span> Call Again
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1223,10 +1284,13 @@
                 <span>📢</span> Call Next Patient
             </button>
             <div class="hero-sub-actions">
-                <button type="button" class="btn-caller-secondary" onclick="completeCurrentToken()">
+                <button type="button" class="btn-caller-repeat" id="btnRepeatCall" onclick="repeatCallCurrentPatient()" title="Repeat call announcement and chime for currently called patient">
+                    <span>🔁</span> Repeat Call
+                </button>
+                <button type="button" class="btn-caller-secondary" onclick="completeCurrentToken()" title="Mark consultation completed">
                     <span>✓</span> Complete
                 </button>
-                <a href="display.html" target="_blank" class="btn-caller-secondary">
+                <a href="display.html" target="_blank" class="btn-caller-secondary" title="Open TV Screen for waiting room">
                     <span>📺</span> TV Screen
                 </a>
             </div>
@@ -2038,6 +2102,9 @@ async function loadQueue() {
             document.getElementById("heroDoctorRoom").textContent = `${current.doctor || 'OPD Doctor'} • ${current.department || 'Consultation'}`;
             document.getElementById("currentServingDoc").textContent = current.doctor || "In Consultation";
 
+            const recallWrap = document.getElementById("heroServingRecallRow");
+            if (recallWrap) recallWrap.style.display = "inline-flex";
+
             // If another doctor or nurse called a new token and this dashboard observes the transition
             if (lastAnnouncedServingTokenId !== null && lastAnnouncedServingTokenId !== current.id) {
                 announceCalledToken(current.token_number, current.patient_name, current.doctor);
@@ -2051,6 +2118,9 @@ async function loadQueue() {
             document.getElementById("heroPatientName").textContent = "No Patient in Consultation";
             document.getElementById("heroDoctorRoom").textContent = waiting.length > 0 ? "Click 'Call Next Patient' below" : "Queue is empty";
             document.getElementById("currentServingDoc").textContent = "No active consultation";
+
+            const recallWrap = document.getElementById("heroServingRecallRow");
+            if (recallWrap) recallWrap.style.display = "none";
         }
 
         renderQueueFeed(waiting);
@@ -2176,6 +2246,67 @@ async function callSpecificToken(tokenId, tokenNum, patientName, doctor) {
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = "<span>📢</span> Call Next Patient";
+        }
+    }
+}
+
+// REPEAT CALL CURRENT PATIENT IN CONSULTATION
+async function repeatCallCurrentPatient() {
+    unlockHospitalAutoplay();
+    const btn = document.getElementById("btnRepeatCall");
+    const msg = document.getElementById("nextMessage");
+
+    if (!currentServingTokenObj) {
+        showToast("No patient currently in consultation to repeat call.", "⚠️");
+        if (msg) {
+            msg.style.color = "#fef08a";
+            msg.textContent = "Call a patient first before repeating.";
+        }
+        return;
+    }
+
+    const tokenId = currentServingTokenObj.id;
+    const tokenNum = currentServingTokenObj.token_number;
+    const patientName = currentServingTokenObj.patient_name || "Patient";
+    const doctor = currentServingTokenObj.doctor || "OPD Doctor";
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = "<span>⏳</span> Calling...";
+    }
+    if (msg) {
+        msg.style.color = "#fef08a";
+        msg.textContent = `Repeating call for Token #${tokenNum}...`;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/tokens/${tokenId}/call`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders(true)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Unable to repeat call");
+
+        // Play dual chime and speech announcement immediately
+        announceCalledToken(tokenNum, patientName, doctor);
+        showToast(`Token #${tokenNum} called again!`, "🔁");
+
+        if (msg) {
+            msg.style.color = "#86efac";
+            msg.textContent = `✓ Repeat call sent for Token #${tokenNum} (${patientName}).`;
+        }
+
+        await loadQueue();
+    } catch (e) {
+        console.error("Repeat call error:", e);
+        if (msg) {
+            msg.style.color = "#f87171";
+            msg.textContent = e.message || "Failed to repeat call.";
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = "<span>🔁</span> Repeat Call";
         }
     }
 }
