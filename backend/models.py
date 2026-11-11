@@ -211,6 +211,11 @@ class Token(Base):
     id = Column(Integer, primary_key=True, index=True)
     patient_id = Column(Integer, nullable=True, index=True)
     patient_name = Column(String(255), nullable=False)
+    patient_email = Column(String(255), nullable=True)
+    patient_phone = Column(String(50), nullable=True)
+    booking_for = Column(String(50), default="self", nullable=True)
+    patient_age = Column(Integer, nullable=True)
+    patient_gender = Column(String(20), nullable=True)
     hospital = Column(String(255), nullable=False, index=True)
     hospital_id = Column(Integer, nullable=True, index=True)
 

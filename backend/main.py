@@ -1191,6 +1191,21 @@ def run_database_migration():
         "daily_token_limit":
             "INTEGER DEFAULT 50 NULL",
 
+        "patient_email":
+            "VARCHAR(255) NULL",
+
+        "patient_phone":
+            "VARCHAR(50) NULL",
+
+        "booking_for":
+            "VARCHAR(50) DEFAULT 'self' NULL",
+
+        "patient_age":
+            "INTEGER NULL",
+
+        "patient_gender":
+            "VARCHAR(20) NULL",
+
         "created_at":
             "TIMESTAMP NULL",
     }
@@ -2825,7 +2840,13 @@ class DoctorUpdateRequest(BaseModel):
 
 
 class TokenRequest(BaseModel):
-    patient_name: str
+    patient_name: Optional[str] = None
+    patient_email: Optional[str] = None
+    patient_phone: Optional[str] = None
+    booking_for: Optional[str] = "self"
+    patient_relation: Optional[str] = None
+    patient_age: Optional[int] = None
+    patient_gender: Optional[str] = None
     hospital: str
     department: str
     doctor: str
@@ -2833,15 +2854,16 @@ class TokenRequest(BaseModel):
     cashfree_order_id: str
 
 class CreateOrderRequest(BaseModel):
-
     patient_name: Optional[str] = None
-
+    patient_email: Optional[str] = None
+    patient_phone: Optional[str] = None
+    booking_for: Optional[str] = "self"
+    patient_relation: Optional[str] = None
+    patient_age: Optional[int] = None
+    patient_gender: Optional[str] = None
     hospital: str
-
     department: str
-
     doctor: str
-
     appointment_date: Optional[date] = None
 
 
@@ -3180,6 +3202,11 @@ def token_to_dict(token):
         "notes": getattr(token, "notes", None),
         "room_number": getattr(token, "room_number", None),
         "doctor_room_number": getattr(token, "room_number", None),
+        "patient_email": getattr(token, "patient_email", None),
+        "patient_phone": getattr(token, "patient_phone", None),
+        "booking_for": getattr(token, "booking_for", None) or "self",
+        "patient_age": getattr(token, "patient_age", None),
+        "patient_gender": getattr(token, "patient_gender", None),
     }
 
 
@@ -6001,9 +6028,35 @@ def create_token(
     )
 
 
+    booking_for = (getattr(data, "booking_for", None) or "self").strip().lower()
+    raw_custom_name = (getattr(data, "patient_name", None) or "").strip()
+    raw_custom_email = (getattr(data, "patient_email", None) or "").strip()
+    raw_custom_phone = (getattr(data, "patient_phone", None) or "").strip()
+    raw_relation = (getattr(data, "patient_relation", None) or "").strip()
+    patient_age = getattr(data, "patient_age", None)
+    patient_gender = (getattr(data, "patient_gender", None) or "").strip() or None
+
+    if booking_for != "self" and raw_custom_name:
+        if raw_relation and raw_relation.lower() != "other":
+            actual_patient_name = f"{raw_custom_name} ({raw_relation.capitalize()})"
+        else:
+            actual_patient_name = raw_custom_name
+        recipient_email = raw_custom_email if raw_custom_email else patient.email
+        patient_contact_phone = raw_custom_phone if raw_custom_phone else getattr(patient, "phone", None)
+    else:
+        booking_for = "self"
+        actual_patient_name = patient.full_name
+        recipient_email = patient.email
+        patient_contact_phone = getattr(patient, "phone", None)
+
     token = Token(
         patient_id=patient.id,
-        patient_name=patient.full_name,
+        patient_name=actual_patient_name,
+        patient_email=recipient_email,
+        patient_phone=patient_contact_phone,
+        booking_for=booking_for,
+        patient_age=patient_age,
+        patient_gender=patient_gender,
         hospital=hospital.name,
         hospital_id=hospital.id,
         department=data.department.strip(),
@@ -6032,12 +6085,13 @@ def create_token(
 
     # --- SEND AUTOMATED EMAIL BOOKING RECEIPT ---
     try:
-        patient_obj = db.query(Patient).filter(Patient.id == patient.id).first()
-        if patient_obj and patient_obj.email:
-            op_hours = hospital.operating_hours_12h if hasattr(hospital, "operating_hours_12h") else f"{hospital.opening_time or '09:00'} - {hospital.closing_time or '21:00'}"
+        op_hours = hospital.operating_hours_12h if hasattr(hospital, "operating_hours_12h") else f"{hospital.opening_time or '09:00'} - {hospital.closing_time or '21:00'}"
+        
+        # Primary recipient (e.g. Father's email if booked for father, or patient account email)
+        if recipient_email:
             send_token_confirmation_email(
-                to_email=patient_obj.email,
-                patient_name=patient_obj.full_name or "Patient",
+                to_email=recipient_email,
+                patient_name=actual_patient_name,
                 hospital_name=hospital.name,
                 doctor_name=doctor.name,
                 department=doctor.department or data.department,
@@ -6047,7 +6101,23 @@ def create_token(
                 amount=total_amount,
                 operating_hours=op_hours,
             )
-            logging.info("Token confirmation email dispatched to %s", patient_obj.email)
+            logging.info("Token confirmation email dispatched to %s", recipient_email)
+
+        # If recipient is different from account holder, also send a confirmation copy to the account holder
+        if patient.email and recipient_email and recipient_email.lower() != patient.email.lower():
+            send_token_confirmation_email(
+                to_email=patient.email,
+                patient_name=f"{actual_patient_name} (Booked by you)",
+                hospital_name=hospital.name,
+                doctor_name=doctor.name,
+                department=doctor.department or data.department,
+                token_number=token.token_number,
+                appointment_date=str(appointment_date),
+                payment_id=payment_id,
+                amount=total_amount,
+                operating_hours=op_hours,
+            )
+            logging.info("Token confirmation receipt copy dispatched to account owner %s", patient.email)
     except Exception as email_err:
         logging.warning("Booking confirmation email could not be delivered: %s", email_err)
 

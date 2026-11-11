@@ -208,6 +208,74 @@
             <input type="date" id="appointmentDate" required>
         </div>
 
+        <!-- BENEFICIARY SELECTION: MYSELF vs FAMILY MEMBER -->
+        <div class="card" id="patientBeneficiaryCard">
+            <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-weight: 800; color: #1e293b;">
+                <span>Who is visiting the doctor?</span>
+                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 999px;">Family Care</span>
+            </label>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                <label id="optBeneficiarySelf" style="padding: 12px; border: 2px solid #0284c7; background: #f0f9ff; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 700; color: #0369a1; transition: all 0.2s;">
+                    <input type="radio" name="bookingForChoice" value="self" checked onchange="handleBeneficiaryToggle('self')">
+                    <span>👤 Myself</span>
+                </label>
+                <label id="optBeneficiaryFamily" style="padding: 12px; border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 700; color: #475569; transition: all 0.2s;">
+                    <input type="radio" name="bookingForChoice" value="family" onchange="handleBeneficiaryToggle('family')">
+                    <span>👨‍👩‍👧 Family Member</span>
+                </label>
+            </div>
+
+            <!-- SELF INFO HINT -->
+            <div id="selfBeneficiaryHint" style="font-size: 12.5px; color: #475569; background: #f8fafc; padding: 10px 14px; border-radius: 10px; border: 1px solid #e2e8f0; line-height: 1.45;">
+                Token will be issued to <strong id="selfDisplayAccountName">You</strong>. The confirmation receipt will be delivered to your registered email (<strong id="selfDisplayAccountEmail">-</strong>).
+            </div>
+
+            <!-- FAMILY MEMBER DETAILS FORM -->
+            <div id="familyBeneficiaryForm" style="display: none; flex-direction: column; gap: 12px; margin-top: 10px;">
+                <div>
+                    <label style="font-size: 12px; color: #475569; margin-bottom: 5px; font-weight: 700;">Relation to you *</label>
+                    <select id="familyRelationSelect" onchange="onFamilyRelationChanged(this.value)" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-weight: 600; background: white; outline: none;">
+                        <option value="Father" selected>Father (पिताजी)</option>
+                        <option value="Mother">Mother (माताजी)</option>
+                        <option value="Spouse">Spouse (Husband / Wife)</option>
+                        <option value="Son">Son (बेटा)</option>
+                        <option value="Daughter">Daughter (बेटी)</option>
+                        <option value="Brother">Brother</option>
+                        <option value="Sister">Sister</option>
+                        <option value="Grandfather">Grandfather</option>
+                        <option value="Grandmother">Grandmother</option>
+                        <option value="Other">Other / Relative</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="font-size: 12px; color: #475569; margin-bottom: 5px; font-weight: 700;">Patient's Full Name *</label>
+                    <input type="text" id="familyPatientName" placeholder="e.g. Ramesh Kumar" maxlength="150" oninput="refreshButton()" style="width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14.5px; outline: none;">
+                    <div style="font-size: 11px; color: #64748b; margin-top: 3px;">The doctor and hospital OPD screen will call the patient by this name.</div>
+                </div>
+
+                <div>
+                    <label style="font-size: 12px; color: #475569; margin-bottom: 5px; font-weight: 700;">Patient's Email (For Direct Token Slip & Receipt) *</label>
+                    <input type="email" id="familyPatientEmail" placeholder="e.g. father@gmail.com" oninput="refreshButton()" style="width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14.5px; outline: none;">
+                    <div style="font-size: 11.5px; color: #0284c7; margin-top: 4px; font-weight: 600;">
+                        ✓ The official token slip & receipt will be emailed directly to your father's email so he has it on his phone!
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 12px; color: #475569; margin-bottom: 5px; font-weight: 700;">Patient Mobile (Optional)</label>
+                        <input type="tel" id="familyPatientPhone" placeholder="10-digit mobile" maxlength="15" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; color: #475569; margin-bottom: 5px; font-weight: 700;">Patient Age (Optional)</label>
+                        <input type="number" id="familyPatientAge" placeholder="e.g. 65" min="1" max="120" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card fees">
             <div class="row">
                 <span class="label">Hospital token fee</span>
@@ -282,11 +350,13 @@
     </section>
 </main>
 
-<script src="https://sdk.cashfree.com/js/v3/cashfree.js">
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script>
 function shareTokenSlipWhatsApp() {
     const details = window.lastBookedTokenDetails;
     const tokenNum = (details && details.token && details.token.token_number) || byId("tokenNumber").textContent || "—";
-    const patientName = byId("receiptPatient").textContent || stored("patientName") || "Patient";
+    const patientName = (details && details.token && details.token.patient_name) || byId("receiptPatient").textContent || stored("patientName") || "Patient";
+    const receiptEmail = (details && details.token && details.token.patient_email) || (byId("receiptEmailDisplay") && byId("receiptEmailDisplay").textContent) || "";
     const doctor = (details && details.doctor) || byId("resultDoctor").textContent || "Consultant";
     const hospital = (details && details.hospital) || byId("resultHospital").textContent || "CarePath Hospital";
     const apptDate = byId("resultDate").textContent || "—";
@@ -305,7 +375,7 @@ function shareTokenSlipWhatsApp() {
 🚪 *Consultation Room:* ${room}
 🏢 *Hospital:* ${hospital}
 📅 *Appointment Date:* ${apptDate}
-⏱️ *Estimated Consultation Time:* ${estTime}
+⏱️ *Estimated Consultation Time:* ${estTime}${receiptEmail ? `\n✉️ *Receipt Emailed To:* ${receiptEmail}` : ""}
 
 📍 *Hospital Directions (Google Maps):*
 ${mapsUrl}
@@ -319,6 +389,49 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
     window.open(waUrl, "_blank");
 }
 
+function handleBeneficiaryToggle(choice) {
+    const isFamily = choice === 'family';
+    const familyCard = byId('familyBeneficiaryForm');
+    const selfHint = byId('selfBeneficiaryHint');
+    if (familyCard) familyCard.style.display = isFamily ? 'block' : 'none';
+    if (selfHint) selfHint.style.display = isFamily ? 'none' : 'block';
+    refreshButton();
+}
+
+function onFamilyRelationChanged(val) {
+    const emailHint = byId('familyPatientEmail');
+    if (emailHint) {
+        emailHint.placeholder = val ? `e.g. ${val.toLowerCase()}@gmail.com` : "e.g. father@gmail.com";
+    }
+}
+
+function getBeneficiaryData() {
+    const isFamily = document.querySelector('input[name="bookingForChoice"]:checked')?.value === "family";
+    if (!isFamily) {
+        return {
+            booking_for: "self",
+            patient_name: stored("patientName", "patient_name", "full_name") || "Self",
+            patient_email: stored("patientEmail", "patient_email", "email") || "",
+            patient_phone: stored("patientPhone", "patient_phone", "phone") || "",
+            patient_relation: "Self",
+            patient_age: null
+        };
+    }
+    const rel = byId("familyRelation")?.value || "Family";
+    const name = (byId("familyPatientName")?.value || "").trim();
+    const email = (byId("familyPatientEmail")?.value || "").trim();
+    const phone = (byId("familyPatientPhone")?.value || "").trim();
+    const ageVal = byId("familyPatientAge")?.value;
+    const age = ageVal ? parseInt(ageVal, 10) : null;
+    return {
+        booking_for: "family",
+        patient_name: name ? `${name} (${rel})` : `Family Member (${rel})`,
+        patient_email: email,
+        patient_phone: phone,
+        patient_relation: rel,
+        patient_age: age
+    };
+}
 </script>
 <script>
 "use strict";
@@ -383,7 +496,7 @@ function setBusy(busy, label) {
 }
 
 function isBookingReady() {
-    return Boolean(
+    const basicReady = Boolean(
         hospitalId &&
         getSelectedHospitalName() &&
         getSelectedDepartment() &&
@@ -392,6 +505,16 @@ function isBookingReady() {
         Number.isFinite(hospitalFee) &&
         hospitalFee >= 0
     );
+    if (!basicReady) return false;
+
+    const isFamily = document.querySelector('input[name="bookingForChoice"]:checked')?.value === "family";
+    if (isFamily) {
+        const name = (byId("familyPatientName")?.value || "").trim();
+        const email = (byId("familyPatientEmail")?.value || "").trim();
+        if (!name) return false;
+        if (!email || !email.includes("@")) return false;
+    }
+    return true;
 }
 
 function refreshButton() {
@@ -485,6 +608,12 @@ function displayBooking() {
     }
 
     validateAppointmentDate();
+
+    const selfName = stored("patientName", "patient_name", "full_name") || "Account Holder";
+    const selfEmail = stored("patientEmail", "patient_email", "email") || "Registered Email";
+    if (byId("selfDisplayAccountName")) byId("selfDisplayAccountName").textContent = selfName;
+    if (byId("selfDisplayAccountEmail")) byId("selfDisplayAccountEmail").textContent = selfEmail;
+
     refreshButton();
     fetchDynamicPlatformFee();
 }
@@ -641,8 +770,16 @@ async function createCashfreeOrder() {
         throw new Error("Please select an appointment date.");
     }
 
+    const bData = getBeneficiaryData();
+    localStorage.setItem("pendingBeneficiaryDetails", JSON.stringify(bData));
+
     const payload = {
-        patient_name: stored("patientName", "patient_name", "full_name") || "Patient",
+        patient_name: bData.patient_name || stored("patientName", "patient_name", "full_name") || "Patient",
+        patient_email: bData.patient_email || "",
+        patient_phone: bData.patient_phone || "",
+        booking_for: bData.booking_for || "self",
+        patient_relation: bData.patient_relation || "Self",
+        patient_age: bData.patient_age || null,
         hospital: getSelectedHospitalName(),
         department: getSelectedDepartment(),
         doctor: getSelectedDoctor(),
@@ -741,6 +878,13 @@ async function verifyPaymentAndCreateToken(orderId) {
     try {
         const appointmentDate = stored("selectedAppointmentDate", "appointmentDate");
 
+        let bData = null;
+        try {
+            const raw = localStorage.getItem("pendingBeneficiaryDetails");
+            if (raw) bData = JSON.parse(raw);
+        } catch (e) {}
+        if (!bData) bData = getBeneficiaryData();
+
         const response = await fetch(`${API}/payments/verify`, {
             method: "POST",
             headers: {
@@ -748,7 +892,12 @@ async function verifyPaymentAndCreateToken(orderId) {
                 "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify({
-                patient_name: stored("patientName", "patient_name", "full_name") || "Patient",
+                patient_name: (bData && bData.patient_name) || stored("patientName", "patient_name", "full_name") || "Patient",
+                patient_email: (bData && bData.patient_email) || "",
+                patient_phone: (bData && bData.patient_phone) || "",
+                booking_for: (bData && bData.booking_for) || "self",
+                patient_relation: (bData && bData.patient_relation) || "Self",
+                patient_age: (bData && bData.patient_age) || null,
                 hospital: getSelectedHospitalName(),
                 department: getSelectedDepartment(),
                 doctor: getSelectedDoctor(),
@@ -777,7 +926,8 @@ async function verifyPaymentAndCreateToken(orderId) {
             paymentId: data.payment_id || orderId,
             fee: hospitalFee,
             platformFee: PLATFORM_FEE,
-            total: hospitalFee + PLATFORM_FEE
+            total: hospitalFee + PLATFORM_FEE,
+            bData: bData
         });
 
         showMessage("Payment confirmed! Your OPD consultation token has been generated.", "success");
@@ -813,7 +963,8 @@ function showReceipt(details) {
         paymentId,
         fee,
         platformFee,
-        total
+        total,
+        bData
     } = details;
 
     byId("bookingSection").style.display = "none";
@@ -834,7 +985,15 @@ function showReceipt(details) {
     byId("receiptTokenId").textContent = token.id ?? "—";
     byId("receiptOrderId").textContent = orderId || "—";
     byId("receiptPaymentId").textContent = paymentId || "—";
-    byId("receiptPatient").textContent = stored("patientName", "patient_name", "full_name") || "Patient";
+
+    const actualPatient = (token && token.patient_name) || (bData && bData.patient_name) || stored("patientName", "patient_name", "full_name") || "Patient";
+    const receiptEmail = (token && token.patient_email) || (bData && bData.patient_email) || stored("patientEmail", "patient_email", "email") || "—";
+
+    byId("receiptPatient").textContent = actualPatient;
+    if (byId("receiptEmailDisplay")) {
+        byId("receiptEmailDisplay").textContent = receiptEmail;
+    }
+
     byId("receiptFee").textContent = money(fee);
     byId("receiptPlatformFee").textContent = money(platformFee);
     byId("receiptTotal").textContent = money(total);

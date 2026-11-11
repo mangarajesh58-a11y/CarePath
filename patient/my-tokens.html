@@ -651,8 +651,12 @@
                   <span class="lbl">Token</span>
                 </div>
                 <div class="token-details">
-                  <h3>${t.hospital || "Hospital"}</h3>
-                  <p>Department: <strong>${t.department || "General"}</strong></p>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                    <span style="font-size: 14.5px; font-weight: 800; color: #0f172a;">👤 ${escapeHtml(t.patient_name || patientName)}</span>
+                    ${t.booking_for === "family" ? `<span style="font-size: 10.5px; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 12px; font-weight: 700;">Family</span>` : ""}
+                  </div>
+                  <h3 style="font-size: 14.5px; font-weight: 700; color: #0284c7; margin: 0;">🏥 ${escapeHtml(t.hospital || "Hospital")}</h3>
+                  <p style="margin: 2px 0 0; font-size: 12.5px; color: #64748b;">Department: <strong>${escapeHtml(t.department || "General")}</strong></p>
                 </div>
               </div>
               <span class="status-pill ${statusClass}">${statusText}</span>
@@ -699,6 +703,10 @@
             <div class="token-card-body">
               <div class="info-grid">
                 <div class="info-item">
+                  <div class="info-label">Patient</div>
+                  <div class="info-value" style="font-weight: 700; color: #0f172a;">👤 ${escapeHtml(t.patient_name || patientName)}</div>
+                </div>
+                <div class="info-item">
                   <div class="info-label">Doctor</div>
                   <div class="info-value">👨‍⚕️ ${t.doctor || "Consultant Doctor"}</div>
                 </div>
@@ -713,6 +721,10 @@
                 <div class="info-item">
                   <div class="info-label">Appointment Date</div>
                   <div class="info-value">📅 ${formattedDate}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Receipt Sent To</div>
+                  <div class="info-value" style="font-size: 12px; color: #0284c7; word-break: break-all;">✉️ ${escapeHtml(t.patient_email || "Registered Email")}</div>
                 </div>
                 <div class="info-item">
                   <div class="info-label">Booked At</div>
@@ -764,7 +776,8 @@
         </div>
 
         <div style="background: #f8fafc; border-radius: 12px; padding: 14px 16px; border: 1px dashed #cbd5e1; margin-bottom: 16px;">
-          <div class="receipt-row"><span style="color:#64748b;">Patient</span><strong>${t.patient_name || patientName}</strong></div>
+          <div class="receipt-row"><span style="color:#64748b;">Patient</span><strong>${escapeHtml(t.patient_name || patientName)}</strong></div>
+          ${t.patient_email ? `<div class="receipt-row"><span style="color:#64748b;">Receipt Emailed To</span><strong style="color: #0284c7;">✉️ ${escapeHtml(t.patient_email)}</strong></div>` : ""}
           <div class="receipt-row"><span style="color:#64748b;">Hospital</span><strong>${t.hospital || "—"}</strong></div>
           <div class="receipt-row"><span style="color:#64748b;">Department</span><strong>${t.department || "—"}</strong></div>
           <div class="receipt-row"><span style="color:#64748b;">Doctor</span><strong>${t.doctor || "—"}</strong></div>
@@ -1016,7 +1029,7 @@
 🚪 *Consultation Room:* ${rawRoom}
 🏢 *Hospital:* ${hospName}
 📅 *Appointment Date:* ${formatApptDate(t.appointment_date)}
-⏱️ *Estimated Consultation Time:* ${t.estimated_time_12h || t.scheduled_time_12h || 'Check Live Queue'}
+⏱️ *Estimated Consultation Time:* ${t.estimated_time_12h || t.scheduled_time_12h || 'Check Live Queue'}${t.patient_email ? `\n✉️ *Receipt Emailed To:* ${t.patient_email}` : ""}
 
 📍 *Hospital Directions (Google Maps):*
 ${mapsUrl}
