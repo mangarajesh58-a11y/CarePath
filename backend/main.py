@@ -744,6 +744,269 @@ CarePath Healthcare Team
     return True
 
 
+def send_family_token_pass_email(
+    to_email: str,
+    patient_name: str,
+    booked_by_name: str,
+    hospital_name: str,
+    doctor_name: str,
+    department: str,
+    room_number: str,
+    token_number: int,
+    appointment_date: str,
+    operating_hours: str = "09:00 AM - 09:00 PM",
+):
+    """Dispatches a dedicated OPD Appointment Pass to the family member who is visiting the hospital."""
+    subject = f"Hospital OPD Pass: Token #{token_number} - {hospital_name}"
+    body_text = f"""Hello {patient_name},
+
+Your hospital OPD appointment pass for Token #{token_number} at {hospital_name} has been booked for you by {booked_by_name}!
+
+Appointment Details:
+- Token Number: #{token_number}
+- Patient: {patient_name}
+- Hospital: {hospital_name}
+- Doctor: Dr. {doctor_name} ({department})
+- Consultation Room: {room_number}
+- Appointment Date: {appointment_date}
+- OPD Timings: {operating_hours}
+- Fee: Prepaid Online by {booked_by_name}
+
+Instructions:
+Please present this token #{token_number} or show this email pass at the hospital reception or doctor's room ({room_number}) when called.
+
+Thank you for using CarePath!
+CarePath Healthcare Team
+"""
+
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OPD Pass #{token_number}</title>
+</head>
+<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9;">
+  <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06);">
+    <!-- Header with CarePath App Logo -->
+    <div style="background: linear-gradient(135deg, #0284c7, #2563eb); padding: 24px 20px; text-align: center; color: white;">
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; text-align: center;">
+        <tr>
+          <td style="vertical-align: middle; padding-right: 14px;">
+            <img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="CarePath Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+          </td>
+          <td style="vertical-align: middle; text-align: left;">
+            <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; line-height: 1.1;">CarePath</div>
+            <div style="font-size: 13px; color: #e0f2fe; margin-top: 3px; font-weight: 500;">Hospital OPD Appointment Pass</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Big Token Highlight Circle -->
+    <div style="padding: 24px 28px; text-align: center; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+      <span style="font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Your OPD Consultation Token</span>
+      <div style="margin: 12px auto; width: 100px; height: 100px; line-height: 100px; background: #0284c7; color: white; border-radius: 50%; font-size: 38px; font-weight: 800; box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);">
+        #{token_number}
+      </div>
+      <span style="display: inline-block; background: #dcfce7; color: #15803d; font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px;">
+        CONFIRMED &amp; PREPAID
+      </span>
+      <p style="margin: 10px 0 0; font-size: 13px; color: #64748b;">Booked on your behalf by <strong>{booked_by_name}</strong></p>
+    </div>
+
+    <!-- Appointment Pass Table -->
+    <div style="padding: 24px 28px;">
+      <h3 style="margin: 0 0 14px; font-size: 16px; color: #0f172a; font-weight: 700;">Patient &amp; Hospital Details</h3>
+      
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Patient</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">{patient_name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Hospital</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">{hospital_name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Doctor</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">Dr. {doctor_name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Department</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">{department}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Consultation Room</td>
+          <td style="padding: 10px 0; color: #0284c7; font-weight: 700; text-align: right;">{room_number}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Appointment Date</td>
+          <td style="padding: 10px 0; color: #0284c7; font-weight: 700; text-align: right;">{appointment_date}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">OPD Timings</td>
+          <td style="padding: 10px 0; color: #0f172a; text-align: right;">{operating_hours}</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 0; color: #64748b;">Consultation Fee</td>
+          <td style="padding: 10px 0; color: #16a34a; font-weight: 700; text-align: right;">Prepaid Online by {booked_by_name}</td>
+        </tr>
+      </table>
+
+      <!-- Instructions Callout -->
+      <div style="margin-top: 20px; background: #ecfdf5; border-left: 4px solid #10b981; padding: 14px 16px; border-radius: 6px; font-size: 13px; color: #065f46; line-height: 1.5;">
+        <strong>How to use this pass:</strong> Simply show this digital token pass #{token_number} at the hospital reception or doctor room ({room_number}) when your turn is announced. No payment is needed at the counter.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+      &copy; 2026 CarePath Healthcare Technologies. Official Patient Appointment Pass.
+    </div>
+  </div>
+</body>
+</html>"""
+
+    return send_carepath_email(to_email, subject, body_text, html_content)
+
+
+def send_payer_payment_receipt_email(
+    to_email: str,
+    payer_name: str,
+    beneficiary_name: str,
+    beneficiary_email: str,
+    hospital_name: str,
+    doctor_name: str,
+    department: str,
+    token_number: int,
+    appointment_date: str,
+    payment_id: str,
+    token_fee: float,
+    platform_fee: float,
+    total_amount: float,
+):
+    """Dispatches an official Payment Invoice & Tax Receipt to the account owner who paid the bill."""
+    subject = f"Payment Receipt: Token #{token_number} at {hospital_name} (for {beneficiary_name})"
+    body_text = f"""Hello {payer_name},
+
+This is your official CarePath payment receipt and tax invoice for the OPD consultation booked for {beneficiary_name}.
+
+Payment & Booking Summary:
+- Token Number: #{token_number}
+- Beneficiary Patient: {beneficiary_name}
+- Hospital: {hospital_name}
+- Doctor: Dr. {doctor_name} ({department})
+- Appointment Date: {appointment_date}
+- Hospital Token Fee: ₹{token_fee:.2f}
+- Platform Convenience Fee: ₹{platform_fee:.2f}
+- Total Paid: ₹{total_amount:.2f}
+- Payment Status: Paid & Verified
+- Cashfree Transaction Ref: {payment_id}
+
+Note: The official Hospital OPD Appointment Pass has been dispatched directly to {beneficiary_name} at {beneficiary_email}.
+
+Thank you for choosing CarePath!
+CarePath Healthcare Team
+"""
+
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Receipt - Token #{token_number}</title>
+</head>
+<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9;">
+  <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06);">
+    <!-- Header with CarePath App Logo -->
+    <div style="background: linear-gradient(135deg, #0f172a, #1e293b); padding: 24px 20px; text-align: center; color: white;">
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; text-align: center;">
+        <tr>
+          <td style="vertical-align: middle; padding-right: 14px;">
+            <img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="CarePath Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); object-fit: cover;" />
+          </td>
+          <td style="vertical-align: middle; text-align: left;">
+            <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; line-height: 1.1;">CarePath Invoice</div>
+            <div style="font-size: 13px; color: #94a3b8; margin-top: 3px; font-weight: 500;">Official Payment &amp; Tax Receipt</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Payment Highlight -->
+    <div style="padding: 24px 28px; text-align: center; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+      <span style="font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Total Amount Paid</span>
+      <div style="margin: 8px 0; font-size: 38px; font-weight: 800; color: #16a34a;">
+        ₹{total_amount:.2f}
+      </div>
+      <span style="display: inline-block; background: #dcfce7; color: #15803d; font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px;">
+        PAYMENT CONFIRMED &amp; VERIFIED
+      </span>
+      <p style="margin: 10px 0 0; font-size: 13px; color: #64748b;">Booked for <strong>{beneficiary_name}</strong> (Token #{token_number})</p>
+    </div>
+
+    <!-- Breakdown Details Table -->
+    <div style="padding: 24px 28px;">
+      <h3 style="margin: 0 0 14px; font-size: 16px; color: #0f172a; font-weight: 700;">Tax Invoice &amp; Payment Summary</h3>
+      
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Payer (Account Owner)</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">{payer_name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Beneficiary Patient</td>
+          <td style="padding: 10px 0; color: #0284c7; font-weight: 700; text-align: right;">{beneficiary_name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Token Allocated</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 700; text-align: right;">#{token_number}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Hospital</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">{hospital_name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Doctor</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">Dr. {doctor_name} ({department})</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Appointment Date</td>
+          <td style="padding: 10px 0; color: #0f172a; text-align: right;">{appointment_date}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">Hospital Consultation Fee</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">₹{token_fee:.2f}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; color: #64748b;">CarePath Convenience Fee</td>
+          <td style="padding: 10px 0; color: #0f172a; font-weight: 600; text-align: right;">₹{platform_fee:.2f}</td>
+        </tr>
+        <tr style="border-top: 2px solid #e2e8f0;">
+          <td style="padding: 12px 0; color: #0f172a; font-weight: 800; font-size: 15px;">Total Paid</td>
+          <td style="padding: 12px 0; color: #16a34a; font-weight: 800; font-size: 16px; text-align: right;">₹{total_amount:.2f}</td>
+        </tr>
+      </table>
+
+      <!-- Dispatch Notice Callout -->
+      <div style="margin-top: 20px; background: #eff6ff; border-left: 4px solid #2563eb; padding: 14px 16px; border-radius: 6px; font-size: 13px; color: #1e40af; line-height: 1.5;">
+        <strong>Direct Pass Delivery:</strong> An official Hospital OPD Appointment Pass has been automatically dispatched directly to <strong>{beneficiary_name}</strong> at <code style="background: #dbeafe; padding: 2px 6px; border-radius: 4px; color: #1e3a8a;">{beneficiary_email}</code> so they can visit the hospital hassle-free.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+      Cashfree Payment Ref: <code style="font-size: 11px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; color: #334155;">{payment_id}</code><br>
+      &copy; 2026 CarePath Healthcare Technologies. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>"""
+
+    return send_carepath_email(to_email, subject, body_text, html_content)
+
+
 def send_token_confirmation_email(
     to_email: str,
     patient_name: str,
@@ -6190,43 +6453,64 @@ def create_token(
         print("Token creation error:", str(error))
         raise HTTPException(status_code=500, detail="Unable to create the hospital token.")
 
-    # --- SEND AUTOMATED EMAIL BOOKING RECEIPT ---
+    # --- SEND AUTOMATED SPLIT EMAIL RECEIPTS (FAMILY PASS & MAIN ACCOUNT INVOICE) ---
     try:
         op_hours = hospital.operating_hours_12h if hasattr(hospital, "operating_hours_12h") else f"{hospital.opening_time or '09:00'} - {hospital.closing_time or '21:00'}"
-        
-        # Primary recipient (e.g. Family member if booking for family, otherwise patient account email)
-        target_email = recipient_email if (booking_for != "self" and recipient_email) else (patient.email or recipient_email)
-        
-        if target_email:
-            send_token_confirmation_email(
-                to_email=target_email,
-                patient_name=actual_patient_name,
-                hospital_name=hospital.name,
-                doctor_name=doctor.name,
-                department=doctor.department or data.department,
-                token_number=token.token_number,
-                appointment_date=str(appointment_date),
-                payment_id=payment_id,
-                amount=total_amount,
-                operating_hours=op_hours,
-            )
-            logging.info("Token confirmation receipt email dispatched to %s (booking_for: %s)", target_email, booking_for)
+        room_display = (doctor.room_number if doctor and doctor.room_number else "OPD Consultation Room")
+        if not room_display.startswith("Room") and not room_display.startswith("Cabin"):
+            room_display = f"Room {room_display}"
 
-        # If booking for a family member, ALSO send a confirmation receipt copy to the account owner (payer)
-        if booking_for != "self" and patient.email and target_email and patient.email.lower() != target_email.lower():
-            send_token_confirmation_email(
-                to_email=patient.email,
-                patient_name=f"{actual_patient_name} (Booked by you)",
+        if booking_for != "self" and recipient_email:
+            # 1. Family Member receives their dedicated Hospital OPD Appointment Pass (entry pass for doctor consultation)
+            send_family_token_pass_email(
+                to_email=recipient_email,
+                patient_name=actual_patient_name,
+                booked_by_name=patient.full_name or "Family Member",
                 hospital_name=hospital.name,
                 doctor_name=doctor.name,
                 department=doctor.department or data.department,
+                room_number=room_display,
                 token_number=token.token_number,
                 appointment_date=str(appointment_date),
-                payment_id=payment_id,
-                amount=total_amount,
                 operating_hours=op_hours,
             )
-            logging.info("Token confirmation receipt copy dispatched to account owner %s", patient.email)
+            logging.info("Hospital OPD Appointment Pass automatically dispatched to family email: %s", recipient_email)
+
+            # 2. Main Account Owner (payer) receives their official Payment Invoice & Tax Receipt
+            if patient.email:
+                send_payer_payment_receipt_email(
+                    to_email=patient.email,
+                    payer_name=patient.full_name or "Account Owner",
+                    beneficiary_name=actual_patient_name,
+                    beneficiary_email=recipient_email,
+                    hospital_name=hospital.name,
+                    doctor_name=doctor.name,
+                    department=doctor.department or data.department,
+                    token_number=token.token_number,
+                    appointment_date=str(appointment_date),
+                    payment_id=payment_id,
+                    token_fee=float(token_fee or 0.0),
+                    platform_fee=float(platform_fee or 0.0),
+                    total_amount=float(total_amount or 0.0),
+                )
+                logging.info("Official Payment Invoice Receipt automatically dispatched to main account email: %s", patient.email)
+        else:
+            # Booking for self: single combined pass & payment confirmation
+            target_email = patient.email or recipient_email
+            if target_email:
+                send_token_confirmation_email(
+                    to_email=target_email,
+                    patient_name=actual_patient_name,
+                    hospital_name=hospital.name,
+                    doctor_name=doctor.name,
+                    department=doctor.department or data.department,
+                    token_number=token.token_number,
+                    appointment_date=str(appointment_date),
+                    payment_id=payment_id,
+                    amount=total_amount,
+                    operating_hours=op_hours,
+                )
+                logging.info("Token confirmation receipt email dispatched to %s", target_email)
     except Exception as email_err:
         logging.warning("Booking confirmation email could not be delivered: %s", email_err)
 
@@ -6268,19 +6552,58 @@ def resend_token_receipt(
         raise HTTPException(status_code=400, detail="No valid recipient email address provided.")
 
     payment_ref = token.cashfree_payment_id or token.cashfree_order_id or str(token.id)
+    room_display = (token.room_number if token.room_number else "OPD Consultation Room")
+    if not room_display.startswith("Room") and not room_display.startswith("Cabin"):
+        room_display = f"Room {room_display}"
 
-    success = send_token_confirmation_email(
-        to_email=target_email,
-        patient_name=token.patient_name or "Patient",
-        hospital_name=h_name,
-        doctor_name=token.doctor or "Doctor",
-        department=token.department or "General",
-        token_number=token.token_number,
-        appointment_date=str(token.appointment_date),
-        payment_id=payment_ref,
-        amount=float(token.total_amount or 0.0),
-        operating_hours=op_hours,
-    )
+    is_family_booking = (token.booking_for or "").strip().lower() != "self"
+    is_main_account = patient and patient.email and target_email.strip().lower() == patient.email.strip().lower()
+
+    if is_family_booking and not is_main_account:
+        # 1. Dedicated OPD Appointment Pass for family member
+        success = send_family_token_pass_email(
+            to_email=target_email,
+            patient_name=token.patient_name or "Family Member",
+            booked_by_name=(patient.full_name if patient else "Family Member"),
+            hospital_name=h_name,
+            doctor_name=token.doctor or "Doctor",
+            department=token.department or "General",
+            room_number=room_display,
+            token_number=token.token_number,
+            appointment_date=str(token.appointment_date),
+            operating_hours=op_hours,
+        )
+    elif is_family_booking and is_main_account:
+        # 2. Dedicated Payment Invoice for the main account owner
+        success = send_payer_payment_receipt_email(
+            to_email=target_email,
+            payer_name=(patient.full_name if patient else "Account Owner"),
+            beneficiary_name=token.patient_name or "Family Member",
+            beneficiary_email=token.patient_email or "Family Member",
+            hospital_name=h_name,
+            doctor_name=token.doctor or "Doctor",
+            department=token.department or "General",
+            token_number=token.token_number,
+            appointment_date=str(token.appointment_date),
+            payment_id=payment_ref,
+            token_fee=float(token.token_fee or 0.0),
+            platform_fee=float(token.platform_fee or 0.0),
+            total_amount=float(token.total_amount or 0.0),
+        )
+    else:
+        # Standard combined token confirmation
+        success = send_token_confirmation_email(
+            to_email=target_email,
+            patient_name=token.patient_name or "Patient",
+            hospital_name=h_name,
+            doctor_name=token.doctor or "Doctor",
+            department=token.department or "General",
+            token_number=token.token_number,
+            appointment_date=str(token.appointment_date),
+            payment_id=payment_ref,
+            amount=float(token.total_amount or 0.0),
+            operating_hours=op_hours,
+        )
 
     if not success:
         raise HTTPException(status_code=500, detail="Failed to dispatch receipt email. Please verify the email address.")
