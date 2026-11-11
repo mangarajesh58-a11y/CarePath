@@ -114,16 +114,25 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-CASHFREE_CLIENT_ID = os.getenv("CASHFREE_CLIENT_ID")
-CASHFREE_CLIENT_SECRET = os.getenv("CASHFREE_CLIENT_SECRET")
-CASHFREE_ENV = os.getenv("CASHFREE_ENV", "sandbox").strip().lower()
+CASHFREE_CLIENT_ID = (os.getenv("CASHFREE_CLIENT_ID") or "").strip()
+CASHFREE_CLIENT_SECRET = (os.getenv("CASHFREE_CLIENT_SECRET") or "").strip()
+cf_env_raw = (os.getenv("CASHFREE_ENV") or "").strip().lower()
+if cf_env_raw in ("production", "prod", "live"):
+    CASHFREE_ENV = "production"
+elif cf_env_raw in ("sandbox", "test"):
+    CASHFREE_ENV = "sandbox"
+elif CASHFREE_CLIENT_SECRET.startswith("cfsk_ma_prod_"):
+    CASHFREE_ENV = "production"
+else:
+    CASHFREE_ENV = "sandbox"
+
 CASHFREE_BASE_URL = (
     "https://api.cashfree.com/pg"
     if CASHFREE_ENV == "production"
     else "https://sandbox.cashfree.com/pg"
 )
 
-CASHFREE_API_VERSION = "2025-01-01"
+CASHFREE_API_VERSION = "2023-08-01"
 
 def create_cashfree_vendor(
     vendor_id: str,
@@ -191,18 +200,18 @@ def create_cashfree_vendor(
         )
 
         if response.status_code not in (200, 201):
-            print(
-                "Cashfree vendor creation failed:",
-                response.status_code,
-            )
-            print(
-                "Cashfree response:",
-                response.text,
-            )
+            logging.warning("Cashfree vendor creation failed: %s %s", response.status_code, response.text)
+            err_msg = "Unable to create Cashfree vendor."
+            try:
+                err_data = response.json()
+                if "message" in err_data:
+                    err_msg = f"Cashfree: {err_data['message']}"
+            except Exception:
+                pass
 
             raise HTTPException(
                 status_code=400,
-                detail="Unable to create Cashfree vendor.",
+                detail=err_msg,
             )
 
         return response.json()
@@ -5895,37 +5904,31 @@ def save_payment_account(
     hospital.payment_upi = data.upi
 
     # ------------------------------------------------------------
-    # CREATE CASHFREE VENDOR
+    # CREATE CASHFREE VENDOR (Easy Split)
     # ------------------------------------------------------------
 
     if not hospital.cashfree_vendor_id:
-
         vendor_id = f"carepath_hospital_{hospital.id}"
-
-        cashfree_response = create_cashfree_vendor(
-            vendor_id=vendor_id,
-            name=hospital.name,
-            email=hospital.email,
-            phone=hospital.phone,
-            bank_account_number=data.account_number,
-            bank_ifsc=data.ifsc,
-            bank_account_holder=data.account_name,
-            upi_id=data.upi,
-        )
-
-        # Save Cashfree vendor ID
-        hospital.cashfree_vendor_id = (
-            cashfree_response.get("vendor_id")
-            or vendor_id
-        )
-
-        # Save Cashfree vendor status
-        cashfree_status = cashfree_response.get("status")
-
-        if cashfree_status:
-            hospital.payment_account_status = cashfree_status
-        else:
-            hospital.payment_account_status = "IN_BENE_CREATION"
+        try:
+            cashfree_response = create_cashfree_vendor(
+                vendor_id=vendor_id,
+                name=hospital.name,
+                email=hospital.email,
+                phone=hospital.phone,
+                bank_account_number=data.account_number,
+                bank_ifsc=data.ifsc,
+                bank_account_holder=data.account_name,
+                upi_id=data.upi,
+            )
+            hospital.cashfree_vendor_id = (
+                cashfree_response.get("vendor_id")
+                or vendor_id
+            )
+            hospital.payment_account_status = cashfree_response.get("status") or "ACTIVE"
+        except Exception as cf_err:
+            logging.warning("Cashfree vendor creation deferred: %s", cf_err)
+            hospital.cashfree_vendor_id = vendor_id
+            hospital.payment_account_status = "SAVED_LOCAL"
 
     else:
         # Vendor already exists
@@ -6003,7 +6006,7 @@ def create_cashfree_order(
     if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
         raise HTTPException(
             status_code=500,
-            detail="Cashfree Sandbox credentials are not configured.",
+            detail="Cashfree payment gateway credentials are not configured on server.",
         )
 
     hospital_name = data.hospital.strip()
@@ -6090,29 +6093,47 @@ def create_cashfree_order(
 
     order_id = f"carepath_{hospital.id}_{secrets.token_hex(8)}"
 
+    # Format customer phone (needs 10 valid digits for Cashfree production)
+    raw_phone = "".join([c for c in str(getattr(patient, "phone", "") or "9999999999") if c.isdigit()])
+    clean_cust_phone = raw_phone[-10:] if len(raw_phone) >= 10 else "9999999999"
+
     payload = {
         "order_id": order_id,
         "order_amount": float(total_amount),
         "order_currency": "INR",
         "customer_details": {
             "customer_id": str(patient.id),
-            "customer_name": patient.full_name,
-            "customer_email": patient.email,
-            "customer_phone": str(
-                getattr(patient, "phone", "") or "9999999999"
-            ),
+            "customer_name": (patient.full_name or "CarePath Patient")[:50],
+            "customer_email": patient.email or "patient@carepath.health",
+            "customer_phone": clean_cust_phone,
         },
         "order_meta": {
-
-
-"return_url": (
-    "https://carepath-patient-mx5v.vercel.app/"
-    "token.html?cashfree_order_id={order_id}"
-)
-
+            "return_url": (
+                "https://carepath-patient-mx5v.vercel.app/"
+                "token.html?cashfree_order_id={order_id}"
+            )
         },
-        "order_note": "CarePath hospital token booking",
+        "order_note": f"CarePath Token - {hospital.name[:35]} (Dr. {doctor.name[:25]})",
+        "order_tags": {
+            "hospital_id": str(hospital.id),
+            "doctor_id": str(doctor.id),
+            "token_fee": str(token_fee),
+            "platform_fee": str(platform_fee),
+        }
     }
+
+    # ------------------------------------------------------------
+    # AUTOMATIC PAYMENT SPLIT (Cashfree Easy Split)
+    # - Hospital Share: Token Fee (e.g. ₹200) -> Transferred to Hospital's vendor bank/UPI account
+    # - App Developer Share: Platform Convenience Fee (e.g. ₹10) -> Retained in Primary Merchant account
+    # ------------------------------------------------------------
+    if hospital.cashfree_vendor_id and token_fee > 0:
+        payload["order_splits"] = [
+            {
+                "vendor_id": hospital.cashfree_vendor_id,
+                "amount": float(token_fee),
+            }
+        ]
 
     headers = {
         "Content-Type": "application/json",
@@ -6130,15 +6151,32 @@ def create_cashfree_order(
             timeout=20,
         )
 
+        # Resilient fallback: If Cashfree rejects the order specifically because of vendor/split configuration,
+        # fallback to direct collection so the patient's urgent appointment booking is never blocked.
+        if response.status_code in (400, 422) and "order_splits" in payload:
+            err_text = response.text.lower()
+            if any(term in err_text for term in ("split", "vendor", "beneficiary", "transfer")):
+                logging.warning("Cashfree split payment unavailable (%s). Retrying order directly...", response.text)
+                payload.pop("order_splits", None)
+                response = requests.post(
+                    f"{CASHFREE_BASE_URL}/orders",
+                    json=payload,
+                    headers=headers,
+                    timeout=20,
+                )
+
         if response.status_code not in (200, 201):
-            print(
-                "Cashfree order error:",
-                response.status_code,
-                response.text,
-            )
+            logging.error("Cashfree order error: %s %s", response.status_code, response.text)
+            err_msg = "Cashfree could not create the payment order."
+            try:
+                err_data = response.json()
+                if "message" in err_data:
+                    err_msg = err_data["message"]
+            except Exception:
+                pass
             raise HTTPException(
                 status_code=502,
-                detail="Cashfree Sandbox could not create the payment order.",
+                detail=f"Cashfree Payment Gateway: {err_msg}",
             )
 
         order = response.json()
@@ -6154,15 +6192,16 @@ def create_cashfree_order(
             "total_amount": total_amount,
             "hospital_id": hospital.id,
             "cashfree_mode": CASHFREE_ENV,
+            "is_split": bool(payload.get("order_splits")),
         }
 
     except HTTPException:
         raise
     except Exception as error:
-        print("Cashfree order error:", str(error))
+        logging.error("Cashfree order error: %s", str(error))
         raise HTTPException(
             status_code=502,
-            detail="Unable to create Cashfree Sandbox order.",
+            detail="Unable to connect to Cashfree payment gateway.",
         )
 # ============================================================
 # RAZORPAY SIGNATURE
@@ -6233,7 +6272,7 @@ def create_token(
     if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
         raise HTTPException(
             status_code=500,
-            detail="Cashfree Sandbox credentials are not configured.",
+            detail="Cashfree payment gateway credentials are not configured on server.",
         )
 
     headers = {
@@ -8486,76 +8525,37 @@ def admin_revenue(
 
     paid_tokens = (
         db.query(Token)
-        .filter(
-            Token.payment_status ==
-            "paid"
-        )
+        .filter(Token.payment_status == "paid")
         .all()
     )
 
-
-    hospital_revenue = sum(
-
-        int(
-            token.token_fee or 0
-        )
-
-        for token in paid_tokens
+    paid_ads = (
+        db.query(HospitalAdvertisement)
+        .filter(HospitalAdvertisement.payment_status == "paid")
+        .all()
     )
 
-
-    platform_revenue = sum(
-
-        int(
-            token.platform_fee or 0
-        )
-
-        for token in paid_tokens
-    )
-
-
-    total_collected = sum(
-
-        int(
-            token.total_amount or 0
-        )
-
-        for token in paid_tokens
-    )
-
-
-    token_count = len(
-        paid_tokens
-    )
-
+    hospital_revenue = sum(int(token.token_fee or 0) for token in paid_tokens)
+    platform_revenue = sum(int(token.platform_fee or 0) for token in paid_tokens)
+    ads_revenue = sum(int(ad.amount_paid or 0) for ad in paid_ads)
+    total_developer_revenue = platform_revenue + ads_revenue
+    total_collected = sum(int(token.total_amount or 0) for token in paid_tokens) + ads_revenue
+    token_count = len(paid_tokens)
+    ads_count = len(paid_ads)
 
     return {
-
         "success": True,
-
-        "hospital_revenue":
-            hospital_revenue,
-
-        "token_revenue":
-            hospital_revenue,
-
-        "platform_revenue":
-            platform_revenue,
-
-        "total_revenue":
-            platform_revenue,
-
-        "total_collected":
-            total_collected,
-
-        "token_count":
-            token_count,
-
-        "total_tokens":
-            token_count,
-
-        "platform_fee_per_token":
-            PLATFORM_FEE,
+        "hospital_revenue": hospital_revenue,
+        "token_revenue": hospital_revenue,
+        "platform_revenue": platform_revenue,
+        "ads_revenue": ads_revenue,
+        "ads_count": ads_count,
+        "developer_total_revenue": total_developer_revenue,
+        "total_revenue": total_developer_revenue,
+        "total_collected": total_collected,
+        "token_count": token_count,
+        "total_tokens": token_count,
+        "platform_fee_per_token": PLATFORM_FEE,
     }
 
 
@@ -9409,7 +9409,7 @@ async def create_hospital_ad_order(
                 detail="Cashfree payment gateway credentials are not configured on server.",
             )
 
-        # Cashfree Order creation
+        # Cashfree Order creation (100% of Advertisement revenue goes to the app developer's merchant account)
         payload = {
             "order_id": order_id,
             "order_amount": amount,
@@ -9424,6 +9424,12 @@ async def create_hospital_ad_order(
                 "return_url": "https://carepath-hospital-ten.vercel.app/ads.html?ad_order_id={order_id}"
             },
             "order_note": f"CarePath 30-Day Ad Campaign for {hospital.name[:40]}",
+            "order_tags": {
+                "campaign_type": "hospital_30d_banner_ad",
+                "hospital_id": str(hospital_id),
+                "revenue_type": "app_developer_direct_income",
+                "amount": str(amount),
+            },
         }
 
         headers = {
@@ -9442,9 +9448,16 @@ async def create_hospital_ad_order(
         )
         if cf_res.status_code not in (200, 201):
             logging.error("Cashfree ad order error: %s %s", cf_res.status_code, cf_res.text)
+            err_msg = cf_res.text[:200]
+            try:
+                cf_json = cf_res.json()
+                if "message" in cf_json:
+                    err_msg = cf_json["message"]
+            except Exception:
+                pass
             raise HTTPException(
                 status_code=502,
-                detail=f"Cashfree payment gateway error: {cf_res.text[:200]}"
+                detail=f"Cashfree Payment Gateway: {err_msg}"
             )
 
         order_data = cf_res.json()

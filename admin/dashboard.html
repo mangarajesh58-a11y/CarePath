@@ -222,15 +222,23 @@
 
     <!-- REVENUE OVERVIEW -->
     <div class="revenue-card">
-        <h2>💰 Financial Breakdown</h2>
-        <div class="revenue-grid">
+        <h2>💰 Financial Breakdown & Payment Splits</h2>
+        <div class="revenue-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
             <div>
                 <span>Token Fee (To Hospitals)</span>
                 <strong id="tokenRevenue">₹0</strong>
             </div>
             <div>
-                <span>CarePath Commission (Net)</span>
+                <span>Platform Fees (To Developer)</span>
                 <strong id="platformRevenue2">₹0</strong>
+            </div>
+            <div>
+                <span>Banner Ads (To Developer)</span>
+                <strong id="adsRevenue">₹0</strong>
+            </div>
+            <div>
+                <span>Developer Total Net</span>
+                <strong id="developerTotalRevenue" style="color: #16a34a;">₹0</strong>
             </div>
             <div>
                 <span>Total Gross Collected</span>

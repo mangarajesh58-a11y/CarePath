@@ -661,6 +661,19 @@ async function loadRevenue() {
                 `₹${tokenRevenueValue}`;
         }
 
+        const adsRevenueValue = Number(data.ads_revenue || 0);
+        const devTotalValue = Number(data.developer_total_revenue ?? (platformRevenueValue + adsRevenueValue));
+
+        const adsRevenue = document.getElementById("adsRevenue");
+        if (adsRevenue) {
+            adsRevenue.textContent = `₹${adsRevenueValue}`;
+        }
+
+        const developerTotalRevenue = document.getElementById("developerTotalRevenue");
+        if (developerTotalRevenue) {
+            developerTotalRevenue.textContent = `₹${devTotalValue}`;
+        }
+
         const totalCollected =
             document.getElementById(
                 "totalCollected"
