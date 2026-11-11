@@ -21,11 +21,12 @@ if DATABASE_URL.startswith("postgresql://"):
     )
 engine = create_engine(
     DATABASE_URL,
-    echo=True,
+    echo=os.getenv("DB_ECHO", "false").lower() in ("true", "1", "yes"),
     pool_pre_ping=True,
-    pool_recycle=300,
-    pool_size=5,
-    max_overflow=2,
+    pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "300")),
+    pool_size=int(os.getenv("DB_POOL_SIZE", "20")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "15")),
+    pool_timeout=int(os.getenv("DB_POOL_TIMEOUT", "30")),
 )
 
 SessionLocal = sessionmaker(

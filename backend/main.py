@@ -42,6 +42,7 @@ from fastapi import (
     File,
     Form,
     Header,
+    BackgroundTasks,
 )
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -6211,6 +6212,7 @@ def verify_razorpay_signature(
 @app.post("/payments/verify")
 def create_token(
     data: TokenRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("patient")),
 ):
@@ -6453,7 +6455,7 @@ def create_token(
         print("Token creation error:", str(error))
         raise HTTPException(status_code=500, detail="Unable to create the hospital token.")
 
-    # --- SEND AUTOMATED SPLIT EMAIL RECEIPTS (FAMILY PASS & MAIN ACCOUNT INVOICE) ---
+    # --- ASYNC HIGH-CONCURRENCY EMAIL DISPATCH (ZERO-LAG BACKGROUND TASKS) ---
     try:
         op_hours = hospital.operating_hours_12h if hasattr(hospital, "operating_hours_12h") else f"{hospital.opening_time or '09:00'} - {hospital.closing_time or '21:00'}"
         room_display = (doctor.room_number if doctor and doctor.room_number else "OPD Consultation Room")
@@ -6461,8 +6463,9 @@ def create_token(
             room_display = f"Room {room_display}"
 
         if booking_for != "self" and recipient_email:
-            # 1. Family Member receives their dedicated Hospital OPD Appointment Pass (entry pass for doctor consultation)
-            send_family_token_pass_email(
+            # 1. Non-blocking Background Task: Family Member's Hospital OPD Appointment Pass
+            background_tasks.add_task(
+                send_family_token_pass_email,
                 to_email=recipient_email,
                 patient_name=actual_patient_name,
                 booked_by_name=patient.full_name or "Family Member",
@@ -6474,11 +6477,11 @@ def create_token(
                 appointment_date=str(appointment_date),
                 operating_hours=op_hours,
             )
-            logging.info("Hospital OPD Appointment Pass automatically dispatched to family email: %s", recipient_email)
 
-            # 2. Main Account Owner (payer) receives their official Payment Invoice & Tax Receipt
+            # 2. Non-blocking Background Task: Main Account Owner's Payment Invoice & Tax Receipt
             if patient.email:
-                send_payer_payment_receipt_email(
+                background_tasks.add_task(
+                    send_payer_payment_receipt_email,
                     to_email=patient.email,
                     payer_name=patient.full_name or "Account Owner",
                     beneficiary_name=actual_patient_name,
@@ -6493,12 +6496,12 @@ def create_token(
                     platform_fee=float(platform_fee or 0.0),
                     total_amount=float(total_amount or 0.0),
                 )
-                logging.info("Official Payment Invoice Receipt automatically dispatched to main account email: %s", patient.email)
         else:
-            # Booking for self: single combined pass & payment confirmation
+            # Booking for self: non-blocking combined pass & payment confirmation
             target_email = patient.email or recipient_email
             if target_email:
-                send_token_confirmation_email(
+                background_tasks.add_task(
+                    send_token_confirmation_email,
                     to_email=target_email,
                     patient_name=actual_patient_name,
                     hospital_name=hospital.name,
@@ -6510,9 +6513,8 @@ def create_token(
                     amount=total_amount,
                     operating_hours=op_hours,
                 )
-                logging.info("Token confirmation receipt email dispatched to %s", target_email)
     except Exception as email_err:
-        logging.warning("Booking confirmation email could not be delivered: %s", email_err)
+        logging.warning("Background email queuing failed: %s", email_err)
 
     return {
         "success": True,
@@ -6525,6 +6527,7 @@ def create_token(
 @app.post("/tokens/{token_id}/email-receipt")
 def resend_token_receipt(
     token_id: int,
+    background_tasks: BackgroundTasks,
     body: Optional[EmailReceiptRequest] = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("patient")),
@@ -6560,8 +6563,9 @@ def resend_token_receipt(
     is_main_account = patient and patient.email and target_email.strip().lower() == patient.email.strip().lower()
 
     if is_family_booking and not is_main_account:
-        # 1. Dedicated OPD Appointment Pass for family member
-        success = send_family_token_pass_email(
+        # 1. Non-blocking Background Task: Dedicated OPD Appointment Pass for family member
+        background_tasks.add_task(
+            send_family_token_pass_email,
             to_email=target_email,
             patient_name=token.patient_name or "Family Member",
             booked_by_name=(patient.full_name if patient else "Family Member"),
@@ -6574,8 +6578,9 @@ def resend_token_receipt(
             operating_hours=op_hours,
         )
     elif is_family_booking and is_main_account:
-        # 2. Dedicated Payment Invoice for the main account owner
-        success = send_payer_payment_receipt_email(
+        # 2. Non-blocking Background Task: Dedicated Payment Invoice for the main account owner
+        background_tasks.add_task(
+            send_payer_payment_receipt_email,
             to_email=target_email,
             payer_name=(patient.full_name if patient else "Account Owner"),
             beneficiary_name=token.patient_name or "Family Member",
@@ -6592,7 +6597,8 @@ def resend_token_receipt(
         )
     else:
         # Standard combined token confirmation
-        success = send_token_confirmation_email(
+        background_tasks.add_task(
+            send_token_confirmation_email,
             to_email=target_email,
             patient_name=token.patient_name or "Patient",
             hospital_name=h_name,
@@ -6605,9 +6611,6 @@ def resend_token_receipt(
             operating_hours=op_hours,
         )
 
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to dispatch receipt email. Please verify the email address.")
-
     # Update token.patient_email if updated
     if custom_to and custom_to != token.patient_email:
         token.patient_email = custom_to
@@ -6615,7 +6618,7 @@ def resend_token_receipt(
 
     return {
         "success": True,
-        "message": f"Token receipt successfully emailed to {target_email}",
+        "message": f"Token receipt is being dispatched to {target_email}",
         "recipient_email": target_email
     }
 # ============================================================
