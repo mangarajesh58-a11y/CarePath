@@ -1062,14 +1062,14 @@ byId("printButton").addEventListener("click", () => window.print());
 
 async function sendReceiptToFamilyEmail() {
     const details = window.lastBookedTokenDetails;
-    const token = details && details.token;
-    if (!token || !token.id) {
+    const tokenObj = details && details.token;
+    if (!tokenObj || !tokenObj.id) {
         alert("Token details are still loading. Please check under 'My Tokens'.");
         return;
     }
-    const currentEmail = (token && token.patient_email) || (byId("receiptEmailDisplay") && byId("receiptEmailDisplay").textContent) || "";
+    const currentEmail = (tokenObj && tokenObj.patient_email) || (byId("receiptEmailDisplay") && byId("receiptEmailDisplay").textContent) || "";
     const cleanDefault = (currentEmail && currentEmail.includes("@")) ? currentEmail.trim() : "";
-    const targetEmail = prompt("Enter family member's email address to receive this OPD Token Receipt:", cleanDefault);
+    const targetEmail = prompt("Enter the email address where you want this official OPD token receipt delivered (e.g. family member's email):", cleanDefault);
     if (!targetEmail) return;
     if (!targetEmail.includes("@") || !targetEmail.includes(".")) {
         alert("Please enter a valid email address.");
@@ -1084,8 +1084,8 @@ async function sendReceiptToFamilyEmail() {
     }
     
     try {
-        const tokenJwt = localStorage.getItem("patient_token") || localStorage.getItem("token");
-        const res = await fetch(`${API_BASE_URL}/patient/tokens/${token.id}/send-receipt`, {
+        const tokenJwt = getPatientToken();
+        const res = await fetch(`${API}/tokens/${tokenObj.id}/email-receipt`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

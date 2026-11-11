@@ -576,10 +576,20 @@ def send_carepath_email(to_email: str, subject: str, text: str, html: str) -> bo
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                if resp.status in (200, 201, 302):
-                    logging.info("CarePath email delivered successfully via Webhook to %s", to_email)
-                    return True
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                resp_bytes = resp.read()
+                try:
+                    resp_json = json.loads(resp_bytes.decode("utf-8"))
+                    if resp_json.get("status") == "success":
+                        logging.info("CarePath email delivered successfully via Webhook to %s", to_email)
+                        return True
+                    else:
+                        logging.warning("Gmail Webhook returned: %s", resp_json.get("message"))
+                        delivery_errors.append(f"Gmail Webhook: {resp_json.get('message')}")
+                except Exception:
+                    if resp.status in (200, 201, 302):
+                        logging.info("CarePath email delivered successfully via Webhook to %s", to_email)
+                        return True
         except Exception as webhook_err:
             logging.warning("Gmail Webhook delivery failed: %s", webhook_err)
             delivery_errors.append(f"Gmail Webhook: {webhook_err}")
@@ -6184,7 +6194,7 @@ def create_token(
     try:
         op_hours = hospital.operating_hours_12h if hasattr(hospital, "operating_hours_12h") else f"{hospital.opening_time or '09:00'} - {hospital.closing_time or '21:00'}"
         
-        # Target email: Family member's email if booking for family, otherwise patient account email
+        # Primary recipient (e.g. Family member if booking for family, otherwise patient account email)
         target_email = recipient_email if (booking_for != "self" and recipient_email) else (patient.email or recipient_email)
         
         if target_email:
@@ -6201,6 +6211,22 @@ def create_token(
                 operating_hours=op_hours,
             )
             logging.info("Token confirmation receipt email dispatched to %s (booking_for: %s)", target_email, booking_for)
+
+        # If booking for a family member, ALSO send a confirmation receipt copy to the account owner (payer)
+        if booking_for != "self" and patient.email and target_email and patient.email.lower() != target_email.lower():
+            send_token_confirmation_email(
+                to_email=patient.email,
+                patient_name=f"{actual_patient_name} (Booked by you)",
+                hospital_name=hospital.name,
+                doctor_name=doctor.name,
+                department=doctor.department or data.department,
+                token_number=token.token_number,
+                appointment_date=str(appointment_date),
+                payment_id=payment_id,
+                amount=total_amount,
+                operating_hours=op_hours,
+            )
+            logging.info("Token confirmation receipt copy dispatched to account owner %s", patient.email)
     except Exception as email_err:
         logging.warning("Booking confirmation email could not be delivered: %s", email_err)
 

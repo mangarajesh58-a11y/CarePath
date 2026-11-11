@@ -835,8 +835,8 @@
       }
 
       try {
-        const tokenJwt = localStorage.getItem("patient_token") || localStorage.getItem("token");
-        const res = await fetch(`${API_BASE_URL}/patient/tokens/${tokenId}/send-receipt`, {
+        const tokenJwt = localStorage.getItem("patientToken") || localStorage.getItem("patient_token") || localStorage.getItem("token");
+        const res = await fetch(`${API_URL}/tokens/${tokenId}/email-receipt`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
