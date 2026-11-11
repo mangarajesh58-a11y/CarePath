@@ -323,7 +323,10 @@
     </section>
 
     <section id="receiptSection">
-        <h1>🏥 CarePath</h1>
+        <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <img src="carepath-ai-small.png" alt="CarePath Logo" style="width: 38px; height: 38px; border-radius: 9px; object-fit: cover;" />
+            <span>CarePath</span>
+        </h1>
         <p class="subtitle">Appointment confirmation</p>
 
         <p style="text-align:center">Your token number</p>
@@ -348,6 +351,7 @@
             <div class="row"><span class="label">Cashfree order ID</span><span class="value" id="receiptOrderId">—</span></div>
             <div class="row"><span class="label">Payment ID</span><span class="value" id="receiptPaymentId">—</span></div>
             <div class="row"><span class="label">Patient</span><span class="value" id="receiptPatient">—</span></div>
+            <div class="row"><span class="label">Receipt Delivered To</span><span class="value" id="receiptEmailDisplay" style="color: #0284c7; font-weight: 700;">—</span></div>
             <div class="row"><span class="label">Hospital token fee</span><span class="value" id="receiptFee">—</span></div>
             <div class="row"><span class="label">Platform fee</span><span class="value" id="receiptPlatformFee">—</span></div>
             <div class="row total"><span>Total paid</span><span class="value" id="receiptTotal">—</span></div>
@@ -355,8 +359,11 @@
             <p class="note">Keep this receipt for your records. The hospital manages the consultation queue and token status.</p>
         </div>
 
-        <button type="button" class="no-print" id="whatsappSlipBtn" onclick="shareTokenSlipWhatsApp()" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; margin: 16px 0 10px; padding: 14px; background: #25D366; color: white; border: none; border-radius: 9px; font-weight: 700; font-size: 16px; cursor: pointer; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);">
+        <button type="button" class="no-print" id="whatsappSlipBtn" onclick="shareTokenSlipWhatsApp()" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; margin: 16px 0 8px; padding: 14px; background: #25D366; color: white; border: none; border-radius: 9px; font-weight: 700; font-size: 16px; cursor: pointer; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);">
             <span style="font-size: 20px;">📲</span> Send / Open WhatsApp Confirmation Slip
+        </button>
+        <button type="button" class="no-print" id="emailReceiptBtn" onclick="sendReceiptToFamilyEmail()" style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; margin: 0 0 10px; padding: 14px; background: #0284c7; color: white; border: none; border-radius: 9px; font-weight: 700; font-size: 16px; cursor: pointer; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);">
+            <span style="font-size: 20px;">✉️</span> Email / Resend Receipt to Family Member
         </button>
         <button type="button" class="print no-print" id="printButton">Print / Save Receipt as PDF</button>
         <a href="my-tokens.html" class="no-print" style="display: block; text-align: center; margin-top: 10px; padding: 14px; background: #0284c7; color: white; text-decoration: none; border-radius: 9px; font-weight: 700; font-size: 16px;">🎟️ View All My Booked Tokens</a>
@@ -1052,6 +1059,56 @@ byId("dashboardButton").addEventListener("click", () => {
     window.location.href = "dashboard.html";
 });
 byId("printButton").addEventListener("click", () => window.print());
+
+async function sendReceiptToFamilyEmail() {
+    const details = window.lastBookedTokenDetails;
+    const token = details && details.token;
+    if (!token || !token.id) {
+        alert("Token details are still loading. Please check under 'My Tokens'.");
+        return;
+    }
+    const currentEmail = (token && token.patient_email) || (byId("receiptEmailDisplay") && byId("receiptEmailDisplay").textContent) || "";
+    const cleanDefault = (currentEmail && currentEmail.includes("@")) ? currentEmail.trim() : "";
+    const targetEmail = prompt("Enter family member's email address to receive this OPD Token Receipt:", cleanDefault);
+    if (!targetEmail) return;
+    if (!targetEmail.includes("@") || !targetEmail.includes(".")) {
+        alert("Please enter a valid email address.");
+        return;
+    }
+    
+    const btn = byId("emailReceiptBtn");
+    const origHtml = btn ? btn.innerHTML : "";
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>⏳</span> Sending Receipt to ${escapeHtml(targetEmail)}...`;
+    }
+    
+    try {
+        const tokenJwt = localStorage.getItem("patient_token") || localStorage.getItem("token");
+        const res = await fetch(`${API_BASE_URL}/patient/tokens/${token.id}/send-receipt`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+            },
+            body: JSON.stringify({ recipient_email: targetEmail.trim() })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.detail || json.message || "Failed to deliver receipt.");
+        
+        if (byId("receiptEmailDisplay")) {
+            byId("receiptEmailDisplay").textContent = targetEmail.trim();
+        }
+        alert(`Success! Token receipt was sent directly to: ${targetEmail.trim()}`);
+    } catch (err) {
+        alert(`Could not send receipt: ${err.message}`);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
 
 displayBooking();
 loadHospitalFee();

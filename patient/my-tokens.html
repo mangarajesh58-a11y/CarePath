@@ -748,6 +748,9 @@
               <button class="btn-receipt" onclick="shareWhatsAppSlip(${t.id})" style="background: #25D366; color: white; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px;">
                 📲 WhatsApp Slip
               </button>
+              <button class="btn-receipt" onclick="promptEmailReceipt(${t.id}, '${escapeHtml(t.patient_email || '')}')" style="background: #0284c7; color: white; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px;">
+                ✉️ Email Receipt
+              </button>
               <button class="btn-receipt" onclick="openReceiptModal(${t.id})">
                 🧾 View Receipt
               </button>
@@ -766,7 +769,10 @@
       const modalContent = document.getElementById("modalContent");
       modalContent.innerHTML = `
         <div style="text-align: center; margin-bottom: 20px;">
-          <h2 style="margin: 0; color: #0284c7; font-size: 20px;">🏥 CarePath Appointment Receipt</h2>
+          <h2 style="margin: 0; color: #0284c7; font-size: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <img src="carepath-ai-small.png" alt="CarePath Logo" style="width: 26px; height: 26px; border-radius: 6px; object-fit: cover;" />
+            CarePath Appointment Receipt
+          </h2>
           <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">Official Appointment & Token Confirmation</p>
         </div>
 
@@ -790,6 +796,15 @@
           <div class="receipt-row receipt-total"><span>Total Paid</span><span style="color: #0284c7;">₹${(t.total_amount || 0).toFixed(2)}</span></div>
         </div>
 
+        <div style="display: flex; gap: 10px; margin: 16px 0 10px;">
+          <button class="btn-receipt" onclick="promptEmailReceipt(${t.id}, '${escapeHtml(t.patient_email || '')}')" style="flex: 1; background: #0284c7; color: white; padding: 11px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            ✉️ Email Receipt to Family
+          </button>
+          <button class="btn-receipt" onclick="window.print()" style="flex: 1; padding: 11px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            🖨️ Print / Save PDF
+          </button>
+        </div>
+
         <div style="font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.5;">
           ${t.cashfree_order_id ? `Order Ref: ${t.cashfree_order_id}<br>` : ""}
           Please show this token number at the hospital reception when called.
@@ -809,6 +824,40 @@
         closeReceiptModal();
       }
     };
+
+    async function promptEmailReceipt(tokenId, defaultEmail) {
+      const current = (defaultEmail && defaultEmail.includes("@")) ? defaultEmail.trim() : "";
+      const enteredEmail = prompt("Enter the email address where you want this official OPD token receipt delivered (e.g. family member's email):", current);
+      if (!enteredEmail) return;
+      if (!enteredEmail.includes("@") || !enteredEmail.includes(".")) {
+        alert("Please enter a valid email address.");
+        return;
+      }
+
+      try {
+        const tokenJwt = localStorage.getItem("patient_token") || localStorage.getItem("token");
+        const res = await fetch(`${API_BASE_URL}/patient/tokens/${tokenId}/send-receipt`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+          },
+          body: JSON.stringify({ recipient_email: enteredEmail.trim() })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.message || "Failed to dispatch receipt.");
+
+        // Update in-memory token list so UI reflects the new recipient email immediately
+        if (typeof allTokens !== "undefined" && Array.isArray(allTokens)) {
+          const t = allTokens.find(x => x.id === tokenId);
+          if (t) t.patient_email = enteredEmail.trim();
+          renderTokens(allTokens);
+        }
+        alert(`Success! Token receipt was sent directly to: ${enteredEmail.trim()}`);
+      } catch (err) {
+        alert(`Could not send receipt: ${err.message}`);
+      }
+    }
 
     // Initial Load
     loadTokenHistory();

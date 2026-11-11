@@ -2875,6 +2875,9 @@ class TokenRequest(BaseModel):
     appointment_date: Optional[date] = None
     cashfree_order_id: str
 
+class EmailReceiptRequest(BaseModel):
+    recipient_email: Optional[str] = None
+
 class CreateOrderRequest(BaseModel):
     patient_name: Optional[str] = None
     patient_email: Optional[str] = None
@@ -6181,10 +6184,12 @@ def create_token(
     try:
         op_hours = hospital.operating_hours_12h if hasattr(hospital, "operating_hours_12h") else f"{hospital.opening_time or '09:00'} - {hospital.closing_time or '21:00'}"
         
-        # Primary recipient (e.g. Father's email if booked for father, or patient account email)
-        if recipient_email:
+        # Target email: Family member's email if booking for family, otherwise patient account email
+        target_email = recipient_email if (booking_for != "self" and recipient_email) else (patient.email or recipient_email)
+        
+        if target_email:
             send_token_confirmation_email(
-                to_email=recipient_email,
+                to_email=target_email,
                 patient_name=actual_patient_name,
                 hospital_name=hospital.name,
                 doctor_name=doctor.name,
@@ -6195,23 +6200,7 @@ def create_token(
                 amount=total_amount,
                 operating_hours=op_hours,
             )
-            logging.info("Token confirmation email dispatched to %s", recipient_email)
-
-        # If recipient is different from account holder, also send a confirmation copy to the account holder
-        if patient.email and recipient_email and recipient_email.lower() != patient.email.lower():
-            send_token_confirmation_email(
-                to_email=patient.email,
-                patient_name=f"{actual_patient_name} (Booked by you)",
-                hospital_name=hospital.name,
-                doctor_name=doctor.name,
-                department=doctor.department or data.department,
-                token_number=token.token_number,
-                appointment_date=str(appointment_date),
-                payment_id=payment_id,
-                amount=total_amount,
-                operating_hours=op_hours,
-            )
-            logging.info("Token confirmation receipt copy dispatched to account owner %s", patient.email)
+            logging.info("Token confirmation receipt email dispatched to %s (booking_for: %s)", target_email, booking_for)
     except Exception as email_err:
         logging.warning("Booking confirmation email could not be delivered: %s", email_err)
 
@@ -6219,6 +6208,66 @@ def create_token(
         "success": True,
         "message": "Hospital token created successfully",
         "token": token_to_dict(token),
+    }
+
+
+@app.post("/patient/tokens/{token_id}/send-receipt")
+@app.post("/tokens/{token_id}/email-receipt")
+def resend_token_receipt(
+    token_id: int,
+    body: Optional[EmailReceiptRequest] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("patient")),
+):
+    """Sends or resends the official appointment token receipt to family email or specified email."""
+    token = db.query(Token).filter(Token.id == token_id).first()
+    if not token:
+        raise HTTPException(status_code=404, detail="Token not found.")
+    if token.patient_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to access this token.")
+
+    patient = db.query(Patient).filter(Patient.id == current_user["user_id"]).first()
+    hospital = db.query(Hospital).filter(Hospital.id == token.hospital_id).first()
+    h_name = hospital.name if hospital else (token.hospital or "CarePath Hospital")
+    op_hours = (
+        hospital.operating_hours_12h 
+        if hospital and hasattr(hospital, "operating_hours_12h") and hospital.operating_hours_12h 
+        else "09:00 AM - 09:00 PM"
+    )
+
+    custom_to = body.recipient_email.strip() if (body and body.recipient_email) else None
+    target_email = custom_to or token.patient_email or (patient.email if patient else None)
+
+    if not target_email or "@" not in target_email:
+        raise HTTPException(status_code=400, detail="No valid recipient email address provided.")
+
+    payment_ref = token.cashfree_payment_id or token.cashfree_order_id or str(token.id)
+
+    success = send_token_confirmation_email(
+        to_email=target_email,
+        patient_name=token.patient_name or "Patient",
+        hospital_name=h_name,
+        doctor_name=token.doctor or "Doctor",
+        department=token.department or "General",
+        token_number=token.token_number,
+        appointment_date=str(token.appointment_date),
+        payment_id=payment_ref,
+        amount=float(token.total_amount or 0.0),
+        operating_hours=op_hours,
+    )
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to dispatch receipt email. Please verify the email address.")
+
+    # Update token.patient_email if updated
+    if custom_to and custom_to != token.patient_email:
+        token.patient_email = custom_to
+        db.commit()
+
+    return {
+        "success": True,
+        "message": f"Token receipt successfully emailed to {target_email}",
+        "recipient_email": target_email
     }
 # ============================================================
 # PATIENT - TOKEN HISTORY
