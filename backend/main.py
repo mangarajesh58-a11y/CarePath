@@ -566,12 +566,12 @@ def send_carepath_email(to_email: str, subject: str, text: str, html: str) -> bo
                 "subject": subject,
                 "body": text,
                 "html": html,
-            }).encode("utf-8")
+            }, ensure_ascii=False).encode("utf-8")
             req = urllib.request.Request(
                 webhook_url,
                 data=payload,
                 headers={
-                    "Content-Type": "application/json",
+                    "Content-Type": "application/json; charset=utf-8",
                     "User-Agent": "CarePath/1.0",
                 },
                 method="POST",
@@ -704,8 +704,17 @@ CarePath Healthcare Team
 <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc;">
   <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
     <div style="text-align: center; margin-bottom: 24px;">
-      <h1 style="color: #0284c7; font-size: 24px; margin: 0;">🏥 CarePath</h1>
-      <p style="color: #64748b; font-size: 13px; margin: 4px 0 0;">{'Password Reset Request' if purpose == 'reset' else 'Hospital & Patient Registration'}</p>
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+        <tr>
+          <td style="vertical-align: middle; padding-right: 10px;">
+            <img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="CarePath Logo" width="42" height="42" style="display: block; width: 42px; height: 42px; border-radius: 10px; object-fit: cover;" />
+          </td>
+          <td style="vertical-align: middle; text-align: left;">
+            <span style="color: #0284c7; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">CarePath</span>
+          </td>
+        </tr>
+      </table>
+      <p style="color: #64748b; font-size: 13px; margin: 6px 0 0;">{'Password Reset Request' if purpose == 'reset' else 'Hospital & Patient Registration'}</p>
     </div>
     <p style="color: #334155; font-size: 15px; line-height: 1.5;">Hello,</p>
     <p style="color: #334155; font-size: 15px; line-height: 1.5;">{headline}</p>
@@ -738,7 +747,7 @@ def send_token_confirmation_email(
     operating_hours: str = "09:00 AM - 09:00 PM",
 ):
     """Sends a professional branded OPD Token Booking Confirmation and Receipt to the patient."""
-    subject = f"🎟️ OPD Token #{token_number} Confirmed - {hospital_name}"
+    subject = f"Token #{token_number} Confirmed - {hospital_name}"
     body_text = f"""Hello {patient_name},
 
 Your hospital OPD appointment token #{token_number} at {hospital_name} has been successfully confirmed and paid!
@@ -760,23 +769,36 @@ CarePath Healthcare Team
 
     html_content = f"""<!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"></head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Token #{token_number} Confirmed</title>
+</head>
 <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9;">
   <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06);">
-    <!-- Header -->
-    <div style="background: linear-gradient(135deg, #0284c7, #2563eb); padding: 28px 24px; text-align: center; color: white;">
-      <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">🏥 CarePath</h1>
-      <p style="margin: 6px 0 0; font-size: 14px; opacity: 0.95;">OPD Token Booking Confirmation</p>
+    <!-- Header with CarePath App Logo (No emojis to avoid question mark diamonds) -->
+    <div style="background: linear-gradient(135deg, #0284c7, #2563eb); padding: 24px 20px; text-align: center; color: white;">
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; text-align: center;">
+        <tr>
+          <td style="vertical-align: middle; padding-right: 14px;">
+            <img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="CarePath Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+          </td>
+          <td style="vertical-align: middle; text-align: left;">
+            <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; line-height: 1.1;">CarePath</div>
+            <div style="font-size: 13px; color: #e0f2fe; margin-top: 3px; font-weight: 500;">OPD Token Booking Confirmation</div>
+          </td>
+        </tr>
+      </table>
     </div>
 
     <!-- Big Token Highlight Circle -->
     <div style="padding: 24px 28px; text-align: center; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
       <span style="font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Your OPD Token Number</span>
-      <div style="margin: 10px auto; width: 100px; height: 100px; line-height: 100px; background: #0284c7; color: white; border-radius: 50%; font-size: 38px; font-weight: 800; box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);">
+      <div style="margin: 12px auto; width: 100px; height: 100px; line-height: 100px; background: #0284c7; color: white; border-radius: 50%; font-size: 38px; font-weight: 800; box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);">
         #{token_number}
       </div>
       <span style="display: inline-block; background: #dcfce7; color: #15803d; font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px;">
-        ✓ CONFIRMED & PAID
+        CONFIRMED &amp; PAID
       </span>
     </div>
 
@@ -803,7 +825,7 @@ CarePath Healthcare Team
         </tr>
         <tr style="border-bottom: 1px solid #f1f5f9;">
           <td style="padding: 10px 0; color: #64748b;">Date</td>
-          <td style="padding: 10px 0; color: #0284c7; font-weight: 700; text-align: right;">📅 {appointment_date}</td>
+          <td style="padding: 10px 0; color: #0284c7; font-weight: 700; text-align: right;">{appointment_date}</td>
         </tr>
         <tr style="border-bottom: 1px solid #f1f5f9;">
           <td style="padding: 10px 0; color: #64748b;">Hours</td>
@@ -817,7 +839,7 @@ CarePath Healthcare Team
 
       <!-- Tip Callout -->
       <div style="margin-top: 20px; background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #1e40af; line-height: 1.5;">
-        💡 <strong>Live Queue Tracking:</strong> Open the CarePath app anytime to see how many patients are ahead of you and your real-time estimated consultation time.
+        <strong>Live Queue Tracking:</strong> Open the CarePath app anytime under 'My Tokens' to see how many patients are ahead of you and your real-time estimated consultation time.
       </div>
     </div>
 
@@ -3256,17 +3278,27 @@ def allocate_token_number(
                     appointment_date
                 )
                 DO UPDATE SET
-                    last_token_number = GREATEST(
-                        COALESCE(token_sequences.last_token_number, 0),
-                        (
-                            SELECT COALESCE(MAX(token_number), 0)
+                    last_token_number = CASE
+                        WHEN (
+                            SELECT COUNT(*)
                             FROM tokens
                             WHERE hospital_id = :hospital_id
                               AND department = :department
                               AND doctor = :doctor
                               AND appointment_date = :appointment_date
-                        )
-                    ) + 1
+                        ) = 0 THEN 1
+                        ELSE GREATEST(
+                            COALESCE(token_sequences.last_token_number, 0),
+                            (
+                                SELECT COALESCE(MAX(token_number), 0)
+                                FROM tokens
+                                WHERE hospital_id = :hospital_id
+                                  AND department = :department
+                                  AND doctor = :doctor
+                                  AND appointment_date = :appointment_date
+                            )
+                        ) + 1
+                    END
                 RETURNING last_token_number
             """),
             {
@@ -3290,6 +3322,66 @@ def allocate_token_number(
             .scalar()
         )
         return int((max_token or 0) + 1)
+
+
+@app.get("/tokens/next-available")
+def get_next_available_token(
+    hospital_id: int,
+    department: str,
+    doctor: str,
+    appointment_date: Optional[date] = None,
+    db: Session = Depends(get_db),
+):
+    """Returns the current queue count and the next available token number for a doctor on a specific date."""
+    target_date = appointment_date or get_ist_today()
+    clean_dept = (department or "").strip()
+    clean_doc = (doctor or "").strip()
+    
+    max_token = (
+        db.query(func.max(Token.token_number))
+        .filter(
+            Token.hospital_id == hospital_id,
+            Token.department == clean_dept,
+            Token.doctor == clean_doc,
+            Token.appointment_date == target_date,
+        )
+        .scalar()
+    ) or 0
+
+    return {
+        "hospital_id": hospital_id,
+        "department": clean_dept,
+        "doctor": clean_doc,
+        "appointment_date": str(target_date),
+        "booked_count": int(max_token),
+        "next_token_number": int(max_token + 1),
+    }
+
+
+@app.post("/hospitals/{hospital_id}/reset-doctor-queue")
+def reset_doctor_queue(
+    hospital_id: int,
+    doctor: str,
+    appointment_date: Optional[date] = None,
+    db: Session = Depends(get_db),
+):
+    """Resets the token counter for a specific doctor on a given date (useful for daily restarts)."""
+    target_date = appointment_date or get_ist_today()
+    clean_doc = doctor.strip()
+    db.execute(
+        text("""
+            DELETE FROM token_sequences 
+            WHERE hospital_id = :h_id 
+              AND doctor = :doc 
+              AND appointment_date = :dt
+        """),
+        {"h_id": hospital_id, "doc": clean_doc, "dt": target_date}
+    )
+    db.commit()
+    return {
+        "success": True,
+        "message": f"Token queue sequence reset for Dr. {clean_doc} on {target_date}."
+    }
 
 # ============================================================
 # GOOGLE VERIFICATION
@@ -6037,10 +6129,12 @@ def create_token(
     patient_gender = (getattr(data, "patient_gender", None) or "").strip() or None
 
     if booking_for != "self" and raw_custom_name:
+        import re
+        clean_name = re.sub(r'\s*\([^)]*\)$', '', raw_custom_name).strip()
         if raw_relation and raw_relation.lower() != "other":
-            actual_patient_name = f"{raw_custom_name} ({raw_relation.capitalize()})"
+            actual_patient_name = f"{clean_name} ({raw_relation.capitalize()})"
         else:
-            actual_patient_name = raw_custom_name
+            actual_patient_name = clean_name
         recipient_email = raw_custom_email if raw_custom_email else patient.email
         patient_contact_phone = raw_custom_phone if raw_custom_phone else getattr(patient, "phone", None)
     else:
@@ -8562,7 +8656,7 @@ def schedule_hospital_closure(
                         subject=f"CarePath Refund Notice: {hospital.name} is closed on {closure_dt}",
                         text=f"Dear {pat.full_name}, {hospital.name} will be closed on {closure_dt} ({reason}). Your token #{t.token_number} has been cancelled and a 100% refund of ₹{t.total_amount:.2f} has been processed to your account.",
                         html=f"""<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 20px;">
-                        <h2 style="color: #0284c7;">🏥 CarePath Appointment Cancellation & 100% Refund</h2>
+                        <h2 style="color: #0284c7; display: flex; align-items: center; gap: 8px;"><img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="CarePath" width="28" height="28" style="vertical-align: middle; border-radius: 6px;" /> CarePath Appointment Cancellation & 100% Refund</h2>
                         <p>Dear <strong>{pat.full_name}</strong>,</p>
                         <p><strong>{hospital.name}</strong> has announced a scheduled closure on <strong>{closure_dt}</strong> ({reason}).</p>
                         <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; border-radius: 8px; margin: 15px 0;">
@@ -8718,7 +8812,7 @@ def mark_doctor_on_leave(
                         subject=f"CarePath Refund Notice: Dr. {doctor.name} is on leave on {leave_dt}",
                         text=f"Dear {pat.full_name}, Dr. {doctor.name} is on leave on {leave_dt} ({reason}). Your token #{t.token_number} has been cancelled and a 100% refund of ₹{t.total_amount:.2f} has been processed to your account.",
                         html=f"""<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 20px;">
-                        <h2 style="color: #0284c7;">🏥 CarePath Appointment Cancellation & 100% Refund</h2>
+                        <h2 style="color: #0284c7; display: flex; align-items: center; gap: 8px;"><img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="CarePath" width="28" height="28" style="vertical-align: middle; border-radius: 6px;" /> CarePath Appointment Cancellation & 100% Refund</h2>
                         <p>Dear <strong>{pat.full_name}</strong>,</p>
                         <p><strong>Dr. {doctor.name}</strong> at {hospital.name} is on leave on <strong>{leave_dt}</strong> ({reason}).</p>
                         <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; border-radius: 8px; margin: 15px 0;">

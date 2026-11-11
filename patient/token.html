@@ -276,6 +276,20 @@
             </div>
         </div>
 
+        <!-- LIVE OPD QUEUE PREVIEW -->
+        <div class="card" id="liveQueueCard" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 14px 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 11px; font-weight: 700; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">Live Queue Position Preview</div>
+                    <div id="queuePreviewDesc" style="font-size: 13.5px; color: #15803d; font-weight: 600; margin-top: 2px;">Your token will be issued next in line</div>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 11px; color: #166534; font-weight: 600; display: block;">Next Token</span>
+                    <span id="queuePreviewTokenNumber" style="display: inline-block; background: #16a34a; color: white; padding: 3px 12px; border-radius: 999px; font-weight: 800; font-size: 16px; margin-top: 2px;">#1</span>
+                </div>
+            </div>
+        </div>
+
         <div class="card fees">
             <div class="row">
                 <span class="label">Hospital token fee</span>
@@ -417,7 +431,7 @@ function getBeneficiaryData() {
             patient_age: null
         };
     }
-    const rel = byId("familyRelation")?.value || "Family";
+    const rel = byId("familyRelationSelect")?.value || byId("familyRelation")?.value || "Family";
     const name = (byId("familyPatientName")?.value || "").trim();
     const email = (byId("familyPatientEmail")?.value || "").trim();
     const phone = (byId("familyPatientPhone")?.value || "").trim();
@@ -425,7 +439,7 @@ function getBeneficiaryData() {
     const age = ageVal ? parseInt(ageVal, 10) : null;
     return {
         booking_for: "family",
-        patient_name: name ? `${name} (${rel})` : `Family Member (${rel})`,
+        patient_name: name || `Family Member (${rel})`,
         patient_email: email,
         patient_phone: phone,
         patient_relation: rel,
@@ -723,6 +737,31 @@ function validateAppointmentDate() {
         clearMessage();
     }
     refreshButton();
+    updateQueuePreview(dateVal);
+}
+
+async function updateQueuePreview(dateVal) {
+    const doc = getSelectedDoctor();
+    const dept = getSelectedDepartment();
+    if (!hospitalId || !doc || !dateVal) return;
+    try {
+        const res = await fetch(`${API}/tokens/next-available?hospital_id=${encodeURIComponent(hospitalId)}&department=${encodeURIComponent(dept)}&doctor=${encodeURIComponent(doc)}&appointment_date=${encodeURIComponent(dateVal)}`);
+        if (res.ok) {
+            const data = await res.json();
+            const badge = byId("queuePreviewTokenNumber");
+            const desc = byId("queuePreviewDesc");
+            if (badge) badge.textContent = `#${data.next_token_number}`;
+            if (desc) {
+                if (data.booked_count === 0) {
+                    desc.textContent = "Be the first in line! No patients booked yet for this date.";
+                } else {
+                    desc.textContent = `${data.booked_count} patient(s) already booked. Your consultation will follow them.`;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Could not fetch queue preview:", e);
+    }
 }
 
 async function loadHospitalFee() {
