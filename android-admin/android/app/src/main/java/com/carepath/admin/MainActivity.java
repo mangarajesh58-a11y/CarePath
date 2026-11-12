@@ -6,10 +6,9 @@ import android.app.NotificationManager;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.webkit.PermissionRequest;
-import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
@@ -26,8 +25,8 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
 
         createNotificationChannel();
+        configureWebView();
         requestEssentialPermissions();
-        configureWebViewPermissions();
     }
 
     private void createNotificationChannel() {
@@ -50,21 +49,35 @@ public class MainActivity extends BridgeActivity {
     private void requestEssentialPermissions() {
         List<String> permissionsNeeded = new ArrayList<>();
 
+        // 1. Camera Permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             permissionsNeeded.add(Manifest.permission.CAMERA);
         }
 
-        // Notification Permission (Android 13+ / API 33+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(Manifest.permission.POST_NOTIFICATIONS);
-            }
+        // 2. Phone Call Permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(Manifest.permission.CALL_PHONE);
+        }
+
+        // 3. Gallery / Photos / Media Permissions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+ (API 33+)
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
                 permissionsNeeded.add(Manifest.permission.READ_MEDIA_IMAGES);
             }
-        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.READ_MEDIA_VIDEO);
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        } else { // Android 12 and below
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 permissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            }
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                }
             }
         }
 
@@ -77,7 +90,7 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    private void configureWebViewPermissions() {
+    private void configureWebView() {
         WebView webView = getBridge().getWebView();
         if (webView != null) {
             WebSettings settings = webView.getSettings();
@@ -85,16 +98,12 @@ public class MainActivity extends BridgeActivity {
             settings.setAllowFileAccess(true);
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
-
-            webView.setWebChromeClient(new WebChromeClient() {
-                @Override
-                public void onPermissionRequest(final PermissionRequest request) {
-                    runOnUiThread(() -> {
-                        request.grant(request.getResources());
-                    });
-                }
-            });
         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     @Override
