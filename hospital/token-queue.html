@@ -356,7 +356,32 @@
 
         <h2>All Hospital Tokens</h2>
 
+        <!-- RETENTION & COMPLIANCE NOTICE -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin: 12px 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #166534;">
+                <span style="font-size: 20px;">🛡️</span>
+                <span><strong>90-Day Retention Policy:</strong> Tokens are stored and organized strictly by appointment date and token number. Records are automatically preserved for 90 days and safely purged thereafter for healthcare privacy & database performance.</span>
+            </div>
+            <button type="button" onclick="purgeExpiredTokensNow()" style="background: #ffffff; border: 1px solid #86efac; color: #15803d; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#ffffff'">
+                🧹 Purge 90+ Day Records
+            </button>
+        </div>
+
         <div class="filters">
+
+            <input
+                id="dateFilter"
+                type="date"
+                title="Filter by appointment date"
+                aria-label="Filter by appointment date"
+                style="padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; color: #334155; font-weight: 600;">
+
+            <button type="button" onclick="setQuickDate('today')" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                Today
+            </button>
+            <button type="button" onclick="setQuickDate('all')" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                All Dates
+            </button>
 
             <select id="departmentFilter" aria-label="Filter by department">
                 <option value="">All departments</option>
@@ -397,7 +422,8 @@
 
                 <thead>
                     <tr>
-                        <th>Token</th>
+                        <th>Token #</th>
+                        <th>Appointment Date</th>
                         <th>Patient</th>
                         <th>Department</th>
                         <th>Doctor</th>
@@ -410,7 +436,7 @@
 
                 <tbody id="tokenRows">
                     <tr>
-                        <td colspan="8">Loading tokens...</td>
+                        <td colspan="9">Loading tokens...</td>
                     </tr>
                 </tbody>
 
@@ -1197,7 +1223,46 @@ function populateFilters() {
 // RENDER TOKEN TABLE
 // =========================================================
 
+function setQuickDate(type) {
+    const dateInput = document.getElementById("dateFilter");
+    if (!dateInput) return;
+    if (type === "today") {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+        dateInput.value = `${y}-${m}-${d}`;
+    } else {
+        dateInput.value = "";
+    }
+    renderTokens();
+}
+
+async function purgeExpiredTokensNow() {
+    if (!confirm("Run 90-day retention cleanup? This will permanently delete all patient token records older than 90 days from the database.")) {
+        return;
+    }
+    try {
+        const res = await fetch(`${API}/hospitals/${encodeURIComponent(hospitalId)}/tokens/purge-expired`, {
+            method: "POST",
+            headers: authHeaders()
+        });
+        const data = await readResponse(res);
+        if (res.ok) {
+            alert(data.message || `Cleaned ${data.deleted_count || 0} tokens older than 90 days.`);
+            await loadTokens();
+        } else {
+            alert(data.detail || "Unable to purge tokens.");
+        }
+    } catch (e) {
+        alert("Error purging expired tokens: " + e.message);
+    }
+}
+
 function renderTokens() {
+
+    const dateInput = document.getElementById("dateFilter");
+    const selectedDate = dateInput ? dateInput.value.trim() : "";
 
     const department =
         document.getElementById(
@@ -1235,6 +1300,8 @@ function renderTokens() {
             String(token.booking_type || "ONLINE")
                 .toUpperCase();
 
+        const tokenDate = token.appointment_date || (token.created_at ? token.created_at.split('T')[0] : '');
+        const matchesDate = !selectedDate || tokenDate === selectedDate;
 
         const matchesSearch =
 
@@ -1248,6 +1315,8 @@ function renderTokens() {
 
         return (
 
+            matchesDate &&
+
             (!department || token.department === department) &&
 
             (!doctor || token.doctor === doctor) &&
@@ -1260,12 +1329,16 @@ function renderTokens() {
 
         );
 
-    }).sort((a, b) =>
-
-        Number(a.token_number || 0) -
-        Number(b.token_number || 0)
-
-    );
+    }).sort((a, b) => {
+        // 1. Group by appointment date (newest date first)
+        const dateA = a.appointment_date || (a.created_at ? a.created_at.split('T')[0] : '');
+        const dateB = b.appointment_date || (b.created_at ? b.created_at.split('T')[0] : '');
+        if (dateA !== dateB) {
+            return dateB.localeCompare(dateA);
+        }
+        // 2. Sequential order by token number (#1, #2, #3...) within the date
+        return Number(a.token_number || 0) - Number(b.token_number || 0);
+    });
 
 
     const rows =
@@ -1277,7 +1350,7 @@ function renderTokens() {
     if (!filtered.length) {
 
         rows.innerHTML =
-            '<tr><td colspan="8">No tokens match these filters.</td></tr>';
+            '<tr><td colspan="9" style="text-align:center;padding:24px;color:#64748b;">No tokens match these filters.</td></tr>';
 
         return;
 
@@ -1317,15 +1390,22 @@ function renderTokens() {
 
             : "—";
 
+        const apptDateDisplay = token.appointment_date || (token.created_at ? token.created_at.split('T')[0] : 'Today');
 
         return `
 
             <tr>
 
                 <td>
-                    <strong>
-                        ${escapeHTML(token.token_number)}
+                    <strong style="color:#2563eb;font-size:15px;">
+                        #${escapeHTML(token.token_number)}
                     </strong>
+                </td>
+
+                <td>
+                    <span style="font-weight:700;color:#0f172a;font-size:13px;">
+                        📅 ${escapeHTML(apptDateDisplay)}
+                    </span>
                 </td>
 
                 <td>
@@ -1608,28 +1688,19 @@ loadWalkInDepartments();
 
 
         // Filters
-
         [
-
+            "dateFilter",
             "departmentFilter",
-
             "doctorFilter",
-
             "typeFilter",
-
             "statusFilter",
-
             "searchFilter"
-
         ].forEach(id => {
-
-            document
-                .getElementById(id)
-                .addEventListener(
-                    "input",
-                    renderTokens
-                );
-
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener("input", renderTokens);
+                el.addEventListener("change", renderTokens);
+            }
         });
 
 

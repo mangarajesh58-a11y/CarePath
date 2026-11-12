@@ -64,6 +64,7 @@ from sqlalchemy import (
     text,
     func,
     or_,
+    and_,
 )
 
 from sqlalchemy.orm import Session
@@ -6715,22 +6716,81 @@ def get_patient_single_token(
 
 
 # ============================================================
-# HOSPITAL - OWN TOKENS
+# HOSPITAL TOKEN RETENTION: 90-DAY COMPLIANCE PURGE
+# ============================================================
+
+def purge_expired_hospital_tokens(db: Session, hospital_id: Optional[int] = None) -> int:
+    """
+    Healthcare Compliance & Data Hygiene:
+    Automatically deletes hospital tokens and old sequence records older than 90 days.
+    """
+    try:
+        ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+        cutoff_date = (ist_now - timedelta(days=90)).date()
+        cutoff_datetime = datetime.utcnow() - timedelta(days=90)
+
+        query = db.query(Token).filter(
+            or_(
+                Token.appointment_date < cutoff_date,
+                and_(Token.appointment_date.is_(None), Token.created_at < cutoff_datetime),
+            )
+        )
+        if hospital_id is not None:
+            query = query.filter(Token.hospital_id == hospital_id)
+
+        deleted = query.delete(synchronize_session=False)
+
+        # Also purge old sequences older than 90 days
+        try:
+            db.execute(
+                text("DELETE FROM token_sequences WHERE appointment_date < :cutoff_date"),
+                {"cutoff_date": cutoff_date}
+            )
+        except Exception as seq_err:
+            logging.debug("token_sequences prune note: %s", seq_err)
+
+        if deleted > 0:
+            db.commit()
+            logging.info(
+                "Auto-deleted %d expired hospital token(s) older than 90 days (Cutoff: %s)",
+                deleted,
+                cutoff_date,
+            )
+        return deleted
+    except Exception as exc:
+        db.rollback()
+        logging.warning("Error auto-purging 90-day expired hospital tokens: %s", exc)
+        return 0
+
+
+# ============================================================
+# HOSPITAL - OWN TOKENS (ORDERED BY APPOINTMENT DATE & TOKEN NUMBER)
 # ============================================================
 
 @app.get("/hospital/tokens")
 def get_hospital_tokens(
+    date: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
 ):
+    hospital_id = current_user["user_id"]
+    # 1. Automatic 90-day retention purge
+    purge_expired_hospital_tokens(db, hospital_id=hospital_id)
+
+    query = db.query(Token).filter(Token.hospital_id == hospital_id)
+
+    if date:
+        try:
+            parsed_date = datetime.strptime(date.strip(), "%Y-%m-%d").date()
+            query = query.filter(Token.appointment_date == parsed_date)
+        except ValueError:
+            pass
+
+    # Stored and returned as per appointment date (newest first) and token number (ascending)
     tokens = (
-        db.query(Token)
-        .filter(
-            Token.hospital_id ==
-            current_user["user_id"]
-        )
-        .order_by(
-            Token.created_at.desc()
+        query.order_by(
+            Token.appointment_date.desc(),
+            Token.token_number.asc(),
         )
         .all()
     )
@@ -7405,6 +7465,9 @@ def get_hospital_live_queue(
     hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
     if not hospital:
         raise HTTPException(status_code=404, detail="Hospital not found")
+
+    # Periodic 90-day retention cleanup
+    purge_expired_hospital_tokens(db, hospital_id=hospital_id)
 
     # Local today's date in IST (+5:30)
     today = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
@@ -8612,6 +8675,7 @@ def admin_tokens(
 @app.get("/hospitals/{hospital_id}/tokens")
 def hospital_tokens(
     hospital_id: int,
+    date: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
 ):
@@ -8622,10 +8686,24 @@ def hospital_tokens(
             detail="You cannot access another hospital's tokens."
         )
 
+    # 1. Automatic 90-day retention purge
+    purge_expired_hospital_tokens(db, hospital_id=hospital_id)
+
+    query = db.query(Token).filter(Token.hospital_id == hospital_id)
+
+    if date:
+        try:
+            parsed_date = datetime.strptime(date.strip(), "%Y-%m-%d").date()
+            query = query.filter(Token.appointment_date == parsed_date)
+        except ValueError:
+            pass
+
+    # Stored and returned as per appointment date (newest first) and token number (ascending)
     tokens = (
-        db.query(Token)
-        .filter(Token.hospital_id == hospital_id)
-        .order_by(Token.created_at.asc())
+        query.order_by(
+            Token.appointment_date.desc(),
+            Token.token_number.asc(),
+        )
         .all()
     )
 
@@ -8633,6 +8711,29 @@ def hospital_tokens(
         token_to_dict(token)
         for token in tokens
     ]
+
+
+@app.post("/hospitals/{hospital_id}/tokens/purge-expired")
+def hospital_purge_expired_tokens(
+    hospital_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Hospital: Purge tokens older than 90 days for this hospital."""
+    if hospital_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    deleted = purge_expired_hospital_tokens(db, hospital_id=hospital_id)
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    cutoff_date = (ist_now - timedelta(days=90)).date()
+
+    return {
+        "success": True,
+        "deleted_count": deleted,
+        "retention_days": 90,
+        "cutoff_date": str(cutoff_date),
+        "message": f"Successfully purged {deleted} token(s) older than 90 days (before {cutoff_date})."
+    }
 # ============================================================
 # ADMIN - HOSPITAL REVENUE (ADMIN AUTHENTICATION REQUIRED)
 # ============================================================
@@ -8691,8 +8792,22 @@ def admin_hospital_revenue(
         "total_collected": total_collected,
     }
 # ============================================================
-# STARTUP INFORMATION
+# STARTUP ROUTINE & 90-DAY RETENTION MAINTENANCE
 # ============================================================
+
+@app.on_event("startup")
+def on_app_startup():
+    """Startup routine: purge tokens older than 90 days and patient inquiries older than 24 hours."""
+    db = SessionLocal()
+    try:
+        purged = purge_expired_hospital_tokens(db)
+        if purged:
+            logging.info("Startup Maintenance: Automatically deleted %d token(s) older than 90 days.", purged)
+        purge_expired_patient_inquiries(db)
+    except Exception as exc:
+        logging.warning("Startup maintenance note: %s", exc)
+    finally:
+        db.close()
 
 print()
 print("================================================")
@@ -8706,6 +8821,7 @@ print(
     f"Google Client ID configured: "
     f"{bool(GOOGLE_CLIENT_ID)}"
 )
+print("Token Retention: 90 Days Auto-Prune Active")
 print("================================================")
 
 

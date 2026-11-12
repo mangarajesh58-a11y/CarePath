@@ -508,6 +508,9 @@ async function loadPatients(silent = false) {
         });
 
         hospitalTokens.sort(function(a, b) {
+            const dateA = a.appointment_date || (a.created_at ? a.created_at.split('T')[0] : '');
+            const dateB = b.appointment_date || (b.created_at ? b.created_at.split('T')[0] : '');
+            if (dateA !== dateB) return dateA.localeCompare(dateB);
             return Number(a.token_number || 0) - Number(b.token_number || 0);
         });
 
