@@ -78,6 +78,15 @@ public class MainActivity extends BridgeActivity {
             }
         }
 
+        
+        // 5. Geolocation / Location Permissions for Nearby Hospitals & Doctors
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissionsNeeded.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+
         if (!permissionsNeeded.isEmpty()) {
             ActivityCompat.requestPermissions(
                 this,
@@ -95,6 +104,7 @@ public class MainActivity extends BridgeActivity {
             settings.setAllowFileAccess(true);
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
+            settings.setGeolocationEnabled(true);
         }
     }
 

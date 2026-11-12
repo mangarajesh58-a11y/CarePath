@@ -19,9 +19,55 @@
 
   let hospitalRecords = [];
   let activeSponsoredAds = [];
-  let activeFilter = "all";
+  let activeFilter = "nearby";
   let activeQuery = "";
   let requestController = null;
+
+  const CarePathLocationManagerUI = {
+    requestLocation: function () {
+      const btn = byId("btnDetectLocationText");
+      const sub = byId("locationStatusSub");
+      if (btn) btn.textContent = "Detecting...";
+      if (sub) sub.textContent = "Accessing device GPS location...";
+
+      if (!window.CarePathLocation) {
+        if (sub) sub.textContent = "Location engine loading...";
+        return;
+      }
+
+      window.CarePathLocation.requestLocation(
+        function (loc) {
+          updateLocationBarUI(loc);
+          if (Array.isArray(hospitalRecords) && hospitalRecords.length > 0) {
+            hospitalRecords = window.CarePathLocation.annotateAndSortByDistance(
+              hospitalRecords,
+              loc.latitude,
+              loc.longitude
+            );
+            renderHospitalCards();
+          }
+        },
+        function (err) {
+          if (btn) btn.textContent = "Use My Location";
+          if (sub) sub.textContent = "Location permission denied. Please allow location in browser/app.";
+        }
+      );
+    }
+  };
+  window.CarePathLocationManagerUI = CarePathLocationManagerUI;
+
+  function updateLocationBarUI(loc) {
+    const badge = byId("locationActiveBadge");
+    const title = byId("locationStatusTitle");
+    const sub = byId("locationStatusSub");
+    const btn = byId("btnDetectLocationText");
+
+    if (badge) badge.style.display = "inline-flex";
+    if (title) title.textContent = "Hospitals Near You";
+    if (sub) sub.textContent = "Showing closest hospitals based on GPS location";
+    if (btn) btn.textContent = "Update GPS";
+  }
+
 
   const byId = (id) => document.getElementById(id);
 
@@ -130,6 +176,45 @@
 
     // Load current hospital records from the backend.
     loadHospitalsForCards();
+
+    // Auto-detect or restore nearby location
+    if (window.CarePathLocation) {
+      const savedLoc = window.CarePathLocation.getSavedLocation();
+      if (savedLoc) {
+        updateLocationBarUI(savedLoc);
+      }
+      // Always trigger fresh location detect in background so nearby order stays accurate
+      window.CarePathLocation.requestLocation(
+        function (loc) {
+          updateLocationBarUI(loc);
+          if (Array.isArray(hospitalRecords) && hospitalRecords.length > 0) {
+            hospitalRecords = window.CarePathLocation.annotateAndSortByDistance(
+              hospitalRecords,
+              loc.latitude,
+              loc.longitude
+            );
+            renderHospitalCards();
+          }
+        },
+        function (err) {
+          console.info("CarePath Location auto-detect:", err ? err.message : "denied");
+        }
+      );
+    }
+
+    window.addEventListener("carepath-location-updated", function (e) {
+      const coords = e.detail;
+      if (coords && window.CarePathLocation && Array.isArray(hospitalRecords)) {
+        hospitalRecords = window.CarePathLocation.annotateAndSortByDistance(
+          hospitalRecords,
+          coords.latitude,
+          coords.longitude
+        );
+        updateLocationBarUI(coords);
+        renderHospitalCards();
+      }
+    });
+
   }
 
   async function loadHospitalsForCards() {
@@ -350,7 +435,13 @@
       return true;
     });
 
-    if (activeFilter === "lowfee") {
+    if (activeFilter === "nearby") {
+      result = result.slice().sort(function (a, b) {
+        const dA = a.distance_km != null ? a.distance_km : 999999;
+        const dB = b.distance_km != null ? b.distance_km : 999999;
+        return dA - dB;
+      });
+    } else if (activeFilter === "lowfee") {
       result = result.slice().sort(function (a, b) {
         return tokenFee(a) - tokenFee(b);
       });
@@ -435,6 +526,12 @@
       cover.appendChild(photo);
       cover.appendChild(makeElement("span", "hospital-photo-shade"));
 
+      if (hospital.distance_text) {
+        cover.appendChild(
+          makeElement("span", "hospital-cover-distance", "📍 " + hospital.distance_text)
+        );
+      }
+
       if (isVerified(hospital)) {
         cover.appendChild(
           makeElement("span", "hospital-badge", "✓ VERIFIED")
@@ -452,9 +549,11 @@
 
       details.appendChild(makeElement("h3", "", hospitalName(hospital)));
 
-      details.appendChild(
-        makeElement("p", "hospital-location", "⌖ " + hospitalCity(hospital))
-      );
+      const locP = makeElement("p", "hospital-location", "⌖ " + hospitalCity(hospital));
+      if (hospital.distance_text) {
+        locP.appendChild(makeElement("span", "hospital-distance-badge", hospital.distance_text));
+      }
+      details.appendChild(locP);
 
       details.appendChild(
         makeElement(

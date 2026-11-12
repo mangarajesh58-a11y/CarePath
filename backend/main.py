@@ -3326,7 +3326,38 @@ def get_current_platform_fee(db: Session) -> int:
         pass
     return PLATFORM_FEE
 
+
+DEFAULT_CITY_COORDINATES = {
+    "bhubaneswar": ("20.2961", "85.8245"),
+    "cuttack": ("20.4625", "85.8828"),
+    "hyderabad": ("17.3850", "78.4867"),
+    "nagar kurnool": ("16.4855", "78.3150"),
+    "nagarkurnool": ("16.4855", "78.3150"),
+    "bangalore": ("12.9716", "77.5946"),
+    "bengaluru": ("12.9716", "77.5946"),
+    "mumbai": ("19.0760", "72.8777"),
+    "delhi": ("28.6139", "77.2090"),
+    "new delhi": ("28.6139", "77.2090"),
+    "pune": ("18.5204", "73.8567"),
+    "kolkata": ("22.5726", "88.3639"),
+    "chennai": ("13.0827", "80.2707"),
+}
+
+def resolve_hospital_coordinates(hospital):
+    if not hospital:
+        return None, None
+    lat = getattr(hospital, "latitude", None)
+    lng = getattr(hospital, "longitude", None)
+    if lat and lng and str(lat).strip() and str(lng).strip() and str(lat).strip().upper() != "NULL":
+        return str(lat).strip(), str(lng).strip()
+    city_str = str(getattr(hospital, "city", "") or getattr(hospital, "address", "") or "").lower()
+    for c_name, (c_lat, c_lng) in DEFAULT_CITY_COORDINATES.items():
+        if c_name in city_str:
+            return c_lat, c_lng
+    return (str(lat).strip() if lat else None), (str(lng).strip() if lng else None)
+
 def hospital_to_dict(hospital):
+
 
     return {
         "id": hospital.id,
@@ -3365,8 +3396,8 @@ def hospital_to_dict(hospital):
         "is_published": hospital.is_published,
 
         "token_fee": hospital.token_fee,
-        "latitude": hospital.latitude,
-        "longitude": hospital.longitude,
+        "latitude": resolve_hospital_coordinates(hospital)[0],
+        "longitude": resolve_hospital_coordinates(hospital)[1],
 
         "payment_account_status": (
             hospital.payment_account_status
@@ -3408,8 +3439,8 @@ def public_hospital_to_dict(hospital):
         "description": hospital.description,
         "image_url": resolve_hospital_photo_url(hospital),
         "token_fee": hospital.token_fee,
-        "latitude": hospital.latitude,
-        "longitude": hospital.longitude,
+        "latitude": resolve_hospital_coordinates(hospital)[0],
+        "longitude": resolve_hospital_coordinates(hospital)[1],
         "approval_status": hospital.approval_status,
         "is_published": hospital.is_published,
         "opening_time": hospital.opening_time or "09:00",
@@ -3437,11 +3468,17 @@ def format_time_12h(time_str: str | None) -> str | None:
     except Exception:
         return time_str
 
-def doctor_to_dict(doctor):
+def doctor_to_dict(doctor, hospital=None):
 
     start_12h = format_time_12h(doctor.start_time)
     end_12h = format_time_12h(doctor.end_time)
     hours_12h = f"{start_12h} - {end_12h}" if (start_12h and end_12h) else None
+
+    hosp_name = getattr(hospital, "name", None)
+    hosp_city = getattr(hospital, "city", None)
+    hosp_address = getattr(hospital, "address", None)
+    hosp_lat, hosp_lng = resolve_hospital_coordinates(hospital) if hospital else (None, None)
+    hosp_fee = getattr(hospital, "token_fee", 0)
 
     return {
         "id": doctor.id,
@@ -3461,6 +3498,14 @@ def doctor_to_dict(doctor):
         "consultation_hours_12h": hours_12h,
         "is_available": getattr(doctor, "is_available", True),
         "room_number": getattr(doctor, "room_number", None),
+
+        # Hospital & location context for nearby doctors
+        "hospital_name": hosp_name,
+        "hospital_city": hosp_city,
+        "hospital_address": hosp_address,
+        "hospital_latitude": hosp_lat,
+        "hospital_longitude": hosp_lng,
+        "hospital_token_fee": hosp_fee,
     }
 
 # ============================================================
@@ -5768,8 +5813,15 @@ def get_doctors(
         .all()
     )
 
+    # Pre-fetch hospitals for location & nearby sorting
+    hosp_ids = {d.hospital_id for d in doctors if d.hospital_id}
+    hospitals_by_id = {}
+    if hosp_ids:
+        for h in db.query(Hospital).filter(Hospital.id.in_(hosp_ids)).all():
+            hospitals_by_id[h.id] = h
+
     result = [
-        doctor_to_dict(doctor)
+        doctor_to_dict(doctor, hospitals_by_id.get(doctor.hospital_id))
         for doctor in doctors
     ]
     set_cached_doctors(cache_key, result)
@@ -5839,7 +5891,7 @@ def get_hospital_doctors(
     )
 
     result = [
-        doctor_to_dict(doctor)
+        doctor_to_dict(doctor, hospital)
         for doctor in doctors
     ]
     set_cached_doctors(cache_key, result)

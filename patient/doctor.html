@@ -441,6 +441,103 @@
                 width: 100%;
             }
         }
+    
+        /* Location Bar & Distance Badges */
+        .doctor-location-bar {
+            background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+            border: 1.5px solid #bbf7d0;
+            border-radius: 14px;
+            padding: 12px 18px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.08);
+            flex-wrap: wrap;
+        }
+
+        .doc-loc-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 220px;
+        }
+
+        .doc-loc-pin {
+            width: 38px;
+            height: 38px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
+            flex-shrink: 0;
+        }
+
+        .doc-loc-title {
+            font-weight: 800;
+            font-size: 14px;
+            color: #0f172a;
+        }
+
+        .doc-loc-sub {
+            font-size: 12px;
+            color: #475569;
+            margin-top: 2px;
+        }
+
+        .btn-doc-loc {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            background: #ffffff;
+            border: 1.5px solid #10b981;
+            color: #047857;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
+        }
+
+        .btn-doc-loc:hover {
+            background: #10b981;
+            color: white;
+        }
+
+        .doctor-dist-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 800;
+            margin-left: 6px;
+        }
+
+        .card-dist-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
     </style>
 </head>
 
@@ -481,6 +578,20 @@
             <!-- Populated via script -->
         </div>
 
+                <!-- Nearby Doctors Location Banner -->
+        <div id="doctorLocationBar" class="doctor-location-bar">
+            <div class="doc-loc-info">
+                <span class="doc-loc-pin">📍</span>
+                <div>
+                    <div class="doc-loc-title" id="docLocTitle">Doctors Nearby Your Location</div>
+                    <div class="doc-loc-sub" id="docLocSub">Allow location access to show doctors closest to you</div>
+                </div>
+            </div>
+            <button type="button" id="btnDocUpdateLocation" class="btn-doc-loc" onclick="requestDoctorLocation()">
+                🎯 <span id="docLocBtnText">Use My Location</span>
+            </button>
+        </div>
+
         <!-- Search & Department Filter Bar -->
         <div class="filter-panel">
             <div class="search-box">
@@ -508,9 +619,9 @@
         // 1. INSTANT PRE-SEED DATA (Guarantees 0ms Instant Load)
         // ============================================================
         const PRESEED_HOSPITALS = [
-            { id: 15, name: "SREE CARE HOSPITAL", city: "Bhubaneswar", token_fee: 50 },
-            { id: 24, name: "Test Metro Hospital", city: "Cuttack", token_fee: 50 },
-            { id: 22, name: "Global Hospital", city: "Bhubaneswar", token_fee: 60 }
+            { id: 15, name: "SREE CARE HOSPITAL", city: "Nagar Kurnool", latitude: "16.4855", longitude: "78.3150", token_fee: 50 },
+            { id: 24, name: "Test Metro Hospital", city: "Bhubaneswar", latitude: "20.2961", longitude: "85.8245", token_fee: 50 },
+            { id: 22, name: "Global Hospital", city: "Hyderabad", latitude: "17.4065", longitude: "78.4772", token_fee: 60 }
         ];
 
         const PRESEED_DOCTORS = [
@@ -518,6 +629,9 @@
                 id: 11,
                 hospital_id: 15,
                 hospital_name: "SREE CARE HOSPITAL",
+                hospital_city: "Nagar Kurnool",
+                hospital_latitude: "16.4855",
+                hospital_longitude: "78.3150",
                 name: "Divyansh",
                 department: "General",
                 specialization: "General Physician",
@@ -532,6 +646,9 @@
                 id: 7,
                 hospital_id: 15,
                 hospital_name: "SREE CARE HOSPITAL",
+                hospital_city: "Nagar Kurnool",
+                hospital_latitude: "16.4855",
+                hospital_longitude: "78.3150",
                 name: "MR.DR.ROCKY",
                 department: "CARDIOLOGY",
                 specialization: "Cardiology Specialist",
@@ -546,6 +663,9 @@
                 id: 12,
                 hospital_id: 24,
                 hospital_name: "Test Metro Hospital",
+                hospital_city: "Bhubaneswar",
+                hospital_latitude: "20.2961",
+                hospital_longitude: "85.8245",
                 name: "Dr. Rajesh Sharma",
                 department: "Cardiology",
                 specialization: "Senior Interventional Cardiologist",
@@ -558,8 +678,11 @@
             },
             {
                 id: 5,
-                hospital_id: 11,
-                hospital_name: "CarePath Partner Clinic",
+                hospital_id: 22,
+                hospital_name: "Global Hospital",
+                hospital_city: "Hyderabad",
+                hospital_latitude: "17.4065",
+                hospital_longitude: "78.4772",
                 name: "Dr. Rajesh",
                 department: "General Medicine",
                 specialization: "General Practitioner",
@@ -598,6 +721,97 @@
 
         let activeHospitalName = localStorage.getItem("selectedHospitalName") ||
             (selectedHospitalContext ? selectedHospitalContext.name : null);
+
+        
+        // ============================================================
+        // GEOLOCATION & NEARBY DOCTORS HELPER
+        // ============================================================
+        const CITY_COORDS = {
+            'bhubaneswar': { lat: 20.2961, lng: 85.8245 },
+            'cuttack': { lat: 20.4625, lng: 85.8828 },
+            'hyderabad': { lat: 17.3850, lng: 78.4867 },
+            'nagar kurnool': { lat: 16.4855, lng: 78.3150 },
+            'nagarkurnool': { lat: 16.4855, lng: 78.3150 },
+            'bangalore': { lat: 12.9716, lng: 77.5946 },
+            'bengaluru': { lat: 12.9716, lng: 77.5946 },
+            'mumbai': { lat: 19.0760, lng: 72.8777 },
+            'delhi': { lat: 28.6139, lng: 77.2090 },
+            'pune': { lat: 18.5204, lng: 73.8567 },
+            'kolkata': { lat: 22.5726, lng: 88.3639 },
+            'chennai': { lat: 13.0827, lng: 80.2707 }
+        };
+
+        function resolveDoctorCoords(doc) {
+            let lat = doc.hospital_latitude ?? doc.latitude ?? doc.lat;
+            let lng = doc.hospital_longitude ?? doc.longitude ?? doc.lng;
+            if (lat && lng && String(lat).toUpperCase() !== 'NULL' && String(lng).toUpperCase() !== 'NULL') {
+                const pLat = parseFloat(lat);
+                const pLng = parseFloat(lng);
+                if (!isNaN(pLat) && !isNaN(pLng)) return { lat: pLat, lng: pLng };
+            }
+            const city = (doc.hospital_city || doc.hospital_name || '').toLowerCase();
+            for (const [key, coords] of Object.entries(CITY_COORDS)) {
+                if (city.includes(key)) return coords;
+            }
+            return null;
+        }
+
+        function calcDistanceKm(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function formatDistance(distKm) {
+            if (distKm == null || isNaN(distKm)) return null;
+            if (distKm < 1) return Math.round(distKm * 1000) + ' m away';
+            if (distKm < 10) return distKm.toFixed(1) + ' km away';
+            return Math.round(distKm) + ' km away';
+        }
+
+        function updateDocLocUI(userLat, userLng) {
+            const title = document.getElementById("docLocTitle");
+            const sub = document.getElementById("docLocSub");
+            const btn = document.getElementById("docLocBtnText");
+            if (!isNaN(userLat) && !isNaN(userLng)) {
+                if (title) title.textContent = "Doctors Nearby Your Location";
+                if (sub) sub.textContent = "Showing doctors sorted closest to you";
+                if (btn) btn.textContent = "Update GPS";
+            }
+        }
+
+        function requestDoctorLocation() {
+            const btn = document.getElementById("docLocBtnText");
+            const sub = document.getElementById("docLocSub");
+            if (btn) btn.textContent = "Detecting...";
+            if (sub) sub.textContent = "Accessing device GPS location...";
+
+            if (!navigator.geolocation) {
+                if (sub) sub.textContent = "Geolocation not supported";
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    localStorage.setItem("carepath_user_lat", lat.toString());
+                    localStorage.setItem("carepath_user_lng", lng.toString());
+                    localStorage.setItem("carepath_loc_granted", "true");
+                    updateDocLocUI(lat, lng);
+                    renderCards();
+                },
+                (err) => {
+                    if (btn) btn.textContent = "Use My Location";
+                    if (sub) sub.textContent = "Location access denied. Please allow location in browser/settings.";
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+            );
+        }
 
         // Elements
         const doctorListEl = document.getElementById("doctorList");
@@ -748,6 +962,31 @@
                     (d.specialization || "").toLowerCase().includes(query) ||
                     (d.hospital_name || "").toLowerCase().includes(query)
                 );
+            }
+
+            // Calculate distance to doctor's hospital and sort nearby first
+            const userLat = parseFloat(localStorage.getItem("carepath_user_lat"));
+            const userLng = parseFloat(localStorage.getItem("carepath_user_lng"));
+
+            if (!isNaN(userLat) && !isNaN(userLng)) {
+                filtered = filtered.map(doc => {
+                    const coords = resolveDoctorCoords(doc);
+                    let dist = null;
+                    if (coords) {
+                        dist = calcDistanceKm(userLat, userLng, coords.lat, coords.lng);
+                    }
+                    return {
+                        ...doc,
+                        distance_km: dist,
+                        distance_text: dist != null ? formatDistance(dist) : null
+                    };
+                });
+
+                filtered.sort((a, b) => {
+                    const dA = a.distance_km != null ? a.distance_km : 999999;
+                    const dB = b.distance_km != null ? b.distance_km : 999999;
+                    return dA - dB;
+                });
             }
 
             if (!filtered || filtered.length === 0) {
@@ -915,6 +1154,17 @@
 
         // Run Instant Load (0ms)
         initInstantData();
+
+        // Check saved location & trigger background GPS refresh
+        const savedLat = parseFloat(localStorage.getItem("carepath_user_lat"));
+        const savedLng = parseFloat(localStorage.getItem("carepath_user_lng"));
+        if (!isNaN(savedLat) && !isNaN(savedLng)) {
+            updateDocLocUI(savedLat, savedLng);
+        } else {
+            // Auto detect on first visit
+            requestDoctorLocation();
+        }
+
 
         // Silent Background Sync
         fetchFreshData();

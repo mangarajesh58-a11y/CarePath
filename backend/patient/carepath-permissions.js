@@ -322,8 +322,173 @@
     }
   };
 
+
+  // ----------------------------------------------------
+  // CarePath Geolocation & Nearby Engine
+  // ----------------------------------------------------
+  const CarePathLocationEngine = {
+    CITY_COORDINATES: {
+      'bhubaneswar': { lat: 20.2961, lng: 85.8245, name: 'Bhubaneswar' },
+      'cuttack': { lat: 20.4625, lng: 85.8828, name: 'Cuttack' },
+      'hyderabad': { lat: 17.3850, lng: 78.4867, name: 'Hyderabad' },
+      'nagar kurnool': { lat: 16.4855, lng: 78.3150, name: 'Nagar Kurnool' },
+      'nagarkurnool': { lat: 16.4855, lng: 78.3150, name: 'Nagar Kurnool' },
+      'bangalore': { lat: 12.9716, lng: 77.5946, name: 'Bengaluru' },
+      'bengaluru': { lat: 12.9716, lng: 77.5946, name: 'Bengaluru' },
+      'mumbai': { lat: 19.0760, lng: 72.8777, name: 'Mumbai' },
+      'delhi': { lat: 28.6139, lng: 77.2090, name: 'Delhi' },
+      'new delhi': { lat: 28.6139, lng: 77.2090, name: 'Delhi' },
+      'pune': { lat: 18.5204, lng: 73.8567, name: 'Pune' },
+      'kolkata': { lat: 22.5726, lng: 88.3639, name: 'Kolkata' },
+      'chennai': { lat: 13.0827, lng: 80.2707, name: 'Chennai' }
+    },
+
+    getSavedLocation() {
+      try {
+        const lat = parseFloat(localStorage.getItem('carepath_user_lat'));
+        const lng = parseFloat(localStorage.getItem('carepath_user_lng'));
+        if (!isNaN(lat) && !isNaN(lng)) {
+          return {
+            latitude: lat,
+            longitude: lng,
+            name: localStorage.getItem('carepath_user_loc_name') || 'Current Location',
+            timestamp: parseInt(localStorage.getItem('carepath_user_loc_time') || '0', 10)
+          };
+        }
+      } catch (e) {}
+      return null;
+    },
+
+    calculateDistance(lat1, lon1, lat2, lon2) {
+      if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return null;
+      const pLat1 = typeof lat1 === 'number' ? lat1 : parseFloat(lat1);
+      const pLon1 = typeof lon1 === 'number' ? lon1 : parseFloat(lon1);
+      const pLat2 = typeof lat2 === 'number' ? lat2 : parseFloat(lat2);
+      const pLon2 = typeof lon2 === 'number' ? lon2 : parseFloat(lon2);
+      if (isNaN(pLat1) || isNaN(pLon1) || isNaN(pLat2) || isNaN(pLon2)) return null;
+
+      const R = 6371; // Earth radius in km
+      const dLat = (pLat2 - pLat1) * Math.PI / 180;
+      const dLon = (pLon2 - pLon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(pLat1 * Math.PI / 180) * Math.cos(pLat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    },
+
+    formatDistance(distKm) {
+      if (distKm == null || isNaN(distKm)) return null;
+      if (distKm < 1) {
+        return Math.round(distKm * 1000) + ' m away';
+      }
+      if (distKm < 10) {
+        return distKm.toFixed(1) + ' km away';
+      }
+      return Math.round(distKm) + ' km away';
+    },
+
+    resolveCoordinates(item) {
+      if (!item) return null;
+      let lat = item.latitude ?? item.hospital_latitude ?? item.lat;
+      let lng = item.longitude ?? item.hospital_longitude ?? item.lng;
+      if (lat && lng && strVal(lat) !== 'NULL' && strVal(lng) !== 'NULL') {
+        const pLat = parseFloat(lat);
+        const pLng = parseFloat(lng);
+        if (!isNaN(pLat) && !isNaN(pLng)) {
+          return { lat: pLat, lng: pLng };
+        }
+      }
+      const city = (item.city || item.hospital_city || item.location || item.address || '').toLowerCase();
+      for (const [key, coords] of Object.entries(this.CITY_COORDINATES)) {
+        if (city.includes(key)) {
+          return { lat: coords.lat, lng: coords.lng };
+        }
+      }
+      return null;
+
+      function strVal(v) { return String(v).trim().toUpperCase(); }
+    },
+
+    async requestLocation(onSuccess, onError, options = {}) {
+      if (!navigator.geolocation) {
+        const err = new Error('Geolocation is not supported by your browser.');
+        if (typeof onError === 'function') onError(err);
+        return;
+      }
+
+      const geoOptions = Object.assign(
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+        options
+      );
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          try {
+            localStorage.setItem('carepath_user_lat', lat.toString());
+            localStorage.setItem('carepath_user_lng', lng.toString());
+            localStorage.setItem('carepath_user_loc_time', Date.now().toString());
+            localStorage.setItem('carepath_loc_granted', 'true');
+          } catch (e) {}
+
+          const result = {
+            latitude: lat,
+            longitude: lng,
+            accuracy: pos.coords.accuracy,
+            name: 'Current Location'
+          };
+
+          // Dispatch event so all open views (dashboard, doctors) react immediately
+          try {
+            window.dispatchEvent(new CustomEvent('carepath-location-updated', { detail: result }));
+          } catch (e) {}
+
+          if (typeof onSuccess === 'function') onSuccess(result);
+        },
+        (err) => {
+          console.warn('CarePath Location Request:', err.message);
+          if (typeof onError === 'function') onError(err);
+        },
+        geoOptions
+      );
+    },
+
+    annotateAndSortByDistance(items, userLat, userLng) {
+      if (!Array.isArray(items)) return [];
+      const pLat = userLat != null ? parseFloat(userLat) : null;
+      const pLng = userLng != null ? parseFloat(userLng) : null;
+
+      const annotated = items.map((item) => {
+        const coords = this.resolveCoordinates(item);
+        let dist = null;
+        if (pLat != null && pLng != null && !isNaN(pLat) && !isNaN(pLng) && coords) {
+          dist = this.calculateDistance(pLat, pLng, coords.lat, coords.lng);
+        }
+        return Object.assign({}, item, {
+          distance_km: dist,
+          distance_text: dist != null ? this.formatDistance(dist) : null
+        });
+      });
+
+      if (pLat != null && pLng != null && !isNaN(pLat) && !isNaN(pLng)) {
+        annotated.sort((a, b) => {
+          const dA = a.distance_km != null ? a.distance_km : 999999;
+          const dB = b.distance_km != null ? b.distance_km : 999999;
+          return dA - dB;
+        });
+      }
+
+      return annotated;
+    }
+  };
+
   // Expose global namespace
+  window.CarePathLocation = CarePathLocationEngine;
   window.CarePathPermissions = {
+    location: CarePathLocationEngine,
     requestNotificationPermission: () => CarePathNotifications.requestPermission(),
     sendNotification: (title, opts) => CarePathNotifications.send(title, opts),
     initNotificationBanner: (cId) => CarePathNotifications.initBanner(cId),
