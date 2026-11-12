@@ -23,6 +23,159 @@
   let activeQuery = "";
   let requestController = null;
 
+  // =========================================================
+  // TOP DOCTORS SPOTLIGHT (0ms INSTANT + LIVE BACKGROUND)
+  // =========================================================
+  const PRESEED_DASHBOARD_DOCTORS = [
+    {
+      id: 11,
+      hospital_id: 15,
+      hospital_name: "SREE CARE HOSPITAL",
+      hospital_city: "Nagar Kurnool",
+      hospital_latitude: "16.4855",
+      hospital_longitude: "78.3150",
+      name: "Divyansh",
+      department: "General Medicine",
+      specialization: "General Physician",
+      experience: "8 years",
+      is_available: true,
+      image_url: "/doctor-photos/doctor_11_45cf251ae12d4968b20f548dec319015.jpg"
+    },
+    {
+      id: 12,
+      hospital_id: 24,
+      hospital_name: "Test Metro Hospital",
+      hospital_city: "Bhubaneswar",
+      hospital_latitude: "20.2961",
+      hospital_longitude: "85.8245",
+      name: "Dr. Rajesh Sharma",
+      department: "Cardiology",
+      specialization: "Senior Interventional Cardiologist",
+      experience: "12 years",
+      is_available: true,
+      image_url: null
+    },
+    {
+      id: 7,
+      hospital_id: 15,
+      hospital_name: "SREE CARE HOSPITAL",
+      hospital_city: "Nagar Kurnool",
+      hospital_latitude: "16.4855",
+      hospital_longitude: "78.3150",
+      name: "MR.DR.ROCKY",
+      department: "Cardiology",
+      specialization: "Cardiology Specialist",
+      experience: "7 years",
+      is_available: true,
+      image_url: null
+    },
+    {
+      id: 5,
+      hospital_id: 22,
+      hospital_name: "Global Hospital",
+      hospital_city: "Hyderabad",
+      hospital_latitude: "17.4065",
+      hospital_longitude: "78.4772",
+      name: "Dr. Rajesh",
+      department: "General Medicine",
+      specialization: "General Practitioner",
+      experience: "8 years",
+      is_available: true,
+      image_url: null
+    }
+  ];
+
+  let dashboardDoctorsList = PRESEED_DASHBOARD_DOCTORS.slice();
+
+  function renderDashboardDoctors() {
+    const row = byId("dashboardDoctorsRow");
+    const countEl = byId("nearbyDoctorsCount");
+    if (!row) return;
+
+    let docs = dashboardDoctorsList.slice();
+    if (window.CarePathLocation) {
+      const loc = window.CarePathLocation.getSavedLocation();
+      if (loc) {
+        docs = window.CarePathLocation.annotateAndSortByDistance(
+          docs,
+          loc.latitude,
+          loc.longitude
+        );
+      }
+    }
+
+    if (countEl) {
+      countEl.textContent = docs.length + " available specialists";
+    }
+
+    row.innerHTML = docs.map(function (doc) {
+      const photo = doc.image_url
+        ? (doc.image_url.startsWith("http") ? doc.image_url : API_BASE + (doc.image_url.startsWith("/") ? "" : "/") + doc.image_url)
+        : null;
+
+      const hospName = doc.hospital_name || "CarePath Partner Hospital";
+      const distBadge = doc.distance_text
+        ? '<span class="doc-card-dist">📍 ' + escapeHtml(doc.distance_text) + '</span>'
+        : '';
+
+      return (
+        '<div class="dashboard-doctor-card">' +
+          '<div>' +
+            '<div class="doc-card-top-row">' +
+              '<div class="doc-card-avatar">' +
+                (photo
+                  ? '<img src="' + photo + '" alt="' + escapeHtml(doc.name) + '" onerror="this.parentElement.innerHTML=\'👨‍⚕️\'">'
+                  : '<span>👨‍⚕️</span>') +
+              '</div>' +
+              '<div class="doc-card-meta">' +
+                '<h4 class="doc-card-name">' + escapeHtml(doc.name) + '</h4>' +
+                '<div class="doc-card-dept">' + escapeHtml(doc.department || "General") + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="doc-card-hosp-pill">' +
+              '<span class="doc-card-hosp-name">🏥 ' + escapeHtml(hospName) + '</span>' +
+              distBadge +
+            '</div>' +
+          '</div>' +
+          '<a href="doctor.html?hospital_id=' + (doc.hospital_id || "") + '" class="doc-card-action-btn">' +
+            'Book Token →' +
+          '</a>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  async function fetchFreshDoctorsForDashboard() {
+    try {
+      const res = await fetch(API_BASE + "/doctors", { headers: { Accept: "application/json" } });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          dashboardDoctorsList = data;
+          renderDashboardDoctors();
+        }
+      }
+    } catch (e) {
+      console.warn("CarePath: Live doctors fetch skipped:", e);
+    }
+  }
+
+  window.scrollToHospitals = function() {
+    const el = byId("availableHospitalsSection") || byId("hospitalCards");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+
   const CarePathLocationManagerUI = {
     requestLocation: function () {
       const btn = byId("btnDetectLocationText");
@@ -60,12 +213,10 @@
     const badge = byId("locationActiveBadge");
     const title = byId("locationStatusTitle");
     const sub = byId("locationStatusSub");
-    const btn = byId("btnDetectLocationText");
 
     if (badge) badge.style.display = "inline-flex";
-    if (title) title.textContent = "Hospitals Near You";
-    if (sub) sub.textContent = "Showing closest hospitals based on GPS location";
-    if (btn) btn.textContent = "Update GPS";
+    if (title) title.textContent = "Near You (GPS Active)";
+    if (sub) sub.textContent = "Sorted by proximity to your current location";
   }
 
 
@@ -212,6 +363,7 @@
         );
         updateLocationBarUI(coords);
         renderHospitalCards();
+        renderDashboardDoctors();
       }
     });
 
