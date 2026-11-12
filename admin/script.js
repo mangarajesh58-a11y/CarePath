@@ -489,19 +489,68 @@ function goDashboard() {
 }
 
 // =====================================================
-// LOAD ADMIN DASHBOARD
+// FAST CACHE HYDRATION (0ms)
+// =====================================================
+
+function hydrateAdminDashboardFromCache() {
+    try {
+        const raw = localStorage.getItem("carepath_admin_dash_cache");
+        if (raw) {
+            const data = JSON.parse(raw);
+            if (data.hospitalCount !== undefined && document.getElementById("hospitalCount")) {
+                document.getElementById("hospitalCount").textContent = data.hospitalCount;
+            }
+            if (data.platformRevenue !== undefined && document.getElementById("platformRevenue")) {
+                document.getElementById("platformRevenue").textContent = data.platformRevenue;
+            }
+            if (data.tokenRevenue !== undefined && document.getElementById("tokenRevenue")) {
+                document.getElementById("tokenRevenue").textContent = data.tokenRevenue;
+            }
+            if (data.totalCollected !== undefined && document.getElementById("totalCollected")) {
+                document.getElementById("totalCollected").textContent = data.totalCollected;
+            }
+            if (data.totalTokens !== undefined && document.getElementById("totalTokens")) {
+                document.getElementById("totalTokens").textContent = data.totalTokens;
+            }
+        }
+    } catch(e) {}
+}
+
+function saveAdminDashboardToCache() {
+    try {
+        const cache = {
+            hospitalCount: document.getElementById("hospitalCount")?.textContent,
+            platformRevenue: document.getElementById("platformRevenue")?.textContent,
+            tokenRevenue: document.getElementById("tokenRevenue")?.textContent,
+            totalCollected: document.getElementById("totalCollected")?.textContent,
+            totalTokens: document.getElementById("totalTokens")?.textContent,
+            savedAt: Date.now()
+        };
+        localStorage.setItem("carepath_admin_dash_cache", JSON.stringify(cache));
+    } catch(e) {}
+}
+
+// =====================================================
+// LOAD ADMIN DASHBOARD (PARALLEL & INSTANT)
 // =====================================================
 
 async function loadDashboard() {
     console.log(
-        "Loading admin dashboard..."
+        "Loading admin dashboard (0ms fast mode)..."
     );
 
-    try {
-        await loadDashboardHospitals();
-        await loadRevenue();
-        await loadAnalytics();
+    // Instant 0ms cache hydration
+    hydrateAdminDashboardFromCache();
 
+    try {
+        // Parallel high-speed fetch instead of sequential blocking
+        await Promise.allSettled([
+            loadDashboardHospitals(),
+            loadRevenue(),
+            loadAnalytics()
+        ]);
+
+        saveAdminDashboardToCache();
     } catch (error) {
         console.error(
             "Dashboard loading error:",

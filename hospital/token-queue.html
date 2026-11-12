@@ -300,11 +300,11 @@
                     required
                     maxlength="150">
 
-               <select id="walkInDepartment" required>
+               <select id="walkInDepartment" required onchange="loadWalkInDoctors()">
     <option value="">Loading departments...</option>
 </select>
 
-<select id="walkInDoctor" required disabled>
+<select id="walkInDoctor" required disabled onchange="updateQueueWalkInLiveTracker()">
     <option value="">Select a department first</option>
 </select>
                 <button type="submit" id="walkInSubmit">
@@ -314,6 +314,40 @@
             </div>
 
         </form>
+
+        <!-- LIVE OPD QUEUE TRACKER PORTION FOR WALK-IN SESSION -->
+        <div id="walkInLiveQueueBox" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 12px 14px; margin-top: 14px; margin-bottom: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 7px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);"></span>
+                    <strong style="font-size: 12px; color: #166534; text-transform: uppercase; letter-spacing: 0.3px;">Live OPD Queue Portion</strong>
+                </div>
+                <span id="walkInLqDoctorLabel" style="font-size: 11.5px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 12px;">All Doctors</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; margin-bottom: 8px;">
+                <div style="background: white; padding: 6px 4px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                    <div style="font-size: 10px; color: #64748b; font-weight: 600;">Currently Serving</div>
+                    <div id="walkInLqServingToken" style="font-size: 15px; font-weight: 800; color: #2563eb; margin-top: 2px;">--</div>
+                </div>
+                <div style="background: white; padding: 6px 4px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                    <div style="font-size: 10px; color: #64748b; font-weight: 600;">Waiting in Line</div>
+                    <div id="walkInLqWaitingCount" style="font-size: 15px; font-weight: 800; color: #d97706; margin-top: 2px;">0</div>
+                </div>
+                <div style="background: white; padding: 6px 4px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                    <div style="font-size: 10px; color: #64748b; font-weight: 600;">Next Token #</div>
+                    <div id="walkInLqNextToken" style="font-size: 15px; font-weight: 800; color: #16a34a; margin-top: 2px;">#1</div>
+                </div>
+                <div style="background: white; padding: 6px 4px; border-radius: 6px; border: 1px solid #bbf7d0;">
+                    <div style="font-size: 10px; color: #64748b; font-weight: 600;">Est. Wait</div>
+                    <div id="walkInLqEstWait" style="font-size: 15px; font-weight: 800; color: #475569; margin-top: 2px;">~0m</div>
+                </div>
+            </div>
+
+            <div id="walkInLqQueueChips" style="display: flex; gap: 6px; overflow-x: auto; padding-top: 2px; font-size: 11px;">
+                <span style="color: #64748b; font-style: italic;">Select doctor above to view live waiting queue</span>
+            </div>
+        </div>
 
         <p id="walkInResult" role="status" aria-live="polite"></p>
 
@@ -659,6 +693,73 @@ async function loadWalkInDepartments() {
     }
 }
 
+// LIVE OPD QUEUE TRACKER PORTION (WALK-IN SESSION)
+function updateQueueWalkInLiveTracker() {
+    const deptSelect = document.getElementById("walkInDepartment");
+    const docSelect = document.getElementById("walkInDoctor");
+    const doctorLabel = document.getElementById("walkInLqDoctorLabel");
+    const servingEl = document.getElementById("walkInLqServingToken");
+    const waitingEl = document.getElementById("walkInLqWaitingCount");
+    const nextTokenEl = document.getElementById("walkInLqNextToken");
+    const estWaitEl = document.getElementById("walkInLqEstWait");
+    const chipsEl = document.getElementById("walkInLqQueueChips");
+
+    if (!servingEl) return;
+
+    const rawDocVal = (docSelect?.value || "").trim();
+    const rawDeptVal = (deptSelect?.value || "").trim();
+
+    const cleanDoc = rawDocVal.split("(")[0].replace(/\[.*?\]/g, "").trim().toLowerCase();
+    const isDocChosen = cleanDoc && !cleanDoc.includes("select") && !cleanDoc.includes("loading");
+
+    let filtered = Array.isArray(allTokens) ? allTokens : [];
+    if (isDocChosen) {
+        filtered = filtered.filter(t => (t.doctor || "").toLowerCase().includes(cleanDoc));
+        if (doctorLabel) doctorLabel.textContent = `Dr. ${rawDocVal.split("(")[0].trim()}`;
+    } else if (rawDeptVal && !rawDeptVal.includes("Select") && !rawDeptVal.includes("Loading")) {
+        filtered = filtered.filter(t => (t.department || "").toLowerCase() === rawDeptVal.toLowerCase());
+        if (doctorLabel) doctorLabel.textContent = `${rawDeptVal} Dept`;
+    } else {
+        if (doctorLabel) doctorLabel.textContent = "All Doctors";
+    }
+
+    const serving = filtered.filter(t => (t.status || "").toLowerCase() === "serving");
+    const waiting = filtered.filter(t => (t.status || "").toLowerCase() === "waiting")
+        .sort((a, b) => Number(a.token_number || 0) - Number(b.token_number || 0));
+
+    if (serving.length > 0) {
+        servingEl.textContent = `#${serving[0].token_number}`;
+        servingEl.style.color = "#2563eb";
+    } else {
+        servingEl.textContent = "Free";
+        servingEl.style.color = "#16a34a";
+    }
+
+    waitingEl.textContent = waiting.length;
+
+    let maxToken = 0;
+    (Array.isArray(allTokens) ? allTokens : []).forEach(t => {
+        const num = Number(t.token_number || 0);
+        if (num > maxToken) maxToken = num;
+    });
+    nextTokenEl.textContent = `#${maxToken + 1}`;
+
+    const estMins = waiting.length * 5;
+    estWaitEl.textContent = estMins > 0 ? `~${estMins}m` : "No wait";
+
+    if (chipsEl) {
+        if (waiting.length === 0) {
+            chipsEl.innerHTML = `<span style="color:#16a34a; font-weight:600;">🟢 No queue waiting! Next walk-in patient will be attended immediately.</span>`;
+        } else {
+            chipsEl.innerHTML = waiting.slice(0, 6).map(t => `
+                <span style="background:#fef3c7; color:#92400e; padding:3px 9px; border-radius:12px; font-weight:700; white-space:nowrap; border:1px solid #fde68a;">
+                    #${t.token_number} ${escapeHtml(t.patient_name || 'Patient')}
+                </span>
+            `).join("") + (waiting.length > 6 ? `<span style="color:#64748b; font-weight:700; font-size:11px; align-self:center;">+${waiting.length - 6} more</span>` : '');
+        }
+    }
+}
+
 
 // =========================================================
 // LOAD DOCTORS BY DEPARTMENT
@@ -729,6 +830,73 @@ async function loadWalkInDoctors() {
             '<option value="">Unable to load doctors</option>';
 
         showMessage(error.message, true);
+    }
+}
+
+// LIVE OPD QUEUE TRACKER PORTION (WALK-IN SESSION)
+function updateQueueWalkInLiveTracker() {
+    const deptSelect = document.getElementById("walkInDepartment");
+    const docSelect = document.getElementById("walkInDoctor");
+    const doctorLabel = document.getElementById("walkInLqDoctorLabel");
+    const servingEl = document.getElementById("walkInLqServingToken");
+    const waitingEl = document.getElementById("walkInLqWaitingCount");
+    const nextTokenEl = document.getElementById("walkInLqNextToken");
+    const estWaitEl = document.getElementById("walkInLqEstWait");
+    const chipsEl = document.getElementById("walkInLqQueueChips");
+
+    if (!servingEl) return;
+
+    const rawDocVal = (docSelect?.value || "").trim();
+    const rawDeptVal = (deptSelect?.value || "").trim();
+
+    const cleanDoc = rawDocVal.split("(")[0].replace(/\[.*?\]/g, "").trim().toLowerCase();
+    const isDocChosen = cleanDoc && !cleanDoc.includes("select") && !cleanDoc.includes("loading");
+
+    let filtered = Array.isArray(allTokens) ? allTokens : [];
+    if (isDocChosen) {
+        filtered = filtered.filter(t => (t.doctor || "").toLowerCase().includes(cleanDoc));
+        if (doctorLabel) doctorLabel.textContent = `Dr. ${rawDocVal.split("(")[0].trim()}`;
+    } else if (rawDeptVal && !rawDeptVal.includes("Select") && !rawDeptVal.includes("Loading")) {
+        filtered = filtered.filter(t => (t.department || "").toLowerCase() === rawDeptVal.toLowerCase());
+        if (doctorLabel) doctorLabel.textContent = `${rawDeptVal} Dept`;
+    } else {
+        if (doctorLabel) doctorLabel.textContent = "All Doctors";
+    }
+
+    const serving = filtered.filter(t => (t.status || "").toLowerCase() === "serving");
+    const waiting = filtered.filter(t => (t.status || "").toLowerCase() === "waiting")
+        .sort((a, b) => Number(a.token_number || 0) - Number(b.token_number || 0));
+
+    if (serving.length > 0) {
+        servingEl.textContent = `#${serving[0].token_number}`;
+        servingEl.style.color = "#2563eb";
+    } else {
+        servingEl.textContent = "Free";
+        servingEl.style.color = "#16a34a";
+    }
+
+    waitingEl.textContent = waiting.length;
+
+    let maxToken = 0;
+    (Array.isArray(allTokens) ? allTokens : []).forEach(t => {
+        const num = Number(t.token_number || 0);
+        if (num > maxToken) maxToken = num;
+    });
+    nextTokenEl.textContent = `#${maxToken + 1}`;
+
+    const estMins = waiting.length * 5;
+    estWaitEl.textContent = estMins > 0 ? `~${estMins}m` : "No wait";
+
+    if (chipsEl) {
+        if (waiting.length === 0) {
+            chipsEl.innerHTML = `<span style="color:#16a34a; font-weight:600;">🟢 No queue waiting! Next walk-in patient will be attended immediately.</span>`;
+        } else {
+            chipsEl.innerHTML = waiting.slice(0, 6).map(t => `
+                <span style="background:#fef3c7; color:#92400e; padding:3px 9px; border-radius:12px; font-weight:700; white-space:nowrap; border:1px solid #fde68a;">
+                    #${t.token_number} ${escapeHtml(t.patient_name || 'Patient')}
+                </span>
+            `).join("") + (waiting.length > 6 ? `<span style="color:#64748b; font-weight:700; font-size:11px; align-self:center;">+${waiting.length - 6} more</span>` : '');
+        }
     }
 }
 
@@ -1023,6 +1191,10 @@ async function loadTokens() {
         populateFilters();
 
         renderTokens();
+        updateQueueWalkInLiveTracker();
+        try {
+            localStorage.setItem("cached_hospital_tokens_" + hospitalId, JSON.stringify(allTokens));
+        } catch(e) {}
 
 
         document.getElementById(
@@ -1715,8 +1887,19 @@ loadWalkInDepartments();
         }
 
 
-        // Initial queue loading
+        // Instant 0ms cache hydration
+        try {
+            const cached = localStorage.getItem("cached_hospital_tokens_" + hospitalId);
+            if (cached) {
+                allTokens = JSON.parse(cached);
+                updateMetrics();
+                populateFilters();
+                renderTokens();
+                updateQueueWalkInLiveTracker();
+            }
+        } catch(e) {}
 
+        // Initial queue loading
         loadTokens();
 
     }

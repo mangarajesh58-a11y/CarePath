@@ -5284,31 +5284,63 @@ def get_hospitals(
 # GET HOSPITAL BY ID
 # ============================================================
 
+# ============================================================
+# HIGH-SPEED IN-MEMORY HOSPITAL CACHE
+# ============================================================
+_HOSPITAL_CACHE = {}
+_HOSPITAL_CACHE_TTL = 60.0
+
+def get_cached_hospital(hosp_id: int):
+    item = _HOSPITAL_CACHE.get(hosp_id)
+    if item:
+        ts, data = item
+        if (time.time() - ts) < _HOSPITAL_CACHE_TTL:
+            return data
+    return None
+
+def set_cached_hospital(hosp_id: int, data):
+    _HOSPITAL_CACHE[hosp_id] = (time.time(), data)
+
+def invalidate_hospital_cache(hosp_id: Optional[int] = None):
+    if hosp_id is not None:
+        _HOSPITAL_CACHE.pop(hosp_id, None)
+    else:
+        _HOSPITAL_CACHE.clear()
+
 @app.get("/hospitals/{hospital_id}")
 def get_hospital(
     hospital_id: int,
+    response: Response = None,
     db: Session = Depends(get_db),
 ):
+    cached = get_cached_hospital(hospital_id)
+    if cached is not None:
+        if response:
+            response.headers["Cache-Control"] = "public, max-age=60, s-maxage=120, stale-while-revalidate=300"
+            response.headers["X-Cache"] = "HIT"
+        return cached
 
     hospital = (
-    db.query(Hospital)
-    .filter(
-        Hospital.id == hospital_id,
-        Hospital.approval_status == "APPROVED",
-        Hospital.is_published == True,
+        db.query(Hospital)
+        .filter(
+            Hospital.id == hospital_id,
+            Hospital.approval_status == "APPROVED",
+            Hospital.is_published == True,
+        )
+        .first()
     )
-    .first()
-)
     if not hospital:
-
         raise HTTPException(
             status_code=404,
             detail="Hospital not found",
         )
 
-    return public_hospital_to_dict(
-    hospital
-)
+    result = public_hospital_to_dict(hospital)
+    set_cached_hospital(hospital_id, result)
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=60, s-maxage=120, stale-while-revalidate=300"
+        response.headers["X-Cache"] = "MISS"
+    return result
 # ============================================================
 # DELETE DOCTOR
 # ============================================================
@@ -7780,14 +7812,39 @@ def admin_login(
     }
 
 # ============================================================
-# ADMIN - ALL HOSPITALS
+# ADMIN - ALL HOSPITALS (CACHED)
 # ============================================================
+
+_ADMIN_HOSPITALS_CACHE = {}
+_ADMIN_HOSPITALS_CACHE_TTL = 30.0
+
+def get_cached_admin_hospitals():
+    item = _ADMIN_HOSPITALS_CACHE.get("all")
+    if item:
+        ts, data = item
+        if (time.time() - ts) < _ADMIN_HOSPITALS_CACHE_TTL:
+            return data
+    return None
+
+def set_cached_admin_hospitals(data):
+    _ADMIN_HOSPITALS_CACHE["all"] = (time.time(), data)
+
+def invalidate_admin_hospitals_cache():
+    _ADMIN_HOSPITALS_CACHE.clear()
 
 @app.get("/admin/hospitals")
 def admin_get_hospitals(
+    response: Response = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("admin")),
 ):
+    cached = get_cached_admin_hospitals()
+    if cached is not None:
+        if response:
+            response.headers["Cache-Control"] = "private, max-age=30"
+            response.headers["X-Cache"] = "HIT"
+        return cached
+
     hospitals = (
         db.query(Hospital)
         .order_by(Hospital.id.desc())
@@ -7835,6 +7892,11 @@ def admin_get_hospitals(
         })
 
         result.append(hospital_data)
+
+    set_cached_admin_hospitals(result)
+    if response:
+        response.headers["Cache-Control"] = "private, max-age=30"
+        response.headers["X-Cache"] = "MISS"
 
     return result
 
@@ -8627,14 +8689,38 @@ def add_hospital_doctor(
 # ============================================================
 
 #============================================================
-# ADMIN - REVENUE
+# ADMIN - REVENUE (CACHED)
 # ============================================================
+
+_ADMIN_REVENUE_CACHE = {}
+_ADMIN_REVENUE_CACHE_TTL = 30.0
+
+def get_cached_admin_revenue():
+    item = _ADMIN_REVENUE_CACHE.get("rev")
+    if item:
+        ts, data = item
+        if (time.time() - ts) < _ADMIN_REVENUE_CACHE_TTL:
+            return data
+    return None
+
+def set_cached_admin_revenue(data):
+    _ADMIN_REVENUE_CACHE["rev"] = (time.time(), data)
+
+def invalidate_admin_revenue_cache():
+    _ADMIN_REVENUE_CACHE.clear()
 
 @app.get("/admin/revenue")
 def admin_revenue(
+    response: Response = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("admin")),
 ):
+    cached = get_cached_admin_revenue()
+    if cached is not None:
+        if response:
+            response.headers["Cache-Control"] = "private, max-age=30"
+            response.headers["X-Cache"] = "HIT"
+        return cached
 
     paid_tokens = (
         db.query(Token)
@@ -8656,7 +8742,7 @@ def admin_revenue(
     token_count = len(paid_tokens)
     ads_count = len(paid_ads)
 
-    return {
+    result = {
         "success": True,
         "hospital_revenue": hospital_revenue,
         "token_revenue": hospital_revenue,
@@ -8670,6 +8756,13 @@ def admin_revenue(
         "total_tokens": token_count,
         "platform_fee_per_token": PLATFORM_FEE,
     }
+
+    set_cached_admin_revenue(result)
+    if response:
+        response.headers["Cache-Control"] = "private, max-age=30"
+        response.headers["X-Cache"] = "MISS"
+
+    return result
 
 
 # ============================================================
