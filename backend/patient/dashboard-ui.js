@@ -178,7 +178,7 @@
 
   const CarePathLocationManagerUI = {
     requestLocation: function () {
-      const btn = byId("btnDetectLocationText");
+      const btn = byId("btnDetectLocationText") || byId("locActionText");
       const sub = byId("locationStatusSub");
       if (btn) btn.textContent = "Detecting...";
       if (sub) sub.textContent = "Accessing device GPS location...";
@@ -201,7 +201,7 @@
           }
         },
         function (err) {
-          if (btn) btn.textContent = "Use My Location";
+          if (btn) btn.textContent = "Update 🎯";
           if (sub) sub.textContent = "Location permission denied. Please allow location in browser/app.";
         }
       );
@@ -213,10 +213,12 @@
     const badge = byId("locationActiveBadge");
     const title = byId("locationStatusTitle");
     const sub = byId("locationStatusSub");
+    const btn = byId("btnDetectLocationText") || byId("locActionText");
 
     if (badge) badge.style.display = "inline-flex";
     if (title) title.textContent = "Near You (GPS Active)";
     if (sub) sub.textContent = "Sorted by proximity to your current location";
+    if (btn) btn.textContent = "Active ✓";
   }
 
 
@@ -735,7 +737,7 @@
       const cleanPhone = String(rawPhone).replace(/[^0-9]/g, "");
       if (cleanPhone) {
         const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
-        const waLink = makeElement("a", "card-wa-btn", "🟢");
+        const waLink = makeElement("a", "card-wa-btn", "💬");
         waLink.href = "https://wa.me/" + waNum + "?text=" + encodeURIComponent("Hello " + (hospitalName(hospital) || "Hospital") + ", I have an inquiry about appointments on CarePath.");
         waLink.target = "_blank";
         waLink.rel = "noopener noreferrer";
