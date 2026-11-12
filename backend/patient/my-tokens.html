@@ -663,7 +663,7 @@
             </div>
             ${t.status === "serving" ? `
               <div style="background: linear-gradient(135deg, #16a34a, #15803d); color: white; padding: 14px 18px; border-radius: 12px; margin: 12px 16px 0; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 16px rgba(22, 163, 74, 0.4); animation: pulse 2s infinite;">
-                <span style="font-size: 26px;">🔔</span>
+                <span style="font-size: 26px;">📢</span>
                 <div style="font-weight: 700; font-size: 14px; line-height: 1.4;">
                   <div style="font-size: 15px;">DOCTOR IS CALLING YOU NOW!</div>
                   <div style="font-size: 13px; font-weight: 500; opacity: 0.95; margin-top: 2px;">Please proceed to Dr. ${t.doctor || 'Doctor'}'s ${(t.doctor_room_number || t.room_number) ? (String(t.doctor_room_number || t.room_number).startsWith('Room') ? (t.doctor_room_number || t.room_number) : 'Room ' + (t.doctor_room_number || t.room_number)) : 'Consultation Room'}.</div>
@@ -1099,7 +1099,7 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
     <div id="patientCalledModal" class="receipt-modal-backdrop" style="display:none; z-index: 99999; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(6px); align-items: center; justify-content: center; position: fixed; inset: 0;">
       <div class="receipt-card" style="max-width: 440px; text-align: center; border: 3px solid #22c55e; box-shadow: 0 20px 40px rgba(34, 197, 94, 0.35); border-radius: 16px; overflow: hidden; background: white; margin: 16px;">
         <div style="background: linear-gradient(135deg, #16a34a, #15803d); color: white; padding: 24px;">
-          <div style="font-size: 42px; line-height: 1;">🔔</div>
+          <div style="font-size: 42px; line-height: 1;">📢</div>
           <h2 style="margin: 10px 0 4px; font-size: 22px; font-weight: 800;">IT'S YOUR TURN!</h2>
           <p style="margin: 0; font-size: 14px; opacity: 0.95;">Doctor is calling you for consultation</p>
         </div>
