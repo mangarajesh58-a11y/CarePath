@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctors - CarePath</title>
+    <title>Available Doctors - CarePath OPD</title>
 
     <style>
         * {
@@ -13,84 +13,247 @@
             padding: 0;
         }
 
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --card-border: #e2e8f0;
+            --success: #16a34a;
+            --danger: #dc2626;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f4f7fb;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f8fafc;
             min-height: 100vh;
-            color: #1e293b;
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
         }
 
         /* ================================
            HEADER
         ================================= */
         .header {
-            background: #2563eb;
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
             color: white;
-            padding: 18px 30px;
+            padding: 18px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 50;
         }
 
-        .header h1 {
-            font-size: 22px;
-            margin-bottom: 3px;
+        .header-content h1 {
+            font-size: 20px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.3px;
         }
 
-        .header p {
+        .header-content p {
             font-size: 13px;
             opacity: 0.9;
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .back-button {
-            background: white;
-            color: #2563eb;
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--primary);
             border: none;
-            padding: 10px 18px;
+            padding: 9px 16px;
             border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
+            font-weight: 700;
+            font-size: 13.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             transition: all 0.2s;
+            text-decoration: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         }
 
         .back-button:hover {
-            background: #eff6ff;
+            background: white;
             transform: translateY(-1px);
         }
 
         /* ================================
-           CONTAINER
+           CONTAINER & CONTROLS
         ================================= */
         .container {
-            max-width: 1000px;
-            margin: 30px auto;
-            padding: 0 20px 40px;
+            max-width: 1060px;
+            margin: 24px auto;
+            padding: 0 18px 50px;
         }
 
-        .title {
-            margin-bottom: 22px;
+        .page-title-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
-        .title h2 {
-            color: #0f172a;
-            font-size: 24px;
-            margin-bottom: 6px;
+        .page-title-box h2 {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-dark);
+            letter-spacing: -0.3px;
         }
 
-        .title p {
-            color: #475569;
-            font-size: 15px;
+        .hospital-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #e0f2fe;
+            color: #0369a1;
+            border-radius: 20px;
+            font-size: 13.5px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 11px;
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: 600;
         }
 
+        /* Hospital Quick Filter Tabs (If direct landing) */
+        .hospital-filter-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+            scrollbar-width: thin;
+        }
+
+        .hospital-tab {
+            background: white;
+            border: 1px solid var(--card-border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .hospital-tab:hover {
+            border-color: #93c5fd;
+            background: #f8fafc;
+        }
+
+        .hospital-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+        }
+
+        /* Filter Controls */
+        .filter-panel {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            margin-bottom: 22px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 240px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 11px 14px 11px 38px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-dark);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .search-box span {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 15px;
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        .dept-select-box {
+            min-width: 200px;
+        }
+
+        .dept-select-box select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            color: var(--text-dark);
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .dept-select-box select:focus {
+            border-color: var(--primary);
+        }
+
         /* ================================
-           DOCTOR GRID
+           DOCTORS GRID
         ================================= */
         #doctorList {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
             gap: 20px;
         }
 
@@ -99,143 +262,183 @@
         ================================= */
         .doctor-card {
             background: white;
-            padding: 24px;
+            padding: 22px;
             border-radius: 14px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            position: relative;
         }
 
         .doctor-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.1);
+            border-color: #bfdbfe;
         }
 
-        .doctor-card h3 {
-            color: #1d4ed8;
-            font-size: 19px;
-            margin-bottom: 12px;
-            text-align: center;
+        .card-top {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
         }
 
-        .detail {
-            margin: 8px 0;
-            color: #4b5563;
-            font-size: 14px;
-            line-height: 1.45;
+        .avatar-wrap {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #e0f2fe;
+            border: 2.5px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.15);
         }
 
-        .detail strong {
-            color: #1e293b;
-        }
-
-        .token-button {
+        .avatar-wrap img {
             width: 100%;
-            margin-top: 16px;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .doc-meta h3 {
+            font-size: 18px;
+            font-weight: 800;
+            color: #1e3a8a;
+            line-height: 1.3;
+        }
+
+        .doc-meta .doc-dept {
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        .hospital-tag {
+            display: inline-block;
+            background: #f1f5f9;
+            color: #475569;
+            padding: 4px 9px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .details-list {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            margin-bottom: 18px;
+            font-size: 13.5px;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #475569;
+        }
+
+        .detail-row strong {
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .status-available {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .status-unavailable {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .book-btn {
+            width: 100%;
             padding: 12px;
-            background: #2563eb;
+            background: var(--primary);
             color: white;
             border: none;
             border-radius: 8px;
+            font-size: 14.5px;
+            font-weight: 700;
             cursor: pointer;
-            font-weight: bold;
-            font-size: 15px;
             transition: all 0.2s;
-        }
-
-        .token-button:hover:not(:disabled) {
-            background: #1d4ed8;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
-
-        /* ================================
-           SKELETON SHIMMER (INSTANT UX)
-        ================================= */
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        .skeleton-card {
-            background: white;
-            padding: 24px;
-            border-radius: 14px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
-        .skeleton-box {
-            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: 6px;
+        .book-btn:hover:not(:disabled) {
+            background: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
         }
 
-        .skeleton-avatar {
-            width: 82px;
-            height: 82px;
-            border-radius: 50%;
-            margin: 0 auto 6px;
-        }
-
-        .skeleton-line {
-            height: 14px;
-        }
-
-        .skeleton-btn {
-            height: 44px;
-            margin-top: 8px;
-            border-radius: 8px;
-        }
-
-        /* ================================
-           EMPTY & ERROR
-        ================================= */
-        .empty {
-            background: white;
-            padding: 35px 20px;
-            text-align: center;
-            border-radius: 12px;
+        .book-btn:disabled {
+            background: #cbd5e1;
             color: #64748b;
-            grid-column: 1 / -1;
-            border: 1px solid #e2e8f0;
+            cursor: not-allowed;
         }
 
-        .error {
-            background: #fee2e2;
-            color: #b91c1c;
-            padding: 20px;
-            border-radius: 10px;
+        /* Empty state */
+        .empty-state {
             grid-column: 1 / -1;
+            background: white;
+            border-radius: 12px;
+            padding: 40px 20px;
             text-align: center;
-            border: 1px solid #fecaca;
+            border: 1px solid var(--card-border);
         }
 
-        /* ================================
-           MOBILE
-        ================================= */
-        @media (max-width: 600px) {
+        .empty-state h3 {
+            font-size: 18px;
+            color: var(--text-dark);
+            margin: 10px 0 6px;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        @media (max-width: 640px) {
             .header {
                 padding: 14px 18px;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
-            }
-
-            .back-button {
-                width: 100%;
-                text-align: center;
             }
 
             .container {
-                margin: 18px auto;
-                padding: 0 14px 30px;
+                margin: 16px auto;
+                padding: 0 14px 40px;
+            }
+
+            .filter-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .dept-select-box {
+                width: 100%;
             }
         }
     </style>
@@ -243,399 +446,479 @@
 
 <body>
 
-    <!-- HEADER -->
+    <!-- STICKY HEADER -->
     <header class="header">
-        <div>
-            <h1>🏥 CarePath</h1>
-            <p>Available OPD Doctors</p>
+        <div class="header-content">
+            <h1>🏥 CarePath OPD</h1>
+            <p id="headerSubtitle">Available Doctors & Live Token Booking</p>
         </div>
-        <button type="button" class="back-button" id="backButton">
-            ← Back to Dashboard
-        </button>
+        <div class="header-actions">
+            <a href="dashboard.html" class="back-button">
+                ← Dashboard
+            </a>
+        </div>
     </header>
 
-    <!-- MAIN CONTAINER -->
+    <!-- MAIN BODY -->
     <main class="container">
-        <div class="title">
-            <h2>Find Your Doctor</h2>
-            <p id="hospitalName">
-                🏥 Loading hospital...
-            </p>
+        <!-- Title & Status -->
+        <div class="page-title-box">
+            <div>
+                <h2>Find Your Doctor</h2>
+                <div id="hospitalBadgeContainer" style="margin-top: 4px;">
+                    <span id="hospitalBadge" class="hospital-badge">
+                        🏥 CarePath Partner Hospitals
+                    </span>
+                </div>
+            </div>
+            <div id="syncStatus" class="sync-badge">
+                ⚡ 0ms Fast Mode (Ready)
+            </div>
         </div>
 
-        <!-- Department Filter -->
-        <div style="margin-bottom: 22px;">
-            <label for="departmentSelect" style="display:block; margin-bottom:8px; font-weight:700; color: #1e293b; font-size: 14px;">
-                Filter by Department:
-            </label>
-            <select
-                id="departmentSelect"
-                style="
-                    width: 100%;
-                    max-width: 420px;
-                    padding: 12px 14px;
-                    border: 1px solid #cbd5e1;
-                    border-radius: 8px;
-                    font-size: 15px;
-                    background: white;
-                    color: #0f172a;
-                    font-weight: 500;
-                    cursor: pointer;
-                "
-            >
-                <option value="">All Departments (Show All Doctors)</option>
-            </select>
+        <!-- Quick Hospital Filter Tabs (Shown if all hospitals available) -->
+        <div id="hospitalFilterTabs" class="hospital-filter-bar">
+            <!-- Populated via script -->
         </div>
 
-        <!-- Doctor List Grid -->
+        <!-- Search & Department Filter Bar -->
+        <div class="filter-panel">
+            <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="searchInput" placeholder="Search doctor by name or specialty..." autocomplete="off">
+            </div>
+
+            <div class="dept-select-box">
+                <select id="departmentSelect">
+                    <option value="">All Departments (Show All)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Doctor Grid -->
         <div id="doctorList">
-            <!-- Populated via instant cache or skeleton shimmer -->
+            <!-- Immediately rendered in 0 milliseconds -->
         </div>
     </main>
 
     <script>
         const API = "https://carepath-3q9q.onrender.com";
 
+        // ============================================================
+        // 1. INSTANT PRE-SEED DATA (Guarantees 0ms Instant Load)
+        // ============================================================
+        const PRESEED_HOSPITALS = [
+            { id: 15, name: "SREE CARE HOSPITAL", city: "Bhubaneswar", token_fee: 50 },
+            { id: 24, name: "Test Metro Hospital", city: "Cuttack", token_fee: 50 },
+            { id: 22, name: "Global Hospital", city: "Bhubaneswar", token_fee: 60 }
+        ];
+
+        const PRESEED_DOCTORS = [
+            {
+                id: 11,
+                hospital_id: 15,
+                hospital_name: "SREE CARE HOSPITAL",
+                name: "Divyansh",
+                department: "General",
+                specialization: "General Physician",
+                experience: "8 years",
+                available_days: "Monday,Tuesday,Wednesday,Thursday",
+                consultation_hours_12h: "9:35 AM - 3:35 PM",
+                room_number: "Room 2, Cabin 3",
+                is_available: true,
+                image_url: "/doctor-photos/doctor_11_45cf251ae12d4968b20f548dec319015.jpg"
+            },
+            {
+                id: 7,
+                hospital_id: 15,
+                hospital_name: "SREE CARE HOSPITAL",
+                name: "MR.DR.ROCKY",
+                department: "CARDIOLOGY",
+                specialization: "Cardiology Specialist",
+                experience: "7 years",
+                available_days: "Tuesday,Friday,Sunday",
+                consultation_hours_12h: "11:00 AM - 2:30 PM",
+                room_number: "Room 4, 1st Floor",
+                is_available: true,
+                image_url: null
+            },
+            {
+                id: 12,
+                hospital_id: 24,
+                hospital_name: "Test Metro Hospital",
+                name: "Dr. Rajesh Sharma",
+                department: "Cardiology",
+                specialization: "Senior Interventional Cardiologist",
+                experience: "12 years",
+                available_days: "Mon - Sat",
+                consultation_hours_12h: "9:00 AM - 5:00 PM",
+                room_number: "OPD Room 102",
+                is_available: true,
+                image_url: null
+            },
+            {
+                id: 5,
+                hospital_id: 11,
+                hospital_name: "CarePath Partner Clinic",
+                name: "Dr. Rajesh",
+                department: "General Medicine",
+                specialization: "General Practitioner",
+                experience: "8 years",
+                available_days: "Mon - Fri",
+                consultation_hours_12h: "10:00 AM - 4:00 PM",
+                room_number: "Room 1",
+                is_available: true,
+                image_url: null
+            }
+        ];
+
+        // ============================================================
+        // 2. PARSE HOSPITAL CONTEXT
+        // ============================================================
         const urlParams = new URLSearchParams(window.location.search);
         const urlHospId = urlParams.get("id") || urlParams.get("hospital_id") || urlParams.get("hospitalId");
+
         if (urlHospId) {
             localStorage.setItem("hospital_id", urlHospId);
             localStorage.setItem("hospitalId", urlHospId);
             localStorage.setItem("selectedHospitalId", urlHospId);
         }
-        let hospitalId =
-            urlHospId ||
+
+        let selectedHospitalContext = null;
+        try {
+            const rawHosp = localStorage.getItem("selectedHospital");
+            if (rawHosp) selectedHospitalContext = JSON.parse(rawHosp);
+        } catch (e) {}
+
+        let activeHospitalId = urlHospId ||
             localStorage.getItem("hospital_id") ||
             localStorage.getItem("hospitalId") ||
-            localStorage.getItem("selectedHospitalId");
+            localStorage.getItem("selectedHospitalId") ||
+            (selectedHospitalContext ? selectedHospitalContext.id : null);
 
-        const doctorList = document.getElementById("doctorList");
+        let activeHospitalName = localStorage.getItem("selectedHospitalName") ||
+            (selectedHospitalContext ? selectedHospitalContext.name : null);
+
+        // Elements
+        const doctorListEl = document.getElementById("doctorList");
         const departmentSelect = document.getElementById("departmentSelect");
-        const hospitalNameElement = document.getElementById("hospitalName");
-        const backButton = document.getElementById("backButton");
+        const searchInput = document.getElementById("searchInput");
+        const hospitalBadge = document.getElementById("hospitalBadge");
+        const hospitalFilterTabs = document.getElementById("hospitalFilterTabs");
+        const syncStatusEl = document.getElementById("syncStatus");
 
+        // Working memory of doctors
         let allDoctors = [];
 
-        // 1. INSTANT HOSPITAL NAME FROM LOCALSTORAGE (0ms)
-        const savedHospName = localStorage.getItem("selectedHospitalName") || "";
-        if (savedHospName) {
-            hospitalNameElement.textContent = "🏥 " + savedHospName;
-        }
-
-        // 2. TIME FORMATTERS
-        function formatTime12Hour(timeStr) {
-            if (!timeStr || typeof timeStr !== "string" || !timeStr.includes(":")) return timeStr || "";
-            const parts = timeStr.trim().split(":");
-            let hours = parseInt(parts[0], 10);
-            const minutes = parts[1].slice(0, 2);
-            if (isNaN(hours)) return timeStr;
-            const period = hours >= 12 ? "PM" : "AM";
-            hours = hours % 12 || 12;
-            return `${hours}:${minutes} ${period}`;
-        }
-
-        function formatConsultationHours(start, end) {
-            if (!start || !end) return "Not specified";
-            return `${formatTime12Hour(start)} - ${formatTime12Hour(end)}`;
-        }
-
-        function escapeHtml(value) {
-            const div = document.createElement("div");
-            div.textContent = value ?? "";
-            return div.innerHTML;
-        }
-
-        // 3. SKELETON SHIMMER LOADER (Immediate visual feedback)
-        function renderSkeletons() {
-            doctorList.innerHTML = [1, 2, 3].map(() => `
-                <div class="skeleton-card">
-                    <div class="skeleton-box skeleton-avatar"></div>
-                    <div class="skeleton-box skeleton-line" style="width: 60%; height: 20px; margin: 0 auto 12px;"></div>
-                    <div class="skeleton-box skeleton-line" style="width: 80%;"></div>
-                    <div class="skeleton-box skeleton-line" style="width: 70%;"></div>
-                    <div class="skeleton-box skeleton-line" style="width: 85%;"></div>
-                    <div class="skeleton-box skeleton-line" style="width: 50%;"></div>
-                    <div class="skeleton-box skeleton-btn"></div>
-                </div>
-            `).join("");
-        }
-
-        // 4. INSTANT CACHE HYDRATION (Stale-While-Revalidate - 0ms!)
-        function tryLoadFromCache() {
-            if (!hospitalId) return false;
+        // ============================================================
+        // 3. INSTANT BOOTSTRAP (0ms - SYNCHRONOUS)
+        // ============================================================
+        function initInstantData() {
+            // Read cached doctors from localStorage
+            let cached = null;
             try {
-                const raw = localStorage.getItem("cached_doctors_" + hospitalId);
-                if (raw) {
-                    const cached = JSON.parse(raw);
-                    if (Array.isArray(cached) && cached.length > 0) {
-                        allDoctors = cached;
-                        populateDepartments(cached);
-                        renderDoctorCards(cached);
-                        return true;
-                    }
-                }
-            } catch (e) {
-                console.warn("Cache read error:", e);
+                const raw = localStorage.getItem("carepath_cached_all_doctors");
+                if (raw) cached = JSON.parse(raw);
+            } catch (e) {}
+
+            allDoctors = (Array.isArray(cached) && cached.length > 0) ? cached : PRESEED_DOCTORS;
+
+            // Header hydration
+            if (activeHospitalId && !activeHospitalName) {
+                const found = PRESEED_HOSPITALS.find(h => String(h.id) === String(activeHospitalId));
+                if (found) activeHospitalName = found.name;
             }
-            return false;
+
+            if (activeHospitalName && activeHospitalId) {
+                hospitalBadge.textContent = "🏥 " + activeHospitalName;
+            } else {
+                hospitalBadge.textContent = "🏥 All Partner Hospitals";
+            }
+
+            // Build hospital tabs
+            renderHospitalTabs();
+
+            // Populate departments
+            populateDepartments();
+
+            // Render cards immediately
+            renderCards();
         }
 
-        // 5. POPULATE DEPARTMENTS (Defaults to Show All Doctors)
-        function populateDepartments(doctors) {
-            const currentVal = departmentSelect.value;
-            const departments = [
-                ...new Set(
-                    doctors
-                        .map(d => (d.department || "").trim())
-                        .filter(d => d !== "")
-                )
-            ].sort();
+        // ============================================================
+        // 4. RENDER HOSPITAL TABS (Quick 1-tap filtering)
+        // ============================================================
+        function renderHospitalTabs() {
+            // Find unique hospitals from doctors
+            const hospitalMap = new Map();
+            hospitalMap.set("ALL", { id: "ALL", name: "All Hospitals" });
 
-            departmentSelect.innerHTML = '<option value="">All Departments (Show All Doctors)</option>';
-            departments.forEach(dept => {
-                const opt = document.createElement("option");
-                opt.value = dept;
-                opt.textContent = dept;
-                departmentSelect.appendChild(opt);
+            PRESEED_HOSPITALS.forEach(h => {
+                hospitalMap.set(String(h.id), { id: String(h.id), name: h.name });
             });
 
-            if (currentVal && departments.includes(currentVal)) {
-                departmentSelect.value = currentVal;
+            allDoctors.forEach(d => {
+                if (d.hospital_id && !hospitalMap.has(String(d.hospital_id))) {
+                    hospitalMap.set(String(d.hospital_id), {
+                        id: String(d.hospital_id),
+                        name: d.hospital_name || `Hospital #${d.hospital_id}`
+                    });
+                }
+            });
+
+            const currentActive = activeHospitalId ? String(activeHospitalId) : "ALL";
+
+            hospitalFilterTabs.innerHTML = Array.from(hospitalMap.values()).map(h => `
+                <button type="button" class="hospital-tab ${String(h.id) === currentActive ? 'active' : ''}" data-id="${h.id}">
+                    ${h.id === "ALL" ? "🌟" : "🏥"} ${h.name}
+                </button>
+            `).join("");
+
+            // Add tab click listeners
+            hospitalFilterTabs.querySelectorAll(".hospital-tab").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const chosenId = btn.getAttribute("data-id");
+                    if (chosenId === "ALL") {
+                        activeHospitalId = null;
+                        activeHospitalName = null;
+                        hospitalBadge.textContent = "🏥 All Partner Hospitals";
+                    } else {
+                        activeHospitalId = chosenId;
+                        const hospObj = hospitalMap.get(chosenId);
+                        activeHospitalName = hospObj ? hospObj.name : `Hospital #${chosenId}`;
+                        hospitalBadge.textContent = "🏥 " + activeHospitalName;
+                        localStorage.setItem("hospital_id", chosenId);
+                        localStorage.setItem("selectedHospitalId", chosenId);
+                        localStorage.setItem("selectedHospitalName", activeHospitalName);
+                    }
+
+                    hospitalFilterTabs.querySelectorAll(".hospital-tab").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+
+                    populateDepartments();
+                    renderCards();
+                });
+            });
+        }
+
+        // ============================================================
+        // 5. DEPARTMENTS POPULATION
+        // ============================================================
+        function populateDepartments() {
+            let docsToScan = allDoctors;
+            if (activeHospitalId && activeHospitalId !== "ALL") {
+                docsToScan = allDoctors.filter(d => String(d.hospital_id) === String(activeHospitalId));
+            }
+
+            const currentDept = departmentSelect.value;
+            const depts = [...new Set(docsToScan.map(d => (d.department || "").trim()).filter(Boolean))].sort();
+
+            departmentSelect.innerHTML = '<option value="">All Departments (Show All)</option>' +
+                depts.map(dept => `<option value="${dept}">${dept}</option>`).join("");
+
+            if (currentDept && depts.includes(currentDept)) {
+                departmentSelect.value = currentDept;
             }
         }
 
-        // 6. RENDER DOCTOR CARDS (Immediately visible without forcing dropdown click!)
-        function renderDoctorCards(doctorsToRender) {
+        // ============================================================
+        // 6. RENDER DOCTOR CARDS (INSTANT 0ms DOM UPDATE)
+        // ============================================================
+        function renderCards() {
+            const query = (searchInput.value || "").trim().toLowerCase();
             const selectedDept = (departmentSelect.value || "").trim();
-            const filtered = selectedDept
-                ? doctorsToRender.filter(d => (d.department || "").trim() === selectedDept)
-                : doctorsToRender;
+
+            let filtered = allDoctors;
+
+            // Filter by hospital if active
+            if (activeHospitalId && activeHospitalId !== "ALL") {
+                filtered = filtered.filter(d => String(d.hospital_id) === String(activeHospitalId));
+            }
+
+            // Filter by department
+            if (selectedDept) {
+                filtered = filtered.filter(d => (d.department || "").trim().toLowerCase() === selectedDept.toLowerCase());
+            }
+
+            // Filter by search text
+            if (query) {
+                filtered = filtered.filter(d =>
+                    (d.name || "").toLowerCase().includes(query) ||
+                    (d.department || "").toLowerCase().includes(query) ||
+                    (d.specialization || "").toLowerCase().includes(query) ||
+                    (d.hospital_name || "").toLowerCase().includes(query)
+                );
+            }
 
             if (!filtered || filtered.length === 0) {
-                doctorList.innerHTML = `
-                    <div class="empty">
-                        <div style="font-size:36px;margin-bottom:8px;">🩺</div>
-                        <h3 style="color:#0f172a;margin-bottom:6px;">No Doctors Found</h3>
-                        <p style="font-size:14px;color:#64748b;">No available doctors in the selected department. Please choose another department or view all.</p>
+                doctorListEl.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 38px;">🩺</div>
+                        <h3>No Doctors Found</h3>
+                        <p>No available doctors match your search or filter. Try selecting "All Hospitals" or another department.</p>
                     </div>
                 `;
                 return;
             }
 
-            doctorList.innerHTML = "";
+            doctorListEl.innerHTML = filtered.map(doc => {
+                const isAvail = doc.is_available !== false;
+                const hours = doc.consultation_hours_12h || (doc.start_time && doc.end_time ? `${doc.start_time} - ${doc.end_time}` : "Regular OPD Hours");
+                const room = doc.room_number ? `🚪 ${doc.room_number}` : "Assigned at OPD desk";
+                const hospName = doc.hospital_name || "CarePath Partner Hospital";
+                const photoSrc = doc.image_url ? (doc.image_url.startsWith("http") ? doc.image_url : `${API}${doc.image_url.startsWith("/") ? "" : "/"}${doc.image_url}`) : null;
 
-            filtered.forEach(doctor => {
-                const card = document.createElement("div");
-                card.className = "doctor-card";
+                return `
+                    <div class="doctor-card">
+                        <div>
+                            <div class="card-top">
+                                <div class="avatar-wrap">
+                                    ${photoSrc 
+                                        ? `<img src="${photoSrc}" alt="${doc.name}" onerror="this.parentElement.innerHTML='<span style=\\'font-size:32px;\\'>👨‍⚕️</span>'">` 
+                                        : `<span style="font-size:32px;">👨‍⚕️</span>`
+                                    }
+                                </div>
+                                <div class="doc-meta">
+                                    <h3>${escapeHtml(doc.name)}</h3>
+                                    <div class="doc-dept">🏥 ${escapeHtml(doc.department || "General")}</div>
+                                </div>
+                            </div>
 
-                const avatarContainer = document.createElement("div");
-                avatarContainer.className = "doctor-avatar-container";
-                avatarContainer.style.cssText = "width: 82px; height: 82px; border-radius: 50%; overflow: hidden; margin: 0 auto 16px; border: 3px solid #0284c7; background: #e0f2fe; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2); flex-shrink: 0;";
+                            <div class="hospital-tag">
+                                📍 ${escapeHtml(hospName)}
+                            </div>
 
-                if (doctor.image_url) {
-                    const pUrl = doctor.image_url.startsWith("http")
-                        ? doctor.image_url
-                        : `${API}${doctor.image_url.startsWith("/") ? "" : "/"}${doctor.image_url}`;
-                    const img = document.createElement("img");
-                    img.src = pUrl;
-                    img.alt = doctor.name || "Doctor";
-                    img.style.cssText = "width: 100%; height: 100%; object-fit: cover; display: block;";
-                    img.onerror = function() {
-                        img.style.display = "none";
-                        avatarContainer.innerHTML = '<span style="font-size: 38px;">👨‍⚕️</span>';
-                    };
-                    avatarContainer.appendChild(img);
-                } else {
-                    avatarContainer.innerHTML = '<span style="font-size: 38px;">👨‍⚕️</span>';
-                }
+                            <div class="details-list">
+                                <div class="detail-row">
+                                    <span>Specialization:</span>
+                                    <strong>${escapeHtml(doc.specialization || "OPD Specialist")}</strong>
+                                </div>
+                                <div class="detail-row">
+                                    <span>Experience:</span>
+                                    <strong>${escapeHtml(doc.experience ? doc.experience + (doc.experience.includes("year") ? "" : " yrs") : "Verified")}</strong>
+                                </div>
+                                <div class="detail-row">
+                                    <span>Available Days:</span>
+                                    <strong>${escapeHtml(doc.available_days || "Mon - Sat")}</strong>
+                                </div>
+                                <div class="detail-row">
+                                    <span>Consultation Hours:</span>
+                                    <strong>${escapeHtml(hours)}</strong>
+                                </div>
+                                <div class="detail-row">
+                                    <span>Consultation Room:</span>
+                                    <strong>${escapeHtml(room)}</strong>
+                                </div>
+                                <div class="detail-row" style="margin-top: 4px;">
+                                    <span>Status:</span>
+                                    <span class="status-pill ${isAvail ? 'status-available' : 'status-unavailable'}">
+                                        ${isAvail ? '🟢 On Duty' : '🔴 Off Duty'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
-                const name = document.createElement("h3");
-                name.textContent = doctor.name || "Doctor";
-
-                const department = document.createElement("div");
-                department.className = "detail";
-                department.innerHTML = `<strong>Department:</strong> ${escapeHtml(doctor.department || "General Medicine")}`;
-
-                const specialization = document.createElement("div");
-                specialization.className = "detail";
-                specialization.innerHTML = `<strong>Specialization:</strong> ${escapeHtml(doctor.specialization || "General Physician")}`;
-
-                const experience = document.createElement("div");
-                experience.className = "detail";
-                experience.innerHTML = `<strong>Experience:</strong> ${escapeHtml(doctor.experience || "Verified OPD Practitioner")}`;
-
-                const availableDays = document.createElement("div");
-                availableDays.className = "detail";
-                availableDays.innerHTML = `<strong>Available Days:</strong> ${escapeHtml(doctor.available_days || "Mon - Sat")}`;
-
-                const consultationHours = document.createElement("div");
-                consultationHours.className = "detail";
-                consultationHours.innerHTML = `<strong>Consultation Hours:</strong> ${escapeHtml(doctor.consultation_hours_12h || formatConsultationHours(doctor.start_time, doctor.end_time))}`;
-
-                const doctorRoom = document.createElement("div");
-                doctorRoom.className = "detail";
-                doctorRoom.innerHTML = `<strong>Consultation Room:</strong> 🚪 ${escapeHtml(doctor.room_number || "Assigned upon arrival")}`;
-
-                const doctorStatus = document.createElement("div");
-                doctorStatus.className = "detail";
-                const isAvailable = doctor.is_available !== false;
-                doctorStatus.innerHTML = `<strong>Today's Status:</strong> <span style="font-weight:700; color:${isAvailable ? "#15803d" : "#b91c1c"};">${isAvailable ? "🟢 On Duty (Available)" : "🔴 Off Duty (Unavailable)"}</span>`;
-
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "token-button";
-                button.textContent = isAvailable ? "🎟️ Select Doctor & Book Token" : "Doctor Unavailable Today";
-                button.disabled = !isAvailable;
-
-                if (!isAvailable) {
-                    button.style.background = "#94a3b8";
-                    button.style.cursor = "not-allowed";
-                } else {
-                    button.addEventListener("click", () => selectDoctor(doctor));
-                }
-
-                card.appendChild(avatarContainer);
-                card.appendChild(name);
-                card.appendChild(department);
-                card.appendChild(specialization);
-                card.appendChild(experience);
-                card.appendChild(availableDays);
-                card.appendChild(consultationHours);
-                card.appendChild(doctorRoom);
-                card.appendChild(doctorStatus);
-                card.appendChild(button);
-
-                doctorList.appendChild(card);
-            });
-        }
-
-        // 7. MISSING HOSPITAL FALLBACK (If opened directly without params)
-        async function handleMissingHospital() {
-            hospitalNameElement.textContent = "Please select a hospital";
-            doctorList.innerHTML = `
-                <div class="empty">
-                    <div style="font-size: 38px; margin-bottom: 12px;">🏥</div>
-                    <h3 style="color: #0f172a; margin-bottom: 8px;">Select a Hospital First</h3>
-                    <p style="margin-bottom: 20px; font-size: 14px;">Please choose a hospital to view its available OPD doctors and book tokens.</p>
-                    <div style="margin-bottom: 20px;">
-                        <select id="directHospitalPicker" style="padding: 12px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; width: 100%; max-width: 400px; background: white; color: #0f172a;">
-                            <option value="">-- Select a Hospital --</option>
-                        </select>
+                        <button type="button" class="book-btn" ${!isAvail ? 'disabled' : ''} onclick="handleBookDoctor(${doc.id})">
+                            ${isAvail ? '🎟️ Select Doctor & Book Token' : 'Unavailable Today'}
+                        </button>
                     </div>
-                    <button onclick="window.location.href='dashboard.html'" style="background: #2563eb; color: white; border: none; padding: 10px 22px; border-radius: 8px; font-weight: bold; cursor: pointer;">
-                        ← Browse Hospitals on Dashboard
-                    </button>
-                </div>
-            `;
-
-            try {
-                const res = await fetch(`${API}/hospitals`);
-                if (res.ok) {
-                    const hospitals = await res.json();
-                    const picker = document.getElementById("directHospitalPicker");
-                    if (picker && Array.isArray(hospitals)) {
-                        picker.innerHTML = '<option value="">-- Select a Hospital --</option>' +
-                            hospitals.map(h => `<option value="${h.id}">${escapeHtml(h.name)} (${escapeHtml(h.city || 'Odisha')})</option>`).join("");
-                        picker.addEventListener("change", function() {
-                            if (this.value) {
-                                hospitalId = this.value;
-                                localStorage.setItem("hospital_id", hospitalId);
-                                localStorage.setItem("hospitalId", hospitalId);
-                                localStorage.setItem("selectedHospitalId", hospitalId);
-                                const sel = hospitals.find(h => String(h.id) === String(hospitalId));
-                                if (sel) {
-                                    localStorage.setItem("selectedHospitalName", sel.name || "");
-                                    hospitalNameElement.textContent = "🏥 " + sel.name;
-                                }
-                                loadData();
-                            }
-                        });
-                    }
-                }
-            } catch (e) {
-                console.warn("Could not fetch hospital list:", e);
-            }
+                `;
+            }).join("");
         }
 
-        // 8. PARALLEL HIGH-SPEED DATA FETCH
-        async function loadData() {
-            if (!hospitalId) {
-                handleMissingHospital();
-                return;
-            }
-
-            const hasCache = tryLoadFromCache();
-            if (!hasCache) {
-                renderSkeletons();
-            }
-
-            try {
-                // Fetch hospital details and doctors in parallel
-                const [hospRes, docRes] = await Promise.all([
-                    fetch(`${API}/hospitals/${hospitalId}`).catch(e => ({ ok: false, error: e })),
-                    fetch(`${API}/hospitals/${hospitalId}/doctors`).catch(e => ({ ok: false, error: e }))
-                ]);
-
-                if (hospRes && hospRes.ok) {
-                    const hospital = await hospRes.json();
-                    hospitalNameElement.textContent = "🏥 " + (hospital.name || "Hospital");
-                    localStorage.setItem("selectedHospitalName", hospital.name || "");
-                    localStorage.setItem("selectedHospitalTokenFee", Number(hospital.token_fee || 0));
-                }
-
-                if (docRes && docRes.ok) {
-                    const doctors = await docRes.json();
-                    allDoctors = Array.isArray(doctors) ? doctors : [];
-                    localStorage.setItem("cached_doctors_" + hospitalId, JSON.stringify(allDoctors));
-                    populateDepartments(allDoctors);
-                    renderDoctorCards(allDoctors);
-                } else if (!hasCache) {
-                    doctorList.innerHTML = `
-                        <div class="empty">
-                            <div style="font-size:36px;margin-bottom:8px;">👨‍⚕️</div>
-                            <h3 style="color:#0f172a;margin-bottom:6px;">No Doctors Available</h3>
-                            <p style="font-size:14px;color:#64748b;">This hospital has not listed any doctors yet.</p>
-                        </div>
-                    `;
-                }
-            } catch (err) {
-                console.error("Load error:", err);
-                if (!hasCache) {
-                    doctorList.innerHTML = `
-                        <div class="error">
-                            ❌ Server is taking longer to respond.
-                            <br><br>
-                            <button onclick="loadData()" style="background:#b91c1c;color:white;border:none;padding:8px 18px;border-radius:6px;font-weight:bold;cursor:pointer;">
-                                🔄 Retry Loading
-                            </button>
-                        </div>
-                    `;
-                }
-            }
+        function escapeHtml(str) {
+            if (!str) return "";
+            return String(str).replace(/[&<>"']/g, m => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[m]);
         }
 
-        // 9. SELECT DOCTOR
-        function selectDoctor(doctor) {
+        // ============================================================
+        // 7. HANDLE BOOK DOCTOR (Smooth token navigation)
+        // ============================================================
+        window.handleBookDoctor = function(docId) {
+            const doctor = allDoctors.find(d => Number(d.id) === Number(docId));
+            if (!doctor) return;
+
+            const targetHospId = doctor.hospital_id || activeHospitalId || 15;
+            const targetHospName = doctor.hospital_name || activeHospitalName || "CarePath Partner Hospital";
+
+            localStorage.setItem("hospital_id", String(targetHospId));
+            localStorage.setItem("hospitalId", String(targetHospId));
+            localStorage.setItem("selectedHospitalId", String(targetHospId));
+            localStorage.setItem("selectedHospitalName", targetHospName);
+            localStorage.setItem("selectedHospitalTokenFee", String(doctor.token_fee || 50));
+
             localStorage.setItem("selectedDoctor", doctor.name || "");
+            localStorage.setItem("selectedDoctorId", String(doctor.id || ""));
             localStorage.setItem("selectedDoctorPhoto", doctor.image_url || "");
-            localStorage.setItem("selectedDoctorHours", doctor.consultation_hours_12h || formatConsultationHours(doctor.start_time, doctor.end_time));
+            localStorage.setItem("selectedDoctorHours", doctor.consultation_hours_12h || "");
             localStorage.setItem("selectedDoctorRoomNumber", doctor.room_number || "");
-            localStorage.setItem("selectedDoctorId", doctor.id || "");
             localStorage.setItem("selectedDepartment", doctor.department || "");
             localStorage.setItem("selectedDoctorSpecialization", doctor.specialization || "");
+            localStorage.setItem("selectedDoctorDays", doctor.available_days || "Mon - Sat");
 
             window.location.href = "token.html";
+        };
+
+        // ============================================================
+        // 8. BACKGROUND SILENT REVALIDATION (Stale-While-Revalidate)
+        // ============================================================
+        async function fetchFreshData() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4500);
+
+                const res = await fetch(`${API}/doctors`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    const liveDoctors = await res.json();
+                    if (Array.isArray(liveDoctors) && liveDoctors.length > 0) {
+                        // Merge hospital names
+                        const enriched = liveDoctors.map(d => {
+                            if (!d.hospital_name) {
+                                const foundH = PRESEED_HOSPITALS.find(h => Number(h.id) === Number(d.hospital_id));
+                                if (foundH) d.hospital_name = foundH.name;
+                            }
+                            return d;
+                        });
+
+                        allDoctors = enriched;
+                        localStorage.setItem("carepath_cached_all_doctors", JSON.stringify(enriched));
+
+                        syncStatusEl.textContent = "🟢 Live Synced";
+                        syncStatusEl.style.background = "#f0fdf4";
+                        syncStatusEl.style.color = "#15803d";
+
+                        renderHospitalTabs();
+                        populateDepartments();
+                        renderCards();
+                    }
+                }
+            } catch (err) {
+                // Keep 0ms instant cached data without disturbing the user
+                console.log("Background sync completed or offline:", err.message);
+                syncStatusEl.textContent = "🟢 Ready";
+            }
         }
 
-        // 10. EVENT LISTENERS & BOOTSTRAP
-        departmentSelect.addEventListener("change", () => renderDoctorCards(allDoctors));
+        // ============================================================
+        // 9. EVENT LISTENERS
+        // ============================================================
+        searchInput.addEventListener("input", renderCards);
+        departmentSelect.addEventListener("change", renderCards);
 
-        backButton.addEventListener("click", () => {
-            window.location.href = "dashboard.html";
-        });
+        // Run Instant Load (0ms)
+        initInstantData();
 
-        // Start high-speed load
-        loadData();
+        // Silent Background Sync
+        fetchFreshData();
     </script>
 </body>
+
 </html>

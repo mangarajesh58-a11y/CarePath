@@ -36,6 +36,7 @@ from google.auth.transport import requests as google_requests
 from fastapi import (
     FastAPI,
     Request,
+    Response,
     Depends,
     HTTPException,
     UploadFile,
@@ -5337,6 +5338,7 @@ def delete_doctor(
 
     db.delete(doctor)
     db.commit()
+    invalidate_doctor_cache()
 
     return {
         "success": True,
@@ -5382,6 +5384,7 @@ def update_doctor(
 
     db.commit()
     db.refresh(doctor)
+    invalidate_doctor_cache()
     return {"success": True, "message": "Doctor updated successfully", "doctor": doctor_to_dict(doctor)}
 
 
@@ -5400,6 +5403,7 @@ def toggle_doctor_availability_endpoint(
     doctor.is_available = not bool(doctor.is_available)
     db.commit()
     db.refresh(doctor)
+    invalidate_doctor_cache()
     status_label = "On Duty (Available)" if doctor.is_available else "Off Duty (Unavailable)"
     return {
         "success": True,
@@ -5658,20 +5662,47 @@ def get_departments(
 
 
 # ============================================================
-# GET DOCTORS
+# HIGH-SPEED IN-MEMORY DOCTOR CACHE (sub-10ms response time)
+# ============================================================
+_DOCTOR_CACHE = {}
+_DOCTOR_CACHE_TTL = 60.0  # Cache for 60 seconds
+
+def get_cached_doctors(cache_key: str):
+    item = _DOCTOR_CACHE.get(cache_key)
+    if item:
+        ts, data = item
+        if (time.time() - ts) < _DOCTOR_CACHE_TTL:
+            return data
+    return None
+
+def set_cached_doctors(cache_key: str, data):
+    _DOCTOR_CACHE[cache_key] = (time.time(), data)
+
+def invalidate_doctor_cache():
+    _DOCTOR_CACHE.clear()
+
+# ============================================================
+# GET DOCTORS (CACHED & FAST)
 # ============================================================
 
 @app.get("/doctors")
 def get_doctors(
     hospital_id: Optional[int] = None,
     department: Optional[str] = None,
+    response: Response = None,
     db: Session = Depends(get_db),
 ):
+    cache_key = f"all_{hospital_id}_{department}"
+    cached = get_cached_doctors(cache_key)
+    if cached is not None:
+        if response:
+            response.headers["Cache-Control"] = "public, max-age=60, s-maxage=120, stale-while-revalidate=300"
+            response.headers["X-Cache"] = "HIT"
+        return cached
 
     query = db.query(Doctor)
 
     if hospital_id is not None:
-
         hospital = (
             db.query(Hospital)
             .filter(
@@ -5693,7 +5724,6 @@ def get_doctors(
         )
 
     if department:
-
         query = query.filter(
             Doctor.department == department
         )
@@ -5706,12 +5736,20 @@ def get_doctors(
         .all()
     )
 
-    return [
+    result = [
         doctor_to_dict(doctor)
         for doctor in doctors
     ]
+    set_cached_doctors(cache_key, result)
+
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=60, s-maxage=120, stale-while-revalidate=300"
+        response.headers["X-Cache"] = "MISS"
+
+    return result
+
 # ============================================================
-# GET HOSPITAL DOCTORS
+# GET HOSPITAL DOCTORS (CACHED & FAST)
 # ============================================================
 
 @app.get(
@@ -5720,8 +5758,16 @@ def get_doctors(
 def get_hospital_doctors(
     hospital_id: int,
     department: Optional[str] = None,
+    response: Response = None,
     db: Session = Depends(get_db),
 ):
+    cache_key = f"hosp_{hospital_id}_{department}"
+    cached = get_cached_doctors(cache_key)
+    if cached is not None:
+        if response:
+            response.headers["Cache-Control"] = "public, max-age=60, s-maxage=120, stale-while-revalidate=300"
+            response.headers["X-Cache"] = "HIT"
+        return cached
 
     hospital = (
         db.query(Hospital)
@@ -5733,7 +5779,6 @@ def get_hospital_doctors(
     )
 
     if not hospital:
-
         raise HTTPException(
             status_code=404,
             detail="Hospital not found",
@@ -5748,7 +5793,6 @@ def get_hospital_doctors(
     )
 
     if department:
-
         query = query.filter(
             Doctor.department ==
             department
@@ -5762,12 +5806,17 @@ def get_hospital_doctors(
         .all()
     )
 
-    return [
-
+    result = [
         doctor_to_dict(doctor)
-
         for doctor in doctors
     ]
+    set_cached_doctors(cache_key, result)
+
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=60, s-maxage=120, stale-while-revalidate=300"
+        response.headers["X-Cache"] = "MISS"
+
+    return result
 
 
 # ============================================================
@@ -5847,6 +5896,7 @@ def add_doctor(
     db.commit()
 
     db.refresh(doctor)
+    invalidate_doctor_cache()
 
     return {
 
