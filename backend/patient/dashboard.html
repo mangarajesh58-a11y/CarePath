@@ -949,7 +949,372 @@
       color: #64748b;
       font-size: 11.5px;
     }
-  </style>
+  
+    /* =====================================================
+       ANIMATIONS FOR MODALS & MESSAGE BOXES
+       ===================================================== */
+    @keyframes cpModalFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* =====================================================
+       HOSPITAL HELPDESK & REPLIES MESSAGE BOX MODAL
+       ===================================================== */
+    .patient-chat-modal {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 100005 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 16px !important;
+      box-sizing: border-box !important;
+      animation: cpModalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .patient-chat-backdrop {
+      position: fixed !important;
+      inset: 0 !important;
+      background: rgba(3, 7, 18, 0.82) !important;
+      backdrop-filter: blur(10px) !important;
+      -webkit-backdrop-filter: blur(10px) !important;
+      z-index: 1 !important;
+    }
+
+    .patient-chat-card {
+      position: relative !important;
+      z-index: 2 !important;
+      width: 100% !important;
+      max-width: 480px !important;
+      height: min(85vh, 680px) !important;
+      background: #0d172a !important;
+      border: 1px solid rgba(56, 189, 248, 0.28) !important;
+      border-radius: 22px !important;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(56, 189, 248, 0.12) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+
+    .patient-chat-header {
+      background: linear-gradient(135deg, #0e1e3d 0%, #172a52 100%) !important;
+      border-bottom: 1px solid rgba(38, 52, 81, 0.85) !important;
+      padding: 14px 16px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 12px !important;
+      flex-shrink: 0 !important;
+    }
+
+    .patient-chat-header-info {
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      min-width: 0 !important;
+      flex: 1 !important;
+    }
+
+    .patient-chat-avatar {
+      width: 42px !important;
+      height: 42px !important;
+      border-radius: 12px !important;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 21px !important;
+      flex-shrink: 0 !important;
+      box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4) !important;
+      border: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+    }
+
+    .patient-chat-title {
+      margin: 0 !important;
+      font-size: 15.5px !important;
+      font-weight: 800 !important;
+      color: #f8fafc !important;
+      letter-spacing: -0.2px !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+    .patient-chat-subtitle {
+      margin: 2px 0 0 !important;
+      font-size: 11px !important;
+      color: #94a3bd !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+    .patient-chat-close-btn {
+      width: 34px !important;
+      height: 34px !important;
+      border-radius: 50% !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #cbd5e1 !important;
+      font-size: 20px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+      transition: all 0.15s !important;
+      flex-shrink: 0 !important;
+      line-height: 1 !important;
+    }
+
+    .patient-chat-close-btn:hover, .patient-chat-close-btn:active {
+      background: rgba(239, 68, 68, 0.3) !important;
+      color: #fca5a5 !important;
+      border-color: rgba(239, 68, 68, 0.5) !important;
+    }
+
+    .patient-chat-body {
+      flex: 1 !important;
+      padding: 16px !important;
+      overflow-y: auto !important;
+      background: #091326 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 12px !important;
+      box-sizing: border-box !important;
+      scrollbar-width: thin !important;
+      scroll-behavior: smooth !important;
+    }
+
+    .chat-bubble-patient {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+      color: #ffffff !important;
+      padding: 11px 15px !important;
+      border-radius: 18px 18px 4px 18px !important;
+      font-size: 13.5px !important;
+      line-height: 1.45 !important;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+      word-break: break-word !important;
+    }
+
+    .chat-bubble-hospital {
+      background: #111e38 !important;
+      color: #f1f5f9 !important;
+      border: 1px solid rgba(56, 189, 248, 0.28) !important;
+      padding: 11px 15px !important;
+      border-radius: 18px 18px 18px 4px !important;
+      font-size: 13.5px !important;
+      line-height: 1.45 !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+      word-break: break-word !important;
+    }
+
+    .patient-chat-footer {
+      background: #0d172a !important;
+      border-top: 1px solid rgba(38, 52, 81, 0.85) !important;
+      padding: 12px 14px calc(env(safe-area-inset-bottom, 0px) + 12px) 14px !important;
+      flex-shrink: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    #patientChatInput {
+      flex: 1 !important;
+      padding: 11px 16px !important;
+      border-radius: 24px !important;
+      border: 1.5px solid rgba(56, 189, 248, 0.32) !important;
+      background: #07101f !important;
+      color: #f8fafc !important;
+      outline: none !important;
+      font-size: 13.5px !important;
+      box-sizing: border-box !important;
+      transition: border-color 0.2s !important;
+    }
+
+    #patientChatInput:focus {
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.35) !important;
+    }
+
+    #patientChatInput::placeholder {
+      color: #64748b !important;
+    }
+
+    #patientChatSendBtn {
+      width: 42px !important;
+      height: 42px !important;
+      border-radius: 50% !important;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+      color: white !important;
+      border: none !important;
+      cursor: pointer !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 16px !important;
+      flex-shrink: 0 !important;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4) !important;
+      transition: transform 0.15s !important;
+    }
+
+    #patientChatSendBtn:active {
+      transform: scale(0.92) !important;
+    }
+
+    /* =====================================================
+       CAREPATH AI CHAT ASSISTANT MESSAGE BOX
+       ===================================================== */
+    .carepath-ai-chat {
+      position: fixed !important;
+      bottom: calc(var(--safe-bottom) + 82px) !important;
+      right: 14px !important;
+      width: calc(100vw - 28px) !important;
+      max-width: 420px !important;
+      height: min(78vh, 600px) !important;
+      background: #0d172a !important;
+      border: 1px solid rgba(56, 189, 248, 0.3) !important;
+      border-radius: 20px !important;
+      overflow: hidden !important;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(56, 189, 248, 0.15) !important;
+      z-index: 100000 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      animation: cpModalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      box-sizing: border-box !important;
+    }
+
+    @media (min-width: 480px) {
+      .carepath-ai-chat {
+        right: 20px !important;
+        width: 400px !important;
+      }
+    }
+
+    .carepath-ai-header {
+      background: linear-gradient(135deg, #0e1e3d 0%, #172a52 100%) !important;
+      color: #f8fafc !important;
+      padding: 12px 16px !important;
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      border-bottom: 1px solid rgba(38, 52, 81, 0.85) !important;
+      flex-shrink: 0 !important;
+    }
+
+    .carepath-ai-messages {
+      flex: 1 !important;
+      padding: 14px !important;
+      overflow-y: auto !important;
+      background: #091326 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 10px !important;
+      scrollbar-width: thin !important;
+      box-sizing: border-box !important;
+    }
+
+    .carepath-ai-message {
+      max-width: 88% !important;
+      padding: 11px 14px !important;
+      border-radius: 16px !important;
+      background: #111e38 !important;
+      color: #f8fafc !important;
+      border: 1px solid rgba(56, 189, 248, 0.22) !important;
+      font-size: 13.5px !important;
+      line-height: 1.45 !important;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    .carepath-ai-input-area {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      padding: 10px 12px !important;
+      background: #0d172a !important;
+      border-top: 1px solid rgba(38, 52, 81, 0.85) !important;
+      flex-shrink: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    .carepath-ai-icon-btn {
+      width: 38px !important;
+      height: 38px !important;
+      border-radius: 50% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 17px !important;
+      cursor: pointer !important;
+      flex-shrink: 0 !important;
+      transition: transform 0.2s !important;
+    }
+
+    .carepath-ai-icon-btn:hover {
+      transform: scale(1.08) !important;
+    }
+
+    .camera-btn {
+      background: rgba(16, 185, 129, 0.18) !important;
+      border: 1.5px solid rgba(52, 211, 153, 0.4) !important;
+      color: #34d399 !important;
+    }
+
+    .mic-btn {
+      background: rgba(56, 189, 248, 0.18) !important;
+      border: 1.5px solid rgba(56, 189, 248, 0.4) !important;
+      color: #38bdf8 !important;
+    }
+
+    #carepathAIInput {
+      flex: 1 !important;
+      border: 1.5px solid rgba(56, 189, 248, 0.3) !important;
+      border-radius: 20px !important;
+      padding: 9px 14px !important;
+      font-size: 13.5px !important;
+      outline: none !important;
+      background: #07101f !important;
+      color: #f8fafc !important;
+      min-width: 0 !important;
+      transition: border-color 0.2s !important;
+      box-sizing: border-box !important;
+    }
+
+    #carepathAIInput:focus {
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3) !important;
+    }
+
+    #carepathAIInput::placeholder {
+      color: #64748b !important;
+    }
+
+    #carepathAISend {
+      width: 38px !important;
+      height: 38px !important;
+      border-radius: 50% !important;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+      color: white !important;
+      border: none !important;
+      cursor: pointer !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 15px !important;
+      flex-shrink: 0 !important;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4) !important;
+      transition: transform 0.15s !important;
+    }
+
+    #carepathAISend:active {
+      transform: scale(0.92) !important;
+    }
+</style>
 </head>
 
 <body>
@@ -1364,7 +1729,7 @@
   </div>
 
   
-  <div class="carepath-ai-input-area" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #ffffff; border-top: 1px solid #e2e8f0;">
+  <div class="carepath-ai-input-area">
     <!-- HIDDEN INPUTS FOR CAMERA AND GALLERY CHOOSER -->
     <input type="file" id="carepathAICameraInput" accept="image/*" capture="environment" style="display: none;">
     <input type="file" id="carepathAIGalleryInput" accept="image/*" style="display: none;">
@@ -1375,9 +1740,7 @@
       title="Upload or take photo of prescription / medical report"
       aria-label="Upload prescription photo"
       onclick="openPrescriptionChoiceModal()"
-      style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; color: #166534; flex-shrink: 0; transition: transform 0.2s;"
-      onmouseover="this.style.transform='scale(1.08)'"
-      onmouseout="this.style.transform='scale(1)'"
+      class="carepath-ai-icon-btn camera-btn"
     >
       📷
     </button>
@@ -1387,9 +1750,7 @@
       title="Speak to CarePath AI with voice"
       aria-label="Voice question to AI"
       onclick="toggleCarePathVoiceRecognition()"
-      style="background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; color: #0284c7; flex-shrink: 0; transition: transform 0.2s;"
-      onmouseover="this.style.transform='scale(1.08)'"
-      onmouseout="this.style.transform='scale(1)'"
+      class="carepath-ai-icon-btn mic-btn"
     >
       🎙️
     </button>
@@ -1398,13 +1759,13 @@
       id="carepathAIInput"
       placeholder="Ask CarePath AI or tap 🎙️ to speak..."
       autocomplete="off"
-      style="flex: 1; border: 1.5px solid #cbd5e1; border-radius: 20px; padding: 9px 14px; font-size: 13.5px; outline: none; min-width: 0;"
+      
     >
     <button
       type="button"
       id="carepathAISend"
       aria-label="Send"
-      style="background: #0284c7; color: white; border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; flex-shrink: 0;"
+      
     >
       ➤
     </button>
@@ -1618,12 +1979,12 @@
           id="patientChatInput" 
           placeholder="Type an inquiry or reply to hospital..." 
           autocomplete="off"
-          style="flex: 1; padding: 10px 14px; border-radius: 24px; border: 1.5px solid #cbd5e1; outline: none; font-size: 13px; background: #f8fafc;"
+          
         />
         <button 
           type="submit" 
           id="patientChatSendBtn"
-          style="width: 40px; height: 40px; border-radius: 50%; background: #0284c7; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);"
+          
         >
           ➤
         </button>
@@ -3262,13 +3623,13 @@ async function loadPatientHospitalChat() {
 
     if (!phone) {
         container.innerHTML = `
-            <div style="text-align: center; padding: 24px 12px; color: #64748b;">
-                <div style="font-size: 32px; margin-bottom: 8px;">📱</div>
-                <div style="font-weight: 700; color: #0f172a; font-size: 14.5px; margin-bottom: 4px;">Enter your mobile number</div>
-                <p style="font-size: 12.5px; margin: 0 0 16px; line-height: 1.4;">To view replies from hospitals to your inquiries, please confirm your phone number:</p>
-                <div style="display: flex; gap: 8px; max-width: 280px; margin: 0 auto;">
-                    <input type="tel" id="patientChatPhoneInput" placeholder="10-digit mobile" style="flex: 1; padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none;" />
-                    <button type="button" onclick="savePatientChatPhoneAndReload()" style="padding: 9px 14px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer;">Save</button>
+            <div style="text-align: center; padding: 28px 14px; color: #94a3bd;">
+                <div style="font-size: 36px; margin-bottom: 10px;">📱</div>
+                <div style="font-weight: 800; color: #f8fafc; font-size: 15px; margin-bottom: 6px;">Enter your mobile number</div>
+                <p style="font-size: 12.5px; margin: 0 0 18px; line-height: 1.45; color: #94a3bd;">To view replies from hospitals to your inquiries, please confirm your phone number:</p>
+                <div style="display: flex; gap: 8px; max-width: 300px; margin: 0 auto;">
+                    <input type="tel" id="patientChatPhoneInput" placeholder="10-digit mobile" style="flex: 1; padding: 10px 14px; border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 12px; font-size: 13.5px; outline: none; background: #07101f; color: #f8fafc;" />
+                    <button type="button" onclick="savePatientChatPhoneAndReload()" style="padding: 10px 16px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);">Save</button>
                 </div>
             </div>
         `;
@@ -3327,15 +3688,15 @@ function renderPatientChatMessages(messages) {
 
     if (!messages || messages.length === 0) {
         container.innerHTML = `
-            <div style="text-align: center; padding: 36px 16px; color: #64748b;">
-                <div style="font-size: 34px; margin-bottom: 8px;">💬</div>
-                <div style="font-weight: 800; color: #0f172a; font-size: 15px; margin-bottom: 6px;">No Hospital Messages Yet</div>
-                <p style="font-size: 12.5px; line-height: 1.45; margin: 0 0 16px; color: #64748b;">
-                    When you send an inquiry to a hospital, their direct replies will appear right here in this chat box.<br>Inquiries and replies are saved for 24 hours.
+            <div style="text-align: center; padding: 36px 16px; color: #94a3bd;">
+                <div style="font-size: 36px; margin-bottom: 10px;">💬</div>
+                <div style="font-weight: 800; color: #f8fafc; font-size: 16px; margin-bottom: 6px;">No Hospital Messages Yet</div>
+                <p style="font-size: 12.5px; line-height: 1.5; margin: 0 0 18px; color: #94a3bd;">
+                    When you send an inquiry to a hospital, their direct replies will appear right here in this message box.<br>Inquiries and replies are saved for 24 hours.
                 </p>
-                <a href="index.html" style="display: inline-block; padding: 9px 16px; background: #eff6ff; color: #0284c7; border: 1px solid #bfdbfe; border-radius: 8px; font-size: 12.5px; font-weight: 700; text-decoration: none;">
+                <button type="button" onclick="closePatientHospitalChatModal(); scrollToHospitals();" style="display: inline-block; padding: 10px 18px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; text-decoration: none;">
                     Explore Hospitals to Send Inquiry →
-                </a>
+                </button>
             </div>
         `;
         if (recipientInfo) recipientInfo.style.display = "none";
@@ -3358,12 +3719,12 @@ function renderPatientChatMessages(messages) {
 
         if (isMe) {
             return `
-                <div style="display: flex; flex-direction: column; align-self: flex-end; max-width: 84%;">
-                    <div style="font-size: 10.5px; color: #64748b; margin-bottom: 3px; text-align: right;">
-                        You → <strong>${escapeHtml(msg.hospital_name || 'Hospital')}</strong> • <span>${timeStr}</span>
+                <div style="display: flex; flex-direction: column; align-self: flex-end; max-width: 85%;">
+                    <div style="font-size: 10.5px; color: #94a3bd; margin-bottom: 3px; text-align: right;">
+                        You → <strong style="color: #38bdf8;">${escapeHtml(msg.hospital_name || 'Hospital')}</strong> • <span>${timeStr}</span>
                     </div>
                     <div class="chat-bubble-patient">
-                        ${msg.subject && msg.subject !== 'Patient Inquiry' ? `<div style="font-weight: 700; font-size: 12px; margin-bottom: 3px; opacity: 0.95;">${escapeHtml(msg.subject)}</div>` : ''}
+                        ${msg.subject && msg.subject !== 'Patient Inquiry' ? `<div style="font-weight: 700; font-size: 12px; margin-bottom: 4px; opacity: 0.95;">${escapeHtml(msg.subject)}</div>` : ''}
                         <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.message || '')}</div>
                     </div>
                 </div>
@@ -3371,16 +3732,16 @@ function renderPatientChatMessages(messages) {
         } else {
             return `
                 <div style="display: flex; flex-direction: column; align-self: flex-start; max-width: 86%;">
-                    <div style="font-size: 10.5px; color: #166534; margin-bottom: 3px; display: flex; align-items: center; gap: 4px;">
+                    <div style="font-size: 10.5px; color: #34d399; margin-bottom: 3px; display: flex; align-items: center; gap: 4px;">
                         <strong>🏥 ${escapeHtml(msg.hospital_name || 'Hospital')}</strong>
-                        ${msg.hospital_city ? `<span style="color: #64748b;">(${escapeHtml(msg.hospital_city)})</span>` : ''}
-                        • <span>${timeStr}</span>
-                        ${!msg.is_read ? `<span style="background: #dcfce7; color: #15803d; font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 800;">NEW REPLY</span>` : ''}
+                        ${msg.hospital_city ? `<span style="color: #94a3bd;">(${escapeHtml(msg.hospital_city)})</span>` : ''}
+                        • <span style="color: #94a3bd;">${timeStr}</span>
+                        ${!msg.is_read ? `<span style="background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 800;">NEW REPLY</span>` : ''}
                     </div>
                     <div class="chat-bubble-hospital">
-                        ${msg.subject ? `<div style="font-weight: 800; font-size: 12.5px; color: #15803d; margin-bottom: 4px;">${escapeHtml(msg.subject)}</div>` : ''}
-                        <div style="white-space: pre-wrap; word-break: break-word; color: #0f172a;">${escapeHtml(msg.message || '')}</div>
-                        <div style="margin-top: 6px; font-size: 10px; color: #16a34a; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                        ${msg.subject ? `<div style="font-weight: 800; font-size: 12.5px; color: #38bdf8; margin-bottom: 4px;">${escapeHtml(msg.subject)}</div>` : ''}
+                        <div style="white-space: pre-wrap; word-break: break-word; color: #f8fafc;">${escapeHtml(msg.message || '')}</div>
+                        <div style="margin-top: 6px; font-size: 10px; color: #34d399; font-weight: 700; display: flex; align-items: center; gap: 4px;">
                             <span>✓ Verified Hospital Response</span>
                         </div>
                     </div>
