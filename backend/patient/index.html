@@ -5,6 +5,24 @@
 
     <meta charset="UTF-8">
 
+    <!-- =====================================================
+         INSTANT 0ms AUTH GUARD (ELIMINATES LOGIN FLASH COMPLETELY)
+    ====================================================== -->
+    <script>
+      (function() {
+        try {
+          var token = localStorage.getItem("patientToken") || localStorage.getItem("patient_token") || localStorage.getItem("token");
+          var patientId = localStorage.getItem("patientId") || localStorage.getItem("patient_id");
+          if (token || patientId) {
+            // Conceal document immediately before any paint/layout occurs (0ms)
+            document.documentElement.style.visibility = 'hidden';
+            document.documentElement.style.display = 'none';
+            window.location.replace("dashboard.html");
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"

@@ -9689,10 +9689,15 @@ def get_doctor_photo(filename: str, db: Session = Depends(get_db)):
     safe_name = os.path.basename(filename)
     file_path = os.path.join(DOCTOR_PHOTO_DIR, safe_name)
 
+    cache_headers = {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Allow-Origin": "*",
+    }
+
     # 1. Check local disk
     if os.path.isfile(file_path):
         media_type = mimetypes.guess_type(file_path)[0] or "image/jpeg"
-        return FileResponse(file_path, media_type=media_type)
+        return FileResponse(file_path, media_type=media_type, headers=cache_headers)
 
     # 2. Check persistent database photo_base64
     doctor = db.query(Doctor).filter(Doctor.image_url.like(f"%{safe_name}")).first()
