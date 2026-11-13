@@ -6250,6 +6250,26 @@ def create_cashfree_order(
         raise HTTPException(status_code=404, detail="Doctor not found")
 
     target_appt_date = data.appointment_date or (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+    if isinstance(target_appt_date, str):
+        try:
+            target_appt_date = datetime.strptime(target_appt_date, "%Y-%m-%d").date()
+        except Exception:
+            pass
+
+    # Doctor appointment booking window: 0 to 3 days (Today / Present time up to 3 days in advance)
+    ist_today = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+    max_advance_date = ist_today + timedelta(days=3)
+
+    if target_appt_date < ist_today:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot book an appointment for a past date ({target_appt_date}). Please select today (present) or up to 3 days in advance."
+        )
+    if target_appt_date > max_advance_date:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Doctor appointments can only be booked from today up to 3 days in advance (until {max_advance_date.strftime('%d %b %Y')})."
+        )
 
     # Block booking if hospital has scheduled a closure on this appointment date
     closure = db.query(HospitalClosure).filter(
@@ -6566,6 +6586,30 @@ def create_token(
         }
 
     hospital = find_published_hospital(db, data.hospital)
+
+    # Doctor appointment booking window: 0 to 3 days (Today / Present time up to 3 days in advance)
+    raw_appt_date = data.appointment_date or (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+    if isinstance(raw_appt_date, str):
+        try:
+            target_token_date = datetime.strptime(raw_appt_date, "%Y-%m-%d").date()
+        except Exception:
+            target_token_date = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+    else:
+        target_token_date = raw_appt_date
+
+    ist_today = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+    max_advance_date = ist_today + timedelta(days=3)
+
+    if target_token_date < ist_today:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot book an appointment for a past date ({target_token_date}). Please select today (present) or up to 3 days in advance."
+        )
+    if target_token_date > max_advance_date:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Doctor appointments can only be booked from today up to 3 days in advance (until {max_advance_date.strftime('%d %b %Y')})."
+        )
 
     doctor = (
         db.query(Doctor)

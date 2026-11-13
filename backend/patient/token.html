@@ -203,9 +203,25 @@
             </div>
         </div>
 
-        <div class="card">
-            <label for="appointmentDate">Select appointment date</label>
-            <input type="date" id="appointmentDate" required>
+        <div class="card" id="appointmentDateCard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <label for="appointmentDate" style="margin: 0; font-weight: 800; color: #1e293b; font-size: 13.5px;">
+                    Select Appointment Date
+                </label>
+                <span style="font-size: 11px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 3px 8px; border-radius: 999px;">
+                    ⚡ 0 to 3 Days Advance
+                </span>
+            </div>
+
+            <!-- Quick 1-Tap Date Selection Pills (Day 0 / Today, Day 1 / Tomorrow, Day 2, Day 3) -->
+            <div id="quickDatePillsGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px;"></div>
+
+            <div style="position: relative;">
+                <input type="date" id="appointmentDate" required style="width: 100%; box-sizing: border-box; padding: 11px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 14px; font-weight: 700; color: #0f172a; background: #f8fafc; outline: none; transition: all 0.2s;">
+            </div>
+            <div style="font-size: 11.5px; color: #64748b; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
+                <span>ℹ️</span> <span>Appointments can be booked for <strong>today (present time)</strong> or up to <strong>3 days in advance</strong>.</span>
+            </div>
         </div>
 
         <!-- BENEFICIARY SELECTION: MYSELF vs FAMILY MEMBER -->
@@ -615,20 +631,7 @@ function displayBooking() {
     byId("platformFee").textContent = money(PLATFORM_FEE);
     byId("totalAmount").textContent = money(hospitalFee + PLATFORM_FEE);
 
-    const today = new Date();
-    const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
-        .toISOString().slice(0, 10);
-    byId("appointmentDate").min = localToday;
-
-    const savedDate = stored("selectedAppointmentDate", "appointmentDate");
-    if (savedDate && savedDate >= localToday) {
-        byId("appointmentDate").value = savedDate;
-    } else {
-        byId("appointmentDate").value = localToday;
-        localStorage.setItem("selectedAppointmentDate", localToday);
-    }
-
-    validateAppointmentDate();
+    setupBookingDateOptions();
 
     const selfName = stored("patientName", "patient_name", "full_name") || "Account Holder";
     const selfEmail = stored("patientEmail", "patient_email", "email") || "Registered Email";
@@ -712,9 +715,117 @@ async function loadDoctorSchedule() {
     }
 }
 
+function setupBookingDateOptions() {
+    const today = new Date();
+    const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000)
+        .toISOString().slice(0, 10);
+
+    // Maximum 3 days in advance (Day 0: Today/Present, Day 1: Tomorrow, Day 2, Day 3)
+    const maxMs = today.getTime() + (3 * 24 * 60 * 60 * 1000) - (today.getTimezoneOffset() * 60000);
+    const maxAdvanceDate = new Date(maxMs).toISOString().slice(0, 10);
+
+    const dateInput = byId("appointmentDate");
+    dateInput.min = localToday;
+    dateInput.max = maxAdvanceDate;
+
+    // Render Quick 1-Tap Date Pills
+    const container = byId("quickDatePillsGrid");
+    if (container) {
+        const daysShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const monthsShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        let pillsHtml = "";
+
+        for (let offset = 0; offset <= 3; offset++) {
+            const pillDate = new Date(today.getTime() + offset * 24 * 60 * 60 * 1000);
+            const dateStr = new Date(pillDate.getTime() - pillDate.getTimezoneOffset() * 60000)
+                .toISOString().slice(0, 10);
+            const dayOfWeek = daysShort[pillDate.getDay()];
+            const dateNum = pillDate.getDate();
+            const monthName = monthsShort[pillDate.getMonth()];
+
+            let title = "";
+            if (offset === 0) title = "Today (0d)";
+            else if (offset === 1) title = "Tomorrow";
+            else title = `+${offset} Days`;
+
+            pillsHtml += `
+                <button type="button" class="quick-date-pill" data-date="${dateStr}" onclick="selectAppointmentQuickDate('${dateStr}')" style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 8px 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; min-width: 0;">
+                    <span class="pill-title" style="font-size: 10px; font-weight: 700; color: #64748b; white-space: nowrap;">${title}</span>
+                    <span class="pill-date" style="font-size: 13px; font-weight: 800; color: #0f172a; margin: 2px 0;">${dateNum} ${monthName}</span>
+                    <span class="pill-day" style="font-size: 9.5px; color: #94a3b8; font-weight: 600;">${dayOfWeek}</span>
+                </button>
+            `;
+        }
+        container.innerHTML = pillsHtml;
+    }
+
+    const savedDate = stored("selectedAppointmentDate", "appointmentDate");
+    if (savedDate && savedDate >= localToday && savedDate <= maxAdvanceDate) {
+        dateInput.value = savedDate;
+    } else {
+        dateInput.value = localToday;
+        localStorage.setItem("selectedAppointmentDate", localToday);
+    }
+
+    highlightQuickDatePill(dateInput.value);
+    validateAppointmentDate();
+}
+
+function selectAppointmentQuickDate(dateStr) {
+    const dateInput = byId("appointmentDate");
+    if (dateInput) {
+        dateInput.value = dateStr;
+        localStorage.setItem("selectedAppointmentDate", dateStr);
+        highlightQuickDatePill(dateStr);
+        validateAppointmentDate();
+        refreshButton();
+    }
+}
+
+function highlightQuickDatePill(selectedDate) {
+    document.querySelectorAll(".quick-date-pill").forEach(pill => {
+        const pDate = pill.getAttribute("data-date");
+        const titleSpan = pill.querySelector(".pill-title");
+        const dateSpan = pill.querySelector(".pill-date");
+        if (pDate === selectedDate) {
+            pill.style.background = "#e0f2fe";
+            pill.style.borderColor = "#0284c7";
+            pill.style.boxShadow = "0 0 0 2px rgba(2, 132, 199, 0.25)";
+            if (titleSpan) titleSpan.style.color = "#0369a1";
+            if (dateSpan) dateSpan.style.color = "#0284c7";
+        } else {
+            pill.style.background = "#ffffff";
+            pill.style.borderColor = "#cbd5e1";
+            pill.style.boxShadow = "none";
+            if (titleSpan) titleSpan.style.color = "#64748b";
+            if (dateSpan) dateSpan.style.color = "#0f172a";
+        }
+    });
+}
+
 function validateAppointmentDate() {
     const dateVal = byId("appointmentDate").value;
     if (!dateVal) return;
+
+    // 0 to 3 days advance boundary checks
+    const today = new Date();
+    const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const maxMs = today.getTime() + (3 * 24 * 60 * 60 * 1000) - (today.getTimezoneOffset() * 60000);
+    const maxAdvanceDate = new Date(maxMs).toISOString().slice(0, 10);
+
+    if (dateVal < localToday) {
+        showMessage(`⚠️ Cannot book an appointment for a past date (${dateVal}). Please select today (present time) or up to 3 days in advance.`, "error");
+        byId("payButton").disabled = true;
+        return;
+    }
+
+    if (dateVal > maxAdvanceDate) {
+        showMessage(`⚠️ Doctor appointments can only be booked from today up to 3 days in advance (until ${maxAdvanceDate}). Please select a date within this window.`, "error");
+        byId("payButton").disabled = true;
+        return;
+    }
+
+    highlightQuickDatePill(dateVal);
 
     // 1. Check if hospital has a scheduled closure
     const closure = currentHospitalClosures.find(c => c.closure_date === dateVal);
@@ -1047,6 +1158,7 @@ function showReceipt(details) {
 
 byId("appointmentDate").addEventListener("change", function () {
     localStorage.setItem("selectedAppointmentDate", this.value);
+    highlightQuickDatePill(this.value);
     validateAppointmentDate();
     refreshButton();
 });
