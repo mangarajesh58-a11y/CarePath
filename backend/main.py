@@ -9657,12 +9657,42 @@ async def upload_doctor_photo(
     filename = f"doctor_{doctor_id}_{uuid.uuid4().hex}{extension}"
     destination = os.path.join(DOCTOR_PHOTO_DIR, filename)
 
+    # Auto-frame and normalize uploaded doctor photo so it never zooms in or distorts in avatars
+    processed_content = content
+    try:
+        from PIL import Image, ImageOps
+        import io
+        img = Image.open(io.BytesIO(content))
+        img = ImageOps.exif_transpose(img)
+        w, h = img.size
+
+        # For portrait photos (h > w): crop balanced square centered on upper body / head
+        if h > w:
+            crop_size = w
+            top = max(0, min(int((h - w) * 0.35), h - crop_size))
+            img = img.crop((0, top, w, top + crop_size))
+        elif w > h:
+            crop_size = h
+            left = (w - h) // 2
+            img = img.crop((left, 0, left + crop_size, h))
+
+        if img.width > 600:
+            img = img.resize((600, 600), Image.Resampling.LANCZOS)
+
+        out_buf = io.BytesIO()
+        img.convert("RGB").save(out_buf, format="JPEG", quality=88, optimize=True)
+        processed_content = out_buf.getvalue()
+        filename = f"doctor_{doctor_id}_{uuid.uuid4().hex}.jpg"
+        destination = os.path.join(DOCTOR_PHOTO_DIR, filename)
+    except Exception:
+        pass
+
     with open(destination, "wb") as output_file:
-        output_file.write(content)
+        output_file.write(processed_content)
 
     old_url = doctor.image_url
     doctor.image_url = f"/doctor-photos/{filename}"
-    doctor.photo_base64 = base64.b64encode(content).decode("utf-8")
+    doctor.photo_base64 = base64.b64encode(processed_content).decode("utf-8")
     db.commit()
     db.refresh(doctor)
 
