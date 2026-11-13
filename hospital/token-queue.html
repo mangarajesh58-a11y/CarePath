@@ -1,314 +1,1350 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Token Queue - CarePath</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>OPD Queue Command Center - CarePath</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="carepath-ai-small.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="./broadcast-banner.js"></script>
+    <script src="./carepath-permissions.js"></script>
 
     <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --primary-border: #bfdbfe;
+            --primary-glow: rgba(37, 99, 235, 0.2);
+            --secondary: #06b6d4;
+            --success: #059669;
+            --success-light: #ecfdf5;
+            --success-border: #a7f3d0;
+            --warning: #d97706;
+            --warning-light: #fffbeb;
+            --warning-border: #fde68a;
+            --danger: #dc2626;
+            --danger-light: #fef2f2;
+            --danger-border: #fecaca;
+            --purple: #7c3aed;
+            --purple-light: #f5f3ff;
+            --purple-border: #ddd6fe;
+            --teal: #0d9488;
+            --teal-light: #f0fdfa;
+            --teal-border: #99f6e4;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --radius-pill: 9999px;
+            --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+            --shadow-card: 0 2px 6px -1px rgba(15, 23, 42, 0.04), 0 8px 16px -2px rgba(15, 23, 42, 0.03);
+            --shadow-elevated: 0 12px 28px -6px rgba(15, 23, 42, 0.09), 0 6px 12px -4px rgba(15, 23, 42, 0.04);
+            --shadow-glow: 0 0 25px -4px rgba(37, 99, 235, 0.25);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f8fafc;
+            background-image: 
+                radial-gradient(800px 400px at 50% 0px, rgba(37, 99, 235, 0.05), transparent),
+                radial-gradient(600px 400px at 100% 200px, rgba(6, 182, 212, 0.04), transparent);
+            background-attachment: fixed;
+            color: var(--slate-900);
+            min-height: 100vh;
+            padding-top: var(--safe-top);
+            padding-bottom: calc(var(--safe-bottom) + 88px);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .dashboard-container,
+        .page-container {
+            width: 100%;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 14px 16px;
+        }
+
+        @media (min-width: 768px) {
+            .dashboard-container,
+            .page-container {
+                padding: 20px 24px;
+            }
+        }
+
+        /* =====================================================
+           STICKY APP HEADER
+        ===================================================== */
+        .mobile-app-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+            padding: 12px 16px;
+            margin: -14px -16px 18px -16px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+        }
+
+        @media (min-width: 768px) {
+            .mobile-app-header {
+                margin: -20px -24px 24px -24px;
+                padding: 14px 28px;
+            }
+        }
+
+        .mobile-app-bar-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            max-width: 1240px;
+            margin: 0 auto;
+        }
+
+        .app-brand-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .app-brand-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            padding: 0;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .app-brand-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .app-title-group {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .app-hospital-title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .app-hospital-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--slate-900);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            letter-spacing: -0.3px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--success-light);
+            color: var(--success);
+            padding: 3px 9px;
+            border-radius: var(--radius-pill);
+            font-size: 10.5px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            border: 1px solid var(--success-border);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 2.5px rgba(16, 185, 129, 0.25);
+            animation: livePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            display: inline-block;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .app-status-sub {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--slate-500);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .app-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .header-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
+            font-size: 12.5px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid var(--slate-200);
+            background: white;
+            color: var(--slate-700);
+        }
+
+        .header-action-btn:hover {
+            background: var(--slate-50);
+            border-color: var(--slate-300);
+            transform: translateY(-1px);
+        }
+
+        .header-action-btn.tv-btn {
+            background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+            border-color: var(--primary-border);
+            color: var(--primary);
+        }
+
+        .header-action-btn.tv-btn:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .header-action-btn.logout-btn {
+            background: var(--slate-100);
+            border-color: var(--slate-200);
+            color: var(--slate-600);
+        }
+
+        .header-action-btn.logout-btn:hover {
+            background: var(--danger-light);
+            border-color: var(--danger-border);
+            color: var(--danger);
+        }
+
+        @media (max-width: 640px) {
+            .header-action-btn .btn-text {
+                display: none;
+            }
+            .header-action-btn {
+                padding: 8px 10px;
+            }
+        }
+
+        /* =====================================================
+           PAGE HERO / COMMAND BAR
+        ===================================================== */
+        .command-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .command-bar-title h1 {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--slate-900);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        .command-bar-title p {
+            font-size: 13.5px;
+            color: var(--slate-500);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .live-clock-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            border: 1px solid var(--slate-200);
+            padding: 6px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--slate-600);
+            box-shadow: var(--shadow-subtle);
+        }
+
+        /* =====================================================
+           ALERT / MESSAGE BANNER
+        ===================================================== */
+        .message {
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            font-weight: 600;
+            display: none;
+            box-shadow: var(--shadow-subtle);
+            border: 1px solid transparent;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* =====================================================
+           KPI METRICS GRID
+        ===================================================== */
         .queue-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 14px;
-            margin: 20px 0;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        @media (min-width: 640px) {
+            .queue-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 14px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .queue-grid {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 16px;
+            }
         }
 
         .metric {
             background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 18px;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            padding: 16px 18px;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .metric:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .metric-icon-box {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
         }
 
         .metric h3 {
-            margin: 0 0 10px;
-            font-size: 14px;
-            color: #475569;
+            margin: 0;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--slate-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .metric strong {
-            font-size: 28px;
-            color: #0f172a;
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--slate-900);
+            line-height: 1.1;
+            margin: 4px 0 2px 0;
         }
 
-        .filters {
+        .metric-sub {
+            font-size: 11px;
+            color: var(--slate-400);
+            font-weight: 600;
+        }
+
+        /* Color Themes for Metrics */
+        .metric.total-metric {
+            border-top: 3px solid var(--primary);
+        }
+        .metric.total-metric .metric-icon-box {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .metric.total-metric strong {
+            color: var(--primary-dark);
+        }
+
+        .metric.waiting-metric {
+            border-top: 3px solid var(--warning);
+        }
+        .metric.waiting-metric .metric-icon-box {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        .metric.waiting-metric strong {
+            color: #b45309;
+        }
+
+        .metric.serving-metric {
+            border-top: 3px solid var(--success);
+        }
+        .metric.serving-metric .metric-icon-box {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        .metric.serving-metric strong {
+            color: #047857;
+        }
+
+        .metric.completed-metric {
+            border-top: 3px solid var(--purple);
+        }
+        .metric.completed-metric .metric-icon-box {
+            background: var(--purple-light);
+            color: var(--purple);
+        }
+        .metric.completed-metric strong {
+            color: var(--purple);
+        }
+
+        .metric.online-metric {
+            border-top: 3px solid #0284c7;
+        }
+        .metric.online-metric .metric-icon-box {
+            background: #e0f2fe;
+            color: #0284c7;
+        }
+        .metric.online-metric strong {
+            color: #0369a1;
+        }
+
+        .metric.offline-metric {
+            border-top: 3px solid var(--teal);
+        }
+        .metric.offline-metric .metric-icon-box {
+            background: var(--teal-light);
+            color: var(--teal);
+        }
+        .metric.offline-metric strong {
+            color: #0f766e;
+        }
+
+        /* =====================================================
+           CLINICAL PANELS (LIST-CARD)
+        ===================================================== */
+        .list-card {
+            background: white;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-xl);
+            padding: 22px 24px;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 640px) {
+            .list-card {
+                padding: 16px;
+                border-radius: var(--radius-lg);
+            }
+        }
+
+        .panel-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .panel-header-left h2 {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--slate-900);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.3px;
+        }
+
+        .panel-header-left p {
+            font-size: 13px;
+            color: var(--slate-500);
+            margin-top: 3px;
+            font-weight: 500;
+        }
+
+        /* =====================================================
+           BOOKING BREAKDOWN CHART
+        ===================================================== */
+        .chart-wrapper {
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+        }
+
+        .chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 36px;
+            height: 150px;
+            padding: 15px 12px 0;
+            border-bottom: 2px dashed var(--slate-200);
+        }
+
+        .bar-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100px;
+        }
+
+        .bar-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+            font-size: 16px;
+            color: var(--slate-800);
+            margin-bottom: 8px;
+        }
+
+        .bar {
+            min-height: 6px;
+            background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 8px 8px 2px 2px;
+            width: 56px;
+            transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+        }
+
+        .bar.offline-bar {
+            background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+        }
+
+        .bar-label {
+            margin-top: 10px;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--slate-600);
+        }
+
+        .chart-legend {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--slate-600);
+            flex-wrap: wrap;
+        }
+
+        .legend-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .legend-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+
+        /* =====================================================
+           WALK-IN INTAKE FORM
+        ===================================================== */
+        .walkin-form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        @media (min-width: 768px) {
+            .walkin-form-grid {
+                grid-template-columns: 2fr 1.5fr 1.5fr 1.4fr;
+                align-items: end;
+            }
+        }
+
+        .form-field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-field-group label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--slate-600);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .form-field-group input,
+        .form-field-group select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--slate-800);
+            background: white;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-field-group input:focus,
+        .form-field-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .form-field-group select:disabled {
+            background: var(--slate-100);
+            color: var(--slate-400);
+            cursor: not-allowed;
+        }
+
+        .btn-register-walkin {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+            transition: all 0.2s ease;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .btn-register-walkin:hover {
+            background: linear-gradient(135deg, #047857 0%, #059669 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-register-walkin:active {
+            transform: translateY(0);
+        }
+
+        /* =====================================================
+           LIVE OPD QUEUE TRACKER PORTION FOR WALK-IN
+        ===================================================== */
+        #walkInLiveQueueBox {
+            background: #f0fdf4;
+            border: 1.5px solid #86efac;
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            margin-top: 16px;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.06);
+        }
+
+        .lq-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .lq-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .lq-indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #16a34a;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+            display: inline-block;
+        }
+
+        .lq-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #166534;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .lq-doc-badge {
+            font-size: 12px;
+            font-weight: 800;
+            color: #0284c7;
+            background: #e0f2fe;
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            border: 1px solid #bae6fd;
+        }
+
+        .lq-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        @media (min-width: 600px) {
+            .lq-stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .lq-stat-card {
+            background: white;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid #bbf7d0;
+            text-align: center;
+        }
+
+        .lq-stat-label {
+            font-size: 10.5px;
+            color: var(--slate-500);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .lq-stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 17px;
+            font-weight: 800;
+            margin-top: 2px;
+        }
+
+        /* =====================================================
+           WALK-IN TOKEN DISPLAY (RECEIPT STYLE)
+        ===================================================== */
+        .walk-in-result {
+            display: none;
+            margin-top: 20px;
+            padding: 24px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+            border: 2px solid #86efac;
+            border-radius: var(--radius-xl);
+            text-align: center;
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.15);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .walk-in-result h3 {
+            color: #166534;
+            font-size: 19px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .walk-in-token-label {
+            color: var(--slate-500);
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 6px 0;
+        }
+
+        .walk-in-token-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 68px;
+            font-weight: 800;
+            line-height: 1.1;
+            color: #15803d;
+            margin: 8px 0;
+            text-shadow: 0 2px 10px rgba(22, 163, 74, 0.15);
+        }
+
+        .walk-in-patient-name {
+            color: var(--slate-800);
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .walk-in-success-message {
+            color: #166534;
+            font-size: 13.5px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* =====================================================
+           RETENTION & COMPLIANCE BANNER
+        ===================================================== */
+        .compliance-banner {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            margin: 14px 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .compliance-text {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12.5px;
+            color: #166534;
+            line-height: 1.4;
+            flex: 1;
+            min-width: 260px;
+        }
+
+        .compliance-btn {
+            background: white;
+            border: 1.5px solid #86efac;
+            color: #15803d;
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .compliance-btn:hover {
+            background: #dcfce7;
+            border-color: #4ade80;
+        }
+
+        /* =====================================================
+           FILTERS BAR
+        ===================================================== */
+        .filters-toolbar {
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            padding: 14px 16px;
+            margin-bottom: 20px;
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
-            margin: 18px 0;
+            gap: 10px;
+            align-items: center;
         }
 
-        .filters select,
-        .filters input {
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
+        .filters-toolbar select,
+        .filters-toolbar input[type="date"],
+        .filters-toolbar input[type="search"] {
+            padding: 9px 12px;
+            border: 1px solid var(--slate-300);
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            font-family: inherit;
+            color: var(--slate-700);
+            background: white;
+            outline: none;
+            transition: all 0.2s ease;
         }
 
+        .filters-toolbar select:focus,
+        .filters-toolbar input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .filters-toolbar input[type="search"] {
+            min-width: 200px;
+            flex: 1;
+        }
+
+        .quick-date-btn {
+            background: white;
+            color: var(--slate-700);
+            border: 1px solid var(--slate-300);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .quick-date-btn:hover {
+            background: var(--slate-100);
+            border-color: var(--slate-400);
+        }
+
+        .refresh-queue-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 9px 16px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-queue-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* =====================================================
+           QUEUE DATA TABLE
+        ===================================================== */
         .table-wrap {
             overflow-x: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--slate-200);
+            background: white;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 850px;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
+            min-width: 900px;
+            font-size: 13.5px;
         }
 
         th {
-            background: #f1f5f9;
+            background: #f8fafc;
+            color: var(--slate-600);
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 14px 16px;
+            border-bottom: 1.5px solid var(--slate-200);
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--slate-100);
+            color: var(--slate-800);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .token-num-pill {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-block;
         }
 
         .badge {
-            padding: 4px 8px;
-            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
         }
 
-        .online {
-            background: #dbeafe;
+        .badge.online {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
         }
 
-        .offline {
-            background: #dcfce7;
+        .badge.offline {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
         }
 
-        .message {
-            padding: 12px;
-            margin: 12px 0;
-            border-radius: 8px;
-            display: none;
+        .status-badge-waiting {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fde68a;
         }
 
-        .chart {
-            display: flex;
-            align-items: end;
-            gap: 18px;
-            height: 170px;
-            padding: 15px 8px 0;
+        .status-badge-serving {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
         }
 
-        .bar-group {
-            flex: 1;
-            text-align: center;
-            min-width: 45px;
-        }
-
-        .bar {
-            min-height: 3px;
-            background: #2563eb;
-            border-radius: 6px 6px 0 0;
-            width: 100%;
-        }
-
-        .bar.offline-bar {
-            background: #16a34a;
-        }
-
-        .bar-value {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .bar-label {
-            margin-top: 8px;
-            font-size: 12px;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        button:disabled {
-            cursor: not-allowed;
-            opacity: 0.6;
+        .status-badge-completed {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
         }
 
         .edit-token-button {
-            padding: 8px 12px;
+            padding: 7px 12px;
             border: 1px solid #16a34a;
-            border-radius: 7px;
+            border-radius: var(--radius-sm);
             background: #dcfce7;
             color: #166534;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
         }
 
         .edit-token-button:hover {
             background: #bbf7d0;
+            transform: translateY(-1px);
         }
 
-        /* Walk-in registration result */
-
-        .walk-in-result {
-            display: none;
-            margin-top: 20px;
-            padding: 24px;
-            background: #ecfdf5;
-            border: 2px solid #86efac;
-            border-radius: 16px;
-            text-align: center;
+        /* =====================================================
+           BACK BUTTON
+        ===================================================== */
+        .back-button {
+            margin-top: 24px;
+            background: white;
+            color: var(--slate-700);
+            border: 1px solid var(--slate-300);
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-subtle);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .walk-in-result h3 {
-            color: #166534;
-            margin: 0 0 12px;
+        .back-button:hover {
+            background: var(--slate-100);
+            border-color: var(--slate-400);
+            transform: translateY(-1px);
         }
 
-        .walk-in-token-label {
-            color: #475569;
-            margin: 8px 0;
+        /* =====================================================
+           MOBILE BOTTOM NAVIGATION DOCK
+        ===================================================== */
+        .mobile-bottom-dock {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(226, 232, 240, 0.9);
+            padding: 6px 10px calc(var(--safe-bottom) + 6px) 10px;
+            box-shadow: 0 -4px 18px rgba(15, 23, 42, 0.06);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
         }
 
-        .walk-in-token-number {
-            font-size: 64px;
-            font-weight: 800;
-            line-height: 1.2;
-            color: #15803d;
-            margin: 10px 0;
+        .dock-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            text-decoration: none;
+            color: var(--slate-500);
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 6px 8px;
+            border-radius: 12px;
+            transition: all 0.15s ease;
+            min-width: 52px;
+            position: relative;
         }
 
-        .walk-in-patient-name {
-            color: #334155;
-            font-size: 17px;
-            font-weight: 600;
+        .dock-item:active {
+            transform: scale(0.92);
         }
 
-        .walk-in-success-message {
-            color: #166534;
-            margin-top: 10px;
+        .dock-item.active {
+            color: var(--primary);
         }
 
-        #walkInResult {
-            white-space: pre-line;
-        }
-
-        @media (max-width: 600px) {
-            .walk-in-token-number {
-                font-size: 48px;
-            }
-
-            .filters input,
-            .filters select,
-            .filters button {
-                width: 100%;
-                box-sizing: border-box;
-            }
+        .dock-icon {
+            font-size: 20px;
+            line-height: 1;
         }
     </style>
 </head>
 
 <body>
-<div class="page-container">
+<div class="dashboard-container page-container">
 
-    <header>
-        <div>
-            <h1>CarePath</h1>
-            <p>Hospital Token Queue</p>
+    <!-- =====================================================
+         STICKY CLINICAL APP HEADER
+    ===================================================== -->
+    <header class="mobile-app-header">
+        <div class="mobile-app-bar-inner">
+            <div class="app-brand-left">
+                <div class="app-brand-avatar">
+                    <img src="carepath-ai-small.png" alt="CarePath AI">
+                </div>
+                <div class="app-title-group">
+                    <div class="app-hospital-title-row">
+                        <div class="app-hospital-name" id="hospitalNameDisplay">CarePath Hospital</div>
+                        <span class="status-pill" id="opdStatusPill">
+                            <span class="status-dot"></span>
+                            <span id="opdStatusLabel">OPD ACTIVE</span>
+                        </span>
+                    </div>
+                    <div class="app-status-sub">
+                        <span>🏥 Token Queue Command Center</span>
+                        <span>•</span>
+                        <span id="liveClockDisplay">Live</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="app-header-actions">
+                <a href="display.html" target="_blank" class="header-action-btn tv-btn" title="Open TV OPD Display">
+                    <span class="btn-icon">📺</span>
+                    <span class="btn-text">TV Display</span>
+                </a>
+                <button type="button" class="header-action-btn" onclick="loadTokens()" title="Refresh Queue">
+                    <span class="btn-icon">🔄</span>
+                    <span class="btn-text">Refresh</span>
+                </button>
+                <button type="button" class="header-action-btn logout-btn" onclick="hospitalLogout()" title="Logout">
+                    <span class="btn-icon">🚪</span>
+                    <span class="btn-text">Logout</span>
+                </button>
+            </div>
         </div>
-
-        <button type="button" class="logout" onclick="hospitalLogout()">
-            Logout
-        </button>
     </header>
 
-    <div class="welcome">
-        <h2>Token Queue Management</h2>
-        <p>View online bookings and offline walk-in tokens together.</p>
-    </div>
-
+    <!-- STATUS / ERROR NOTIFICATION -->
     <div id="message" class="message" role="status" aria-live="polite"></div>
 
-    <!-- QUEUE METRICS -->
+    <!-- =====================================================
+         QUEUE KPI METRICS CARDS
+    ===================================================== -->
+    <section class="queue-grid" aria-label="OPD Queue Overview Metrics">
 
-    <section class="queue-grid">
-
-        <div class="metric">
-            <h3>Total Tokens</h3>
+        <div class="metric total-metric">
+            <div class="metric-header">
+                <h3>Total Tokens</h3>
+                <div class="metric-icon-box">📋</div>
+            </div>
             <strong id="totalCount">0</strong>
+            <div class="metric-sub">Today's total roster</div>
         </div>
 
-        <div class="metric">
-            <h3>Waiting</h3>
+        <div class="metric waiting-metric">
+            <div class="metric-header">
+                <h3>Waiting</h3>
+                <div class="metric-icon-box">⏳</div>
+            </div>
             <strong id="waitingCount">0</strong>
+            <div class="metric-sub">In hospital lobby</div>
         </div>
 
-        <div class="metric">
-            <h3>Serving</h3>
+        <div class="metric serving-metric">
+            <div class="metric-header">
+                <h3>Serving</h3>
+                <div class="metric-icon-box">🩺</div>
+            </div>
             <strong id="servingCount">0</strong>
+            <div class="metric-sub">With doctor now</div>
         </div>
 
-        <div class="metric">
-            <h3>Completed</h3>
+        <div class="metric completed-metric">
+            <div class="metric-header">
+                <h3>Completed</h3>
+                <div class="metric-icon-box">✅</div>
+            </div>
             <strong id="completedCount">0</strong>
+            <div class="metric-sub">Consults finalized</div>
         </div>
 
-        <div class="metric">
-            <h3>Online</h3>
+        <div class="metric online-metric">
+            <div class="metric-header">
+                <h3>Online</h3>
+                <div class="metric-icon-box">🌐</div>
+            </div>
             <strong id="onlineCount">0</strong>
+            <div class="metric-sub">App appointments</div>
         </div>
 
-        <div class="metric">
-            <h3>Walk-ins</h3>
+        <div class="metric offline-metric">
+            <div class="metric-header">
+                <h3>Walk-ins</h3>
+                <div class="metric-icon-box">🚶</div>
+            </div>
             <strong id="offlineCount">0</strong>
+            <div class="metric-sub">Desk registrations</div>
         </div>
 
     </section>
 
-    <!-- BOOKING BREAKDOWN -->
+    <!-- =====================================================
+         BOOKING BREAKDOWN VISUALIZER
+    ===================================================== -->
+    <section class="list-card" aria-label="Booking Channel Distribution">
 
-    <section class="list-card">
-
-        <h2>Booking Breakdown</h2>
-
-        <div
-            class="chart"
-            id="chart"
-            aria-label="Online and offline token count graph">
+        <div class="panel-header-row">
+            <div class="panel-header-left">
+                <h2>📊 Booking Channel Distribution</h2>
+                <p>Comparative analytics of pre-booked online app patients vs. reception desk walk-ins</p>
+            </div>
         </div>
 
-        <p>
-            <span style="color:#2563eb">■</span> Online bookings
-            &nbsp;
-            <span style="color:#16a34a">■</span> Offline walk-ins
-        </p>
+        <div class="chart-wrapper">
+            <div
+                class="chart"
+                id="chart"
+                aria-label="Online and offline token count graph">
+            </div>
+
+            <div class="chart-legend">
+                <span class="legend-chip">
+                    <span class="legend-indicator" style="background:#2563eb;"></span>
+                    Online App Bookings
+                </span>
+                <span class="legend-chip">
+                    <span class="legend-indicator" style="background:#16a34a;"></span>
+                    Offline Desk Walk-ins
+                </span>
+            </div>
+        </div>
 
     </section>
 
-    <!-- ADD WALK-IN PATIENT -->
+    <!-- =====================================================
+         ADD OFFLINE WALK-IN PATIENT
+    ===================================================== -->
+    <section class="list-card" aria-label="Add Offline Walk-in Patient">
 
-    <section class="list-card" style="margin-top:20px">
-
-        <h2>➕ Add Offline Walk-in Patient</h2>
-
-        <p>Register a patient who visits the hospital directly.</p>
+        <div class="panel-header-row">
+            <div class="panel-header-left">
+                <h2>➕ Fast Walk-in Patient Registration</h2>
+                <p>Register on-spot walk-in patients with automatic doctor queue sequencing</p>
+            </div>
+        </div>
 
         <form id="walkInForm">
 
-            <div class="filters">
+            <div class="walkin-form-grid">
 
-                <input
-                    type="text"
-                    id="walkInPatientName"
-                    placeholder="Patient name"
-                    required
-                    maxlength="150">
+                <div class="form-field-group">
+                    <label for="walkInPatientName">Patient Full Name</label>
+                    <input
+                        type="text"
+                        id="walkInPatientName"
+                        placeholder="e.g. Rahul Sharma"
+                        required
+                        maxlength="150"
+                        autocomplete="off">
+                </div>
 
-               <select id="walkInDepartment" required onchange="loadWalkInDoctors()">
-    <option value="">Loading departments...</option>
-</select>
+                <div class="form-field-group">
+                    <label for="walkInDepartment">Clinical Department</label>
+                    <select id="walkInDepartment" required onchange="loadWalkInDoctors()">
+                        <option value="">Loading departments...</option>
+                    </select>
+                </div>
 
-<select id="walkInDoctor" required disabled onchange="updateQueueWalkInLiveTracker()">
-    <option value="">Select a department first</option>
-</select>
-                <button type="submit" id="walkInSubmit">
-                    Register Walk-in Patient
+                <div class="form-field-group">
+                    <label for="walkInDoctor">Assigned Doctor</label>
+                    <select id="walkInDoctor" required disabled onchange="updateQueueWalkInLiveTracker()">
+                        <option value="">Select a department first</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="walkInSubmit" class="btn-register-walkin">
+                    <span>Register Walk-in</span> 🎫
                 </button>
 
             </div>
@@ -316,50 +1352,49 @@
         </form>
 
         <!-- LIVE OPD QUEUE TRACKER PORTION FOR WALK-IN SESSION -->
-        <div id="walkInLiveQueueBox" style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 12px 14px; margin-top: 14px; margin-bottom: 6px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="display: flex; align-items: center; gap: 7px;">
-                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);"></span>
-                    <strong style="font-size: 12px; color: #166534; text-transform: uppercase; letter-spacing: 0.3px;">Live OPD Queue Portion</strong>
+        <div id="walkInLiveQueueBox">
+            <div class="lq-header">
+                <div class="lq-indicator">
+                    <span class="lq-indicator-dot"></span>
+                    <strong class="lq-title">Live Doctor OPD Schedule</strong>
                 </div>
-                <span id="walkInLqDoctorLabel" style="font-size: 11.5px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 12px;">All Doctors</span>
+                <span id="walkInLqDoctorLabel" class="lq-doc-badge">All Doctors</span>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; margin-bottom: 8px;">
-                <div style="background: white; padding: 6px 4px; border-radius: 6px; border: 1px solid #bbf7d0;">
-                    <div style="font-size: 10px; color: #64748b; font-weight: 600;">Currently Serving</div>
-                    <div id="walkInLqServingToken" style="font-size: 15px; font-weight: 800; color: #2563eb; margin-top: 2px;">--</div>
+            <div class="lq-stats-grid">
+                <div class="lq-stat-card">
+                    <div class="lq-stat-label">Currently Serving</div>
+                    <div id="walkInLqServingToken" class="lq-stat-value" style="color: #2563eb;">--</div>
                 </div>
-                <div style="background: white; padding: 6px 4px; border-radius: 6px; border: 1px solid #bbf7d0;">
-                    <div style="font-size: 10px; color: #64748b; font-weight: 600;">Waiting in Line</div>
-                    <div id="walkInLqWaitingCount" style="font-size: 15px; font-weight: 800; color: #d97706; margin-top: 2px;">0</div>
+                <div class="lq-stat-card">
+                    <div class="lq-stat-label">Waiting in Line</div>
+                    <div id="walkInLqWaitingCount" class="lq-stat-value" style="color: #d97706;">0</div>
                 </div>
-                <div style="background: white; padding: 6px 4px; border-radius: 6px; border: 1px solid #bbf7d0;">
-                    <div style="font-size: 10px; color: #64748b; font-weight: 600;">Next Token #</div>
-                    <div id="walkInLqNextToken" style="font-size: 15px; font-weight: 800; color: #16a34a; margin-top: 2px;">#1</div>
+                <div class="lq-stat-card">
+                    <div class="lq-stat-label">Next Token #</div>
+                    <div id="walkInLqNextToken" class="lq-stat-value" style="color: #16a34a;">#1</div>
                 </div>
-                <div style="background: white; padding: 6px 4px; border-radius: 6px; border: 1px solid #bbf7d0;">
-                    <div style="font-size: 10px; color: #64748b; font-weight: 600;">Est. Wait</div>
-                    <div id="walkInLqEstWait" style="font-size: 15px; font-weight: 800; color: #475569; margin-top: 2px;">~0m</div>
+                <div class="lq-stat-card">
+                    <div class="lq-stat-label">Est. Wait</div>
+                    <div id="walkInLqEstWait" class="lq-stat-value" style="color: #475569;">~0m</div>
                 </div>
             </div>
 
-            <div id="walkInLqQueueChips" style="display: flex; gap: 6px; overflow-x: auto; padding-top: 2px; font-size: 11px;">
+            <div id="walkInLqQueueChips" style="display: flex; gap: 6px; overflow-x: auto; padding-top: 4px; font-size: 11px;">
                 <span style="color: #64748b; font-style: italic;">Select doctor above to view live waiting queue</span>
             </div>
         </div>
 
-        <p id="walkInResult" role="status" aria-live="polite"></p>
+        <p id="walkInResult" role="status" aria-live="polite" style="margin-top: 10px; font-weight: 600;"></p>
 
-        <!-- ASSIGNED TOKEN DISPLAY -->
-
+        <!-- ASSIGNED TOKEN RECEIPT DISPLAY -->
         <div
             id="walkInTokenDisplay"
             class="walk-in-result"
             role="status"
             aria-live="polite">
 
-            <h3>Walk-in Registration Successful!</h3>
+            <h3>✅ Walk-in Patient Registered!</h3>
 
             <p class="walk-in-token-label">
                 Assigned Token Number
@@ -377,43 +1412,50 @@
             </p>
 
             <p class="walk-in-success-message">
-                Please ask the patient to wait for their turn.
+                Please instruct the patient to proceed to the OPD waiting lounge.
             </p>
 
         </div>
 
     </section>
 
-    <!-- ALL TOKENS -->
+    <!-- =====================================================
+         ALL TOKENS ROSTER & FILTERS
+    ===================================================== -->
+    <section class="list-card" aria-label="All Hospital Tokens">
 
-    <section class="list-card" style="margin-top:20px">
-
-        <h2>All Hospital Tokens</h2>
+        <div class="panel-header-row">
+            <div class="panel-header-left">
+                <h2>📑 Clinical Token Roster</h2>
+                <p>Real-time queue directory sorted by appointment schedule & token sequence</p>
+            </div>
+        </div>
 
         <!-- RETENTION & COMPLIANCE NOTICE -->
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin: 12px 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #166534;">
-                <span style="font-size: 20px;">🛡️</span>
+        <div class="compliance-banner">
+            <div class="compliance-text">
+                <span style="font-size: 22px;">🛡️</span>
                 <span><strong>90-Day Retention Policy:</strong> Tokens are stored and organized strictly by appointment date and token number. Records are automatically preserved for 90 days and safely purged thereafter for healthcare privacy & database performance.</span>
             </div>
-            <button type="button" onclick="purgeExpiredTokensNow()" style="background: #ffffff; border: 1px solid #86efac; color: #15803d; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#ffffff'">
+            <button type="button" class="compliance-btn" onclick="purgeExpiredTokensNow()">
                 🧹 Purge 90+ Day Records
             </button>
         </div>
 
-        <div class="filters">
+        <!-- FILTERS TOOLBAR -->
+        <div class="filters-toolbar filters">
 
             <input
                 id="dateFilter"
                 type="date"
                 title="Filter by appointment date"
                 aria-label="Filter by appointment date"
-                style="padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; color: #334155; font-weight: 600;">
+                style="font-weight: 700; color: #1e293b;">
 
-            <button type="button" onclick="setQuickDate('today')" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
+            <button type="button" class="quick-date-btn" onclick="setQuickDate('today')">
                 Today
             </button>
-            <button type="button" onclick="setQuickDate('all')" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">
+            <button type="button" class="quick-date-btn" onclick="setQuickDate('all')">
                 All Dates
             </button>
 
@@ -426,9 +1468,9 @@
             </select>
 
             <select id="typeFilter" aria-label="Filter by booking type">
-                <option value="">Online and offline</option>
-                <option value="ONLINE">Online</option>
-                <option value="WALK_IN">Offline walk-ins</option>
+                <option value="">Online & Walk-in</option>
+                <option value="ONLINE">Online only</option>
+                <option value="WALK_IN">Offline walk-ins only</option>
             </select>
 
             <select id="statusFilter" aria-label="Filter by status">
@@ -441,15 +1483,16 @@
             <input
                 id="searchFilter"
                 type="search"
-                placeholder="Search patient or token"
+                placeholder="🔍 Search patient name or token #"
                 aria-label="Search patient or token">
 
-            <button type="button" onclick="loadTokens()">
-                Refresh
+            <button type="button" class="refresh-queue-btn" onclick="loadTokens()">
+                <span>Refresh</span>
             </button>
 
         </div>
 
+        <!-- DATA TABLE -->
         <div class="table-wrap">
 
             <table>
@@ -461,7 +1504,7 @@
                         <th>Patient</th>
                         <th>Department</th>
                         <th>Doctor</th>
-                        <th>Booking Type</th>
+                        <th>Channel</th>
                         <th>Status</th>
                         <th>Created</th>
                         <th>Action</th>
@@ -470,7 +1513,9 @@
 
                 <tbody id="tokenRows">
                     <tr>
-                        <td colspan="9">Loading tokens...</td>
+                        <td colspan="9" style="text-align: center; padding: 30px; color: #64748b;">
+                            Loading patient queue records...
+                        </td>
                     </tr>
                 </tbody>
 
@@ -484,15 +1529,14 @@
         type="button"
         class="back-button"
         onclick="location.href='dashboard.html'">
-
-        Back to Dashboard
-
+        <span>← Back to Command Center</span>
     </button>
 
 </div>
 
 <script>
 "use strict";
+const escapeHtml = typeof escapeHTML === "function" ? escapeHTML : (s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])));
 
 // =========================================================
 // CONFIGURATION
@@ -1060,6 +2104,25 @@ async function registerWalkIn(event) {
 
         await loadTokens();
 
+        // Populate hospital name in header
+        try {
+            const hName = localStorage.getItem("hospital_name") || localStorage.getItem("hospital") || "CarePath Hospital";
+            const nameEl = document.getElementById("hospitalNameDisplay");
+            if (nameEl) nameEl.textContent = hName;
+            
+            // Live clock
+            const updateClock = () => {
+                const clockEl = document.getElementById("liveClockDisplay");
+                if (clockEl) {
+                    const now = new Date();
+                    clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                }
+            };
+            updateClock();
+            setInterval(updateClock, 1000);
+        } catch(e) {}
+
+
 
         // Keep the assigned token visible
 
@@ -1423,6 +2486,25 @@ async function purgeExpiredTokensNow() {
         if (res.ok) {
             alert(data.message || `Cleaned ${data.deleted_count || 0} tokens older than 90 days.`);
             await loadTokens();
+
+        // Populate hospital name in header
+        try {
+            const hName = localStorage.getItem("hospital_name") || localStorage.getItem("hospital") || "CarePath Hospital";
+            const nameEl = document.getElementById("hospitalNameDisplay");
+            if (nameEl) nameEl.textContent = hName;
+            
+            // Live clock
+            const updateClock = () => {
+                const clockEl = document.getElementById("liveClockDisplay");
+                if (clockEl) {
+                    const now = new Date();
+                    clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                }
+            };
+            updateClock();
+            setInterval(updateClock, 1000);
+        } catch(e) {}
+
         } else {
             alert(data.detail || "Unable to purge tokens.");
         }
@@ -1772,6 +2854,25 @@ async function editOfflineToken(
 
         await loadTokens();
 
+        // Populate hospital name in header
+        try {
+            const hName = localStorage.getItem("hospital_name") || localStorage.getItem("hospital") || "CarePath Hospital";
+            const nameEl = document.getElementById("hospitalNameDisplay");
+            if (nameEl) nameEl.textContent = hName;
+            
+            // Live clock
+            const updateClock = () => {
+                const clockEl = document.getElementById("liveClockDisplay");
+                if (clockEl) {
+                    const now = new Date();
+                    clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                }
+            };
+            updateClock();
+            setInterval(updateClock, 1000);
+        } catch(e) {}
+
+
 
     } catch (error) {
 
@@ -1901,6 +3002,25 @@ loadWalkInDepartments();
 
         // Initial queue loading
         loadTokens();
+
+        // Populate hospital name in header
+        try {
+            const hName = localStorage.getItem("hospital_name") || localStorage.getItem("hospital") || "CarePath Hospital";
+            const nameEl = document.getElementById("hospitalNameDisplay");
+            if (nameEl) nameEl.textContent = hName;
+            
+            // Live clock
+            const updateClock = () => {
+                const clockEl = document.getElementById("liveClockDisplay");
+                if (clockEl) {
+                    const now = new Date();
+                    clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                }
+            };
+            updateClock();
+            setInterval(updateClock, 1000);
+        } catch(e) {}
+
 
     }
 );
