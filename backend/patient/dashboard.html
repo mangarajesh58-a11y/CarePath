@@ -1314,7 +1314,85 @@
     #carepathAISend:active {
       transform: scale(0.92) !important;
     }
-</style>
+
+    /* CarePath AI Multilingual Language Switcher */
+    .carepath-ai-lang-bar {
+      background: rgba(10, 18, 38, 0.98);
+      border-bottom: 1px solid rgba(56, 189, 248, 0.22);
+      padding: 7px 10px;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      z-index: 5;
+    }
+    .carepath-ai-lang-bar::-webkit-scrollbar { display: none; }
+    .lang-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #cbd5e1;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .lang-pill:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+    }
+    .lang-pill.active {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+    }
+    .cp-voice-lang-bar {
+      width: 100%;
+      padding: 4px 0 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 6px;
+    }
+    .cp-voice-lang-bar::-webkit-scrollbar { display: none; }
+    .voice-lang-pill {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+    .voice-lang-pill.active {
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      border-color: #7dd3fc;
+      color: #04101e;
+      font-weight: 800;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+    }
+    
+  </style>
 </head>
 
 <body>
@@ -1624,6 +1702,22 @@
       <button type="button" onclick="closeVoiceAssistantOverlay()" aria-label="Close voice assistant" style="background: rgba(255,255,255,0.15); border: none; color: #cbd5e1; width: 28px; height: 28px; border-radius: 50%; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
     </div>
 
+    <!-- VOICE MULTILINGUAL LANGUAGE SELECTOR -->
+    <div class="cp-voice-lang-bar" id="cpVoiceLangBar">
+      <button type="button" class="voice-lang-pill active" data-lang="auto" onclick="changeCarePathLanguage('auto')">🌐 Auto</button>
+      <button type="button" class="voice-lang-pill" data-lang="te-IN" onclick="changeCarePathLanguage('te-IN')">తెలుగు</button>
+      <button type="button" class="voice-lang-pill" data-lang="hi-IN" onclick="changeCarePathLanguage('hi-IN')">हिंदी</button>
+      <button type="button" class="voice-lang-pill" data-lang="en-IN" onclick="changeCarePathLanguage('en-IN')">English</button>
+      <button type="button" class="voice-lang-pill" data-lang="ta-IN" onclick="changeCarePathLanguage('ta-IN')">தமிழ்</button>
+      <button type="button" class="voice-lang-pill" data-lang="kn-IN" onclick="changeCarePathLanguage('kn-IN')">ಕನ್ನಡ</button>
+      <button type="button" class="voice-lang-pill" data-lang="ml-IN" onclick="changeCarePathLanguage('ml-IN')">മലയാളം</button>
+      <button type="button" class="voice-lang-pill" data-lang="mr-IN" onclick="changeCarePathLanguage('mr-IN')">मराठी</button>
+      <button type="button" class="voice-lang-pill" data-lang="bn-IN" onclick="changeCarePathLanguage('bn-IN')">বাংলা</button>
+      <button type="button" class="voice-lang-pill" data-lang="gu-IN" onclick="changeCarePathLanguage('gu-IN')">ગુજરાતી</button>
+      <button type="button" class="voice-lang-pill" data-lang="pa-IN" onclick="changeCarePathLanguage('pa-IN')">ਪੰਜਾਬੀ</button>
+      <button type="button" class="voice-lang-pill" data-lang="or-IN" onclick="changeCarePathLanguage('or-IN')">ଓଡ଼ିଆ</button>
+    </div>
+
     <!-- Center Orb & Live Status -->
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; margin: auto 0; width: 100%;">
       <div id="cpVoiceOrb" style="width: 76px; height: 76px; border-radius: 50%; background: radial-gradient(circle, #38bdf8 0%, #0284c7 70%); display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: 0 0 28px rgba(56, 189, 248, 0.6); animation: cpVoicePulse 1.6s infinite ease-in-out;">
@@ -1700,6 +1794,22 @@
         ×
       </button>
     </div>
+  </div>
+
+  <!-- DYNAMIC MULTILINGUAL INDIAN LANGUAGE SELECTOR -->
+  <div class="carepath-ai-lang-bar" id="carepathAiLangBar">
+    <button type="button" class="lang-pill active" data-lang="auto" onclick="changeCarePathLanguage('auto')">🌐 Auto Detect</button>
+    <button type="button" class="lang-pill" data-lang="te-IN" onclick="changeCarePathLanguage('te-IN')">తెలుగు</button>
+    <button type="button" class="lang-pill" data-lang="hi-IN" onclick="changeCarePathLanguage('hi-IN')">हिंदी</button>
+    <button type="button" class="lang-pill" data-lang="en-IN" onclick="changeCarePathLanguage('en-IN')">English</button>
+    <button type="button" class="lang-pill" data-lang="ta-IN" onclick="changeCarePathLanguage('ta-IN')">தமிழ்</button>
+    <button type="button" class="lang-pill" data-lang="kn-IN" onclick="changeCarePathLanguage('kn-IN')">ಕನ್ನಡ</button>
+    <button type="button" class="lang-pill" data-lang="ml-IN" onclick="changeCarePathLanguage('ml-IN')">മലയാളം</button>
+    <button type="button" class="lang-pill" data-lang="mr-IN" onclick="changeCarePathLanguage('mr-IN')">मराठी</button>
+    <button type="button" class="lang-pill" data-lang="bn-IN" onclick="changeCarePathLanguage('bn-IN')">বাংলা</button>
+    <button type="button" class="lang-pill" data-lang="gu-IN" onclick="changeCarePathLanguage('gu-IN')">ગુજરાતી</button>
+    <button type="button" class="lang-pill" data-lang="pa-IN" onclick="changeCarePathLanguage('pa-IN')">ਪੰਜਾਬੀ</button>
+    <button type="button" class="lang-pill" data-lang="or-IN" onclick="changeCarePathLanguage('or-IN')">ଓଡ଼ିଆ</button>
   </div>
 
   <div id="carepathAIMessages" class="carepath-ai-messages">
@@ -2011,12 +2121,31 @@
   let activeAudioVoice = null;
   window.cpMessageTextMap = window.cpMessageTextMap || {};
 
-  // Default to Telugu or Hindi if in India or user preference, fallback to English
-  // Default to English on open
-  let currentAiLang = "en-IN";
-  localStorage.setItem("carepath_lang", "en-IN");
+  // Default to Auto Detect Indian Language
+  let currentAiLang = localStorage.getItem("carepath_lang") || "auto";
+  let currentDetectedLang = localStorage.getItem("carepath_detected_lang") || "te-IN";
 
   const CP_LANG_CONFIG = {
+    "auto": {
+      name: "🌐 Auto Detect",
+      code: "auto",
+      speechRecLang: "auto",
+      welcome: "నమస్కారం! Welcome! CarePath AI auto-detects your spoken & written Indian language (తెలుగు, हिंदी, English, தமிழ், ಕನ್ನಡ, etc.). Speak or type your question! 🎙️",
+      placeholder: "Speak or type in any Indian language... (Auto-detect active)",
+      listening: "Listening... Speak in Telugu, Hindi, Tamil, Kannada, English, or your language 🎙️",
+      transcriptBoxHint: "Speak naturally in any Indian language — CarePath will detect it automatically...",
+      unsupported: "🎙️ Voice recognition not supported. Type or select a question below!",
+      btnScan: "📸 Scan Doctor's Prescription",
+      btnDecode: "💊 Decode Dosage Terms",
+      sendBtn: "Send Question",
+      orTapTopic: "Or Tap a Question to Hear Answer:",
+      topics: [
+        { text: "నాకు తేలికపాటి జ్వరం మరియు తలనొప్పి ఉంది, ఏమి చేయాలి?", label: "🌡️ జ్వరం (Telugu)" },
+        { text: "मुझे हल्का बुखार और सिरदर्द है, मुझे क्या करना चाहिए?", label: "🌡️ बुखार (Hindi)" },
+        { text: "I have mild fever and headache, what should I do?", label: "🌡️ Fever (English)" }
+      ],
+      dosageQuery: "Explain prescription dosage abbreviations 1-0-1 and TDS"
+    },
     "te-IN": {
       name: "తెలుగు",
       code: "te",
@@ -2226,6 +2355,26 @@
       ],
       greetingVoice: "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ! ਮੈਂ CarePath AI ਹਾਂ। ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
       dosageQuery: "ਪਰਚੀ ਵਿੱਚ 1-0-1 ਦਾ ਕੀ ਮਤਲਬ ਹੈ ਸਮਝਾਓ"
+    },
+    "or-IN": {
+      name: "ଓଡ଼ିଆ",
+      code: "or",
+      speechRecLang: "or-IN",
+      welcome: "ନମସ୍କାର! 🙏 ମୁଁ CarePath AI ସ୍ୱାସ୍ଥ୍ୟ ସହାୟକ। ଡାକ୍ତର, OPD ଟୋକନ କିମ୍ବା ପ୍ରେସକ୍ରିପସନ୍ ବିଷୟରେ ପଚାରନ୍ତୁ!",
+      placeholder: "CarePath AI କୁ ପଚାରନ୍ତୁ କିମ୍ବା 🎙️ ଦବାନ୍ତୁ...",
+      listening: "ଶୁଣୁଛି... ଆପଣଙ୍କ ସମସ୍ୟା କୁହନ୍ତୁ",
+      transcriptBoxHint: "କୁହନ୍ତୁ — ଆପଣଙ୍କ ଶବ୍ଦ ଏଠାରେ ଦେଖାଯିବ...",
+      unsupported: "🎙️ ଏହି ବ୍ରାଉଜରରେ ଭଏସ୍ ସମର୍ଥନ ନାହିଁ।",
+      btnScan: "📸 ପ୍ରେସକ୍ରିପସନ୍ ସ୍କାନ୍ କରନ୍ତୁ",
+      btnDecode: "💊 ଔଷଧର ମାତ୍ରା ବୁଝନ୍ତୁ",
+      sendBtn: "ପ୍ରଶ୍ନ ପଠାନ୍ତୁ",
+      orTapTopic: "ଉତ୍ତର ଶୁଣିବା ପାଇଁ ପ୍ରଶ୍ନ ଚୟନ କରନ୍ତୁ:",
+      topics: [
+        { text: "ମୋତେ ଜ୍ୱର ଏବଂ ମୁଣ୍ଡ ବିନ୍ଧା ହେଉଛି, କଣ କରିବା ଉଚିତ?", label: "🌡️ ଜ୍ୱର & ମୁଣ୍ଡ ବିନ୍ଧା" },
+        { text: "ପ୍ରେସକ୍ରିପସନରେ 1-0-1 ର ଅର୍ଥ କଣ?", label: "💊 1-0-1 ର ଅର୍ଥ" },
+        { text: "ମୋର ଲାଇଭ ଟୋକନ ନମ୍ବର କିପରି ଦେଖିବି?", label: "🎫 ଟୋକନ ଦେଖନ୍ତୁ" }
+      ],
+      dosageQuery: "ପ୍ରେସକ୍ରିପସନରେ 1-0-1 ର ଅର୍ଥ ବୁଝାନ୍ତୁ"
     }
   };
 
@@ -2274,34 +2423,132 @@
   }
 
   // Detect which Indian language a given piece of text is written in
-  function detectTextLanguage(text, defaultLang) {
-    if (!text) return defaultLang || currentAiLang || "en-IN";
-    if (/[\u0C00-\u0C7F]/.test(text)) return "te-IN"; // Telugu
-    if (/[\u0900-\u097F]/.test(text)) {
-      // Check Marathi specific words or default to Hindi
-      if (text.includes("आहे") || text.includes("मला") || text.includes("करावे")) return "mr-IN";
-      return "hi-IN"; // Hindi
+  // Regional Default Language from Hospital location / GPS / preference
+  function getRegionalDefaultLanguage() {
+    const last = localStorage.getItem("carepath_detected_lang");
+    if (last && CP_LANG_CONFIG[last] && last !== "auto") return last;
+
+    const city = (window.carepathUserCity || "").toLowerCase();
+    const hosp = ((typeof selectedHospitalName !== "undefined" ? selectedHospitalName : "") || "").toLowerCase();
+    const loc = city + " " + hosp;
+
+    if (loc.includes("nagar kurnool") || loc.includes("hyderabad") || loc.includes("telangana") || loc.includes("andhra") || loc.includes("sree care") || loc.includes("global")) {
+      return "te-IN";
     }
-    if (/[\u0B80-\u0BFF]/.test(text)) return "ta-IN"; // Tamil
-    if (/[\u0C80-\u0CFF]/.test(text)) return "kn-IN"; // Kannada
-    if (/[\u0D00-\u0D7F]/.test(text)) return "ml-IN"; // Malayalam
-    if (/[\u0980-\u09FF]/.test(text)) return "bn-IN"; // Bengali
-    if (/[\u0A80-\u0AFF]/.test(text)) return "gu-IN"; // Gujarati
-    if (/[\u0A00-\u0A7F]/.test(text)) return "pa-IN"; // Punjabi
-    return defaultLang || currentAiLang || "en-IN";
+    if (loc.includes("chennai") || loc.includes("tamil")) return "ta-IN";
+    if (loc.includes("bengaluru") || loc.includes("bangalore") || loc.includes("karnataka")) return "kn-IN";
+    if (loc.includes("mumbai") || loc.includes("pune") || loc.includes("maharashtra")) return "mr-IN";
+    if (loc.includes("bhubaneswar") || loc.includes("odisha") || loc.includes("test metro")) return "hi-IN";
+    return "te-IN";
   }
 
-  // Switch Active Language
+  // Detect which Indian language a given piece of text is written in (Native Script + Phonetic Transliteration)
+  function detectTextLanguage(text, defaultLang) {
+    if (!text) {
+      if (currentAiLang && currentAiLang !== "auto") return currentAiLang;
+      return defaultLang || getRegionalDefaultLanguage();
+    }
+    const t = String(text).trim();
+    const lower = t.toLowerCase();
+
+    // 1. Explicit triggers
+    if (/\b(telugu|tenglish|telugulo|telugula)\b/i.test(lower)) return "te-IN";
+    if (/\b(hindi|hinglish|hindi me)\b/i.test(lower)) return "hi-IN";
+    if (/\b(tamil|tanglish|tamilil)\b/i.test(lower)) return "ta-IN";
+    if (/\b(kannada|kannadadalli)\b/i.test(lower)) return "kn-IN";
+    if (/\b(malayalam)\b/i.test(lower)) return "ml-IN";
+    if (/\b(marathi|marathit)\b/i.test(lower)) return "mr-IN";
+    if (/\b(bengali|bangla)\b/i.test(lower)) return "bn-IN";
+    if (/\b(gujarati)\b/i.test(lower)) return "gu-IN";
+    if (/\b(punjabi)\b/i.test(lower)) return "pa-IN";
+    if (/\b(odia|oriya)\b/i.test(lower)) return "or-IN";
+    if (/\b(english|in english)\b/i.test(lower)) return "en-IN";
+
+    // 2. Native Indic Unicode Scripts
+    if (/[\u0C00-\u0C7F]/.test(t)) return "te-IN"; // Telugu
+    if (/[\u0900-\u097F]/.test(t)) {
+      if (t.includes("आहे") || t.includes("मला") || t.includes("करावे") || t.includes("नाही") || t.includes("काय") || t.includes("ताप")) return "mr-IN";
+      return "hi-IN"; // Hindi
+    }
+    if (/[\u0B80-\u0BFF]/.test(t)) return "ta-IN"; // Tamil
+    if (/[\u0C80-\u0CFF]/.test(t)) return "kn-IN"; // Kannada
+    if (/[\u0D00-\u0D7F]/.test(t)) return "ml-IN"; // Malayalam
+    if (/[\u0980-\u09FF]/.test(t)) return "bn-IN"; // Bengali
+    if (/[\u0A80-\u0AFF]/.test(t)) return "gu-IN"; // Gujarati
+    if (/[\u0A00-\u0A7F]/.test(t)) return "pa-IN"; // Punjabi
+    if (/[\u0B00-\u0B7F]/.test(t)) return "or-IN"; // Odia
+
+    // 3. Phonetic Transliterated Keywords
+    const teluguWords = ["jvaram", "jwaram", "thalanopi", "mandulu", "mandhu", "taggali", "daktaru", "kadupu", "noppi", "em cheyali", "cheppandi", "undi", "ledu", "baga", "pillalu", "gunde", "swasa", "daggu", "jalubu", "namaskaram", "asupathri", "naku"];
+    if (teluguWords.some(w => lower.includes(w))) return "te-IN";
+
+    const hindiWords = ["bukhar", "sir dard", "sar dard", "dawai", "dawa", "pet dard", "ulti", "chakkar", "kya kare", "kaisa hai", "bataiye", "mujhe", "mera", "ho raha", "dard", "khansi", "jukham", "tabiyat", "aspatal", "ilaj", "kya karu"];
+    if (hindiWords.some(w => lower.includes(w))) return "hi-IN";
+
+    const tamilWords = ["kaichal", "thalaivali", "marunthu", "marundhu", "valikuthu", "udambu", "mudiyala", "enna pannanum", "sari illa", "erukku", "illai", "maruthuvar", "nenju vali", "enakku"];
+    if (tamilWords.some(w => lower.includes(w))) return "ta-IN";
+
+    const kannadaWords = ["jwara", "thalenovu", "aushadhi", "mathe", "hege", "beku", "madabeku", "hotte", "novu", "nanage", "helu"];
+    if (kannadaWords.some(w => lower.includes(w))) return "kn-IN";
+
+    const malayalamWords = ["pani", "thala vedhana", "marunnu", "entha cheyyuka", "vayaru", "vedhana", "enikku"];
+    if (malayalamWords.some(w => lower.includes(w))) return "ml-IN";
+
+    const marathiWords = ["taap", "doke dukhat", "aushadh", "kay karu", "potat dukhate", "mala"];
+    if (marathiWords.some(w => lower.includes(w))) return "mr-IN";
+
+    const bengaliWords = ["jor", "matha betha", "osudh", "ki korbo", "pet betha", "amar"];
+    if (bengaliWords.some(w => lower.includes(w))) return "bn-IN";
+
+    const gujaratiWords = ["taav", "mathu dukhe", "dava", "su karvu", "pet ma dukhe", "mane"];
+    if (gujaratiWords.some(w => lower.includes(w))) return "gu-IN";
+
+    const punjabiWords = ["bukhar", "sir dukhda", "dawai", "ki karaan", "mainu"];
+    if (punjabiWords.some(w => lower.includes(w))) return "pa-IN";
+
+    const odiaWords = ["jwara", "munda betha", "aushadha", "kana karibi", "peta betha", "mote"];
+    if (odiaWords.some(w => lower.includes(w))) return "or-IN";
+
+    if (currentAiLang && currentAiLang !== "auto") return currentAiLang;
+    return defaultLang || getRegionalDefaultLanguage();
+  }
+
+  // Highlight Active Language Pills
+  function updateLanguagePillUI(activeLang) {
+    document.querySelectorAll(".lang-pill").forEach(pill => {
+      const pillLang = pill.getAttribute("data-lang");
+      if (pillLang === activeLang) {
+        pill.classList.add("active");
+        try { pill.scrollIntoView({ behavior: "smooth", inline: "nearest" }); } catch(e) {}
+      } else {
+        pill.classList.remove("active");
+      }
+    });
+
+    document.querySelectorAll(".voice-lang-pill").forEach(pill => {
+      const pillLang = pill.getAttribute("data-lang");
+      if (pillLang === activeLang) {
+        pill.classList.add("active");
+        try { pill.scrollIntoView({ behavior: "smooth", inline: "nearest" }); } catch(e) {}
+      } else {
+        pill.classList.remove("active");
+      }
+    });
+  }
+
+  // Switch Active Language (Supports 'auto' or specific Indian language code)
   function changeCarePathLanguage(newLang) {
     primeSpeechSynthesis();
-    if (!CP_LANG_CONFIG[newLang]) newLang = "en-IN";
+    if (!newLang || (!CP_LANG_CONFIG[newLang] && newLang !== "auto")) {
+      newLang = "auto";
+    }
     currentAiLang = newLang;
     localStorage.setItem("carepath_lang", newLang);
 
-    const sel = document.getElementById("carepathLanguageSelect");
-    if (sel && sel.value !== newLang) sel.value = newLang;
+    updateLanguagePillUI(newLang);
 
-    const conf = CP_LANG_CONFIG[newLang];
+    const effectiveLang = (newLang === "auto") ? getRegionalDefaultLanguage() : newLang;
+    const conf = CP_LANG_CONFIG[newLang] || CP_LANG_CONFIG[effectiveLang] || CP_LANG_CONFIG["en-IN"];
 
     const input = document.getElementById("carepathAIInput");
     if (input) input.placeholder = conf.placeholder;
@@ -2337,10 +2584,12 @@
     }
 
     if (cpSpeechRecognition) {
-      try { cpSpeechRecognition.lang = conf.speechRecLang; } catch(e) {}
+      try {
+        const speechLang = (newLang === "auto") ? (CP_LANG_CONFIG[effectiveLang] ? CP_LANG_CONFIG[effectiveLang].speechRecLang : "te-IN") : conf.speechRecLang;
+        cpSpeechRecognition.lang = speechLang;
+      } catch(e) {}
     }
 
-    // Auto-greeting audio removed: speech only plays when answering patient questions
     stopCarePathSpeech();
   }
 
@@ -2422,7 +2671,8 @@
 
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
     const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
-    const backendTtsUrl = `${apiBase}/ai/tts?text=${encodeURIComponent(toSpeak)}&lang=${shortCode}`;
+    const ttsLangCode = (shortCode === "or") ? "hi" : shortCode;
+    const backendTtsUrl = `${apiBase}/ai/tts?text=${encodeURIComponent(toSpeak)}&lang=${ttsLangCode}`;
     const directTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${shortCode}&client=tw-ob&q=${encodeURIComponent(toSpeak)}`;
 
     // Triple Fail-Safe Native Audio Player:
@@ -2684,6 +2934,18 @@
 
     primeSpeechSynthesis();
 
+    // Auto-enable voice response when talking to voice assistant
+    autoVoiceOutput = true;
+    const voiceLabel = document.getElementById("carepathVoiceLabel");
+    const voiceIcon = document.getElementById("carepathVoiceIcon");
+    const voiceBtn = document.getElementById("carepathAIVoiceToggle");
+    if (voiceLabel) voiceLabel.textContent = "Voice: ON";
+    if (voiceIcon) voiceIcon.textContent = "🔊";
+    if (voiceBtn) {
+      voiceBtn.style.background = "rgba(34, 197, 94, 0.35)";
+      voiceBtn.style.borderColor = "#86efac";
+    }
+
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRec) {
       showVoiceAssistantOverlay("unsupported");
@@ -2696,11 +2958,18 @@
         cpSpeechRecognition = null;
       }
 
-      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
+      // Determine active speech recognition language
+      let activeRecLang = "te-IN";
+      if (currentAiLang === "auto") {
+        const regional = getRegionalDefaultLanguage();
+        activeRecLang = CP_LANG_CONFIG[regional] ? CP_LANG_CONFIG[regional].speechRecLang : "te-IN";
+      } else if (CP_LANG_CONFIG[currentAiLang]) {
+        activeRecLang = CP_LANG_CONFIG[currentAiLang].speechRecLang;
+      }
 
       let speechSilenceTimer = null;
       cpSpeechRecognition = new SpeechRec();
-      cpSpeechRecognition.lang = conf.speechRecLang;
+      cpSpeechRecognition.lang = activeRecLang;
       cpSpeechRecognition.continuous = true;
       cpSpeechRecognition.interimResults = true;
       cpSpeechRecognition.maxAlternatives = 1;
@@ -2717,6 +2986,19 @@
         }
         if (transcript.trim()) {
           updateVoiceAssistantTranscript(transcript);
+
+          // Auto Language Detection in real time from spoken words
+          if (currentAiLang === "auto") {
+            const detected = detectTextLanguage(transcript);
+            if (detected && detected !== "en-IN") {
+              currentDetectedLang = detected;
+              localStorage.setItem("carepath_detected_lang", detected);
+              const langName = CP_LANG_CONFIG[detected] ? CP_LANG_CONFIG[detected].name : detected;
+              const status = document.getElementById("cpVoiceStatusText");
+              if (status) status.innerHTML = `Listening... 🗣️ <strong>${langName}</strong>`;
+            }
+          }
+
           if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
           speechSilenceTimer = setTimeout(() => {
             const input = document.getElementById("carepathAIInput");
@@ -2800,8 +3082,9 @@
 
     const isCurrentlyHidden = (chat.style.display === "none" || chat.hidden);
     if (isCurrentlyHidden) {
-      // Always show English when opening CarePath AI
-      changeCarePathLanguage("en-IN");
+      // Auto-detect Indian language on opening CarePath AI
+      const savedLang = localStorage.getItem("carepath_lang") || "auto";
+      changeCarePathLanguage(savedLang);
       chat.style.display = "flex";
       chat.hidden = false;
       const input = document.getElementById("carepathAIInput");
@@ -3255,7 +3538,7 @@
     const timeoutId = setTimeout(() => controller.abort(), 6000);
 
     let replyText = "";
-    let detectedLang = currentAiLang || "en";
+    let detectedLang = (currentAiLang === "auto") ? detectTextLanguage(text, getRegionalDefaultLanguage()) : currentAiLang;
 
     try {
       const headers = { "Content-Type": "application/json" };
@@ -3282,7 +3565,15 @@
         replyText = data.reply || getInstantClientCarePathReply(text, detectedLang);
         if (data.detected_language) {
           detectedLang = data.detected_language;
-          currentAiLang = data.detected_language;
+          currentDetectedLang = data.detected_language;
+          localStorage.setItem("carepath_detected_lang", data.detected_language);
+          if (currentAiLang === "auto") {
+            const autoPill = document.querySelector('.lang-pill[data-lang="auto"]');
+            if (autoPill) {
+              const dName = (CP_LANG_CONFIG[data.detected_language] || {}).name || data.detected_language;
+              autoPill.innerHTML = `🌐 Auto: ${dName}`;
+            }
+          }
         }
       } else {
         replyText = getInstantClientCarePathReply(text, detectedLang);
@@ -3566,8 +3857,11 @@
     });
   }
 
-  // Set initial language from saved preference (default: Telugu or saved choice)
-  setTimeout(() => changeCarePathLanguage("en-IN"), 100);
+  // Set initial language from saved preference (default: Auto Detect Indian Language)
+  setTimeout(() => {
+    const initLang = localStorage.getItem("carepath_lang") || "auto";
+    changeCarePathLanguage(initLang);
+  }, 100);
 
   // Footer year
   const footerYear = document.getElementById("footerYear");

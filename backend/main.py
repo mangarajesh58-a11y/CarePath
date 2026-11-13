@@ -1878,13 +1878,14 @@ def get_carepath_ai_fallback(message: str) -> str:
 
 def detect_user_language_preference(message: str, history: Optional[list] = None) -> str:
     """
-    Automatically detects which language the user is speaking or has explicitly requested.
+    Automatically detects which Indian language the user is speaking, typing, or requesting.
+    Supports native Indic scripts as well as Romanized/transliterated words (Tenglish, Hinglish, Tanglish, etc.).
     Returns: 'te' (Telugu), 'hi' (Hindi), 'ta' (Tamil), 'kn' (Kannada), 'ml' (Malayalam),
-             'mr' (Marathi), 'bn' (Bengali), 'gu' (Gujarati), 'pa' (Punjabi), or 'en' (English).
+             'mr' (Marathi), 'bn' (Bengali), 'gu' (Gujarati), 'pa' (Punjabi), 'or' (Odia), or 'en' (English).
     """
     msg_lower = (message or "").strip().lower()
 
-    # 1. Explicit language request triggers (e.g. "explain in telugu", "in hindi", "telugulo cheppandi")
+    # 1. Explicit language request triggers
     if any(k in msg_lower for k in ["telugu", "తెలుగు", "tenglish", "telugulo", "telugu lo", "telugula"]):
         return "te"
     if any(k in msg_lower for k in ["hindi", "हिंदी", "hinglish", "hindi me", "hindi mein"]):
@@ -1903,41 +1904,113 @@ def detect_user_language_preference(message: str, history: Optional[list] = None
         return "gu"
     if any(k in msg_lower for k in ["punjabi", "ਪੰਜਾਬੀ"]):
         return "pa"
+    if any(k in msg_lower for k in ["odia", "oriya", "ଓଡ଼ିଆ"]):
+        return "or"
     if any(k in msg_lower for k in ["english", "in english"]):
         return "en"
 
     # 2. Native Indic Unicode Script Detection
-    if re.search(r"[\u0C00-\u0C7F]", message):  # Telugu
+    if re.search(r"[ఀ-౿]", message):  # Telugu
         return "te"
-    if re.search(r"[\u0900-\u097F]", message):  # Devanagari (Hindi/Marathi)
+    if re.search(r"[ऀ-ॿ]", message):  # Devanagari (Marathi vs Hindi)
+        if any(w in message for w in ["आहे", "मला", "करावे", "नाही", "काय", "कसे", "औषध", "ताप"]):
+            return "mr"
         return "hi"
-    if re.search(r"[\u0B80-\u0BFF]", message):  # Tamil
+    if re.search(r"[஀-௿]", message):  # Tamil
         return "ta"
-    if re.search(r"[\u0C80-\u0CFF]", message):  # Kannada
+    if re.search(r"[ಀ-೿]", message):  # Kannada
         return "kn"
-    if re.search(r"[\u0D00-\u0D7F]", message):  # Malayalam
+    if re.search(r"[ഀ-ൿ]", message):  # Malayalam
         return "ml"
-    if re.search(r"[\u0980-\u09FF]", message):  # Bengali
+    if re.search(r"[ঀ-৿]", message):  # Bengali
         return "bn"
-    if re.search(r"[\u0A80-\u0AFF]", message):  # Gujarati
+    if re.search(r"[઀-૿]", message):  # Gujarati
         return "gu"
-    if re.search(r"[\u0A00-\u0A7F]", message):  # Punjabi
+    if re.search(r"[਀-੿]", message):  # Punjabi
+        return "pa"
+    if re.search(r"[଀-୿]", message):  # Odia
+        return "or"
+
+    # 3. Comprehensive Romanized / Transliterated Phonetic Keywords
+    # Telugu phonetic tokens
+    telugu_words = [
+        "jvaram", "jwaram", "thalanopi", "thala noppi", "mandulu", "mandhu", "taggali", "daktaru",
+        "kadupu", "noppi", "em cheyali", "ela undi", "cheppandi", "chudandi", "undi", "ledu", "baga",
+        "pillalu", "gunde", "swasa", "daggu", "jalubu", "gonthu", "namaskaram", "asupathri", "aushadham",
+        "naku", "enti", "kavali", "eppudu", "doctorgaru", "daktar"
+    ]
+    if any(w in msg_lower for w in telugu_words):
+        return "te"
+
+    # Hindi phonetic tokens
+    hindi_words = [
+        "bukhar", "sir dard", "sar dard", "dawai", "dawa", "pet dard", "pet me", "ulti", "chakkar",
+        "kya kare", "kaisa hai", "bataiye", "mujhe", "mera", "ho raha", "dard", "seene me", "khansi",
+        "jukham", "gala kharab", "tabiyat", "aspatal", "ilaj", "kya karu", "chahiye", "batao", "kaise"
+    ]
+    if any(w in msg_lower for w in hindi_words):
+        return "hi"
+
+    # Tamil phonetic tokens
+    tamil_words = [
+        "kaichal", "thalaivali", "marunthu", "marundhu", "valikuthu", "udambu", "mudiyala", "enna pannanum",
+        "sari illa", "erukku", "illai", "maruthuvar", "nenju vali", "irukku", "enakku", "sollinga", "vanakkam"
+    ]
+    if any(w in msg_lower for w in tamil_words):
+        return "ta"
+
+    # Kannada phonetic tokens
+    kannada_words = [
+        "jwara", "thalenovu", "aushadhi", "mathe", "hege", "beku", "madabeku", "hotte", "novu", "nanage", "helu", "namaskara"
+    ]
+    if any(w in msg_lower for w in kannada_words):
+        return "kn"
+
+    # Malayalam phonetic tokens
+    malayalam_words = ["pani", "thala vedhana", "marunnu", "entha cheyyuka", "vayaru", "vedhana", "enikku"]
+    if any(w in msg_lower for w in malayalam_words):
+        return "ml"
+
+    # Marathi phonetic tokens
+    marathi_words = ["taap", "doke dukhat", "aushadh", "kay karu", "potat dukhate", "mala", "sangitla"]
+    if any(w in msg_lower for w in marathi_words):
+        return "mr"
+
+    # Bengali phonetic tokens
+    bengali_words = ["jor", "matha betha", "osudh", "ki korbo", "pet betha", "amar", "bolun"]
+    if any(w in msg_lower for w in bengali_words):
+        return "bn"
+
+    # Gujarati phonetic tokens
+    gujarati_words = ["taav", "mathu dukhe", "dava", "su karvu", "pet ma dukhe", "mane"]
+    if any(w in msg_lower for w in gujarati_words):
+        return "gu"
+
+    # Punjabi phonetic tokens
+    punjabi_words = ["bukhar", "sir dukhda", "dawai", "ki karaan", "mainu"]
+    if any(w in msg_lower for w in punjabi_words):
         return "pa"
 
-    # 3. Contextual Continuity (Look back at recent history for short follow-ups like "which doctor", "fever", "yes")
+    # Odia phonetic tokens
+    odia_words = ["jwara", "munda betha", "aushadha", "kana karibi", "peta betha", "mote"]
+    if any(w in msg_lower for w in odia_words):
+        return "or"
+
+    # 4. Contextual Continuity (Look back at recent history)
     if history and len(msg_lower.split()) <= 4:
         for prev in reversed(history[-6:]):
             prev_content = str(prev.get("content", ""))
-            if re.search(r"[\u0C00-\u0C7F]", prev_content) or "telugu" in prev_content.lower():
+            prev_lower = prev_content.lower()
+            if re.search(r"[ఀ-౿]", prev_content) or any(w in prev_lower for w in telugu_words):
                 return "te"
-            if re.search(r"[\u0900-\u097F]", prev_content) or "hindi" in prev_content.lower():
+            if re.search(r"[ऀ-ॿ]", prev_content) or any(w in prev_lower for w in hindi_words):
                 return "hi"
-            if re.search(r"[\u0B80-\u0BFF]", prev_content) or "tamil" in prev_content.lower():
+            if re.search(r"[஀-௿]", prev_content) or any(w in prev_lower for w in tamil_words):
                 return "ta"
-            if re.search(r"[\u0C80-\u0CFF]", prev_content) or "kannada" in prev_content.lower():
+            if re.search(r"[ಀ-೿]", prev_content) or any(w in prev_lower for w in kannada_words):
                 return "kn"
 
-    return "en"
+    return "en"""
 
 
 def check_specialist_routing_intent(message: str, history: Optional[list], target_lang: str) -> Optional[str]:
@@ -2072,6 +2145,7 @@ def carepath_ai_chat(
         "bn": "Bengali (বাংলা)",
         "gu": "Gujarati (ગુજરાતી)",
         "pa": "Punjabi (ਪੰਜਾਬੀ)",
+        "or": "Odia (ଓଡ଼ିଆ)",
         "en": "English",
     }
     target_lang_name = lang_names.get(target_lang, "English")
@@ -2314,6 +2388,8 @@ def carepath_ai_text_to_speech(text: str, lang: str = "en"):
 
     lang_code = lang.split("-")[0].lower() if "-" in lang else lang.lower()
     valid_langs = {"te", "hi", "ta", "kn", "ml", "mr", "bn", "gu", "pa", "en"}
+    if lang_code == "or":
+        lang_code = "hi"
     if lang_code not in valid_langs:
         lang_code = "en"
 
