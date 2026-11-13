@@ -8987,6 +8987,331 @@ def admin_tokens(
         for token in tokens
     ]
 
+# ============================================================
+# TOKEN COLLECTION HISTORY (PER DAY & PER MONTH)
+# ============================================================
+
+@app.get("/hospital/collection-summary")
+@app.get("/hospitals/{hospital_id}/collection-summary")
+def get_hospital_collection_summary(
+    hospital_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Returns Token Collection History breakdown:
+    - Today's collection & token count
+    - Current month's collection & token count
+    - Daily history list (per day)
+    - Monthly history list (per month)
+    """
+    user_role = current_user.get("role")
+    auth_user_id = current_user.get("user_id")
+
+    if user_role == "hospital":
+        target_hospital_id = auth_user_id
+    elif user_role == "admin":
+        target_hospital_id = hospital_id or auth_user_id
+    else:
+        raise HTTPException(status_code=403, detail="Unauthorized access to hospital collection history.")
+
+    hospital = db.query(Hospital).filter(Hospital.id == target_hospital_id).first()
+    if not hospital:
+        raise HTTPException(status_code=404, detail="Hospital not found.")
+
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    ist_today = ist_now.date()
+    curr_month_str = ist_today.strftime("%Y-%m")
+
+    tokens = (
+        db.query(Token)
+        .filter(
+            Token.hospital_id == target_hospital_id,
+            Token.status != "cancelled",
+            Token.payment_status != "refunded"
+        )
+        .order_by(Token.appointment_date.desc(), Token.id.desc())
+        .all()
+    )
+
+    daily_map = {}
+    monthly_map = {}
+
+    today_summary = {
+        "date": str(ist_today),
+        "date_display": ist_today.strftime("%d %b %Y"),
+        "total_tokens": 0,
+        "online_tokens": 0,
+        "walkin_tokens": 0,
+        "completed_tokens": 0,
+        "collection": 0,
+    }
+
+    month_summary = {
+        "month": curr_month_str,
+        "month_name": ist_today.strftime("%B %Y"),
+        "total_tokens": 0,
+        "online_tokens": 0,
+        "walkin_tokens": 0,
+        "completed_tokens": 0,
+        "collection": 0,
+    }
+
+    total_all_time_collection = 0
+    total_all_time_tokens = 0
+
+    days_short = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+    for t in tokens:
+        d = t.appointment_date
+        if not d:
+            continue
+        d_str = str(d)
+        m_str = d.strftime("%Y-%m")
+        m_name = d.strftime("%B %Y")
+        day_name = days_short[d.weekday()]
+
+        fee = int(t.token_fee or 0)
+        is_walkin = (t.booking_type == "WALK_IN")
+        is_completed = (t.status == "completed")
+
+        total_all_time_collection += fee
+        total_all_time_tokens += 1
+
+        # Daily mapping
+        if d_str not in daily_map:
+            label = "Today" if d == ist_today else ("Yesterday" if d == (ist_today - timedelta(days=1)) else day_name)
+            daily_map[d_str] = {
+                "date": d_str,
+                "date_display": f"{d.strftime('%d %b %Y')} ({label})",
+                "day_name": day_name,
+                "total_tokens": 0,
+                "online_tokens": 0,
+                "walkin_tokens": 0,
+                "completed_tokens": 0,
+                "collection": 0,
+            }
+
+        daily_map[d_str]["total_tokens"] += 1
+        if is_walkin:
+            daily_map[d_str]["walkin_tokens"] += 1
+        else:
+            daily_map[d_str]["online_tokens"] += 1
+        if is_completed:
+            daily_map[d_str]["completed_tokens"] += 1
+        daily_map[d_str]["collection"] += fee
+
+        # Monthly mapping
+        if m_str not in monthly_map:
+            monthly_map[m_str] = {
+                "month": m_str,
+                "month_name": m_name,
+                "is_current": (m_str == curr_month_str),
+                "total_tokens": 0,
+                "online_tokens": 0,
+                "walkin_tokens": 0,
+                "completed_tokens": 0,
+                "collection": 0,
+            }
+
+        monthly_map[m_str]["total_tokens"] += 1
+        if is_walkin:
+            monthly_map[m_str]["walkin_tokens"] += 1
+        else:
+            monthly_map[m_str]["online_tokens"] += 1
+        if is_completed:
+            monthly_map[m_str]["completed_tokens"] += 1
+        monthly_map[m_str]["collection"] += fee
+
+        # Accumulate Today
+        if d == ist_today:
+            today_summary["total_tokens"] += 1
+            if is_walkin:
+                today_summary["walkin_tokens"] += 1
+            else:
+                today_summary["online_tokens"] += 1
+            if is_completed:
+                today_summary["completed_tokens"] += 1
+            today_summary["collection"] += fee
+
+        # Accumulate This Month
+        if m_str == curr_month_str:
+            month_summary["total_tokens"] += 1
+            if is_walkin:
+                month_summary["walkin_tokens"] += 1
+            else:
+                month_summary["online_tokens"] += 1
+            if is_completed:
+                month_summary["completed_tokens"] += 1
+            month_summary["collection"] += fee
+
+    daily_history = [v for k, v in sorted(daily_map.items(), key=lambda x: x[0], reverse=True)]
+    monthly_history = [v for k, v in sorted(monthly_map.items(), key=lambda x: x[0], reverse=True)]
+
+    return {
+        "success": True,
+        "hospital_id": hospital.id,
+        "hospital_name": hospital.name,
+        "hospital_fee": int(hospital.token_fee or 0),
+        "today": today_summary,
+        "this_month": month_summary,
+        "all_time": {
+            "total_collection": total_all_time_collection,
+            "total_tokens": total_all_time_tokens,
+        },
+        "daily_history": daily_history,
+        "monthly_history": monthly_history,
+    }
+
+
+@app.get("/admin/collection-summary")
+def get_admin_collection_summary(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """
+    Returns Platform-Wide Token Collection History:
+    - Today's platform-wide collection
+    - Monthly collection
+    - Daily & Monthly collection breakdown across all hospitals
+    """
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    ist_today = ist_now.date()
+    curr_month_str = ist_today.strftime("%Y-%m")
+
+    tokens = (
+        db.query(Token)
+        .filter(
+            Token.status != "cancelled",
+            Token.payment_status != "refunded"
+        )
+        .order_by(Token.appointment_date.desc(), Token.id.desc())
+        .all()
+    )
+
+    daily_map = {}
+    monthly_map = {}
+
+    today_summary = {
+        "date": str(ist_today),
+        "date_display": ist_today.strftime("%d %b %Y"),
+        "total_tokens": 0,
+        "online_tokens": 0,
+        "walkin_tokens": 0,
+        "completed_tokens": 0,
+        "hospital_collection": 0,
+        "platform_fee": 0,
+        "total_gross": 0,
+    }
+
+    month_summary = {
+        "month": curr_month_str,
+        "month_name": ist_today.strftime("%B %Y"),
+        "total_tokens": 0,
+        "online_tokens": 0,
+        "walkin_tokens": 0,
+        "completed_tokens": 0,
+        "hospital_collection": 0,
+        "platform_fee": 0,
+        "total_gross": 0,
+    }
+
+    days_short = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+    for t in tokens:
+        d = t.appointment_date
+        if not d:
+            continue
+        d_str = str(d)
+        m_str = d.strftime("%Y-%m")
+        m_name = d.strftime("%B %Y")
+        day_name = days_short[d.weekday()]
+
+        fee = int(t.token_fee or 0)
+        p_fee = int(t.platform_fee or 0)
+        gross = int(t.total_amount or (fee + p_fee))
+        is_walkin = (t.booking_type == "WALK_IN")
+        is_completed = (t.status == "completed")
+
+        # Daily mapping
+        if d_str not in daily_map:
+            label = "Today" if d == ist_today else ("Yesterday" if d == (ist_today - timedelta(days=1)) else day_name)
+            daily_map[d_str] = {
+                "date": d_str,
+                "date_display": f"{d.strftime('%d %b %Y')} ({label})",
+                "day_name": day_name,
+                "total_tokens": 0,
+                "online_tokens": 0,
+                "walkin_tokens": 0,
+                "completed_tokens": 0,
+                "hospital_collection": 0,
+                "platform_fee": 0,
+                "total_gross": 0,
+            }
+
+        daily_map[d_str]["total_tokens"] += 1
+        if is_walkin: daily_map[d_str]["walkin_tokens"] += 1
+        else: daily_map[d_str]["online_tokens"] += 1
+        if is_completed: daily_map[d_str]["completed_tokens"] += 1
+        daily_map[d_str]["hospital_collection"] += fee
+        daily_map[d_str]["platform_fee"] += p_fee
+        daily_map[d_str]["total_gross"] += gross
+
+        # Monthly mapping
+        if m_str not in monthly_map:
+            monthly_map[m_str] = {
+                "month": m_str,
+                "month_name": m_name,
+                "is_current": (m_str == curr_month_str),
+                "total_tokens": 0,
+                "online_tokens": 0,
+                "walkin_tokens": 0,
+                "completed_tokens": 0,
+                "hospital_collection": 0,
+                "platform_fee": 0,
+                "total_gross": 0,
+            }
+
+        monthly_map[m_str]["total_tokens"] += 1
+        if is_walkin: monthly_map[m_str]["walkin_tokens"] += 1
+        else: monthly_map[m_str]["online_tokens"] += 1
+        if is_completed: monthly_map[m_str]["completed_tokens"] += 1
+        monthly_map[m_str]["hospital_collection"] += fee
+        monthly_map[m_str]["platform_fee"] += p_fee
+        monthly_map[m_str]["total_gross"] += gross
+
+        # Today
+        if d == ist_today:
+            today_summary["total_tokens"] += 1
+            if is_walkin: today_summary["walkin_tokens"] += 1
+            else: today_summary["online_tokens"] += 1
+            if is_completed: today_summary["completed_tokens"] += 1
+            today_summary["hospital_collection"] += fee
+            today_summary["platform_fee"] += p_fee
+            today_summary["total_gross"] += gross
+
+        # Month
+        if m_str == curr_month_str:
+            month_summary["total_tokens"] += 1
+            if is_walkin: month_summary["walkin_tokens"] += 1
+            else: month_summary["online_tokens"] += 1
+            if is_completed: month_summary["completed_tokens"] += 1
+            month_summary["hospital_collection"] += fee
+            month_summary["platform_fee"] += p_fee
+            month_summary["total_gross"] += gross
+
+    daily_history = [v for k, v in sorted(daily_map.items(), key=lambda x: x[0], reverse=True)]
+    monthly_history = [v for k, v in sorted(monthly_map.items(), key=lambda x: x[0], reverse=True)]
+
+    return {
+        "success": True,
+        "today": today_summary,
+        "this_month": month_summary,
+        "daily_history": daily_history,
+        "monthly_history": monthly_history,
+    }
+
+
 @app.get("/hospitals/{hospital_id}/tokens")
 def hospital_tokens(
     hospital_id: int,

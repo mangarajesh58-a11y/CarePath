@@ -1731,14 +1731,20 @@
             <div class="vital-subtext" id="totalDoctorsSubtext">In Session</div>
         </div>
 
-        <!-- 4. TODAY'S COLLECTION -->
-        <div class="vital-card purple">
+        <!-- 4. TODAY'S & MONTHLY TOKEN COLLECTION (WITH HISTORY LINK) -->
+        <div class="vital-card purple" onclick="openCollectionHistoryModal()" style="cursor: pointer; transition: all 0.2s;" title="Tap to view Daily & Monthly Collection History">
             <div class="vital-header">
-                <span class="vital-title">Collection</span>
-                <div class="vital-icon-badge">💰</div>
+                <span class="vital-title">Token Collection</span>
+                <div class="vital-icon-badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">💰</div>
             </div>
-            <div class="vital-value" id="todayRevenueDisplay">₹0</div>
-            <div class="vital-subtext" id="completedTokensCount">0 Consultations</div>
+            <div style="display: flex; align-items: baseline; gap: 8px; margin: 3px 0 1px;">
+                <div class="vital-value" id="todayRevenueDisplay">₹0</div>
+                <span style="font-size: 11px; font-weight: 700; color: #c084fc; background: rgba(168, 85, 247, 0.15); padding: 2px 7px; border-radius: 999px;">Today</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--slate-400); border-top: 1px solid rgba(255,255,255,0.08); padding-top: 4px; margin-top: 2px;">
+                <span>Month: <strong id="monthRevenueDisplay" style="color: #e2e8f0;">₹0</strong></span>
+                <span style="color: #38bdf8; font-weight: 700; font-size: 11px;">History →</span>
+            </div>
         </div>
     </section>
 
@@ -1893,6 +1899,84 @@
                     ➕ Next Walk-in
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         TOKEN COLLECTION HISTORY (PER DAY & PER MONTH)
+    ===================================================== -->
+    <div class="card-panel" id="collectionHistoryPanel" style="border-top: 3px solid #a855f7; margin-bottom: 20px;">
+        <div class="panel-header" style="flex-wrap: wrap; gap: 12px; align-items: center;">
+            <div>
+                <h2 class="panel-title" style="color: #c084fc; display: flex; align-items: center; gap: 8px;">
+                    <span>💰</span> Token Collection History
+                </h2>
+                <p style="margin: 3px 0 0; font-size: 12px; color: var(--slate-400);">
+                    OPD token fees collected <strong>per day (Today)</strong> and <strong>per month (Monthly)</strong>
+                </p>
+            </div>
+
+            <!-- Segmented Tabs: Per Day vs Per Month -->
+            <div style="display: inline-flex; background: rgba(15, 23, 42, 0.85); border: 1.5px solid rgba(255, 255, 255, 0.14); border-radius: 12px; padding: 4px; gap: 4px;">
+                <button type="button" id="tabDailyCollection" onclick="switchCollectionTab('daily')" style="background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); color: white; border: none; padding: 7px 15px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                    📅 Per Day History
+                </button>
+                <button type="button" id="tabMonthlyCollection" onclick="switchCollectionTab('monthly')" style="background: transparent; color: var(--slate-400); border: none; padding: 7px 15px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                    🗓️ Per Month History
+                </button>
+            </div>
+        </div>
+
+        <!-- Top KPI Strip -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px;">
+            <div style="background: rgba(168, 85, 247, 0.1); border: 1.5px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 12px 14px;">
+                <span style="font-size: 11px; font-weight: 700; color: #d8b4fe; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Today's Collection</span>
+                <div style="font-size: 22px; font-weight: 800; color: #ffffff; margin: 3px 0;" id="kpiTodayCollection">₹0</div>
+                <span style="font-size: 11.5px; color: var(--slate-400);" id="kpiTodayTokens">0 Tokens Today</span>
+            </div>
+
+            <div style="background: rgba(56, 189, 248, 0.1); border: 1.5px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 12px 14px;">
+                <span style="font-size: 11px; font-weight: 700; color: #7dd3fc; display: block; text-transform: uppercase; letter-spacing: 0.5px;">This Month's Collection</span>
+                <div style="font-size: 22px; font-weight: 800; color: #ffffff; margin: 3px 0;" id="kpiMonthCollection">₹0</div>
+                <span style="font-size: 11.5px; color: var(--slate-400);" id="kpiMonthTokens">0 Tokens This Month</span>
+            </div>
+
+            <div style="background: rgba(34, 197, 94, 0.1); border: 1.5px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 12px 14px;">
+                <span style="font-size: 11px; font-weight: 700; color: #86efac; display: block; text-transform: uppercase; letter-spacing: 0.5px;">All-Time Collection</span>
+                <div style="font-size: 22px; font-weight: 800; color: #ffffff; margin: 3px 0;" id="kpiAllTimeCollection">₹0</div>
+                <span style="font-size: 11.5px; color: var(--slate-400);" id="kpiAllTimeTokens">0 Total Tokens</span>
+            </div>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="position: relative; max-width: 290px; width: 100%;">
+                <input type="text" id="collectionSearchInput" placeholder="Search by date or month..." oninput="renderCollectionHistoryTable()" style="width: 100%; box-sizing: border-box; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; padding: 8px 12px; color: white; font-size: 12.5px; outline: none;">
+            </div>
+            <button type="button" onclick="exportCollectionHistoryCSV()" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <span>📥</span> Export CSV Report
+            </button>
+        </div>
+
+        <!-- History Table Container -->
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12.5px;">
+                <thead>
+                    <tr id="collectionTableHeaderRow" style="background: rgba(30, 41, 59, 0.95); color: var(--slate-300); border-bottom: 1px solid rgba(255,255,255,0.12);">
+                        <th style="padding: 11px 14px;">Date / Period</th>
+                        <th style="padding: 11px 14px;">Total Tokens</th>
+                        <th style="padding: 11px 14px;">Online Paid</th>
+                        <th style="padding: 11px 14px;">Offline Walk-in</th>
+                        <th style="padding: 11px 14px;">Completed</th>
+                        <th style="padding: 11px 14px; text-align: right;">Token Collection (₹)</th>
+                    </tr>
+                </thead>
+                <tbody id="collectionTableBody">
+                    <tr>
+                        <td colspan="6" style="padding: 24px; text-align: center; color: var(--slate-400);">Loading token collection history...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -4164,7 +4248,63 @@ function printWalkInSlip() {
                     setTimeout(function() { window.close(); }, 800);
                 };
             <\/script>
-        </body>
+        <!-- =====================================================
+     POPUP MODAL: TOKEN COLLECTION HISTORY
+===================================================== -->
+<div id="collectionHistoryModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999; backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;" onclick="if(event.target===this)closeCollectionHistoryModal()">
+    <div style="background: #0f172a; border: 1.5px solid rgba(168, 85, 247, 0.4); border-radius: 16px; width: 100%; max-width: 760px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; box-shadow: 0 16px 40px rgba(0,0,0,0.7); color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.12); background: rgba(30, 41, 59, 0.6);">
+            <div>
+                <h3 style="margin: 0; font-size: 18px; color: #c084fc; display: flex; align-items: center; gap: 8px;">
+                    <span>💰</span> Token Collection History
+                </h3>
+                <span style="font-size: 12px; color: var(--slate-400);">Daily and Monthly breakdown</span>
+            </div>
+            <button type="button" onclick="closeCollectionHistoryModal()" style="background: rgba(255,255,255,0.12); border: none; color: #cbd5e1; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+        </div>
+
+        <div style="padding: 18px 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: inline-flex; background: rgba(15, 23, 42, 0.95); border: 1.5px solid rgba(255, 255, 255, 0.14); border-radius: 10px; padding: 3px; gap: 4px;">
+                    <button type="button" id="modalTabDaily" onclick="switchCollectionTab('daily')" style="background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        📅 Per Day
+                    </button>
+                    <button type="button" id="modalTabMonthly" onclick="switchCollectionTab('monthly')" style="background: transparent; color: var(--slate-400); border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        🗓️ Per Month
+                    </button>
+                </div>
+
+                <button type="button" onclick="exportCollectionHistoryCSV()" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer;">
+                    📥 Export CSV
+                </button>
+            </div>
+
+            <div style="overflow-x: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                    <thead>
+                        <tr style="background: rgba(30, 41, 59, 0.95); color: var(--slate-300); border-bottom: 1px solid rgba(255,255,255,0.12);">
+                            <th style="padding: 10px 12px;">Period / Date</th>
+                            <th style="padding: 10px 12px;">Tokens</th>
+                            <th style="padding: 10px 12px;">Online</th>
+                            <th style="padding: 10px 12px;">Walk-in</th>
+                            <th style="padding: 10px 12px; text-align: right;">Collection (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalCollectionTableBody">
+                        <tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--slate-400);">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.1); text-align: right; background: rgba(30, 41, 59, 0.4);">
+            <button type="button" onclick="closeCollectionHistoryModal()" style="padding: 8px 18px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+</body>
         </html>
     `);
     printWin.document.close();
@@ -4388,6 +4528,289 @@ async function saveHospitalSettings() {
     }
 }
 
+
+
+    // =====================================================
+    // TOKEN COLLECTION HISTORY (PER DAY & PER MONTH)
+    // =====================================================
+    let currentCollectionTab = "daily";
+    let cachedCollectionSummary = null;
+
+    async function fetchHospitalCollectionSummary() {
+        const token = localStorage.getItem("hospitalToken") || localStorage.getItem("token") || "";
+        const hospId = (storedHospital && storedHospital.id) || (cachedHospitalProfile && cachedHospitalProfile.id) || "";
+        if (!hospId) return;
+
+        try {
+            const res = await fetch(`${API}/hospitals/${encodeURIComponent(hospId)}/collection-summary`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                cachedCollectionSummary = data;
+
+                // 1. Update Vital Signs Card & Top KPIs
+                const todayColl = data.today ? Number(data.today.collection || 0) : 0;
+                const todayTok = data.today ? Number(data.today.total_tokens || 0) : 0;
+                const monthColl = data.this_month ? Number(data.this_month.collection || 0) : 0;
+                const monthTok = data.this_month ? Number(data.this_month.total_tokens || 0) : 0;
+                const allTimeColl = data.all_time ? Number(data.all_time.total_collection || 0) : 0;
+                const allTimeTok = data.all_time ? Number(data.all_time.total_tokens || 0) : 0;
+
+                const todayEl = document.getElementById("todayRevenueDisplay");
+                if (todayEl) todayEl.textContent = `₹${todayColl.toLocaleString()}`;
+
+                const monthEl = document.getElementById("monthRevenueDisplay");
+                if (monthEl) monthEl.textContent = `₹${monthColl.toLocaleString()}`;
+
+                const kpiTodayColl = document.getElementById("kpiTodayCollection");
+                if (kpiTodayColl) kpiTodayColl.textContent = `₹${todayColl.toLocaleString()}`;
+
+                const kpiTodayTok = document.getElementById("kpiTodayTokens");
+                if (kpiTodayTok) kpiTodayTok.textContent = `${todayTok} Tokens Today`;
+
+                const kpiMonthColl = document.getElementById("kpiMonthCollection");
+                if (kpiMonthColl) kpiMonthColl.textContent = `₹${monthColl.toLocaleString()}`;
+
+                const kpiMonthTok = document.getElementById("kpiMonthTokens");
+                if (kpiMonthTok) kpiMonthTok.textContent = `${monthTok} Tokens (${data.this_month?.month_name || 'This Month'})`;
+
+                const kpiAllTimeColl = document.getElementById("kpiAllTimeCollection");
+                if (kpiAllTimeColl) kpiAllTimeColl.textContent = `₹${allTimeColl.toLocaleString()}`;
+
+                const kpiAllTimeTok = document.getElementById("kpiAllTimeTokens");
+                if (kpiAllTimeTok) kpiAllTimeTok.textContent = `${allTimeTok} Total Completed`;
+
+                // Render Tables
+                renderCollectionHistoryTable();
+            }
+        } catch (e) {
+            console.warn("Could not load hospital collection summary:", e);
+        }
+    }
+
+    function switchCollectionTab(tab) {
+        currentCollectionTab = tab;
+
+        const btnDaily = document.getElementById("tabDailyCollection");
+        const btnMonthly = document.getElementById("tabMonthlyCollection");
+        const modalBtnDaily = document.getElementById("modalTabDaily");
+        const modalBtnMonthly = document.getElementById("modalTabMonthly");
+
+        if (tab === "daily") {
+            if (btnDaily) {
+                btnDaily.style.background = "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)";
+                btnDaily.style.color = "white";
+            }
+            if (btnMonthly) {
+                btnMonthly.style.background = "transparent";
+                btnMonthly.style.color = "var(--slate-400)";
+            }
+            if (modalBtnDaily) {
+                modalBtnDaily.style.background = "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)";
+                modalBtnDaily.style.color = "white";
+            }
+            if (modalBtnMonthly) {
+                modalBtnMonthly.style.background = "transparent";
+                modalBtnMonthly.style.color = "var(--slate-400)";
+            }
+        } else {
+            if (btnDaily) {
+                btnDaily.style.background = "transparent";
+                btnDaily.style.color = "var(--slate-400)";
+            }
+            if (btnMonthly) {
+                btnMonthly.style.background = "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)";
+                btnMonthly.style.color = "white";
+            }
+            if (modalBtnDaily) {
+                modalBtnDaily.style.background = "transparent";
+                modalBtnDaily.style.color = "var(--slate-400)";
+            }
+            if (modalBtnMonthly) {
+                modalBtnMonthly.style.background = "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)";
+                modalBtnMonthly.style.color = "white";
+            }
+        }
+
+        renderCollectionHistoryTable();
+    }
+
+    function renderCollectionHistoryTable() {
+        if (!cachedCollectionSummary) return;
+
+        const searchInput = document.getElementById("collectionSearchInput");
+        const filterText = (searchInput ? searchInput.value : "").trim().toLowerCase();
+
+        const tbody = document.getElementById("collectionTableBody");
+        const modalTbody = document.getElementById("modalCollectionTableBody");
+        const theadRow = document.getElementById("collectionTableHeaderRow");
+
+        if (currentCollectionTab === "daily") {
+            if (theadRow) {
+                theadRow.innerHTML = `
+                    <th style="padding: 11px 14px;">Date (Day)</th>
+                    <th style="padding: 11px 14px;">Total Tokens</th>
+                    <th style="padding: 11px 14px;">Online Paid</th>
+                    <th style="padding: 11px 14px;">Offline Walk-in</th>
+                    <th style="padding: 11px 14px;">Completed</th>
+                    <th style="padding: 11px 14px; text-align: right;">Day Collection (₹)</th>
+                `;
+            }
+
+            let list = cachedCollectionSummary.daily_history || [];
+            if (filterText) {
+                list = list.filter(item => (item.date || "").includes(filterText) || (item.date_display || "").toLowerCase().includes(filterText));
+            }
+
+            if (list.length === 0) {
+                const emptyRow = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--slate-400);">No daily collection records found.</td></tr>`;
+                if (tbody) tbody.innerHTML = emptyRow;
+                if (modalTbody) modalTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--slate-400);">No daily collection records found.</td></tr>`;
+                return;
+            }
+
+            let rowsHtml = "";
+            let modalRowsHtml = "";
+
+            list.forEach(item => {
+                const isToday = item.date === cachedCollectionSummary.today?.date;
+                const badge = isToday ? '<span style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; margin-left: 6px;">Today</span>' : '';
+
+                rowsHtml += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); ${isToday ? 'background: rgba(168, 85, 247, 0.06);' : ''}">
+                        <td style="padding: 12px 14px; font-weight: 700; color: #f8fafc;">
+                            ${item.date_display || item.date} ${badge}
+                        </td>
+                        <td style="padding: 12px 14px; font-weight: 700; color: #38bdf8;">${item.total_tokens}</td>
+                        <td style="padding: 12px 14px; color: #a7f3d0;">${item.online_tokens}</td>
+                        <td style="padding: 12px 14px; color: #fde68a;">${item.walkin_tokens}</td>
+                        <td style="padding: 12px 14px; color: #cbd5e1;">${item.completed_tokens}</td>
+                        <td style="padding: 12px 14px; text-align: right; font-weight: 800; color: #4ade80; font-size: 13.5px;">
+                            ₹${Number(item.collection || 0).toLocaleString()}
+                        </td>
+                    </tr>
+                `;
+
+                modalRowsHtml += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                        <td style="padding: 10px 12px; font-weight: 700; color: #f8fafc;">${item.date_display || item.date}</td>
+                        <td style="padding: 10px 12px; font-weight: 700; color: #38bdf8;">${item.total_tokens}</td>
+                        <td style="padding: 10px 12px; color: #a7f3d0;">${item.online_tokens}</td>
+                        <td style="padding: 10px 12px; color: #fde68a;">${item.walkin_tokens}</td>
+                        <td style="padding: 10px 12px; text-align: right; font-weight: 800; color: #4ade80;">₹${Number(item.collection || 0).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            if (tbody) tbody.innerHTML = rowsHtml;
+            if (modalTbody) modalTbody.innerHTML = modalRowsHtml;
+        } else {
+            // MONTHLY VIEW
+            if (theadRow) {
+                theadRow.innerHTML = `
+                    <th style="padding: 11px 14px;">Month / Year</th>
+                    <th style="padding: 11px 14px;">Total Tokens</th>
+                    <th style="padding: 11px 14px;">Online Paid</th>
+                    <th style="padding: 11px 14px;">Offline Walk-in</th>
+                    <th style="padding: 11px 14px;">Completed</th>
+                    <th style="padding: 11px 14px; text-align: right;">Month Collection (₹)</th>
+                `;
+            }
+
+            let list = cachedCollectionSummary.monthly_history || [];
+            if (filterText) {
+                list = list.filter(item => (item.month || "").includes(filterText) || (item.month_name || "").toLowerCase().includes(filterText));
+            }
+
+            if (list.length === 0) {
+                const emptyRow = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--slate-400);">No monthly collection records found.</td></tr>`;
+                if (tbody) tbody.innerHTML = emptyRow;
+                if (modalTbody) modalTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px; color: var(--slate-400);">No monthly collection records found.</td></tr>`;
+                return;
+            }
+
+            let rowsHtml = "";
+            let modalRowsHtml = "";
+
+            list.forEach(item => {
+                const badge = item.is_current ? '<span style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; margin-left: 6px;">Current Month</span>' : '';
+
+                rowsHtml += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); ${item.is_current ? 'background: rgba(56, 189, 248, 0.06);' : ''}">
+                        <td style="padding: 12px 14px; font-weight: 700; color: #f8fafc;">
+                            ${item.month_name || item.month} ${badge}
+                        </td>
+                        <td style="padding: 12px 14px; font-weight: 700; color: #38bdf8;">${item.total_tokens}</td>
+                        <td style="padding: 12px 14px; color: #a7f3d0;">${item.online_tokens}</td>
+                        <td style="padding: 12px 14px; color: #fde68a;">${item.walkin_tokens}</td>
+                        <td style="padding: 12px 14px; color: #cbd5e1;">${item.completed_tokens}</td>
+                        <td style="padding: 12px 14px; text-align: right; font-weight: 800; color: #4ade80; font-size: 14px;">
+                            ₹${Number(item.collection || 0).toLocaleString()}
+                        </td>
+                    </tr>
+                `;
+
+                modalRowsHtml += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                        <td style="padding: 10px 12px; font-weight: 700; color: #f8fafc;">${item.month_name || item.month}</td>
+                        <td style="padding: 10px 12px; font-weight: 700; color: #38bdf8;">${item.total_tokens}</td>
+                        <td style="padding: 10px 12px; color: #a7f3d0;">${item.online_tokens}</td>
+                        <td style="padding: 10px 12px; color: #fde68a;">${item.walkin_tokens}</td>
+                        <td style="padding: 10px 12px; text-align: right; font-weight: 800; color: #4ade80;">₹${Number(item.collection || 0).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            if (tbody) tbody.innerHTML = rowsHtml;
+            if (modalTbody) modalTbody.innerHTML = modalRowsHtml;
+        }
+    }
+
+    function exportCollectionHistoryCSV() {
+        if (!cachedCollectionSummary) {
+            alert("No collection history available to export.");
+            return;
+        }
+
+        const isDaily = currentCollectionTab === "daily";
+        let csvContent = "data:text/csv;charset=utf-8,";
+
+        if (isDaily) {
+            csvContent += "Date,Day,Total Tokens,Online Paid,Offline Walkin,Completed Consultations,Day Collection (INR)\n";
+            (cachedCollectionSummary.daily_history || []).forEach(row => {
+                csvContent += `"${row.date}","${row.day_name || ''}",${row.total_tokens},${row.online_tokens},${row.walkin_tokens},${row.completed_tokens},${row.collection}\n`;
+            });
+        } else {
+            csvContent += "Month,Month Name,Total Tokens,Online Paid,Offline Walkin,Completed Consultations,Month Collection (INR)\n";
+            (cachedCollectionSummary.monthly_history || []).forEach(row => {
+                csvContent += `"${row.month}","${row.month_name}",${row.total_tokens},${row.online_tokens},${row.walkin_tokens},${row.completed_tokens},${row.collection}\n`;
+            });
+        }
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `CarePath_Token_Collection_${isDaily ? 'Daily' : 'Monthly'}_${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function openCollectionHistoryModal() {
+        const modal = document.getElementById("collectionHistoryModal");
+        if (modal) {
+            modal.style.display = "flex";
+            renderCollectionHistoryTable();
+        }
+    }
+
+    function closeCollectionHistoryModal() {
+        const modal = document.getElementById("collectionHistoryModal");
+        if (modal) modal.style.display = "none";
+    }
+    
 </script>
 
 </body>

@@ -547,6 +547,7 @@ async function loadDashboard() {
         await Promise.allSettled([
             loadDashboardHospitals(),
             loadRevenue(),
+            loadAdminCollectionSummary(),
             loadAnalytics()
         ]);
 
@@ -3776,3 +3777,191 @@ function closeAuditLogModal() {
     if (modal) modal.style.display = "none";
 }
 window.closeAuditLogModal = closeAuditLogModal;
+
+
+// =====================================================
+// MASTER ADMIN TOKEN COLLECTION HISTORY (DAILY / MONTHLY)
+// =====================================================
+let adminCollectionTab = "daily";
+let cachedAdminCollectionData = null;
+
+async function loadAdminCollectionSummary() {
+    try {
+        const response = await fetch(`${API}/admin/collection-summary`, {
+            headers: getAdminAuthHeaders()
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            cachedAdminCollectionData = data;
+
+            // Update Today and This Month KPI displays
+            const todayCollEl = document.getElementById("adminTodayCollection");
+            if (todayCollEl) todayCollEl.textContent = `₹${Number(data.today?.total_gross || 0).toLocaleString()}`;
+
+            const monthCollEl = document.getElementById("adminMonthCollection");
+            if (monthCollEl) monthCollEl.textContent = `₹${Number(data.this_month?.total_gross || 0).toLocaleString()}`;
+
+            renderAdminCollectionTable();
+        }
+    } catch (err) {
+        console.warn("Could not load admin collection summary:", err);
+    }
+}
+window.loadAdminCollectionSummary = loadAdminCollectionSummary;
+
+function switchAdminCollectionTab(tab) {
+    adminCollectionTab = tab;
+    const btnDaily = document.getElementById("adminTabDaily");
+    const btnMonthly = document.getElementById("adminTabMonthly");
+
+    if (tab === "daily") {
+        if (btnDaily) {
+            btnDaily.style.background = "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)";
+            btnDaily.style.color = "white";
+        }
+        if (btnMonthly) {
+            btnMonthly.style.background = "transparent";
+            btnMonthly.style.color = "#64748b";
+        }
+    } else {
+        if (btnDaily) {
+            btnDaily.style.background = "transparent";
+            btnDaily.style.color = "#64748b";
+        }
+        if (btnMonthly) {
+            btnMonthly.style.background = "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)";
+            btnMonthly.style.color = "white";
+        }
+    }
+
+    renderAdminCollectionTable();
+}
+window.switchAdminCollectionTab = switchAdminCollectionTab;
+
+function renderAdminCollectionTable() {
+    if (!cachedAdminCollectionData) return;
+
+    const searchInput = document.getElementById("adminCollectionSearch");
+    const query = (searchInput ? searchInput.value : "").trim().toLowerCase();
+
+    const tbody = document.getElementById("adminCollectionTableBody");
+    const theadRow = document.getElementById("adminCollectionHeadRow");
+    if (!tbody) return;
+
+    if (adminCollectionTab === "daily") {
+        if (theadRow) {
+            theadRow.innerHTML = `
+                <th style="padding: 12px 16px;">Date (Day)</th>
+                <th style="padding: 12px 16px;">Total Tokens</th>
+                <th style="padding: 12px 16px;">Online Paid</th>
+                <th style="padding: 12px 16px;">Walk-in</th>
+                <th style="padding: 12px 16px;">Hospital Share (₹)</th>
+                <th style="padding: 12px 16px;">Platform Fee (₹)</th>
+                <th style="padding: 12px 16px; text-align: right;">Total Gross (₹)</th>
+            `;
+        }
+
+        let list = cachedAdminCollectionData.daily_history || [];
+        if (query) {
+            list = list.filter(item => (item.date || "").includes(query) || (item.date_display || "").toLowerCase().includes(query));
+        }
+
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 24px; color: #94a3b8;">No daily records found.</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        list.forEach(item => {
+            const isToday = item.date === cachedAdminCollectionData.today?.date;
+            const badge = isToday ? '<span style="background: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; margin-left: 6px; border: 1px solid #bfdbfe;">Today</span>' : '';
+
+            html += `
+                <tr style="border-bottom: 1px solid #f1f5f9; ${isToday ? 'background: #f8fafc;' : ''}">
+                    <td style="padding: 12px 16px; font-weight: 700; color: #0f172a;">${item.date_display || item.date} ${badge}</td>
+                    <td style="padding: 12px 16px; font-weight: 700; color: #0284c7;">${item.total_tokens}</td>
+                    <td style="padding: 12px 16px; color: #059669;">${item.online_tokens}</td>
+                    <td style="padding: 12px 16px; color: #d97706;">${item.walkin_tokens}</td>
+                    <td style="padding: 12px 16px; font-weight: 600; color: #334155;">₹${Number(item.hospital_collection || 0).toLocaleString()}</td>
+                    <td style="padding: 12px 16px; font-weight: 600; color: #7c3aed;">₹${Number(item.platform_fee || 0).toLocaleString()}</td>
+                    <td style="padding: 12px 16px; text-align: right; font-weight: 800; color: #16a34a; font-size: 14px;">₹${Number(item.total_gross || 0).toLocaleString()}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    } else {
+        // MONTHLY VIEW
+        if (theadRow) {
+            theadRow.innerHTML = `
+                <th style="padding: 12px 16px;">Month / Year</th>
+                <th style="padding: 12px 16px;">Total Tokens</th>
+                <th style="padding: 12px 16px;">Online Paid</th>
+                <th style="padding: 12px 16px;">Walk-in</th>
+                <th style="padding: 12px 16px;">Hospital Share (₹)</th>
+                <th style="padding: 12px 16px;">Platform Fee (₹)</th>
+                <th style="padding: 12px 16px; text-align: right;">Total Gross (₹)</th>
+            `;
+        }
+
+        let list = cachedAdminCollectionData.monthly_history || [];
+        if (query) {
+            list = list.filter(item => (item.month || "").includes(query) || (item.month_name || "").toLowerCase().includes(query));
+        }
+
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 24px; color: #94a3b8;">No monthly records found.</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        list.forEach(item => {
+            const badge = item.is_current ? '<span style="background: #fdf2f8; color: #be185d; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; margin-left: 6px; border: 1px solid #fbcfe8;">Current Month</span>' : '';
+
+            html += `
+                <tr style="border-bottom: 1px solid #f1f5f9; ${item.is_current ? 'background: #fdf4ff;' : ''}">
+                    <td style="padding: 12px 16px; font-weight: 700; color: #0f172a;">${item.month_name || item.month} ${badge}</td>
+                    <td style="padding: 12px 16px; font-weight: 700; color: #0284c7;">${item.total_tokens}</td>
+                    <td style="padding: 12px 16px; color: #059669;">${item.online_tokens}</td>
+                    <td style="padding: 12px 16px; color: #d97706;">${item.walkin_tokens}</td>
+                    <td style="padding: 12px 16px; font-weight: 600; color: #334155;">₹${Number(item.hospital_collection || 0).toLocaleString()}</td>
+                    <td style="padding: 12px 16px; font-weight: 600; color: #7c3aed;">₹${Number(item.platform_fee || 0).toLocaleString()}</td>
+                    <td style="padding: 12px 16px; text-align: right; font-weight: 800; color: #16a34a; font-size: 14.5px;">₹${Number(item.total_gross || 0).toLocaleString()}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+}
+window.renderAdminCollectionTable = renderAdminCollectionTable;
+
+function exportAdminCollectionCSV() {
+    if (!cachedAdminCollectionData) {
+        alert("No collection data available to export.");
+        return;
+    }
+
+    const isDaily = adminCollectionTab === "daily";
+    let csv = "data:text/csv;charset=utf-8,";
+
+    if (isDaily) {
+        csv += "Date,Day,Total Tokens,Online Paid,Offline Walkin,Hospital Share (INR),Platform Fee (INR),Total Gross (INR)\n";
+        (cachedAdminCollectionData.daily_history || []).forEach(r => {
+            csv += `"${r.date}","${r.day_name || ''}",${r.total_tokens},${r.online_tokens},${r.walkin_tokens},${r.hospital_collection},${r.platform_fee},${r.total_gross}\n`;
+        });
+    } else {
+        csv += "Month,Month Name,Total Tokens,Online Paid,Offline Walkin,Hospital Share (INR),Platform Fee (INR),Total Gross (INR)\n";
+        (cachedAdminCollectionData.monthly_history || []).forEach(r => {
+            csv += `"${r.month}","${r.month_name}",${r.total_tokens},${r.online_tokens},${r.walkin_tokens},${r.hospital_collection},${r.platform_fee},${r.total_gross}\n`;
+        });
+    }
+
+    const uri = encodeURI(csv);
+    const link = document.createElement("a");
+    link.href = uri;
+    link.download = `CarePath_Platform_Collection_${isDaily ? 'Daily' : 'Monthly'}_${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+window.exportAdminCollectionCSV = exportAdminCollectionCSV;

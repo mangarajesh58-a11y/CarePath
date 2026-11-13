@@ -224,6 +224,14 @@
     <div class="revenue-card">
         <h2>💰 Financial Breakdown & Payment Splits</h2>
         <div class="revenue-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+            <div style="background: #f0f9ff; padding: 12px; border-radius: 10px; border: 1.5px solid #bae6fd;">
+                <span style="color: #0369a1; font-weight: 700;">Today's Collection</span>
+                <strong id="adminTodayCollection" style="color: #0284c7; font-size: 20px;">₹0</strong>
+            </div>
+            <div style="background: #faf5ff; padding: 12px; border-radius: 10px; border: 1.5px solid #e9d5ff;">
+                <span style="color: #6b21a8; font-weight: 700;">This Month's Collection</span>
+                <strong id="adminMonthCollection" style="color: #7c3aed; font-size: 20px;">₹0</strong>
+            </div>
             <div>
                 <span>Token Fee (To Hospitals)</span>
                 <strong id="tokenRevenue">₹0</strong>
@@ -244,6 +252,58 @@
                 <span>Total Gross Collected</span>
                 <strong id="totalCollected">₹0</strong>
             </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         PLATFORM-WIDE TOKEN COLLECTION HISTORY (PER DAY & PER MONTH)
+    ===================================================== -->
+    <div class="analytics-section" style="border-top: 4px solid #7c3aed;">
+        <div class="analytics-header">
+            <div>
+                <h2 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                    <span>💰</span> Platform Token Collection History
+                </h2>
+                <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">
+                    Master OPD token fee collection records <strong>per day (Today)</strong> and <strong>per month (Monthly)</strong> across all hospitals
+                </p>
+            </div>
+
+            <!-- Segmented Tabs: Daily vs Monthly -->
+            <div style="display: inline-flex; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 12px; padding: 4px; gap: 4px;">
+                <button type="button" id="adminTabDaily" onclick="switchAdminCollectionTab('daily')" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                    📅 Per Day History
+                </button>
+                <button type="button" id="adminTabMonthly" onclick="switchAdminCollectionTab('monthly')" style="background: transparent; color: #64748b; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                    🗓️ Per Month History
+                </button>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+            <input type="text" id="adminCollectionSearch" placeholder="Filter by date or month..." oninput="renderAdminCollectionTable()" style="padding: 8px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; width: 260px; outline: none;">
+            <button type="button" onclick="exportAdminCollectionCSV()" style="padding: 7px 14px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                📥 Export CSV Report
+            </button>
+        </div>
+
+        <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                <thead>
+                    <tr id="adminCollectionHeadRow" style="background: #f8fafc; color: #475569; border-bottom: 1.5px solid #e2e8f0;">
+                        <th style="padding: 12px 16px;">Date / Period</th>
+                        <th style="padding: 12px 16px;">Total Tokens</th>
+                        <th style="padding: 12px 16px;">Online Paid</th>
+                        <th style="padding: 12px 16px;">Walk-in</th>
+                        <th style="padding: 12px 16px;">Hospital Collection (₹)</th>
+                        <th style="padding: 12px 16px;">Platform Fee (₹)</th>
+                        <th style="padding: 12px 16px; text-align: right;">Total Gross (₹)</th>
+                    </tr>
+                </thead>
+                <tbody id="adminCollectionTableBody">
+                    <tr><td colspan="7" style="text-align: center; padding: 24px; color: #94a3b8;">Loading collection history...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
