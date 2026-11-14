@@ -1578,6 +1578,65 @@
         gap: 22px !important;
       }
     }
+
+    /* Floating CarePath AI Assistant Button */
+    .carepath-ai-floating-btn {
+      position: fixed !important;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 82px) !important;
+      right: 18px !important;
+      z-index: 9998 !important;
+      background: linear-gradient(135deg, #7c3aed 0%, #0284c7 100%) !important;
+      border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+      border-radius: 999px !important;
+      padding: 7px 15px 7px 9px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      font-size: 13px !important;
+      cursor: pointer !important;
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5), 0 0 16px rgba(56, 189, 248, 0.4) !important;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      text-decoration: none !important;
+    }
+
+    .carepath-ai-floating-btn:hover {
+      transform: translateY(-2px) scale(1.05) !important;
+      box-shadow: 0 8px 25px rgba(124, 58, 237, 0.65), 0 0 22px rgba(56, 189, 248, 0.5) !important;
+    }
+
+    .carepath-ai-floating-btn:active {
+      transform: scale(0.96) !important;
+    }
+
+    .carepath-ai-floating-btn .ai-btn-img {
+      width: 28px !important;
+      height: 28px !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+      display: block !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .carepath-ai-floating-btn .ai-btn-label {
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      letter-spacing: -0.2px !important;
+    }
+
+    @media (min-width: 768px) {
+      .carepath-ai-floating-btn {
+        bottom: 24px !important;
+        right: 28px !important;
+        padding: 9px 18px 9px 11px !important;
+        font-size: 13.5px !important;
+      }
+      .carepath-ai-floating-btn .ai-btn-img {
+        width: 32px !important;
+        height: 32px !important;
+      }
+    }
   </style>
 </head>
 
@@ -1884,14 +1943,17 @@
   </nav>
 
 <!-- CarePath AI Assistant (Accessible via central 'AI Scan' in bottom dock & hero action card; hidden here to prevent overlapping Profile dock button) -->
+<!-- CarePath AI Floating Assistant Button -->
 <button
   type="button"
-  id="carepathAIButton" onclick="toggleCarePathAIChat(event)"
+  id="carepathAIButton"
+  class="carepath-ai-floating-btn"
+  onclick="toggleCarePathAIChat(event)"
   aria-label="Open CarePath AI Assistant"
   title="CarePath AI Assistant"
-  style="display: none !important; visibility: hidden !important; pointer-events: none !important;"
 >
-  <img src="carepath-ai.png" alt="CarePath AI" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+  <img src="carepath-ai-small.png" alt="CarePath AI" class="ai-btn-img" onerror="this.onerror=null; this.src='carepath-ai.png';">
+  <span class="ai-btn-label">CarePath AI</span>
 </button>
 
 
@@ -4384,6 +4446,18 @@ function escapeHtml(str) {
       }
     } catch(e) {}
   }
+</script>
+<script>
+  // Auto-open AI Chat if requested via URL (?ai=open or #ai)
+  try {
+    if (window.location.search.includes("ai=open") || window.location.hash.includes("ai")) {
+      setTimeout(function() {
+        if (typeof toggleCarePathAIChat === "function") {
+          toggleCarePathAIChat();
+        }
+      }, 350);
+    }
+  } catch(e) {}
 </script>
 </body>
 </html>
