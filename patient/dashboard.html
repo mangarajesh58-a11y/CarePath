@@ -1579,67 +1579,155 @@
       }
     }
 
-    /* Floating CarePath AI Assistant Button */
-    .carepath-ai-floating-btn,
-    #carepathAIButton {
-      position: fixed !important;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 82px) !important;
-      right: 18px !important;
-      z-index: 9998 !important;
-      background: linear-gradient(135deg, #7c3aed 0%, #0284c7 100%) !important;
-      border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
-      border-radius: 999px !important;
-      padding: 7px 15px 7px 9px !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 8px !important;
-      color: #ffffff !important;
-      font-weight: 800 !important;
-      font-size: 13px !important;
-      cursor: pointer !important;
-      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5), 0 0 16px rgba(56, 189, 248, 0.4) !important;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-      text-decoration: none !important;
-    }
+    /* ============================================================
+   CAREPATH AI FLOATING BUTTON (PERFECT CIRCLE & CINEMATIC MOTION)
+============================================================ */
+.carepath-ai-floating-btn,
+#carepathAIButton {
+  position: fixed !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 88px) !important;
+  right: 16px !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: 10001 !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #0284c7 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+  border-radius: 999px !important;
+  padding: 6px 16px 6px 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  cursor: pointer !important;
+  box-shadow: 0 6px 22px rgba(124, 58, 237, 0.55), 0 0 18px rgba(56, 189, 248, 0.4) !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease !important;
+  text-decoration: none !important;
+  overflow: hidden !important;
+  width: auto !important;
+  min-width: auto !important;
+  max-width: none !important;
+  height: 46px !important;
+  box-sizing: border-box !important;
+}
 
-    .carepath-ai-floating-btn:hover,
-    #carepathAIButton:hover {
-      transform: translateY(-2px) scale(1.05) !important;
-      box-shadow: 0 8px 25px rgba(124, 58, 237, 0.65), 0 0 22px rgba(56, 189, 248, 0.5) !important;
-    }
+.carepath-ai-floating-btn:hover,
+#carepathAIButton:hover {
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 10px 28px rgba(124, 58, 237, 0.7), 0 0 24px rgba(56, 189, 248, 0.55) !important;
+  color: #ffffff !important;
+}
 
-    .carepath-ai-floating-btn:active,
-    #carepathAIButton:active {
-      transform: scale(0.96) !important;
-    }
+.carepath-ai-floating-btn:active,
+#carepathAIButton:active {
+  transform: scale(0.95) !important;
+}
 
-    .carepath-ai-floating-btn .ai-btn-img {
-      width: 28px !important;
-      height: 28px !important;
-      border-radius: 50% !important;
-      object-fit: cover !important;
-      display: block !important;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
-    }
+/* Perfect circular logo */
+.carepath-ai-floating-btn .ai-btn-img,
+#carepathAIButton img,
+#carepathAIButton .ai-btn-img {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  display: block !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
 
-    .carepath-ai-floating-btn .ai-btn-label {
-      color: #ffffff !important;
-      font-weight: 800 !important;
-      letter-spacing: -0.2px !important;
-    }
+/* Typography with cinematic sliding/collapsing animation */
+.carepath-ai-floating-btn .ai-btn-label,
+#carepathAIButton .ai-btn-label,
+#carepathAIButton span:not(.ai-badge) {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+  letter-spacing: -0.2px !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
+  max-width: 140px !important;
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+  margin-left: 8px !important;
+  padding: 0 !important;
+  display: inline-block !important;
+  transition: max-width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.35s ease,
+              transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              margin 0.35s ease !important;
+}
 
-    @media (min-width: 768px) {
-      .carepath-ai-floating-btn {
-        bottom: 24px !important;
-        right: 28px !important;
-        padding: 9px 18px 9px 11px !important;
-        font-size: 13.5px !important;
-      }
-      .carepath-ai-floating-btn .ai-btn-img {
-        width: 32px !important;
-        height: 32px !important;
-      }
-    }
+/* Collapsed Circular Emblem State (When scrolling up) */
+.carepath-ai-floating-btn.ai-btn-collapsed,
+#carepathAIButton.ai-btn-collapsed {
+  padding: 6px !important;
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6), 0 0 16px rgba(56, 189, 248, 0.45) !important;
+}
+
+.carepath-ai-floating-btn.ai-btn-collapsed .ai-btn-label,
+#carepathAIButton.ai-btn-collapsed .ai-btn-label,
+#carepathAIButton.ai-btn-collapsed span:not(.ai-badge) {
+  max-width: 0 !important;
+  opacity: 0 !important;
+  transform: translateX(10px) !important;
+  margin-left: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hovering over collapsed button always expands full name smoothly */
+.carepath-ai-floating-btn.ai-btn-collapsed:hover,
+#carepathAIButton.ai-btn-collapsed:hover {
+  padding: 6px 16px 6px 6px !important;
+  width: auto !important;
+  border-radius: 999px !important;
+}
+.carepath-ai-floating-btn.ai-btn-collapsed:hover .ai-btn-label,
+#carepathAIButton.ai-btn-collapsed:hover .ai-btn-label,
+#carepathAIButton.ai-btn-collapsed:hover span:not(.ai-badge) {
+  max-width: 140px !important;
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+  margin-left: 8px !important;
+}
+
+@media (min-width: 768px) {
+  .carepath-ai-floating-btn,
+  #carepathAIButton {
+    bottom: 24px !important;
+    right: 28px !important;
+    height: 48px !important;
+    padding: 7px 18px 7px 7px !important;
+    font-size: 13.5px !important;
+  }
+  .carepath-ai-floating-btn .ai-btn-img,
+  #carepathAIButton img,
+  #carepathAIButton .ai-btn-img {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+  }
+  .carepath-ai-floating-btn.ai-btn-collapsed,
+  #carepathAIButton.ai-btn-collapsed {
+    width: 48px !important;
+    height: 48px !important;
+    padding: 7px !important;
+  }
+}
   </style>
 </head>
 
@@ -4461,6 +4549,39 @@ function escapeHtml(str) {
       }, 350);
     }
   } catch(e) {}
+</script>
+<script>
+  // =====================================================
+  // CAREPATH AI CINEMATIC SCROLL MOTION
+  // =====================================================
+  (function initCarePathAIScrollMotion() {
+    let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    let scrollTimer = null;
+    const btn = document.getElementById("carepathAIButton");
+    if (!btn) return;
+
+    window.addEventListener("scroll", function() {
+      const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      const diff = currentScrollY - lastScrollY;
+
+      // Scrolling up: smoothly collapse label, showing only circular logo emblem
+      // Scrolling down or near top of page: expand with cinematic motion
+      if (diff < -4 && currentScrollY > 60) {
+        btn.classList.add("ai-btn-collapsed");
+      } else if (diff > 4 || currentScrollY <= 30) {
+        btn.classList.remove("ai-btn-collapsed");
+      }
+
+      lastScrollY = currentScrollY;
+
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function() {
+        if ((window.pageYOffset || document.documentElement.scrollTop || 0) < 40) {
+          btn.classList.remove("ai-btn-collapsed");
+        }
+      }, 1500);
+    }, { passive: true });
+  })();
 </script>
 </body>
 </html>
