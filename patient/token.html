@@ -1329,10 +1329,18 @@ function showReceipt(details) {
             status: token.status || "waiting",
             doctor_room_number: roomVal,
             patient_email: receiptEmail,
-            created_at: new Date().toISOString()
+            total_amount: Number(total) || 0,
+            token_fee: Number(fee) || 0,
+            platform_fee: Number(platformFee) || 0,
+            payment_status: "paid",
+            payment_id: paymentId,
+            order_id: orderId,
+            created_at: token.created_at || new Date().toISOString()
         };
-        const updatedList = [newTokenEntry, ...cachedList.filter(x => x.id !== newTokenEntry.id)];
+        const updatedList = [newTokenEntry, ...cachedList.filter(x => String(x.id) !== String(newTokenEntry.id))];
         localStorage.setItem("carepath_cached_tokens", JSON.stringify(updatedList));
+        localStorage.setItem("carepath_all_booked_tokens", JSON.stringify(updatedList));
+        localStorage.setItem("lastBookedTokenDetails", JSON.stringify(details));
     } catch(e) {}
 }
 

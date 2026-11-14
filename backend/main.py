@@ -6853,10 +6853,15 @@ def resend_token_receipt(
     token = db.query(Token).filter(Token.id == token_id).first()
     if not token:
         raise HTTPException(status_code=404, detail="Token not found.")
-    if token.patient_id != current_user["user_id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to access this token.")
-
     patient = db.query(Patient).filter(Patient.id == current_user["user_id"]).first()
+    authorized = (token.patient_id == current_user["user_id"])
+    if not authorized and patient:
+        if patient.email and token.patient_email and patient.email.strip().lower() == token.patient_email.strip().lower():
+            authorized = True
+        elif patient.phone and token.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token.patient_phone).strip().replace(" ", "").replace("-", ""):
+            authorized = True
+    if not authorized:
+        raise HTTPException(status_code=403, detail="Not authorized to access this token.")
     hospital = db.query(Hospital).filter(Hospital.id == token.hospital_id).first()
     h_name = hospital.name if hospital else (token.hospital or "CarePath Hospital")
     op_hours = (
@@ -6948,15 +6953,53 @@ def get_patient_token_history(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("patient")),
 ):
+    patient_id = current_user["user_id"]
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+
+    filter_conditions = [Token.patient_id == patient_id]
+
+    if patient:
+        if patient.email and patient.email.strip():
+            filter_conditions.append(func.lower(Token.patient_email) == patient.email.strip().lower())
+        if patient.phone and patient.phone.strip():
+            clean_phone = patient.phone.strip().replace(" ", "").replace("-", "")
+            filter_conditions.append(Token.patient_phone == patient.phone)
+            filter_conditions.append(Token.patient_phone == clean_phone)
+            if clean_phone.startswith("+91"):
+                filter_conditions.append(Token.patient_phone == clean_phone[3:])
+                filter_conditions.append(Token.notes.ilike(f"%{clean_phone[3:]}%"))
+            elif len(clean_phone) == 10:
+                filter_conditions.append(Token.patient_phone == f"+91{clean_phone}")
+                filter_conditions.append(Token.notes.ilike(f"%{clean_phone}%"))
+        if patient.full_name and patient.full_name.strip():
+            filter_conditions.append(
+                and_(
+                    Token.patient_id == None,
+                    func.lower(Token.patient_name) == patient.full_name.strip().lower()
+                )
+            )
+
     tokens = (
         db.query(Token)
-        .filter(Token.patient_id == current_user["user_id"])
+        .filter(or_(*filter_conditions))
         .order_by(
             Token.appointment_date.desc(),
             Token.created_at.desc()
         )
         .all()
     )
+
+    # Auto-link unlinked tokens to this patient so future queries are instant
+    updated = False
+    for token in tokens:
+        if token.patient_id is None:
+            token.patient_id = patient_id
+            updated = True
+    if updated:
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
 
     results = []
     for token in tokens:
@@ -6974,12 +7017,21 @@ def get_patient_single_token(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("patient")),
 ):
+    patient_id = current_user["user_id"]
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+
+    filter_conditions = [and_(Token.id == token_id, Token.patient_id == patient_id)]
+    if patient:
+        if patient.email and patient.email.strip():
+            filter_conditions.append(and_(Token.id == token_id, func.lower(Token.patient_email) == patient.email.strip().lower()))
+        if patient.phone and patient.phone.strip():
+            clean_phone = patient.phone.strip().replace(" ", "").replace("-", "")
+            filter_conditions.append(and_(Token.id == token_id, Token.patient_phone == patient.phone))
+            filter_conditions.append(and_(Token.id == token_id, Token.patient_phone == clean_phone))
+
     token = (
         db.query(Token)
-        .filter(
-            Token.id == token_id,
-            Token.patient_id == current_user["user_id"],
-        )
+        .filter(or_(*filter_conditions))
         .first()
     )
 
@@ -6988,6 +7040,13 @@ def get_patient_single_token(
             status_code=404,
             detail="Token record not found.",
         )
+
+    if token.patient_id is None:
+        token.patient_id = patient_id
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
 
     return token_to_dict(token)
 
@@ -7252,9 +7311,21 @@ def create_walk_in_token(
             notes_parts.append(str(data.notes).strip())
         walkin_notes = " | ".join(notes_parts) if notes_parts else None
 
+        phone_val = str(data.patient_phone).strip() if getattr(data, "patient_phone", None) and str(data.patient_phone).strip() else None
+        matching_patient = None
+        if phone_val:
+            clean_p = phone_val.replace(" ", "").replace("-", "")
+            p_queries = [Patient.phone == phone_val, Patient.phone == clean_p]
+            if clean_p.startswith("+91"):
+                p_queries.append(Patient.phone == clean_p[3:])
+            elif len(clean_p) == 10:
+                p_queries.append(Patient.phone == f"+91{clean_p}")
+            matching_patient = db.query(Patient).filter(or_(*p_queries)).first()
+
         token = Token(
-            patient_id=None,
+            patient_id=matching_patient.id if matching_patient else None,
             patient_name=patient_name,
+            patient_phone=phone_val,
             hospital=hospital.name,
             hospital_id=authenticated_hospital_id,
             department=department,

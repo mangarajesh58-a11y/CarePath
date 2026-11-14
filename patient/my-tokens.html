@@ -797,26 +797,87 @@
 
     document.getElementById("welcomePatient").textContent = `Logged in as ${patientName}`;
 
-        // ============================================================
+    // ============================================================
     // 0ms INSTANT TOKEN CACHE & REAL-TIME QUEUE ENGINE
     // ============================================================
     function loadInstantCachedTokens() {
-      try {
-        // Check primary cache key as well as fallback storage keys
-        const raw = localStorage.getItem("carepath_cached_tokens") ||
-                    localStorage.getItem("bookedTokens") ||
-                    localStorage.getItem("patientTokens") ||
-                    localStorage.getItem("myTokens");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            allTokens = parsed;
-            updateStats(allTokens);
-            renderTokens(allTokens);
-            return true;
+      const mergedMap = new Map();
+
+      function addTokensToMap(list) {
+        if (!Array.isArray(list)) return;
+        list.forEach(t => {
+          if (!t) return;
+          const key = String(t.id || (t.token_number + "_" + (t.appointment_date || "") + "_" + (t.doctor || "")));
+          if (!mergedMap.has(key)) {
+            mergedMap.set(key, t);
           }
+        });
+      }
+
+      try {
+        // 1. Primary cache keys
+        const primaryKeys = ["carepath_cached_tokens", "carepath_all_booked_tokens", "bookedTokens", "patientTokens", "myTokens", "patient_tokens_history"];
+        primaryKeys.forEach(k => {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) addTokensToMap(parsed);
+              else if (parsed && typeof parsed === "object") addTokensToMap([parsed]);
+            } catch (e) {}
+          }
+        });
+
+        // 2. Check lastBookedTokenDetails
+        const lastDetailsRaw = localStorage.getItem("lastBookedTokenDetails");
+        if (lastDetailsRaw) {
+          try {
+            const details = JSON.parse(lastDetailsRaw);
+            if (details && (details.token || details.token_number)) {
+              const tk = details.token || details;
+              const actualPatient = (tk && tk.patient_name) || (details.bData && details.bData.patient_name) || patientName;
+              const receiptEmail = (tk && tk.patient_email) || (details.bData && details.bData.patient_email) || "";
+              const roomVal = (tk && (tk.doctor_room_number || tk.room_number)) || details.roomVal || "Consultation Room";
+              const entry = {
+                id: tk.id || ("tk_" + Date.now()),
+                token_number: tk.token_number || 1,
+                patient_name: actualPatient,
+                doctor: details.doctor || tk.doctor || "Consultant",
+                department: details.department || tk.department || "General",
+                hospital: details.hospital || tk.hospital || "CarePath Hospital",
+                appointment_date: details.appointmentDate || tk.appointment_date || new Date().toISOString().split("T")[0],
+                status: tk.status || "waiting",
+                doctor_room_number: roomVal,
+                patient_email: receiptEmail,
+                total_amount: Number(details.total || tk.total_amount) || 0,
+                token_fee: Number(details.fee || tk.token_fee) || 0,
+                platform_fee: Number(details.platformFee || tk.platform_fee) || 0,
+                payment_status: "paid",
+                created_at: tk.created_at || new Date().toISOString()
+              };
+              const key = String(entry.id || (entry.token_number + "_" + entry.appointment_date + "_" + entry.doctor));
+              if (!mergedMap.has(key)) {
+                mergedMap.set(key, entry);
+              }
+            }
+          } catch(e) {}
         }
-      } catch (e) {}
+
+        if (mergedMap.size > 0) {
+          allTokens = Array.from(mergedMap.values());
+          allTokens.sort((a, b) => {
+            const dateA = a.appointment_date || a.created_at || "";
+            const dateB = b.appointment_date || b.created_at || "";
+            if (dateB !== dateA) return dateB.localeCompare(dateA);
+            return (Number(b.token_number) || 0) - (Number(a.token_number) || 0);
+          });
+          updateStats(allTokens);
+          renderTokens(allTokens);
+          return true;
+        }
+      } catch (e) {
+        console.warn("Instant token cache read error:", e);
+      }
 
       // If no tokens in local cache, immediately render clean empty state (0ms, zero spinner wait!)
       const container = document.getElementById("tokensList");
@@ -830,7 +891,7 @@
     // 0ms instant render from memory cache
     loadInstantCachedTokens();
 
-    // Load Token History (Background Silent Sync)
+    // Load Token History (Background Silent Sync with Intelligent Non-Destructive Merge)
     async function loadTokenHistory() {
       const container = document.getElementById("tokensList");
       const emptyState = document.getElementById("emptyState");
@@ -854,10 +915,47 @@
           throw new Error("Unable to fetch token history.");
         }
 
-        allTokens = await response.json();
-        try {
-          localStorage.setItem("carepath_cached_tokens", JSON.stringify(allTokens));
-        } catch (e) {}
+        const remoteTokens = await response.json();
+
+        // Intelligent Non-Destructive Merge:
+        // Remote server has authoritative queue statuses, but local cache must NEVER be wiped if remote is empty
+        const mergedMap = new Map();
+
+        // 1. First add remote tokens
+        if (Array.isArray(remoteTokens)) {
+          remoteTokens.forEach(t => {
+            if (!t) return;
+            const key = String(t.id || (t.token_number + "_" + (t.appointment_date || "") + "_" + (t.doctor || "")));
+            mergedMap.set(key, t);
+          });
+        }
+
+        // 2. Merge local tokens so previously booked tokens are ALWAYS preserved
+        (allTokens || []).forEach(localT => {
+          if (!localT) return;
+          const key = String(localT.id || (localT.token_number + "_" + (localT.appointment_date || "") + "_" + (localT.doctor || "")));
+          if (!mergedMap.has(key)) {
+            mergedMap.set(key, localT);
+          } else {
+            const remoteT = mergedMap.get(key);
+            mergedMap.set(key, Object.assign({}, localT, remoteT));
+          }
+        });
+
+        allTokens = Array.from(mergedMap.values());
+        allTokens.sort((a, b) => {
+          const dateA = a.appointment_date || a.created_at || "";
+          const dateB = b.appointment_date || b.created_at || "";
+          if (dateB !== dateA) return dateB.localeCompare(dateA);
+          return (Number(b.token_number) || 0) - (Number(a.token_number) || 0);
+        });
+
+        if (allTokens.length > 0) {
+          try {
+            localStorage.setItem("carepath_cached_tokens", JSON.stringify(allTokens));
+            localStorage.setItem("carepath_all_booked_tokens", JSON.stringify(allTokens));
+          } catch (e) {}
+        }
 
         // Check if any token just transitioned to 'serving'
         allTokens.forEach(t => {
@@ -879,12 +977,18 @@
         window.carepathPrevTokenStatuses = previousTokenStatuses;
 
         updateStats(allTokens);
-        renderTokens(allTokens);
+        if (currentFilter === "all") {
+          renderTokens(allTokens);
+        } else {
+          applyFilter(currentFilter);
+        }
 
       } catch (err) {
         console.warn("Silent token sync error:", err);
         // Seamless fallback: keep existing tokens or clean empty state without alarming banner
         if (allTokens && allTokens.length > 0) {
+          updateStats(allTokens);
+          renderTokens(allTokens);
           return;
         }
         if (emptyState) emptyState.style.display = "block";
@@ -1069,17 +1173,17 @@
                 ✓ Payment Confirmed
               </span>
               ${t.prescription ? `
-                <button class="btn-receipt" onclick="openPatientRxModal(${t.id})" style="background:#16a34a; margin-right:8px;">
+                <button class="btn-receipt" onclick="openPatientRxModal('${t.id}')" style="background:#16a34a; margin-right:8px;">
                   📋 Prescription
                 </button>
               ` : ""}
-              <button class="btn-receipt" onclick="shareWhatsAppSlip(${t.id})" style="background: #25D366; color: white; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px;">
+              <button class="btn-receipt" onclick="shareWhatsAppSlip('${t.id}')" style="background: #25D366; color: white; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px;">
                 📲 WhatsApp Slip
               </button>
-              <button class="btn-receipt" onclick="promptEmailReceipt(${t.id}, '${escapeHtml(t.patient_email || '')}')" style="background: #0284c7; color: white; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px;">
+              <button class="btn-receipt" onclick="promptEmailReceipt('${t.id}', '${escapeHtml(t.patient_email || '')}')" style="background: #0284c7; color: white; margin-right: 8px; display: inline-flex; align-items: center; gap: 4px;">
                 ✉️ Email Receipt
               </button>
-              <button class="btn-receipt" onclick="openReceiptModal(${t.id})">
+              <button class="btn-receipt" onclick="openReceiptModal('${t.id}')">
                 🧾 View Receipt
               </button>
             </div>
@@ -1091,7 +1195,7 @@
     }
 
     function openReceiptModal(tokenId) {
-      const t = allTokens.find(item => item.id === tokenId);
+      const t = allTokens.find(item => String(item.id) === String(tokenId));
       if (!t) return;
 
       const modalContent = document.getElementById("modalContent");
@@ -1177,7 +1281,7 @@
 
         // Update in-memory token list so UI reflects the new recipient email immediately
         if (typeof allTokens !== "undefined" && Array.isArray(allTokens)) {
-          const t = allTokens.find(x => x.id === tokenId);
+          const t = allTokens.find(x => String(x.id) === String(tokenId));
           if (t) t.patient_email = enteredEmail.trim();
           renderTokens(allTokens);
         }
@@ -1215,7 +1319,7 @@
 
     <script>
     function openPatientRxModal(tokenId) {
-      const token = allTokens.find(t => t.id === tokenId);
+      const token = allTokens.find(t => String(t.id) === String(tokenId));
       if (!token) return;
       document.getElementById("rxModalHospital").textContent = token.hospital || "CarePath Healthcare";
       document.getElementById("rxModalBody").innerHTML = `
@@ -1389,7 +1493,7 @@
     }
 
     function shareWhatsAppSlip(tokenId) {
-      const t = (allTokens || []).find(item => item.id === tokenId);
+      const t = (allTokens || []).find(item => String(item.id) === String(tokenId));
       if (!t) return;
 
       const rawRoom = t.doctor_room_number || t.room_number ? (String(t.doctor_room_number || t.room_number).startsWith('Room') ? (t.doctor_room_number || t.room_number) : 'Room ' + (t.doctor_room_number || t.room_number)) : 'OPD Consultation Room';
