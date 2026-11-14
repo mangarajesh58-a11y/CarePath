@@ -822,6 +822,99 @@
       }
     }
 
+  
+    /* ============================================================
+       CAREPATH AI FLOATING BUTTON (UNIFIED ACROSS ALL PAGES)
+    ============================================================ */
+    .carepath-ai-floating-btn,
+    #carepathAIButton {
+      position: fixed !important;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 82px) !important;
+      right: 16px !important;
+      left: auto !important;
+      top: auto !important;
+      z-index: 9998 !important;
+      background: linear-gradient(135deg, #7c3aed 0%, #0284c7 100%) !important;
+      border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+      border-radius: 999px !important;
+      padding: 7px 15px 7px 9px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      font-size: 13px !important;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+      cursor: pointer !important;
+      box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5), 0 0 16px rgba(56, 189, 248, 0.4) !important;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+      text-decoration: none !important;
+      width: auto !important;
+      min-width: auto !important;
+      max-width: none !important;
+      height: auto !important;
+      overflow: visible !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
+    .carepath-ai-floating-btn:hover,
+    #carepathAIButton:hover {
+      transform: translateY(-2px) scale(1.05) !important;
+      box-shadow: 0 8px 25px rgba(124, 58, 237, 0.65), 0 0 22px rgba(56, 189, 248, 0.5) !important;
+      color: #ffffff !important;
+    }
+
+    .carepath-ai-floating-btn:active,
+    #carepathAIButton:active {
+      transform: scale(0.96) !important;
+    }
+
+    .carepath-ai-floating-btn .ai-btn-img,
+    #carepathAIButton img,
+    #carepathAIButton .ai-btn-img {
+      width: 28px !important;
+      height: 28px !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+      display: block !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+      border: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .carepath-ai-floating-btn .ai-btn-label,
+    #carepathAIButton .ai-btn-label,
+    #carepathAIButton span:not(.ai-badge) {
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      font-size: 13px !important;
+      letter-spacing: -0.2px !important;
+      display: inline-block !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      line-height: 1 !important;
+    }
+
+    @media (min-width: 768px) {
+      .carepath-ai-floating-btn,
+      #carepathAIButton {
+        bottom: 24px !important;
+        right: 28px !important;
+        padding: 9px 18px 9px 11px !important;
+        font-size: 13.5px !important;
+      }
+      .carepath-ai-floating-btn .ai-btn-img,
+      #carepathAIButton img,
+      #carepathAIButton .ai-btn-img {
+        width: 32px !important;
+        height: 32px !important;
+      }
+    }
+
   </style>
 </head>
 
