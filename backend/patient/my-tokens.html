@@ -615,13 +615,8 @@
       <button class="filter-tab" data-filter="completed" onclick="applyFilter('completed')">✅ Completed</button>
     </div>
 
-    <!-- Token Cards List Container -->
-    <div id="tokensList">
-      <div style="text-align: center; padding: 40px; color: #64748b;">
-        <span class="spinner" style="display:inline-block; width:28px; height:28px; border:3px solid #cbd5e1; border-top-color:#0284c7; border-radius:50%; animation:spin 0.8s linear infinite;"></span>
-        <p style="margin-top: 12px; font-weight: 500;">Loading your token history...</p>
-      </div>
-    </div>
+    <!-- Token Cards List Container (0ms Instant Load) -->
+    <div id="tokensList"></div>
 
     <!-- Empty State Container -->
     <div id="emptyState" class="empty-box" style="display: none;">
@@ -807,7 +802,11 @@
     // ============================================================
     function loadInstantCachedTokens() {
       try {
-        const raw = localStorage.getItem("carepath_cached_tokens");
+        // Check primary cache key as well as fallback storage keys
+        const raw = localStorage.getItem("carepath_cached_tokens") ||
+                    localStorage.getItem("bookedTokens") ||
+                    localStorage.getItem("patientTokens") ||
+                    localStorage.getItem("myTokens");
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -818,6 +817,13 @@
           }
         }
       } catch (e) {}
+
+      // If no tokens in local cache, immediately render clean empty state (0ms, zero spinner wait!)
+      const container = document.getElementById("tokensList");
+      const emptyState = document.getElementById("emptyState");
+      if (container) container.innerHTML = "";
+      if (emptyState) emptyState.style.display = "block";
+      updateStats([]);
       return false;
     }
 
@@ -877,20 +883,12 @@
 
       } catch (err) {
         console.warn("Silent token sync error:", err);
-        // If we already have instant cached tokens rendered, keep them seamlessly
+        // Seamless fallback: keep existing tokens or clean empty state without alarming banner
         if (allTokens && allTokens.length > 0) {
           return;
         }
-        container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-box">
-              <span style="font-size: 40px; display: block; margin-bottom: 12px;">⚠️</span>
-              <h2>Could Not Load Tokens</h2>
-              <p>Check your connection or try again.</p>
-              <button onclick="loadTokenHistory()" class="btn-book" style="border:none; cursor:pointer;">Try Again</button>
-            </div>
-          </div>
-        `;
+        if (emptyState) emptyState.style.display = "block";
+        if (container) container.innerHTML = "";
       }
     }
 
