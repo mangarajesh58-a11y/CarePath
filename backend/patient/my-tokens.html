@@ -406,22 +406,191 @@
       color: #f1f5f9 !important;
     }
 
+  
+    /* =====================================================
+       DESKTOP FULL SCREEN RESPONSIVENESS & TOP NAVIGATION
+       ===================================================== */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 19, 41, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(30, 41, 59, 0.9);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      margin-bottom: 20px;
+    }
+
+    .desktop-top-nav {
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .desktop-nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 12px;
+      color: #94a3bd;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      background: rgba(17, 26, 48, 0.7);
+    }
+
+    .desktop-nav-link:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .desktop-nav-link.active {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .desktop-nav-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .btn-topbar-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #111a30;
+      border: 1px solid #1e293b;
+      color: #94a3bd;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-topbar-icon:hover, .btn-topbar-icon:active {
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    @media (min-width: 768px) {
+      .tokens-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 28px 40px !important;
+        box-sizing: border-box !important;
+      }
+      .topbar {
+        padding: 12px 28px !important;
+        margin: 0 -28px 24px -28px !important;
+        width: calc(100% + 56px) !important;
+        box-sizing: border-box !important;
+      }
+      .desktop-top-nav {
+        display: flex !important;
+      }
+      .mobile-bottom-dock {
+        display: none !important;
+      }
+      html, body {
+        padding-bottom: 40px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      #tokensList {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)) !important;
+        gap: 18px !important;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 16px !important;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .tokens-container {
+        padding: 0 36px 44px !important;
+      }
+      .topbar {
+        padding: 14px 36px !important;
+        margin: 0 -36px 28px -36px !important;
+        width: calc(100% + 72px) !important;
+      }
+      #tokensList {
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)) !important;
+        gap: 22px !important;
+      }
+    }
+
   </style>
 </head>
 <body>
 
   <div class="tokens-container">
-    <!-- Header -->
-    <div class="tokens-header">
-      <a href="dashboard.html" class="btn-back">
-        ← Dashboard
-      </a>
-      <div class="header-titles">
-        <h1>🎟️ My Booked Tokens</h1>
-        <p id="welcomePatient">View and track all your hospital appointments</p>
+        <!-- Sticky Top Navigation Header -->
+    <header class="topbar">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <a href="dashboard.html" class="btn-topbar-icon" title="Back to Dashboard" style="text-decoration: none;">
+          ←
+        </a>
+        <div class="header-titles">
+          <h1 style="margin: 0; font-size: 17px; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
+            🎟️ My Tokens <span style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-size: 11px; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">Live</span>
+          </h1>
+        </div>
       </div>
-      <div></div>
-    </div>
+
+      <!-- Desktop Navigation Bar (Visible on tablets & desktop >= 768px) -->
+      <nav class="desktop-top-nav" aria-label="Desktop Navigation">
+        <a href="dashboard.html" class="desktop-nav-link">
+          <span class="desktop-nav-icon">🏥</span>
+          <span>Hospitals</span>
+        </a>
+        <a href="doctor.html" class="desktop-nav-link">
+          <span class="desktop-nav-icon">🩺</span>
+          <span>Doctors</span>
+        </a>
+        <a href="my-tokens.html" class="desktop-nav-link active">
+          <span class="desktop-nav-icon">🎟️</span>
+          <span>Tokens</span>
+        </a>
+        <a href="profile.html" class="desktop-nav-link">
+          <span class="desktop-nav-icon">👤</span>
+          <span>Profile</span>
+        </a>
+      </nav>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button
+          type="button"
+          id="btnToggleFullscreen"
+          class="btn-topbar-icon"
+          onclick="toggleFullScreenMode()"
+          title="Toggle Full Screen Mode"
+          aria-label="Full Screen"
+        >
+          ⛶
+        </button>
+        <button type="button" class="btn-topbar-icon" onclick="loadMyTokens()" title="Refresh Tokens" aria-label="Refresh">
+          🔄
+        </button>
+      </div>
+    </header>
+
 
     <!-- Stats -->
     <div class="stats-grid">
@@ -483,6 +652,136 @@
 
   <style>
     @keyframes spin { to { transform: rotate(360deg); } }
+  
+    /* =====================================================
+       DESKTOP FULL SCREEN RESPONSIVENESS & TOP NAVIGATION
+       ===================================================== */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 19, 41, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(30, 41, 59, 0.9);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      margin-bottom: 20px;
+    }
+
+    .desktop-top-nav {
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .desktop-nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 12px;
+      color: #94a3bd;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      background: rgba(17, 26, 48, 0.7);
+    }
+
+    .desktop-nav-link:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .desktop-nav-link.active {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .desktop-nav-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .btn-topbar-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #111a30;
+      border: 1px solid #1e293b;
+      color: #94a3bd;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-topbar-icon:hover, .btn-topbar-icon:active {
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    @media (min-width: 768px) {
+      .tokens-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 28px 40px !important;
+        box-sizing: border-box !important;
+      }
+      .topbar {
+        padding: 12px 28px !important;
+        margin: 0 -28px 24px -28px !important;
+        width: calc(100% + 56px) !important;
+        box-sizing: border-box !important;
+      }
+      .desktop-top-nav {
+        display: flex !important;
+      }
+      .mobile-bottom-dock {
+        display: none !important;
+      }
+      html, body {
+        padding-bottom: 40px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      #tokensList {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)) !important;
+        gap: 18px !important;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 16px !important;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .tokens-container {
+        padding: 0 36px 44px !important;
+      }
+      .topbar {
+        padding: 14px 36px !important;
+        margin: 0 -36px 28px -36px !important;
+        width: calc(100% + 72px) !important;
+      }
+      #tokensList {
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)) !important;
+        gap: 22px !important;
+      }
+    }
+
   </style>
 
   <script src="./carepath-permissions.js"></script>
@@ -1120,24 +1419,53 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
 
 
   <!-- Native Mobile Bottom Dock -->
+    <!-- Native Mobile Bottom Dock -->
   <nav class="mobile-bottom-dock" aria-label="Mobile Navigation">
     <a href="dashboard.html" class="dock-item">
       <span class="dock-icon">🏥</span>
       <span>Hospitals</span>
     </a>
+    <a href="doctor.html" class="dock-item">
+      <span class="dock-icon">🩺</span>
+      <span>Doctors</span>
+    </a>
     <a href="my-tokens.html" class="dock-item active">
       <span class="dock-icon">🎟️</span>
       <span>Tokens</span>
     </a>
-    <div class="dock-item dock-ai-pill" onclick="window.location.href='dashboard.html#ai'" style="cursor: pointer;">
-      <span class="dock-icon" style="font-size: 20px;">✨</span>
-      <span>AI Scan</span>
-    </div>
     <a href="profile.html" class="dock-item">
       <span class="dock-icon">👤</span>
       <span>Profile</span>
     </a>
   </nav>
+
+  <!-- Floating CarePath AI Assistant Button -->
+  <a
+    href="dashboard.html?ai=open"
+    id="carepathAIButton"
+    class="carepath-ai-floating-btn"
+    title="Open CarePath AI Assistant & Prescription Scanner"
+    aria-label="CarePath AI Assistant"
+  >
+    <img src="carepath-ai-small.png" alt="CarePath AI" class="ai-btn-img" onerror="this.onerror=null; this.src='carepath-ai.png';">
+    <span class="ai-btn-label">CarePath AI</span>
+  </a>
+
+  <script>
+    function toggleFullScreenMode() {
+      try {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          const root = document.documentElement;
+          if (root.requestFullscreen) root.requestFullscreen();
+          else if (root.webkitRequestFullscreen) root.webkitRequestFullscreen();
+        } else {
+          if (document.exitFullscreen) document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+      } catch(e) {}
+    }
+  </script>
+
 </body>
 
 </html>

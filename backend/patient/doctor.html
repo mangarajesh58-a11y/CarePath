@@ -837,7 +837,8 @@
     }
 
     /* Floating CarePath AI Assistant Button */
-    .carepath-ai-floating-btn {
+    .carepath-ai-floating-btn,
+    #carepathAIButton {
       position: fixed !important;
       bottom: calc(env(safe-area-inset-bottom, 0px) + 82px) !important;
       right: 18px !important;
@@ -858,12 +859,14 @@
       text-decoration: none !important;
     }
 
-    .carepath-ai-floating-btn:hover {
+    .carepath-ai-floating-btn:hover,
+    #carepathAIButton:hover {
       transform: translateY(-2px) scale(1.05) !important;
       box-shadow: 0 8px 25px rgba(124, 58, 237, 0.65), 0 0 22px rgba(56, 189, 248, 0.5) !important;
     }
 
-    .carepath-ai-floating-btn:active {
+    .carepath-ai-floating-btn:active,
+    #carepathAIButton:active {
       transform: scale(0.96) !important;
     }
 

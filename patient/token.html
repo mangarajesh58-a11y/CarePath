@@ -162,12 +162,147 @@
             #bookingSection, .no-print, #message { display: none !important; }
             #receiptSection { display: block !important; }
         }
+    
+    /* =====================================================
+       DESKTOP FULL SCREEN RESPONSIVENESS & TOP NAVIGATION
+       ===================================================== */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+      margin: -20px -20px 20px -20px;
+    }
+
+    .desktop-top-nav {
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .desktop-nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 12px;
+      color: #64748b;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      background: #f1f5f9;
+    }
+
+    .desktop-nav-link:hover {
+      color: #0f172a;
+      background: #e2e8f0;
+    }
+
+    .desktop-nav-link.active {
+      color: #0284c7;
+      background: #e0f2fe;
+      border-color: #7dd3fc;
+    }
+
+    .desktop-nav-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .btn-topbar-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: white;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-topbar-icon:hover {
+      border-color: #0284c7;
+      color: #0284c7;
+    }
+
+    @media (min-width: 768px) {
+      .topbar {
+        padding: 12px 28px !important;
+        margin: -20px -20px 24px -20px !important;
+      }
+      .desktop-top-nav {
+        display: flex !important;
+      }
+      .container {
+        max-width: 800px !important;
+      }
+    }
+
     </style>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="carepath-ai-small.png">
 </head>
 
 <body>
+<header class="topbar no-print">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <button type="button" class="btn-topbar-icon" onclick="history.back()" title="Back" style="background: white; border: 1px solid #cbd5e1; color: #0284c7; cursor: pointer; text-decoration: none;">
+      ←
+    </button>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <h1 style="margin: 0; font-size: 16px; color: #0f172a; font-weight: 800;">CarePath</h1>
+      <span style="font-size: 12px; color: #64748b; font-weight: 600;">Confirm Appointment</span>
+    </div>
+  </div>
+
+  <!-- Desktop Navigation Bar (Visible on tablets & desktop >= 768px) -->
+  <nav class="desktop-top-nav" aria-label="Desktop Navigation">
+    <a href="dashboard.html" class="desktop-nav-link">
+      <span class="desktop-nav-icon">🏥</span>
+      <span>Hospitals</span>
+    </a>
+    <a href="doctor.html" class="desktop-nav-link active">
+      <span class="desktop-nav-icon">🩺</span>
+      <span>Doctors</span>
+    </a>
+    <a href="my-tokens.html" class="desktop-nav-link">
+      <span class="desktop-nav-icon">🎟️</span>
+      <span>Tokens</span>
+    </a>
+    <a href="profile.html" class="desktop-nav-link">
+      <span class="desktop-nav-icon">👤</span>
+      <span>Profile</span>
+    </a>
+  </nav>
+
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <button
+      type="button"
+      id="btnToggleFullscreen"
+      class="btn-topbar-icon"
+      onclick="toggleFullScreenMode()"
+      title="Toggle Full Screen Mode"
+      aria-label="Full Screen"
+    >
+      ⛶
+    </button>
+  </div>
+</header>
+
 <main class="container">
     <section id="bookingSection">
         <h1>🏥 CarePath</h1>
@@ -1256,6 +1391,32 @@ const returnedOrderId = params.get("cashfree_order_id");
 if (returnedOrderId) {
     verifyPaymentAndCreateToken(returnedOrderId);
 }
+</script>
+<!-- Floating CarePath AI Assistant Button -->
+<a
+  href="dashboard.html?ai=open"
+  id="carepathAIButton"
+  class="carepath-ai-floating-btn"
+  title="Open CarePath AI Assistant & Prescription Scanner"
+  aria-label="CarePath AI Assistant"
+>
+  <img src="carepath-ai-small.png" alt="CarePath AI" class="ai-btn-img" onerror="this.onerror=null; this.src='carepath-ai.png';">
+  <span class="ai-btn-label">CarePath AI</span>
+</a>
+
+<script>
+  function toggleFullScreenMode() {
+    try {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        const root = document.documentElement;
+        if (root.requestFullscreen) root.requestFullscreen();
+        else if (root.webkitRequestFullscreen) root.webkitRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      }
+    } catch(e) {}
+  }
 </script>
 </body>
 </html>

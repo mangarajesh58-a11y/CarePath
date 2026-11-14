@@ -722,6 +722,106 @@
       box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
       margin-top: -6px;
     }
+  
+    /* =====================================================
+       DESKTOP FULL SCREEN RESPONSIVENESS & TOP NAVIGATION
+       ===================================================== */
+    .desktop-top-nav {
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .desktop-nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 12px;
+      color: #94a3bd;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      background: rgba(17, 26, 48, 0.7);
+    }
+
+    .desktop-nav-link:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .desktop-nav-link.active {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .desktop-nav-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .btn-topbar-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-topbar-icon:hover, .btn-topbar-icon:active {
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    @media (min-width: 768px) {
+      .app-shell {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 28px 40px !important;
+        box-sizing: border-box !important;
+      }
+      .topbar {
+        padding: 12px 28px !important;
+        margin: 0 -28px 24px -28px !important;
+        width: calc(100% + 56px) !important;
+        box-sizing: border-box !important;
+      }
+      .desktop-top-nav {
+        display: flex !important;
+      }
+      .mobile-bottom-dock {
+        display: none !important;
+      }
+      html, body {
+        padding-bottom: 40px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      .app-shell {
+        padding: 0 36px 44px !important;
+      }
+      .topbar {
+        padding: 14px 36px !important;
+        margin: 0 -36px 28px -36px !important;
+        width: calc(100% + 72px) !important;
+      }
+    }
+
   </style>
 </head>
 
@@ -729,15 +829,51 @@
   <div class="app-shell">
 
     <!-- Sticky Top Navigation Bar -->
-    <header class="topbar">
-      <a href="dashboard.html" class="back-btn" aria-label="Back to dashboard">
-        <span>←</span>
-        <span>Hospitals</span>
-      </a>
-      <h1 class="topbar-title">👤 Patient Profile</h1>
-      <button type="button" class="btn-logout" id="btnLogoutTop" title="Sign Out" onclick="handleLogout()">
-        🚪
-      </button>
+        <header class="topbar">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <a href="dashboard.html" class="btn-topbar-icon" title="Back to Dashboard" style="text-decoration: none;">
+          ←
+        </a>
+        <h1 class="topbar-title" style="margin: 0; font-size: 17px; font-weight: 800;">
+          👤 Patient Profile
+        </h1>
+      </div>
+
+      <!-- Desktop Navigation Bar (Visible on tablets & desktop >= 768px) -->
+      <nav class="desktop-top-nav" aria-label="Desktop Navigation">
+        <a href="dashboard.html" class="desktop-nav-link">
+          <span class="desktop-nav-icon">🏥</span>
+          <span>Hospitals</span>
+        </a>
+        <a href="doctor.html" class="desktop-nav-link">
+          <span class="desktop-nav-icon">🩺</span>
+          <span>Doctors</span>
+        </a>
+        <a href="my-tokens.html" class="desktop-nav-link">
+          <span class="desktop-nav-icon">🎟️</span>
+          <span>Tokens</span>
+        </a>
+        <a href="profile.html" class="desktop-nav-link active">
+          <span class="desktop-nav-icon">👤</span>
+          <span>Profile</span>
+        </a>
+      </nav>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button
+          type="button"
+          id="btnToggleFullscreen"
+          class="btn-topbar-icon"
+          onclick="toggleFullScreenMode()"
+          title="Toggle Full Screen Mode"
+          aria-label="Full Screen"
+        >
+          ⛶
+        </button>
+        <button class="btn-logout" onclick="handleLogout()" title="Sign Out" aria-label="Sign out">
+          <span style="font-size: 15px;">⎋</span>
+        </button>
+      </div>
     </header>
 
     <!-- Guest / Unauthenticated State -->
@@ -951,24 +1087,53 @@
   </div>
 
   <!-- Native Mobile Bottom Navigation Dock -->
+    <!-- Native Mobile Bottom Dock -->
   <nav class="mobile-bottom-dock" aria-label="Mobile Navigation">
     <a href="dashboard.html" class="dock-item">
       <span class="dock-icon">🏥</span>
       <span>Hospitals</span>
     </a>
+    <a href="doctor.html" class="dock-item">
+      <span class="dock-icon">🩺</span>
+      <span>Doctors</span>
+    </a>
     <a href="my-tokens.html" class="dock-item">
       <span class="dock-icon">🎟️</span>
       <span>Tokens</span>
-    </a>
-    <a href="dashboard.html?ai=open" class="dock-item dock-ai-pill">
-      <img src="carepath-ai-small.png" alt="CarePath AI" class="dock-icon" style="width: 24px; height: 24px; border-radius: 7px; object-fit: cover; display: block; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.25);">
-      <span>AI Scan</span>
     </a>
     <a href="profile.html" class="dock-item active">
       <span class="dock-icon">👤</span>
       <span>Profile</span>
     </a>
   </nav>
+
+  <!-- Floating CarePath AI Assistant Button -->
+  <a
+    href="dashboard.html?ai=open"
+    id="carepathAIButton"
+    class="carepath-ai-floating-btn"
+    title="Open CarePath AI Assistant & Prescription Scanner"
+    aria-label="CarePath AI Assistant"
+  >
+    <img src="carepath-ai-small.png" alt="CarePath AI" class="ai-btn-img" onerror="this.onerror=null; this.src='carepath-ai.png';">
+    <span class="ai-btn-label">CarePath AI</span>
+  </a>
+
+  <script>
+    function toggleFullScreenMode() {
+      try {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          const root = document.documentElement;
+          if (root.requestFullscreen) root.requestFullscreen();
+          else if (root.webkitRequestFullscreen) root.webkitRequestFullscreen();
+        } else {
+          if (document.exitFullscreen) document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+      } catch(e) {}
+    }
+  </script>
+
 
   <!-- Profile & Theme Script Logic -->
   <script>
