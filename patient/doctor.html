@@ -1301,29 +1301,36 @@
     ];
 
     // ============================================================
-    // 2. PARSE HOSPITAL CONTEXT FROM URL OR LOCALSTORAGE
+    // 2. PARSE HOSPITAL CONTEXT FROM URL OR SHOW ALL DOCTORS
     // ============================================================
     const urlParams = new URLSearchParams(window.location.search);
     const urlHospId = urlParams.get("id") || urlParams.get("hospital_id") || urlParams.get("hospitalId");
 
-    if (urlHospId) {
-      localStorage.setItem("hospital_id", urlHospId);
-      localStorage.setItem("selectedHospitalId", urlHospId);
+    let activeHospitalId = null;
+    let activeHospitalName = null;
+
+    if (urlHospId && urlHospId.toUpperCase() !== "ALL") {
+      // User opened a specific hospital and clicked View & Book:
+      // Show ONLY that hospital's verified doctors!
+      activeHospitalId = String(urlHospId);
+      try {
+        localStorage.setItem("hospital_id", activeHospitalId);
+        localStorage.setItem("selectedHospitalId", activeHospitalId);
+        const match = PRESEED_HOSPITALS.find(h => String(h.id) === String(activeHospitalId));
+        if (match) activeHospitalName = match.name;
+      } catch (e) {}
+    } else {
+      // User clicked 'Doctors' from dashboard or nav dock:
+      // Show ALL doctors in our CarePath!
+      activeHospitalId = null;
+      activeHospitalName = null;
+      try {
+        localStorage.removeItem("hospital_id");
+        localStorage.removeItem("selectedHospitalId");
+        localStorage.removeItem("selectedHospital");
+        localStorage.removeItem("selectedHospitalName");
+      } catch (e) {}
     }
-
-    let selectedHospitalContext = null;
-    try {
-      const rawHosp = localStorage.getItem("selectedHospital");
-      if (rawHosp) selectedHospitalContext = JSON.parse(rawHosp);
-    } catch (e) {}
-
-    let activeHospitalId = urlHospId ||
-      localStorage.getItem("hospital_id") ||
-      localStorage.getItem("selectedHospitalId") ||
-      (selectedHospitalContext ? selectedHospitalContext.id : null);
-
-    let activeHospitalName = localStorage.getItem("selectedHospitalName") ||
-      (selectedHospitalContext ? selectedHospitalContext.name : null);
 
     let selectedDeptFilter = "";
 

@@ -818,8 +818,11 @@
       );
 
       selectButton.type = "button";
-      selectButton.addEventListener("click", function () {
+      selectButton.addEventListener("click", function (e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const id = hospitalId(hospital);
         selectHospital(hospital);
+        window.location.href = "./doctor.html?id=" + encodeURIComponent(id);
       });
       actionRow.appendChild(selectButton);
 
@@ -1076,6 +1079,6 @@
       JSON.stringify(existing.slice(0, 5))
     );
 
-    window.location.href = "./hospital-details.html";
+    window.location.href = "./hospital-details.html?id=" + encodeURIComponent(id);
   }
 })();

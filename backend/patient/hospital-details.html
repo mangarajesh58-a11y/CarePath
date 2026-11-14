@@ -657,7 +657,7 @@
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "continue-button";
-                button.textContent = "View Departments & Doctors →";
+                button.textContent = "View & Book Doctors →";
 
                 button.onclick = () => {
                     const hId = String(hospitalData.id ?? hospitalData.hospital_id);
@@ -667,7 +667,7 @@
                     localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
                     localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
 
-                    window.location.href = "./doctor.html";
+                    window.location.href = "./doctor.html?id=" + encodeURIComponent(hId);
                 };
 
                 hospitalContainer.appendChild(button);
@@ -811,17 +811,7 @@
 
         showHospitalDetails();
     </script>
-    <!-- Floating CarePath AI Assistant Button -->
-    <a
-        href="dashboard.html?ai=open"
-        id="carepathAIButton"
-        class="carepath-ai-floating-btn"
-        title="Open CarePath AI Assistant & Prescription Scanner"
-        aria-label="CarePath AI Assistant"
-    >
-        <img src="carepath-ai-small.png" alt="CarePath AI" class="ai-btn-img" onerror="this.onerror=null; this.src='carepath-ai.png';">
-        <span class="ai-btn-label">CarePath AI</span>
-    </a>
+    
 
     <script>
         function toggleFullScreenMode() {
