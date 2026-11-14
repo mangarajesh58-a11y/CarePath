@@ -2619,26 +2619,12 @@ async function loadDoctors() {
                         )}
                     </p>
 
-                    <p style="background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; margin: 10px 0;">
-                        <span><strong>🚪 Room / Cabin:</strong> <span style="color: #0284c7; font-weight: 700;">${escapeHtml(doctor.room_number || "Not assigned")}</span></span>
-                        <button
-                            type="button"
-                            onclick="promptEditDoctorRoom(${Number(doctor.id)}, '${escapeHtml(doctor.room_number || '')}')"
-                            style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;"
-                        >
-                            ✏️ Edit Room
-                        </button>
+                    <p style="background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 10px 0;">
+                        <strong>🚪 Room / Cabin:</strong> <span style="color: #0284c7; font-weight: 700;">${escapeHtml(doctor.room_number || "Not assigned")}</span>
                     </p>
 
-                    <p style="background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; margin: 10px 0;">
-                        <span><strong>🎫 Token / Consultation Fee:</strong> <span style="color: #0d9488; font-weight: 700;">₹${Number(doctor.token_fee != null ? doctor.token_fee : 50)}</span></span>
-                        <button
-                            type="button"
-                            onclick="promptEditDoctorFee(${Number(doctor.id)}, ${Number(doctor.token_fee != null ? doctor.token_fee : 50)})"
-                            style="background: #ccfbf1; color: #0d9488; border: 1px solid #99f6e4; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;"
-                        >
-                            ✏️ Edit Fee
-                        </button>
+                    <p style="background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 10px 0;">
+                        <strong>🎫 Token / Consultation Fee:</strong> <span style="color: #0d9488; font-weight: 700;">₹${Number(doctor.token_fee != null ? doctor.token_fee : 50)}</span>
                     </p>
 
                     <div style="display: flex; gap: 8px; margin: 10px 0;">
