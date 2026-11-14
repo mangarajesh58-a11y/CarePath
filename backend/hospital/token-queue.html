@@ -10,706 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <script src="./broadcast-banner.js">
-// =========================================================
-// TOKEN COLLECTION HISTORY & REVENUE TRACKING
-// =========================================================
-let currentCollectionTab = "daily";
-let cachedCollectionSummary = null;
-
-function scrollToCollectionHistory() {
-    const el = document.getElementById("collectionHistorySection");
-    if (el) el.scrollIntoView({ behavior: "smooth" });
-}
-
-async function fetchHospitalCollectionSummary() {
-    const hospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId") || "";
-    if (!hospId) return;
-
-    try {
-        const res = await fetch(`${API}/hospitals/${encodeURIComponent(hospId)}/collection-summary`, {
-            headers: authHeaders()
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            cachedCollectionSummary = data;
-
-            const todayColl = data.today ? Number(data.today.collection || 0) : 0;
-            const todayTok = data.today ? Number(data.today.total_tokens || 0) : 0;
-            const monthColl = data.this_month ? Number(data.this_month.collection || 0) : 0;
-            const monthTok = data.this_month ? Number(data.this_month.total_tokens || 0) : 0;
-            const allTimeColl = data.all_time ? Number(data.all_time.total_collection || 0) : 0;
-            const allTimeTok = data.all_time ? Number(data.all_time.total_tokens || 0) : 0;
-
-            const todayEl = document.getElementById("todayCollectionDisplay");
-            if (todayEl) todayEl.textContent = `₹${todayColl.toLocaleString()}`;
-
-            const todaySub = document.getElementById("todayCollectionTokensSub");
-            if (todaySub) todaySub.textContent = `${todayTok} tokens today`;
-
-            const monthEl = document.getElementById("monthCollectionDisplay");
-            if (monthEl) monthEl.textContent = `₹${monthColl.toLocaleString()}`;
-
-            const monthSub = document.getElementById("monthCollectionTokensSub");
-            if (monthSub) monthSub.textContent = `${monthTok} tokens (${data.this_month?.month_name || 'This Month'})`;
-
-            const kpiTodayColl = document.getElementById("kpiTodayCollection");
-            if (kpiTodayColl) kpiTodayColl.textContent = `₹${todayColl.toLocaleString()}`;
-
-            const kpiTodayTok = document.getElementById("kpiTodayTokens");
-            if (kpiTodayTok) kpiTodayTok.textContent = `${todayTok} Tokens Today`;
-
-            const kpiMonthColl = document.getElementById("kpiMonthCollection");
-            if (kpiMonthColl) kpiMonthColl.textContent = `₹${monthColl.toLocaleString()}`;
-
-            const kpiMonthTok = document.getElementById("kpiMonthTokens");
-            if (kpiMonthTok) kpiMonthTok.textContent = `${monthTok} Tokens (${data.this_month?.month_name || 'This Month'})`;
-
-            const kpiAllTimeColl = document.getElementById("kpiAllTimeCollection");
-            if (kpiAllTimeColl) kpiAllTimeColl.textContent = `₹${allTimeColl.toLocaleString()}`;
-
-            const kpiAllTimeTok = document.getElementById("kpiAllTimeTokens");
-            if (kpiAllTimeTok) kpiAllTimeTok.textContent = `${allTimeTok} Total Completed`;
-
-            renderCollectionHistoryTable();
-            return;
-        }
-    } catch(e) {
-        console.warn("Could not load hospital collection summary from API, using real-time computation:", e);
-    }
-
-    // Fallback real-time computation from allTokens
-    computeCollectionFromTokens();
-}
-
-function computeCollectionFromTokens() {
-    if (!Array.isArray(allTokens)) return;
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    const todayStr = `${y}-${m}-${d}`;
-    const thisMonthStr = `${y}-${m}`;
-
-    const hospFee = Number(localStorage.getItem("hospital_token_fee") || 50);
-
-    let todayCount = 0;
-    let todayRev = 0;
-    let monthCount = 0;
-    let monthRev = 0;
-    let allCount = 0;
-    let allRev = 0;
-
-    const dailyMap = {};
-    const monthlyMap = {};
-
-    allTokens.forEach(t => {
-        const tokenDate = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
-        const tokenMonth = tokenDate ? tokenDate.substring(0, 7) : '';
-        const fee = Number(t.fee || t.amount || t.token_fee || hospFee);
-        const isOnline = String(t.booking_type || "ONLINE").toUpperCase() === "ONLINE";
-        const isCompleted = normalStatus(t.status) === "completed";
-
-        allCount++;
-        allRev += fee;
-
-        if (tokenDate) {
-            if (!dailyMap[tokenDate]) {
-                const dateObj = new Date(tokenDate + "T00:00:00");
-                const dayName = isNaN(dateObj.getTime()) ? "" : dateObj.toLocaleDateString("en-US", { weekday: "short" });
-                dailyMap[tokenDate] = {
-                    date: tokenDate,
-                    day_name: dayName,
-                    total_tokens: 0,
-                    online_tokens: 0,
-                    walkin_tokens: 0,
-                    completed_tokens: 0,
-                    collection: 0
-                };
-            }
-            dailyMap[tokenDate].total_tokens++;
-            dailyMap[tokenDate].collection += fee;
-            if (isOnline) dailyMap[tokenDate].online_tokens++;
-            else dailyMap[tokenDate].walkin_tokens++;
-            if (isCompleted) dailyMap[tokenDate].completed_tokens++;
-        }
-
-        if (tokenMonth) {
-            if (!monthlyMap[tokenMonth]) {
-                const [my, mm] = tokenMonth.split("-");
-                const dateObj = new Date(Number(my), Number(mm) - 1, 1);
-                const monthName = isNaN(dateObj.getTime()) ? tokenMonth : dateObj.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-                monthlyMap[tokenMonth] = {
-                    month: tokenMonth,
-                    month_name: monthName,
-                    total_tokens: 0,
-                    online_tokens: 0,
-                    walkin_tokens: 0,
-                    completed_tokens: 0,
-                    collection: 0,
-                    is_current: tokenMonth === thisMonthStr
-                };
-            }
-            monthlyMap[tokenMonth].total_tokens++;
-            monthlyMap[tokenMonth].collection += fee;
-            if (isOnline) monthlyMap[tokenMonth].online_tokens++;
-            else monthlyMap[tokenMonth].walkin_tokens++;
-            if (isCompleted) monthlyMap[tokenMonth].completed_tokens++;
-        }
-
-        if (tokenDate === todayStr) {
-            todayCount++;
-            todayRev += fee;
-        }
-
-        if (tokenMonth === thisMonthStr) {
-            monthCount++;
-            monthRev += fee;
-        }
-    });
-
-    const todayEl = document.getElementById("todayCollectionDisplay");
-    if (todayEl) todayEl.textContent = `₹${todayRev.toLocaleString()}`;
-
-    const todaySub = document.getElementById("todayCollectionTokensSub");
-    if (todaySub) todaySub.textContent = `${todayCount} tokens today`;
-
-    const monthEl = document.getElementById("monthCollectionDisplay");
-    if (monthEl) monthEl.textContent = `₹${monthRev.toLocaleString()}`;
-
-    const monthSub = document.getElementById("monthCollectionTokensSub");
-    if (monthSub) monthSub.textContent = `${monthCount} tokens this month`;
-
-    const kpiTodayColl = document.getElementById("kpiTodayCollection");
-    if (kpiTodayColl) kpiTodayColl.textContent = `₹${todayRev.toLocaleString()}`;
-
-    const kpiTodayTok = document.getElementById("kpiTodayTokens");
-    if (kpiTodayTok) kpiTodayTok.textContent = `${todayCount} Tokens Today`;
-
-    const kpiMonthColl = document.getElementById("kpiMonthCollection");
-    if (kpiMonthColl) kpiMonthColl.textContent = `₹${monthRev.toLocaleString()}`;
-
-    const kpiMonthTok = document.getElementById("kpiMonthTokens");
-    if (kpiMonthTok) kpiMonthTok.textContent = `${monthCount} Tokens (This Month)`;
-
-    const kpiAllTimeColl = document.getElementById("kpiAllTimeCollection");
-    if (kpiAllTimeColl) kpiAllTimeColl.textContent = `₹${allRev.toLocaleString()}`;
-
-    const kpiAllTimeTok = document.getElementById("kpiAllTimeTokens");
-    if (kpiAllTimeTok) kpiAllTimeTok.textContent = `${allCount} Total Tokens`;
-
-    cachedCollectionSummary = {
-        today: { date: todayStr, collection: todayRev, total_tokens: todayCount },
-        this_month: { month: thisMonthStr, collection: monthRev, total_tokens: monthCount },
-        all_time: { total_collection: allRev, total_tokens: allCount },
-        daily_history: Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date)),
-        monthly_history: Object.values(monthlyMap).sort((a, b) => b.month.localeCompare(a.month))
-    };
-
-    renderCollectionHistoryTable();
-}
-
-function switchCollectionTab(tab) {
-    currentCollectionTab = tab;
-    const btnDaily = document.getElementById("tabDailyCollection");
-    const btnMonthly = document.getElementById("tabMonthlyCollection");
-
-    if (tab === "daily") {
-        if (btnDaily) {
-            btnDaily.style.background = "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)";
-            btnDaily.style.color = "white";
-        }
-        if (btnMonthly) {
-            btnMonthly.style.background = "transparent";
-            btnMonthly.style.color = "#64748b";
-        }
-    } else {
-        if (btnDaily) {
-            btnDaily.style.background = "transparent";
-            btnDaily.style.color = "#64748b";
-        }
-        if (btnMonthly) {
-            btnMonthly.style.background = "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)";
-            btnMonthly.style.color = "white";
-        }
-    }
-
-    renderCollectionHistoryTable();
-}
-
-function renderCollectionHistoryTable() {
-    if (!cachedCollectionSummary) return;
-
-    const searchInput = document.getElementById("collectionSearchInput");
-    const filterText = searchInput ? searchInput.value.trim().toLowerCase() : "";
-    const tbody = document.getElementById("collectionTableBody");
-    const theadRow = document.getElementById("collectionTableHeaderRow");
-
-    if (!tbody || !theadRow) return;
-
-    if (currentCollectionTab === "daily") {
-        theadRow.innerHTML = `
-            <th>Appointment Date</th>
-            <th>Day</th>
-            <th>Total Tokens</th>
-            <th>Online Paid</th>
-            <th>Offline Walk-in</th>
-            <th>Completed</th>
-            <th style="text-align: right;">Day Collection (₹)</th>
-        `;
-
-        let list = cachedCollectionSummary.daily_history || [];
-        if (filterText) {
-            list = list.filter(item => (item.date || "").includes(filterText) || (item.day_name || "").toLowerCase().includes(filterText));
-        }
-
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: #64748b;">No daily collection records found.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = list.map(item => {
-            const isToday = item.date === (cachedCollectionSummary.today?.date);
-            const badge = isToday ? '<span style="background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; margin-left: 6px;">Today</span>' : '';
-            return `
-                <tr style="${isToday ? 'background: #faf5ff;' : ''}">
-                    <td><strong>${escapeHtml(item.date)}</strong> ${badge}</td>
-                    <td><span style="font-weight: 600; color: #64748b;">${escapeHtml(item.day_name || '—')}</span></td>
-                    <td><strong style="color: #2563eb;">${item.total_tokens}</strong></td>
-                    <td><span style="color: #0284c7; font-weight: 600;">${item.online_tokens}</span></td>
-                    <td><span style="color: #059669; font-weight: 600;">${item.walkin_tokens}</span></td>
-                    <td><span style="color: #475569; font-weight: 600;">${item.completed_tokens}</span></td>
-                    <td style="text-align: right;">
-                        <strong style="font-family: 'JetBrains Mono', monospace; color: #16a34a; font-size: 14.5px;">
-                            ₹${Number(item.collection || 0).toLocaleString()}
-                        </strong>
-                    </td>
-                </tr>
-            `;
-        }).join("");
-
-    } else {
-        theadRow.innerHTML = `
-            <th>Month / Year</th>
-            <th>Total Tokens</th>
-            <th>Online Paid</th>
-            <th>Offline Walk-in</th>
-            <th>Completed</th>
-            <th style="text-align: right;">Month Collection (₹)</th>
-        `;
-
-        let list = cachedCollectionSummary.monthly_history || [];
-        if (filterText) {
-            list = list.filter(item => (item.month || "").includes(filterText) || (item.month_name || "").toLowerCase().includes(filterText));
-        }
-
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 24px; color: #64748b;">No monthly collection records found.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = list.map(item => {
-            const badge = item.is_current ? '<span style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; margin-left: 6px;">Current Month</span>' : '';
-            return `
-                <tr style="${item.is_current ? 'background: #f0fdf4;' : ''}">
-                    <td><strong>${escapeHtml(item.month_name || item.month)}</strong> ${badge}</td>
-                    <td><strong style="color: #2563eb;">${item.total_tokens}</strong></td>
-                    <td><span style="color: #0284c7; font-weight: 600;">${item.online_tokens}</span></td>
-                    <td><span style="color: #059669; font-weight: 600;">${item.walkin_tokens}</span></td>
-                    <td><span style="color: #475569; font-weight: 600;">${item.completed_tokens}</span></td>
-                    <td style="text-align: right;">
-                        <strong style="font-family: 'JetBrains Mono', monospace; color: #16a34a; font-size: 14.5px;">
-                            ₹${Number(item.collection || 0).toLocaleString()}
-                        </strong>
-                    </td>
-                </tr>
-            `;
-        }).join("");
-    }
-}
-
-function exportCollectionHistoryCSV() {
-    if (!cachedCollectionSummary) {
-        alert("No collection history available to export.");
-        return;
-    }
-
-    const isDaily = currentCollectionTab === "daily";
-    let csvContent = "data:text/csv;charset=utf-8,";
-
-    if (isDaily) {
-        csvContent += "Date,Day,Total Tokens,Online Paid,Offline Walkin,Completed Consultations,Day Collection (INR)\n";
-        (cachedCollectionSummary.daily_history || []).forEach(row => {
-            csvContent += `"${row.date}","${row.day_name || ''}",${row.total_tokens},${row.online_tokens},${row.walkin_tokens},${row.completed_tokens},${row.collection}\n`;
-        });
-    } else {
-        csvContent += "Month,Month Name,Total Tokens,Online Paid,Offline Walkin,Completed Consultations,Month Collection (INR)\n";
-        (cachedCollectionSummary.monthly_history || []).forEach(row => {
-            csvContent += `"${row.month}","${row.month_name}",${row.total_tokens},${row.online_tokens},${row.walkin_tokens},${row.completed_tokens},${row.collection}\n`;
-        });
-    }
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `CarePath_Token_Collection_${isDaily ? 'Daily' : 'Monthly'}_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-</script>
-    <script src="./carepath-permissions.js">
-// =========================================================
-// TOKEN COLLECTION HISTORY & REVENUE TRACKING
-// =========================================================
-let currentCollectionTab = "daily";
-let cachedCollectionSummary = null;
-
-function scrollToCollectionHistory() {
-    const el = document.getElementById("collectionHistorySection");
-    if (el) el.scrollIntoView({ behavior: "smooth" });
-}
-
-async function fetchHospitalCollectionSummary() {
-    const hospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId") || "";
-    if (!hospId) return;
-
-    try {
-        const res = await fetch(`${API}/hospitals/${encodeURIComponent(hospId)}/collection-summary`, {
-            headers: authHeaders()
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            cachedCollectionSummary = data;
-
-            const todayColl = data.today ? Number(data.today.collection || 0) : 0;
-            const todayTok = data.today ? Number(data.today.total_tokens || 0) : 0;
-            const monthColl = data.this_month ? Number(data.this_month.collection || 0) : 0;
-            const monthTok = data.this_month ? Number(data.this_month.total_tokens || 0) : 0;
-            const allTimeColl = data.all_time ? Number(data.all_time.total_collection || 0) : 0;
-            const allTimeTok = data.all_time ? Number(data.all_time.total_tokens || 0) : 0;
-
-            const todayEl = document.getElementById("todayCollectionDisplay");
-            if (todayEl) todayEl.textContent = `₹${todayColl.toLocaleString()}`;
-
-            const todaySub = document.getElementById("todayCollectionTokensSub");
-            if (todaySub) todaySub.textContent = `${todayTok} tokens today`;
-
-            const monthEl = document.getElementById("monthCollectionDisplay");
-            if (monthEl) monthEl.textContent = `₹${monthColl.toLocaleString()}`;
-
-            const monthSub = document.getElementById("monthCollectionTokensSub");
-            if (monthSub) monthSub.textContent = `${monthTok} tokens (${data.this_month?.month_name || 'This Month'})`;
-
-            const kpiTodayColl = document.getElementById("kpiTodayCollection");
-            if (kpiTodayColl) kpiTodayColl.textContent = `₹${todayColl.toLocaleString()}`;
-
-            const kpiTodayTok = document.getElementById("kpiTodayTokens");
-            if (kpiTodayTok) kpiTodayTok.textContent = `${todayTok} Tokens Today`;
-
-            const kpiMonthColl = document.getElementById("kpiMonthCollection");
-            if (kpiMonthColl) kpiMonthColl.textContent = `₹${monthColl.toLocaleString()}`;
-
-            const kpiMonthTok = document.getElementById("kpiMonthTokens");
-            if (kpiMonthTok) kpiMonthTok.textContent = `${monthTok} Tokens (${data.this_month?.month_name || 'This Month'})`;
-
-            const kpiAllTimeColl = document.getElementById("kpiAllTimeCollection");
-            if (kpiAllTimeColl) kpiAllTimeColl.textContent = `₹${allTimeColl.toLocaleString()}`;
-
-            const kpiAllTimeTok = document.getElementById("kpiAllTimeTokens");
-            if (kpiAllTimeTok) kpiAllTimeTok.textContent = `${allTimeTok} Total Completed`;
-
-            renderCollectionHistoryTable();
-            return;
-        }
-    } catch(e) {
-        console.warn("Could not load hospital collection summary from API, using real-time computation:", e);
-    }
-
-    // Fallback real-time computation from allTokens
-    computeCollectionFromTokens();
-}
-
-function computeCollectionFromTokens() {
-    if (!Array.isArray(allTokens)) return;
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    const todayStr = `${y}-${m}-${d}`;
-    const thisMonthStr = `${y}-${m}`;
-
-    const hospFee = Number(localStorage.getItem("hospital_token_fee") || 50);
-
-    let todayCount = 0;
-    let todayRev = 0;
-    let monthCount = 0;
-    let monthRev = 0;
-    let allCount = 0;
-    let allRev = 0;
-
-    const dailyMap = {};
-    const monthlyMap = {};
-
-    allTokens.forEach(t => {
-        const tokenDate = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
-        const tokenMonth = tokenDate ? tokenDate.substring(0, 7) : '';
-        const fee = Number(t.fee || t.amount || t.token_fee || hospFee);
-        const isOnline = String(t.booking_type || "ONLINE").toUpperCase() === "ONLINE";
-        const isCompleted = normalStatus(t.status) === "completed";
-
-        allCount++;
-        allRev += fee;
-
-        if (tokenDate) {
-            if (!dailyMap[tokenDate]) {
-                const dateObj = new Date(tokenDate + "T00:00:00");
-                const dayName = isNaN(dateObj.getTime()) ? "" : dateObj.toLocaleDateString("en-US", { weekday: "short" });
-                dailyMap[tokenDate] = {
-                    date: tokenDate,
-                    day_name: dayName,
-                    total_tokens: 0,
-                    online_tokens: 0,
-                    walkin_tokens: 0,
-                    completed_tokens: 0,
-                    collection: 0
-                };
-            }
-            dailyMap[tokenDate].total_tokens++;
-            dailyMap[tokenDate].collection += fee;
-            if (isOnline) dailyMap[tokenDate].online_tokens++;
-            else dailyMap[tokenDate].walkin_tokens++;
-            if (isCompleted) dailyMap[tokenDate].completed_tokens++;
-        }
-
-        if (tokenMonth) {
-            if (!monthlyMap[tokenMonth]) {
-                const [my, mm] = tokenMonth.split("-");
-                const dateObj = new Date(Number(my), Number(mm) - 1, 1);
-                const monthName = isNaN(dateObj.getTime()) ? tokenMonth : dateObj.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-                monthlyMap[tokenMonth] = {
-                    month: tokenMonth,
-                    month_name: monthName,
-                    total_tokens: 0,
-                    online_tokens: 0,
-                    walkin_tokens: 0,
-                    completed_tokens: 0,
-                    collection: 0,
-                    is_current: tokenMonth === thisMonthStr
-                };
-            }
-            monthlyMap[tokenMonth].total_tokens++;
-            monthlyMap[tokenMonth].collection += fee;
-            if (isOnline) monthlyMap[tokenMonth].online_tokens++;
-            else monthlyMap[tokenMonth].walkin_tokens++;
-            if (isCompleted) monthlyMap[tokenMonth].completed_tokens++;
-        }
-
-        if (tokenDate === todayStr) {
-            todayCount++;
-            todayRev += fee;
-        }
-
-        if (tokenMonth === thisMonthStr) {
-            monthCount++;
-            monthRev += fee;
-        }
-    });
-
-    const todayEl = document.getElementById("todayCollectionDisplay");
-    if (todayEl) todayEl.textContent = `₹${todayRev.toLocaleString()}`;
-
-    const todaySub = document.getElementById("todayCollectionTokensSub");
-    if (todaySub) todaySub.textContent = `${todayCount} tokens today`;
-
-    const monthEl = document.getElementById("monthCollectionDisplay");
-    if (monthEl) monthEl.textContent = `₹${monthRev.toLocaleString()}`;
-
-    const monthSub = document.getElementById("monthCollectionTokensSub");
-    if (monthSub) monthSub.textContent = `${monthCount} tokens this month`;
-
-    const kpiTodayColl = document.getElementById("kpiTodayCollection");
-    if (kpiTodayColl) kpiTodayColl.textContent = `₹${todayRev.toLocaleString()}`;
-
-    const kpiTodayTok = document.getElementById("kpiTodayTokens");
-    if (kpiTodayTok) kpiTodayTok.textContent = `${todayCount} Tokens Today`;
-
-    const kpiMonthColl = document.getElementById("kpiMonthCollection");
-    if (kpiMonthColl) kpiMonthColl.textContent = `₹${monthRev.toLocaleString()}`;
-
-    const kpiMonthTok = document.getElementById("kpiMonthTokens");
-    if (kpiMonthTok) kpiMonthTok.textContent = `${monthCount} Tokens (This Month)`;
-
-    const kpiAllTimeColl = document.getElementById("kpiAllTimeCollection");
-    if (kpiAllTimeColl) kpiAllTimeColl.textContent = `₹${allRev.toLocaleString()}`;
-
-    const kpiAllTimeTok = document.getElementById("kpiAllTimeTokens");
-    if (kpiAllTimeTok) kpiAllTimeTok.textContent = `${allCount} Total Tokens`;
-
-    cachedCollectionSummary = {
-        today: { date: todayStr, collection: todayRev, total_tokens: todayCount },
-        this_month: { month: thisMonthStr, collection: monthRev, total_tokens: monthCount },
-        all_time: { total_collection: allRev, total_tokens: allCount },
-        daily_history: Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date)),
-        monthly_history: Object.values(monthlyMap).sort((a, b) => b.month.localeCompare(a.month))
-    };
-
-    renderCollectionHistoryTable();
-}
-
-function switchCollectionTab(tab) {
-    currentCollectionTab = tab;
-    const btnDaily = document.getElementById("tabDailyCollection");
-    const btnMonthly = document.getElementById("tabMonthlyCollection");
-
-    if (tab === "daily") {
-        if (btnDaily) {
-            btnDaily.style.background = "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)";
-            btnDaily.style.color = "white";
-        }
-        if (btnMonthly) {
-            btnMonthly.style.background = "transparent";
-            btnMonthly.style.color = "#64748b";
-        }
-    } else {
-        if (btnDaily) {
-            btnDaily.style.background = "transparent";
-            btnDaily.style.color = "#64748b";
-        }
-        if (btnMonthly) {
-            btnMonthly.style.background = "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)";
-            btnMonthly.style.color = "white";
-        }
-    }
-
-    renderCollectionHistoryTable();
-}
-
-function renderCollectionHistoryTable() {
-    if (!cachedCollectionSummary) return;
-
-    const searchInput = document.getElementById("collectionSearchInput");
-    const filterText = searchInput ? searchInput.value.trim().toLowerCase() : "";
-    const tbody = document.getElementById("collectionTableBody");
-    const theadRow = document.getElementById("collectionTableHeaderRow");
-
-    if (!tbody || !theadRow) return;
-
-    if (currentCollectionTab === "daily") {
-        theadRow.innerHTML = `
-            <th>Appointment Date</th>
-            <th>Day</th>
-            <th>Total Tokens</th>
-            <th>Online Paid</th>
-            <th>Offline Walk-in</th>
-            <th>Completed</th>
-            <th style="text-align: right;">Day Collection (₹)</th>
-        `;
-
-        let list = cachedCollectionSummary.daily_history || [];
-        if (filterText) {
-            list = list.filter(item => (item.date || "").includes(filterText) || (item.day_name || "").toLowerCase().includes(filterText));
-        }
-
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 24px; color: #64748b;">No daily collection records found.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = list.map(item => {
-            const isToday = item.date === (cachedCollectionSummary.today?.date);
-            const badge = isToday ? '<span style="background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; margin-left: 6px;">Today</span>' : '';
-            return `
-                <tr style="${isToday ? 'background: #faf5ff;' : ''}">
-                    <td><strong>${escapeHtml(item.date)}</strong> ${badge}</td>
-                    <td><span style="font-weight: 600; color: #64748b;">${escapeHtml(item.day_name || '—')}</span></td>
-                    <td><strong style="color: #2563eb;">${item.total_tokens}</strong></td>
-                    <td><span style="color: #0284c7; font-weight: 600;">${item.online_tokens}</span></td>
-                    <td><span style="color: #059669; font-weight: 600;">${item.walkin_tokens}</span></td>
-                    <td><span style="color: #475569; font-weight: 600;">${item.completed_tokens}</span></td>
-                    <td style="text-align: right;">
-                        <strong style="font-family: 'JetBrains Mono', monospace; color: #16a34a; font-size: 14.5px;">
-                            ₹${Number(item.collection || 0).toLocaleString()}
-                        </strong>
-                    </td>
-                </tr>
-            `;
-        }).join("");
-
-    } else {
-        theadRow.innerHTML = `
-            <th>Month / Year</th>
-            <th>Total Tokens</th>
-            <th>Online Paid</th>
-            <th>Offline Walk-in</th>
-            <th>Completed</th>
-            <th style="text-align: right;">Month Collection (₹)</th>
-        `;
-
-        let list = cachedCollectionSummary.monthly_history || [];
-        if (filterText) {
-            list = list.filter(item => (item.month || "").includes(filterText) || (item.month_name || "").toLowerCase().includes(filterText));
-        }
-
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 24px; color: #64748b;">No monthly collection records found.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = list.map(item => {
-            const badge = item.is_current ? '<span style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; margin-left: 6px;">Current Month</span>' : '';
-            return `
-                <tr style="${item.is_current ? 'background: #f0fdf4;' : ''}">
-                    <td><strong>${escapeHtml(item.month_name || item.month)}</strong> ${badge}</td>
-                    <td><strong style="color: #2563eb;">${item.total_tokens}</strong></td>
-                    <td><span style="color: #0284c7; font-weight: 600;">${item.online_tokens}</span></td>
-                    <td><span style="color: #059669; font-weight: 600;">${item.walkin_tokens}</span></td>
-                    <td><span style="color: #475569; font-weight: 600;">${item.completed_tokens}</span></td>
-                    <td style="text-align: right;">
-                        <strong style="font-family: 'JetBrains Mono', monospace; color: #16a34a; font-size: 14.5px;">
-                            ₹${Number(item.collection || 0).toLocaleString()}
-                        </strong>
-                    </td>
-                </tr>
-            `;
-        }).join("");
-    }
-}
-
-function exportCollectionHistoryCSV() {
-    if (!cachedCollectionSummary) {
-        alert("No collection history available to export.");
-        return;
-    }
-
-    const isDaily = currentCollectionTab === "daily";
-    let csvContent = "data:text/csv;charset=utf-8,";
-
-    if (isDaily) {
-        csvContent += "Date,Day,Total Tokens,Online Paid,Offline Walkin,Completed Consultations,Day Collection (INR)\n";
-        (cachedCollectionSummary.daily_history || []).forEach(row => {
-            csvContent += `"${row.date}","${row.day_name || ''}",${row.total_tokens},${row.online_tokens},${row.walkin_tokens},${row.completed_tokens},${row.collection}\n`;
-        });
-    } else {
-        csvContent += "Month,Month Name,Total Tokens,Online Paid,Offline Walkin,Completed Consultations,Month Collection (INR)\n";
-        (cachedCollectionSummary.monthly_history || []).forEach(row => {
-            csvContent += `"${row.month}","${row.month_name}",${row.total_tokens},${row.online_tokens},${row.walkin_tokens},${row.completed_tokens},${row.collection}\n`;
-        });
-    }
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `CarePath_Token_Collection_${isDaily ? 'Daily' : 'Monthly'}_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-</script>
+    <script src="./broadcast-banner.js"></script>
+    <script src="./carepath-permissions.js"></script>
 
     <style>
         :root {
@@ -2250,6 +1552,12 @@ function exportCollectionHistoryCSV() {
                 Please instruct the patient to proceed to the OPD waiting lounge.
             </p>
 
+            <div style="margin-top: 14px; display: flex; justify-content: center; gap: 10px;">
+                <button type="button" onclick="printLastWalkInSlip()" style="padding: 10px 20px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);">
+                    🖨️ Print OPD Slip
+                </button>
+            </div>
+
         </div>
 
     </section>
@@ -2342,7 +1650,7 @@ function exportCollectionHistoryCSV() {
                         <th>Channel</th>
                         <th>Status</th>
                         <th>Created</th>
-                        <th>Action</th>
+                        <th>OPD Slip</th>
                     </tr>
                 </thead>
 
@@ -2616,10 +1924,20 @@ function updateQueueWalkInLiveTracker() {
 
     waitingEl.textContent = waiting.length;
 
+    // Filter to today's tokens for accurate next token calculation
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
+
     let maxToken = 0;
-    (Array.isArray(allTokens) ? allTokens : []).forEach(t => {
-        const num = Number(t.token_number || 0);
-        if (num > maxToken) maxToken = num;
+    filtered.forEach(t => {
+        const tDate = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+        if (!tDate || tDate === todayStr) {
+            const num = Number(t.token_number || 0);
+            if (num > maxToken) maxToken = num;
+        }
     });
     nextTokenEl.textContent = `#${maxToken + 1}`;
 
@@ -2638,7 +1956,6 @@ function updateQueueWalkInLiveTracker() {
         }
     }
 }
-
 
 // =========================================================
 // LOAD DOCTORS BY DEPARTMENT
@@ -2712,72 +2029,8 @@ async function loadWalkInDoctors() {
     }
 }
 
-// LIVE OPD QUEUE TRACKER PORTION (WALK-IN SESSION)
-function updateQueueWalkInLiveTracker() {
-    const deptSelect = document.getElementById("walkInDepartment");
-    const docSelect = document.getElementById("walkInDoctor");
-    const doctorLabel = document.getElementById("walkInLqDoctorLabel");
-    const servingEl = document.getElementById("walkInLqServingToken");
-    const waitingEl = document.getElementById("walkInLqWaitingCount");
-    const nextTokenEl = document.getElementById("walkInLqNextToken");
-    const estWaitEl = document.getElementById("walkInLqEstWait");
-    const chipsEl = document.getElementById("walkInLqQueueChips");
 
-    if (!servingEl) return;
 
-    const rawDocVal = (docSelect?.value || "").trim();
-    const rawDeptVal = (deptSelect?.value || "").trim();
-
-    const cleanDoc = rawDocVal.split("(")[0].replace(/\[.*?\]/g, "").trim().toLowerCase();
-    const isDocChosen = cleanDoc && !cleanDoc.includes("select") && !cleanDoc.includes("loading");
-
-    let filtered = Array.isArray(allTokens) ? allTokens : [];
-    if (isDocChosen) {
-        filtered = filtered.filter(t => (t.doctor || "").toLowerCase().includes(cleanDoc));
-        if (doctorLabel) doctorLabel.textContent = `Dr. ${rawDocVal.split("(")[0].trim()}`;
-    } else if (rawDeptVal && !rawDeptVal.includes("Select") && !rawDeptVal.includes("Loading")) {
-        filtered = filtered.filter(t => (t.department || "").toLowerCase() === rawDeptVal.toLowerCase());
-        if (doctorLabel) doctorLabel.textContent = `${rawDeptVal} Dept`;
-    } else {
-        if (doctorLabel) doctorLabel.textContent = "All Doctors";
-    }
-
-    const serving = filtered.filter(t => (t.status || "").toLowerCase() === "serving");
-    const waiting = filtered.filter(t => (t.status || "").toLowerCase() === "waiting")
-        .sort((a, b) => Number(a.token_number || 0) - Number(b.token_number || 0));
-
-    if (serving.length > 0) {
-        servingEl.textContent = `#${serving[0].token_number}`;
-        servingEl.style.color = "#2563eb";
-    } else {
-        servingEl.textContent = "Free";
-        servingEl.style.color = "#16a34a";
-    }
-
-    waitingEl.textContent = waiting.length;
-
-    let maxToken = 0;
-    (Array.isArray(allTokens) ? allTokens : []).forEach(t => {
-        const num = Number(t.token_number || 0);
-        if (num > maxToken) maxToken = num;
-    });
-    nextTokenEl.textContent = `#${maxToken + 1}`;
-
-    const estMins = waiting.length * 5;
-    estWaitEl.textContent = estMins > 0 ? `~${estMins}m` : "No wait";
-
-    if (chipsEl) {
-        if (waiting.length === 0) {
-            chipsEl.innerHTML = `<span style="color:#16a34a; font-weight:600;">🟢 No queue waiting! Next walk-in patient will be attended immediately.</span>`;
-        } else {
-            chipsEl.innerHTML = waiting.slice(0, 6).map(t => `
-                <span style="background:#fef3c7; color:#92400e; padding:3px 9px; border-radius:12px; font-weight:700; white-space:nowrap; border:1px solid #fde68a;">
-                    #${t.token_number} ${escapeHtml(t.patient_name || 'Patient')}
-                </span>
-            `).join("") + (waiting.length > 6 ? `<span style="color:#64748b; font-weight:700; font-size:11px; align-self:center;">+${waiting.length - 6} more</span>` : '');
-        }
-    }
-}
 
 // =========================================================
 // WALK-IN REGISTRATION
@@ -2919,6 +2172,16 @@ async function registerWalkIn(event) {
             `Patient: ${patientName}`;
 
 
+                lastRegisteredWalkInToken = {
+            id: data.token?.id || Date.now(),
+            token_number: assignedToken,
+            patient_name: patientName,
+            doctor: doctor,
+            department: department,
+            appointment_date: new Date().toISOString().split('T')[0],
+            booking_type: "WALK_IN"
+        };
+
         tokenDisplay.style.display = "block";
 
 
@@ -2940,23 +2203,7 @@ async function registerWalkIn(event) {
         await loadTokens();
         fetchHospitalCollectionSummary();
 
-        // Populate hospital name in header
-        try {
-            const hName = localStorage.getItem("hospital_name") || localStorage.getItem("hospital") || "CarePath Hospital";
-            const nameEl = document.getElementById("hospitalNameDisplay");
-            if (nameEl) nameEl.textContent = hName;
-            
-            // Live clock
-            const updateClock = () => {
-                const clockEl = document.getElementById("liveClockDisplay");
-                if (clockEl) {
-                    const now = new Date();
-                    clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                }
-            };
-            updateClock();
-            setInterval(updateClock, 1000);
-        } catch(e) {}
+// Hospital name and live clock managed globally in DOMContentLoaded
 
 
 
@@ -3324,23 +2571,7 @@ async function purgeExpiredTokensNow() {
             await loadTokens();
         fetchHospitalCollectionSummary();
 
-        // Populate hospital name in header
-        try {
-            const hName = localStorage.getItem("hospital_name") || localStorage.getItem("hospital") || "CarePath Hospital";
-            const nameEl = document.getElementById("hospitalNameDisplay");
-            if (nameEl) nameEl.textContent = hName;
-            
-            // Live clock
-            const updateClock = () => {
-                const clockEl = document.getElementById("liveClockDisplay");
-                if (clockEl) {
-                    const now = new Date();
-                    clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                }
-            };
-            updateClock();
-            setInterval(updateClock, 1000);
-        } catch(e) {}
+// Hospital name and live clock managed globally in DOMContentLoaded
 
         } else {
             alert(data.detail || "Unable to purge tokens.");
@@ -3463,23 +2694,19 @@ function renderTokens() {
             normalStatus(token.status) || "unknown";
 
 
-        const canEdit =
-
-            isWalkIn &&
-            ["waiting", "serving"].includes(statusText);
-
-
-        const action = canEdit
-
-            ? `<button
-                   type="button"
-                   class="edit-token-button"
-                   data-edit-id="${Number(token.id)}"
-                   data-token-number="${Number(token.token_number)}">
-                   Edit Offline Token
-               </button>`
-
-            : "—";
+        const action = `
+            <button
+                type="button"
+                class="print-slip-btn"
+                onclick="printTokenSlipById(${Number(token.id)})"
+                title="Print OPD Token Slip"
+                style="padding: 6px 12px; background: #f8fafc; color: #0284c7; border: 1.5px solid #bae6fd; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;"
+                onmouseover="this.style.background='#e0f2fe'; this.style.borderColor='#38bdf8';"
+                onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#bae6fd';"
+            >
+                🖨️ Print Slip
+            </button>
+        `;
 
         const apptDateDisplay = token.appointment_date || (token.created_at ? token.created_at.split('T')[0] : 'Today');
 
@@ -3540,190 +2767,7 @@ function renderTokens() {
     }).join("");
 
 
-    rows.querySelectorAll("[data-edit-id]").forEach(button => {
-
-        button.addEventListener("click", () => {
-
-            editOfflineToken(
-
-                Number(button.dataset.editId),
-
-                Number(button.dataset.tokenNumber)
-
-            );
-
-        });
-
-    });
-
-}
-
-
-// =========================================================
-// EDIT OFFLINE TOKEN NUMBER
-// =========================================================
-
-async function editOfflineToken(
-    tokenId,
-    currentNumber
-) {
-
-    const token = allTokens.find(
-        item => Number(item.id) === tokenId
-    );
-
-
-    if (
-
-        !token ||
-
-        String(token.booking_type || "")
-            .toUpperCase() !== "WALK_IN"
-
-    ) {
-
-        showMessage(
-            "Only offline walk-in tokens can be edited here.",
-            true
-        );
-
-        return;
-
-    }
-
-
-    const input = prompt(
-
-        `Patient: ${token.patient_name || "Walk-in patient"}\n` +
-
-        `Department: ${token.department || "—"}\n` +
-
-        `Doctor: ${token.doctor || "—"}\n\n` +
-
-        "Enter the new offline token number:",
-
-        String(currentNumber)
-
-    );
-
-
-    if (input === null) {
-        return;
-    }
-
-
-    const newNumber = Number(input.trim());
-
-
-    if (
-        !Number.isInteger(newNumber) ||
-        newNumber <= 0
-    ) {
-
-        showMessage(
-            "Enter a positive whole-number token.",
-            true
-        );
-
-        return;
-
-    }
-
-
-    if (newNumber === currentNumber) {
-
-        showMessage(
-            "The token number is unchanged."
-        );
-
-        return;
-
-    }
-
-
-    try {
-
-        const response = await fetch(
-
-            `${API}/tokens/${tokenId}/number`,
-
-            {
-
-                method: "PUT",
-
-                headers: authHeaders(true),
-
-                body: JSON.stringify({
-
-                    token_number: newNumber
-
-                })
-
-            }
-
-        );
-
-
-        const data = await readResponse(response);
-
-
-        if (!response.ok) {
-
-            throw new Error(
-
-                typeof data.detail === "string"
-
-                    ? data.detail
-
-                    : "Token number could not be updated."
-
-            );
-
-        }
-
-
-        showMessage(
-
-            `Offline token updated to ${newNumber}. Refreshing the queue.`
-
-        );
-
-
-        await loadTokens();
-        fetchHospitalCollectionSummary();
-
-        // Populate hospital name in header
-        try {
-            const hName = localStorage.getItem("hospital_name") || localStorage.getItem("hospital") || "CarePath Hospital";
-            const nameEl = document.getElementById("hospitalNameDisplay");
-            if (nameEl) nameEl.textContent = hName;
-            
-            // Live clock
-            const updateClock = () => {
-                const clockEl = document.getElementById("liveClockDisplay");
-                if (clockEl) {
-                    const now = new Date();
-                    clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                }
-            };
-            updateClock();
-            setInterval(updateClock, 1000);
-        } catch(e) {}
-
-
-
-    } catch (error) {
-
-        showMessage(
-
-            error.message ||
-            "Could not update the token.",
-
-            true
-
-        );
-
-    }
+// Edit offline token button removed as per hospital queue requirements
 
 }
 
@@ -3842,23 +2886,7 @@ loadWalkInDepartments();
         loadTokens();
         fetchHospitalCollectionSummary();
 
-        // Populate hospital name in header
-        try {
-            const hName = localStorage.getItem("hospital_name") || localStorage.getItem("hospital") || "CarePath Hospital";
-            const nameEl = document.getElementById("hospitalNameDisplay");
-            if (nameEl) nameEl.textContent = hName;
-            
-            // Live clock
-            const updateClock = () => {
-                const clockEl = document.getElementById("liveClockDisplay");
-                if (clockEl) {
-                    const now = new Date();
-                    clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                }
-            };
-            updateClock();
-            setInterval(updateClock, 1000);
-        } catch(e) {}
+// Hospital name and live clock managed globally in DOMContentLoaded
 
 
     }

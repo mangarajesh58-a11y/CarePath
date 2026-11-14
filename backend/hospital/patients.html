@@ -531,14 +531,7 @@ async function loadPatients(silent = false) {
             const row = document.createElement("tr");
             const status = String(token.status || "").toLowerCase();
 
-            const editTokenButtonHtml =
-                ["waiting", "serving"].includes(status)
-                    ? `<button type="button"
-                        onclick="editPatientTokenNumber(${Number(token.id)}, ${Number(token.token_number)})"
-                        style="background:#2563eb;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-right:6px;">
-                        Edit Token
-                       </button>`
-                    : "";
+            const editTokenButtonHtml = "";
 
             const callButtonHtml = status === "waiting"
                 ? `<button type="button"
@@ -564,7 +557,6 @@ async function loadPatients(silent = false) {
                 <td style="padding:12px;">${escapeHTML(token.doctor)}</td>
                 <td style="padding:12px;">${getStatusText(token.status)}</td>
                 <td style="padding:12px;white-space:nowrap;">
-                    ${editTokenButtonHtml}
                     ${callButtonHtml}${completeButtonHtml}
                 </td>
             `;
