@@ -1,0 +1,23 @@
+{
+  "version": 3,
+  "daemons": {},
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "^/patient(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?$",
+      "dest": "/$1",
+      "check": true
+    },
+    {
+      "handle": "error"
+    },
+    {
+      "status": 404,
+      "src": "^(?!/api).*$",
+      "dest": "/404.html"
+    }
+  ],
+  "crons": []
+}

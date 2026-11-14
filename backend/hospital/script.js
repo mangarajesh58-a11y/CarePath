@@ -2486,6 +2486,8 @@ async function loadDoctors() {
         }
 
 
+        window.allHospitalDoctors = doctors;
+
         doctors.forEach(
             function (doctor) {
 
@@ -2628,6 +2630,24 @@ async function loadDoctors() {
                         </button>
                     </p>
 
+                    <p style="background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; margin: 10px 0;">
+                        <span><strong>🎫 Token / Consultation Fee:</strong> <span style="color: #0d9488; font-weight: 700;">₹${Number(doctor.token_fee != null ? doctor.token_fee : 50)}</span></span>
+                        <button
+                            type="button"
+                            onclick="promptEditDoctorFee(${Number(doctor.id)}, ${Number(doctor.token_fee != null ? doctor.token_fee : 50)})"
+                            style="background: #ccfbf1; color: #0d9488; border: 1px solid #99f6e4; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;"
+                        >
+                            ✏️ Edit Fee
+                        </button>
+                    </p>
+
+                    <div style="display: flex; gap: 8px; margin: 10px 0;">
+                        <label style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                            📷 Change Photo
+                            <input type="file" accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="uploadDoctorPhotoDirect(${Number(doctor.id)}, this)">
+                        </label>
+                    </div>
+
                     <div style="display: flex; align-items: center; justify-content: space-between; margin: 10px 0; padding: 10px 14px; background: ${available ? '#f0fdf4' : '#fef2f2'}; border-radius: 8px; border: 1px solid ${available ? '#bbf7d0' : '#fecaca'};">
                         <div>
                             <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">Today's Availability</div>
@@ -2644,17 +2664,24 @@ async function loadDoctors() {
                         </button>
                     </div>
 
-                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
                         <button
                             type="button"
-                            style="background: #f59e0b; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; flex: 1;"
-                            onclick="promptDoctorLeave(${Number(doctor.id)}, '${escapeHtml(doctor.name || 'Doctor')}')"
+                            style="background: #0284c7; color: white; border: none; padding: 9px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; flex: 1.2; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);"
+                            onclick="openEditDoctorModal(${Number(doctor.id)})"
                         >
-                            🏖️ Mark Leave & Refund
+                            ✏️ Edit Full Profile
                         </button>
                         <button
                             type="button"
-                            style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer;"
+                            style="background: #f59e0b; color: white; border: none; padding: 9px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; flex: 1;"
+                            onclick="promptDoctorLeave(${Number(doctor.id)}, '${escapeHtml(doctor.name || 'Doctor')}')"
+                        >
+                            🏖️ Leave
+                        </button>
+                        <button
+                            type="button"
+                            style="background: #ef4444; color: white; border: none; padding: 9px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;"
                             onclick="deleteDoctor(${Number(doctor.id)})"
                         >
                             Delete
@@ -2846,6 +2873,9 @@ async function addDoctor() {
             "doctorRoomNumber"
         )?.value.trim() || "";
 
+    const tokenFeeInput = document.getElementById("doctorTokenFee");
+    const tokenFeeVal = tokenFeeInput && tokenFeeInput.value.trim() !== "" ? parseInt(tokenFeeInput.value.trim(), 10) : null;
+
 
     const availableDays =
         Array.from(
@@ -2971,6 +3001,9 @@ async function addDoctor() {
                             room_number:
                                 roomNumber || null,
 
+                            token_fee:
+                                tokenFeeVal != null ? tokenFeeVal : 50,
+
                             available_days:
                                 availableDays.join(","),
 
@@ -3060,7 +3093,9 @@ async function addDoctor() {
 
             "doctorStartTime",
 
-            "doctorEndTime"
+            "doctorEndTime",
+
+            "doctorTokenFee"
 
         ].forEach(
             function (id) {
@@ -3333,3 +3368,228 @@ async function promptEditDoctorRoom(doctorId, currentRoom) {
         alert(err.message || "Could not update room number.");
     }
 }
+
+
+// ============================================================
+// DOCTOR TOKEN FEE & DIRECT PHOTO MANAGEMENT
+// ============================================================
+
+async function promptEditDoctorFee(doctorId, currentFee) {
+    const input = prompt(`Enter new token / consultation fee (₹) for Dr. (Current: ₹${currentFee}):`, currentFee);
+    if (input === null) return;
+    const newFee = parseInt(input.trim(), 10);
+    if (isNaN(newFee) || newFee < 0) {
+        alert("Please enter a valid non-negative number for the fee.");
+        return;
+    }
+    try {
+        const response = await fetch(`${API}/doctors/${doctorId}`, {
+            method: "PATCH",
+            headers: getHospitalAuthHeaders(true),
+            body: JSON.stringify({ token_fee: newFee })
+        });
+        if (handleHospitalAuthFailure(response)) return;
+        const resData = await readJsonResponse(response);
+        if (!response.ok) {
+            throw new Error(getErrorMessage(resData, "Failed to update fee."));
+        }
+        alert("Doctor token fee updated successfully.");
+        await loadDoctors();
+    } catch(err) {
+        alert(err.message || "Could not update doctor fee.");
+    }
+}
+
+async function uploadDoctorPhotoDirect(doctorId, fileInput) {
+    if (!fileInput.files || !fileInput.files[0]) return;
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append("photo", file);
+    const token = localStorage.getItem("hospitalToken");
+    try {
+        const res = await fetch(`${API}/doctors/${doctorId}/photo`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || "Failed to upload photo");
+        }
+        alert("Photo updated successfully!");
+        await loadDoctors();
+    } catch(e) {
+        alert(e.message || "Error uploading photo.");
+    }
+}
+window.uploadDoctorPhotoDirect = uploadDoctorPhotoDirect;
+
+// =========================================================
+// EDIT DOCTOR FULL PROFILE MODAL & LOGIC
+// =========================================================
+function openEditDoctorModal(doctorId) {
+    const doctors = window.allHospitalDoctors || [];
+    const doctor = doctors.find(d => Number(d.id) === Number(doctorId));
+    if (!doctor) {
+        alert("Doctor details not found. Please refresh the page.");
+        return;
+    }
+
+    document.getElementById("editDoctorId").value = doctor.id;
+    document.getElementById("editDoctorName").value = doctor.name || "";
+    document.getElementById("editDoctorDepartment").value = doctor.department || "";
+    document.getElementById("editDoctorSpecialization").value = doctor.specialization || "";
+    document.getElementById("editDoctorExperience").value = doctor.experience || "";
+    document.getElementById("editDoctorRoomNumber").value = doctor.room_number || "";
+    document.getElementById("editDoctorTokenFee").value = doctor.token_fee != null ? doctor.token_fee : 50;
+    document.getElementById("editDoctorStartTime").value = doctor.start_time || "";
+    document.getElementById("editDoctorEndTime").value = doctor.end_time || "";
+    document.getElementById("editDoctorIsAvailable").value = doctor.is_available !== false ? "true" : "false";
+
+    // Set available days checkboxes
+    const docDays = (doctor.available_days || "").split(",").map(d => d.trim().toLowerCase());
+    document.querySelectorAll('input[name="editDoctorDays"]').forEach(cb => {
+        cb.checked = docDays.includes(cb.value.toLowerCase());
+    });
+
+    // Reset photo file input
+    const photoFile = document.getElementById("editDoctorPhotoFile");
+    if (photoFile) photoFile.value = "";
+
+    // Show current photo preview
+    const prevImg = document.getElementById("editDoctorPhotoPreview");
+    const prevEmoji = document.getElementById("editDoctorPhotoEmoji");
+    const currentPhoto = doctor.photo_base64 || (doctor.image_url ? (doctor.image_url.startsWith("http") ? doctor.image_url : `${API}${doctor.image_url.startsWith("/") ? "" : "/"}${doctor.image_url}`) : "");
+
+    if (currentPhoto) {
+        prevImg.src = currentPhoto;
+        prevImg.style.display = "block";
+        prevEmoji.style.display = "none";
+    } else {
+        prevImg.src = "";
+        prevImg.style.display = "none";
+        prevEmoji.style.display = "block";
+    }
+
+    const modal = document.getElementById("editDoctorModal");
+    if (modal) modal.style.display = "flex";
+}
+window.openEditDoctorModal = openEditDoctorModal;
+
+function closeEditDoctorModal() {
+    const modal = document.getElementById("editDoctorModal");
+    if (modal) modal.style.display = "none";
+}
+window.closeEditDoctorModal = closeEditDoctorModal;
+
+function previewEditDoctorPhoto(event) {
+    const file = event.target.files[0];
+    const img = document.getElementById("editDoctorPhotoPreview");
+    const emoji = document.getElementById("editDoctorPhotoEmoji");
+    if (file && img && emoji) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            img.style.display = "block";
+            emoji.style.display = "none";
+        };
+        reader.readAsDataURL(file);
+    }
+}
+window.previewEditDoctorPhoto = previewEditDoctorPhoto;
+
+async function saveDoctorFullProfile(event) {
+    if (event) event.preventDefault();
+    const doctorId = document.getElementById("editDoctorId").value;
+    if (!doctorId) return;
+
+    const name = document.getElementById("editDoctorName").value.trim();
+    const department = document.getElementById("editDoctorDepartment").value.trim();
+    const specialization = document.getElementById("editDoctorSpecialization").value.trim();
+    const experience = document.getElementById("editDoctorExperience").value.trim();
+    const roomNumber = document.getElementById("editDoctorRoomNumber").value.trim();
+    const tokenFeeRaw = document.getElementById("editDoctorTokenFee").value.trim();
+    const tokenFee = tokenFeeRaw !== "" ? Math.max(0, parseInt(tokenFeeRaw, 10)) : 50;
+    const startTime = document.getElementById("editDoctorStartTime").value;
+    const endTime = document.getElementById("editDoctorEndTime").value;
+    const isAvailable = document.getElementById("editDoctorIsAvailable").value === "true";
+
+    const days = Array.from(document.querySelectorAll('input[name="editDoctorDays"]:checked')).map(cb => cb.value);
+
+    if (!name || !department) {
+        alert("Doctor Name and Department are required.");
+        return;
+    }
+
+    if (startTime && endTime && startTime >= endTime) {
+        alert("Consultation end time must be later than start time.");
+        return;
+    }
+
+    const saveBtn = document.getElementById("saveDoctorEditBtn");
+    const origBtnText = saveBtn ? saveBtn.innerHTML : "Save Changes";
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = "Saving...";
+    }
+
+    try {
+        const payload = {
+            name,
+            department,
+            specialization: specialization || null,
+            experience: experience || null,
+            room_number: roomNumber || null,
+            token_fee: tokenFee,
+            available_days: days.join(",") || null,
+            start_time: startTime || null,
+            end_time: endTime || null,
+            is_available: isAvailable
+        };
+
+        const res = await fetch(`${API}/doctors/${doctorId}`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders(true),
+            body: JSON.stringify(payload)
+        });
+
+        if (handleHospitalAuthFailure(res)) return;
+
+        const resData = await readJsonResponse(res);
+        if (!res.ok) {
+            throw new Error(getErrorMessage(resData, "Failed to update doctor profile."));
+        }
+
+        // Upload photo if a new file was chosen
+        const photoInput = document.getElementById("editDoctorPhotoFile");
+        if (photoInput && photoInput.files && photoInput.files[0]) {
+            try {
+                const formData = new FormData();
+                formData.append("photo", photoInput.files[0]);
+                const photoRes = await fetch(`${API}/doctors/${doctorId}/photo`, {
+                    method: "POST",
+                    headers: getHospitalAuthHeaders(false),
+                    body: formData
+                });
+                if (!photoRes.ok) {
+                    const pData = await readJsonResponse(photoRes);
+                    console.warn("Photo upload warning:", pData);
+                }
+            } catch (pErr) {
+                console.warn("Photo upload error:", pErr);
+            }
+        }
+
+        closeEditDoctorModal();
+        alert("Doctor full profile updated successfully!");
+        await loadDoctors();
+    } catch (err) {
+        alert(err.message || "Could not update doctor profile.");
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = origBtnText;
+        }
+    }
+}
+window.saveDoctorFullProfile = saveDoctorFullProfile;

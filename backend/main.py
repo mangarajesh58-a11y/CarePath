@@ -235,7 +235,7 @@ def create_cashfree_vendor(
 # JWT Authentication Configuration (30-day persistent session)
 JWT_SECRET_KEY = (os.getenv("JWT_SECRET_KEY") or "1AD1dzdD0smBCRaHxGxy6QyAM_r4DwP7_O8SsTn2kRWF-u-nVTB1Om2IVApdOVrY").strip()
 JWT_ALGORITHM = "HS256"
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30  # 30 days
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 365  # 365 days
 
 
 def create_access_token(user_id: int, role: str) -> str:
@@ -3194,6 +3194,7 @@ class DoctorCreate(BaseModel):
 
     experience: Optional[str] = None
     room_number: Optional[str] = None
+    token_fee: Optional[int] = 50
     is_available: bool = True
 
 class HospitalDoctorCreate(BaseModel):
@@ -3202,6 +3203,7 @@ class HospitalDoctorCreate(BaseModel):
     specialization: Optional[str] = None
     experience: Optional[str] = None
     room_number: Optional[str] = None
+    token_fee: Optional[int] = 50
 
     # Doctor availability
     available_days: Optional[str] = None
@@ -3216,6 +3218,7 @@ class DoctorUpdateRequest(BaseModel):
     specialization: Optional[str] = None
     experience: Optional[str] = None
     room_number: Optional[str] = None
+    token_fee: Optional[int] = None
     is_available: Optional[bool] = None
     available_days: Optional[str] = None
     start_time: Optional[str] = None
@@ -3555,6 +3558,13 @@ def doctor_to_dict(doctor, hospital=None):
     hosp_address = getattr(hospital, "address", None)
     hosp_lat, hosp_lng = resolve_hospital_coordinates(hospital) if hospital else (None, None)
     hosp_fee = getattr(hospital, "token_fee", 0)
+    doc_fee = getattr(doctor, "token_fee", None)
+    effective_fee = doc_fee if doc_fee is not None else hosp_fee
+
+    photo_b64 = getattr(doctor, "photo_base64", None)
+    if photo_b64 and isinstance(photo_b64, str) and not photo_b64.startswith("data:"):
+        mime = "image/png" if (getattr(doctor, "image_url", None) and str(doctor.image_url).lower().endswith(".png")) else "image/jpeg"
+        photo_b64 = f"data:{mime};base64,{photo_b64}"
 
     return {
         "id": doctor.id,
@@ -3564,6 +3574,12 @@ def doctor_to_dict(doctor, hospital=None):
         "specialization": doctor.specialization,
         "experience": doctor.experience,
         "image_url": doctor.image_url,
+        "photo_base64": photo_b64,
+
+        # Token fee (per doctor with hospital fallback)
+        "token_fee": effective_fee,
+        "doctor_token_fee": doc_fee,
+        "hospital_token_fee": hosp_fee,
 
         # Doctor availability details
         "available_days": doctor.available_days,
@@ -5526,6 +5542,8 @@ def update_doctor(
         doctor.experience = data.experience.strip() or None
     if data.room_number is not None:
         doctor.room_number = data.room_number.strip() or None
+    if data.token_fee is not None:
+        doctor.token_fee = max(0, int(data.token_fee))
     if data.is_available is not None:
         doctor.is_available = bool(data.is_available)
     if data.available_days is not None:
@@ -6049,6 +6067,9 @@ def add_doctor(
             if data.experience
             else None
         ),
+        room_number=data.room_number.strip() if getattr(data, "room_number", None) else None,
+        token_fee=max(0, int(data.token_fee)) if getattr(data, "token_fee", None) is not None else int(hospital.token_fee or 50),
+        is_available=bool(getattr(data, "is_available", True)),
     )
 
     db.add(doctor)
@@ -6315,7 +6336,8 @@ def create_cashfree_order(
             detail=f"Daily patient booking capacity of {daily_cap} reached for Dr. {doctor.name} on {target_appt_date}. Please choose another date or doctor.",
         )
 
-    token_fee = int(hospital.token_fee or 0)
+    doc_fee = getattr(doctor, "token_fee", None)
+    token_fee = int(doc_fee if doc_fee is not None else (hospital.token_fee or 0))
     platform_fee = get_current_platform_fee(db)
     total_amount = token_fee + platform_fee
 
@@ -6624,7 +6646,8 @@ def create_token(
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found.")
 
-    token_fee = int(hospital.token_fee or 0)
+    doc_fee = getattr(doctor, "token_fee", None)
+    token_fee = int(doc_fee if doc_fee is not None else (hospital.token_fee or 0))
     platform_fee = get_current_platform_fee(db)
     total_amount = token_fee + platform_fee
 
@@ -8750,11 +8773,13 @@ def add_hospital_doctor(
         end_time=end_time,
         is_available=data.is_available,
         room_number=data.room_number.strip() if getattr(data, "room_number", None) else None,
+        token_fee=max(0, int(data.token_fee)) if getattr(data, "token_fee", None) is not None else int(hospital.token_fee or 50),
     )
 
     db.add(doctor)
     db.commit()
     db.refresh(doctor)
+    invalidate_doctor_cache()
 
     return {
         "success": True,
@@ -9695,6 +9720,7 @@ async def upload_doctor_photo(
     doctor.photo_base64 = base64.b64encode(processed_content).decode("utf-8")
     db.commit()
     db.refresh(doctor)
+    invalidate_doctor_cache()
 
     # Clean up old file if exists
     if old_url and old_url.startswith("/doctor-photos/"):
@@ -9738,14 +9764,17 @@ def get_doctor_photo(filename: str, db: Session = Depends(get_db)):
 
     if doctor and doctor.photo_base64:
         try:
-            photo_bytes = base64.b64decode(doctor.photo_base64)
+            raw_b64 = doctor.photo_base64
+            if isinstance(raw_b64, str) and "," in raw_b64 and raw_b64.startswith("data:"):
+                raw_b64 = raw_b64.split(",", 1)[1]
+            photo_bytes = base64.b64decode(raw_b64)
             try:
                 with open(file_path, "wb") as f:
                     f.write(photo_bytes)
             except Exception:
                 pass
             media_type = mimetypes.guess_type(safe_name)[0] or "image/jpeg"
-            return Response(content=photo_bytes, media_type=media_type)
+            return Response(content=photo_bytes, media_type=media_type, headers=cache_headers)
         except Exception:
             pass
 

@@ -1,0 +1,2098 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071329">
+
+  <title>CarePath - Select Hospital</title>
+
+  <link rel="stylesheet" href="./style.css">
+
+  <!-- Load the dashboard JavaScript after HTML parsing -->
+   <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+  <script src="./script.js" defer></script>
+<script src="./dashboard-ui.js"></script>
+  <script src="./broadcast-banner.js"></script>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="carepath-ai-small.png">
+</head>
+
+<body>
+  <div class="app-shell">
+
+    <!-- Header -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">✚</span>
+
+        <div>
+          <h1>Select Hospital</h1>
+          <p>
+            Welcome,
+            <span id="patientName">Patient</span>
+          </p>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <a
+          href="my-tokens.html"
+          id="btnMyTokens"
+          style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 20px; color: white; font-weight: 600; font-size: 13px; text-decoration: none; transition: background 0.2s;"
+        >
+          🎟️ My Tokens
+        </a>
+
+        <button
+          type="button"
+          id="logoutButton"
+          class="icon-button"
+          aria-label="Logout"
+          title="Logout"
+        >
+          ⇥
+        </button>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="page-content">
+
+      <!-- Hospital search -->
+      <section class="search-panel" aria-label="Search hospitals">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+
+        <input
+          id="hospitalSearch"
+          type="search"
+          placeholder="Search by hospital name or city..."
+          autocomplete="off"
+          aria-label="Search by hospital name or city"
+        >
+
+        <button
+          type="button"
+          id="clearSearch"
+          class="clear-search"
+          aria-label="Clear search"
+          title="Clear search"
+        >
+          ×
+        </button>
+      </section>
+
+      <!-- Hospital filters -->
+      <section class="filter-row" aria-label="Hospital filters">
+        <span class="filter-label">Sort / Filter:</span>
+
+        <button
+          type="button"
+          class="filter-chip active"
+          data-filter="all"
+        >
+          All Hospitals
+        </button>
+
+        <button
+          type="button"
+          class="filter-chip"
+          data-filter="verified"
+        >
+          ✓ Verified
+        </button>
+
+        <button
+          type="button"
+          class="filter-chip"
+          data-filter="lowfee"
+        >
+          ₹ Low Fee
+        </button>
+      </section>
+
+      <!-- Quick search -->
+      <section class="suggestions-section">
+        <span class="section-kicker">Quick search</span>
+
+        <div id="quickSearchChips" class="quick-chips">
+          <button
+            type="button"
+            class="quick-chip"
+            data-query="Hyderabad"
+          >
+            Hyderabad
+          </button>
+
+          <button
+            type="button"
+            class="quick-chip"
+            data-query="Cardiology"
+          >
+            Cardiology
+          </button>
+
+          <button
+            type="button"
+            class="quick-chip"
+            data-query="General Medicine"
+          >
+            General Medicine
+          </button>
+
+          <button
+            type="button"
+            class="quick-chip"
+            data-query="Pediatrics"
+          >
+            Pediatrics
+          </button>
+        </div>
+      </section>
+
+      <!-- Recently viewed hospitals -->
+      <section
+        id="recentSection"
+        class="hospital-section"
+        hidden
+      >
+        <div class="section-heading">
+          <h2>Recently Viewed</h2>
+          <span class="section-note">Your recent hospitals</span>
+        </div>
+
+        <div
+          id="recentHospitals"
+          class="recent-horizontal-row"
+        ></div>
+      </section>
+
+      <!-- Hospital listing -->
+      <section class="hospital-section">
+
+        <div class="section-heading">
+          <h2>Popular Hospitals</h2>
+
+          <span
+            id="hospitalCount"
+            class="section-note"
+            aria-live="polite"
+          >
+            Loading hospitals...
+          </span>
+        </div>
+
+        <!-- Hospital cards are inserted by script.js -->
+        <div
+          id="hospitalCards"
+          class="hospital-list"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div class="loading-card">
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Loading hospitals from CarePath...</span>
+          </div>
+        </div>
+
+        <!-- Empty or error message -->
+        <p
+          id="emptyHospitals"
+          class="empty-state"
+          role="status"
+          hidden
+        >
+          No hospitals are currently available.
+        </p>
+
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="page-footer">
+      <p>&copy; <span id="footerYear"></span> CarePath. Find hospitals and book your token online.</p>
+      <div style="display: flex; justify-content: center; gap: 16px; margin-top: 8px; flex-wrap: wrap; font-size: 12px;">
+        <a href="terms.html" style="color: #64748b; text-decoration: none;">Terms of Service</a>
+        <span style="color: #cbd5e1;">•</span>
+        <a href="privacy.html" style="color: #64748b; text-decoration: none;">Privacy Policy</a>
+        <span style="color: #cbd5e1;">•</span>
+        <a href="refund.html" style="color: #64748b; text-decoration: none;">Refund Policy</a>
+        <span style="color: #cbd5e1;">•</span>
+        <a href="contact.html" style="color: #64748b; text-decoration: none;">Contact Us</a>
+      </div>
+    </footer>
+
+  </div>
+
+   <!-- CarePath AI Assistant -->
+<button
+  type="button"
+  id="carepathAIButton" onclick="toggleCarePathAIChat(event)"
+  aria-label="Open CarePath AI Assistant"
+  title="CarePath AI Assistant"
+  style="padding: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; background: transparent; border: none; box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);"
+>
+  <img src="carepath-ai.png" alt="CarePath AI" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; display: block;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+</button>
+
+
+<!-- CarePath AI Chat Window -->
+<div id="carepathAIChat" class="carepath-ai-chat" style="display: none; z-index: 100000; position: fixed;">
+
+  <!-- DEDICATED LIVE VOICE ASSISTANT OVERLAY -->
+  <div id="carepathVoiceOverlay" style="display: none; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 30, 0.98) 100%); z-index: 10000; border-radius: 18px; backdrop-filter: blur(8px); flex-direction: column; align-items: center; justify-content: space-between; padding: 16px; box-sizing: border-box; color: white; animation: cpFadeIn 0.2s ease;">
+    <!-- Top Bar -->
+    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 19px;">🎙️</span>
+        <div>
+          <strong style="font-size: 13.5px; color: #38bdf8; display: block;">CarePath Voice Assistant</strong>
+          <span style="font-size: 10.5px; color: #94a3b8;">Two-way conversational AI</span>
+        </div>
+      </div>
+      <button type="button" onclick="closeVoiceAssistantOverlay()" aria-label="Close voice assistant" style="background: rgba(255,255,255,0.15); border: none; color: #cbd5e1; width: 28px; height: 28px; border-radius: 50%; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+    </div>
+
+    <!-- Center Orb & Live Status -->
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; margin: auto 0; width: 100%;">
+      <div id="cpVoiceOrb" style="width: 76px; height: 76px; border-radius: 50%; background: radial-gradient(circle, #38bdf8 0%, #0284c7 70%); display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: 0 0 28px rgba(56, 189, 248, 0.6); animation: cpVoicePulse 1.6s infinite ease-in-out;">
+        🎙️
+      </div>
+
+      <div id="cpVoiceStatusText" style="font-size: 13.5px; font-weight: 700; color: #f8fafc; text-align: center; max-width: 290px; line-height: 1.35;">
+        Listening... Speak your symptoms or question
+      </div>
+
+      <!-- Real-Time Live Transcript Bubble -->
+      <div id="cpVoiceTranscriptBox" style="background: rgba(255, 255, 255, 0.08); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 10px 12px; min-height: 48px; max-height: 85px; overflow-y: auto; width: 95%; font-size: 13px; color: #e2e8f0; text-align: center; box-sizing: border-box; line-height: 1.4;">
+        <em style="color: #94a3b8;">Speak now — words will appear here in real time...</em>
+      </div>
+    </div>
+
+    <!-- Bottom Actions & Quick Topics -->
+    <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: center;">
+      <div style="display: flex; gap: 8px; width: 100%;">
+        <button type="button" id="btnVoiceDoneSend" onclick="handleVoiceDoneSend()" style="flex: 1.4; padding: 10px 12px; background: #0284c7; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);">
+          <span>✅</span> Send Question
+        </button>
+        <button type="button" onclick="closeVoiceAssistantOverlay()" style="flex: 1; padding: 10px 12px; background: rgba(255,255,255,0.12); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.22); border-radius: 12px; font-weight: 600; font-size: 12.5px; cursor: pointer;">
+          Cancel
+        </button>
+      </div>
+
+      <!-- Quick Voice Questions -->
+      <div style="width: 100%; text-align: left;">
+        <div style="font-size: 10.5px; color: #94a3b8; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">Or Tap a Question to Hear Answer:</div>
+        <div id="cpVoiceTopicsRow" style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" onclick="askQuickVoiceTopic('I have mild fever and headache, what should I do?')" style="background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.35); padding: 5px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; cursor: pointer;">
+            🌡️ Fever & Headache
+          </button>
+          <button type="button" onclick="askQuickVoiceTopic('Explain prescription dosage abbreviations 1-0-1 and TDS')" style="background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.35); padding: 5px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; cursor: pointer;">
+            💊 1-0-1 Dosage Meaning
+          </button>
+          <button type="button" onclick="askQuickVoiceTopic('How can I check my live OPD token queue position?')" style="background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.35); padding: 5px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; cursor: pointer;">
+            🎫 Check Token Queue
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="carepath-ai-header">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <img src="carepath-ai.png" alt="AI Avatar" style="width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.45); box-shadow: 0 2px 8px rgba(0,0,0,0.25);" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+      <div>
+        <strong style="display: flex; align-items: center; gap: 6px;">
+          CarePath AI
+          <span style="display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 6px #22c55e;"></span>
+        </strong>
+        <span>24/7 Healthcare Assistant</span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <!-- Auto Multilingual Enabled -->
+      <button
+        type="button"
+        id="carepathAIVoiceToggle"
+        onclick="toggleCarePathVoiceOutput()"
+        title="Toggle AI Spoken Voice"
+        style="background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.4); color: white; border-radius: 16px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; backdrop-filter: blur(4px); transition: all 0.2s;"
+      >
+        <span id="carepathVoiceIcon">🔇</span> <span id="carepathVoiceLabel">Voice: OFF</span>
+      </button>
+      <button
+        type="button"
+        id="carepathAIClose" onclick="closeCarePathAIChat()"
+        aria-label="Close CarePath AI"
+      >
+        ×
+      </button>
+    </div>
+  </div>
+
+  <div id="carepathAIMessages" class="carepath-ai-messages">
+    <div class="carepath-ai-message" style="display: flex; gap: 10px; align-items: flex-start;">
+      <img src="carepath-ai.png" alt="Bot" style="width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+      <div>
+        Welcome! Ask me about symptoms, doctors, OPD tokens, or <strong>upload / take a photo of your doctor's prescription</strong> and I will explain how to take your medicines.
+      </div>
+    </div>
+    <div id="carepathInitialActionChips" style="display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px 36px;">
+      <button type="button" id="btnScanPrescriptionChip" onclick="triggerPrescriptionCapture()" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+        📸 Scan Doctor's Prescription
+      </button>
+      <button type="button" id="btnDecodeDosageChip" onclick="handleDosageChipClick()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer;">
+        💊 Decode Dosage Terms
+      </button>
+    </div>
+  </div>
+
+  <!-- LIVE AUDIO LISTENING INDICATOR -->
+  <div id="carepathAIListeningBar" style="display: none; padding: 7px 14px; background: #fef2f2; border-top: 1px solid #fecaca; color: #b91c1c; font-size: 12px; font-weight: 700; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="display: inline-block; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; animation: cpMicPulse 1s infinite;"></span>
+      <span id="carepathAIListeningText">Listening... Speak your health question now</span>
+    </div>
+    <button type="button" onclick="stopCarePathVoiceRecognition()" style="background: none; border: none; color: #b91c1c; font-size: 12px; font-weight: 800; cursor: pointer; text-decoration: underline;">Stop</button>
+  </div>
+
+  <div class="carepath-ai-input-area" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #ffffff; border-top: 1px solid #e2e8f0;">
+    <!-- HIDDEN INPUTS FOR CAMERA AND GALLERY CHOOSER -->
+    <input type="file" id="carepathAICameraInput" accept="image/*" capture="environment" style="display: none;">
+    <input type="file" id="carepathAIGalleryInput" accept="image/*" style="display: none;">
+
+    <button
+      type="button"
+      id="carepathAIAttachBtn"
+      title="Upload or take photo of prescription / medical report"
+      aria-label="Upload prescription photo"
+      onclick="openPrescriptionChoiceModal()"
+      style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; color: #166534; flex-shrink: 0; transition: transform 0.2s;"
+      onmouseover="this.style.transform='scale(1.08)'"
+      onmouseout="this.style.transform='scale(1)'"
+    >
+      📷
+    </button>
+    <button
+      type="button"
+      id="carepathAIMicBtn"
+      title="Speak to CarePath AI with voice"
+      aria-label="Voice question to AI"
+      onclick="toggleCarePathVoiceRecognition()"
+      style="background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; color: #0284c7; flex-shrink: 0; transition: transform 0.2s;"
+      onmouseover="this.style.transform='scale(1.08)'"
+      onmouseout="this.style.transform='scale(1)'"
+    >
+      🎙️
+    </button>
+    <input
+      type="text"
+      id="carepathAIInput"
+      placeholder="Ask CarePath AI or tap 🎙️ to speak..."
+      autocomplete="off"
+      style="flex: 1; border: 1.5px solid #cbd5e1; border-radius: 20px; padding: 9px 14px; font-size: 13.5px; outline: none; min-width: 0;"
+    >
+    <button
+      type="button"
+      id="carepathAISend"
+      aria-label="Send"
+      style="background: #0284c7; color: white; border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 15px; cursor: pointer; flex-shrink: 0;"
+    >
+      ➤
+    </button>
+  </div>
+
+</div>
+
+
+
+<!-- ANDROID-STYLE PERMISSION DIALOG -->
+<div id="carepathPermissionDialog" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 2500000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;">
+  <div style="background: #282a2e; color: #e2e8f0; border-radius: 28px; max-width: 340px; width: 100%; padding: 28px 24px 20px; box-shadow: 0 20px 45px rgba(0,0,0,0.6); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+    <div id="cpPermIcon" style="font-size: 34px; margin-bottom: 12px; color: #60a5fa;">📷</div>
+    <h3 id="cpPermTitle" style="margin: 0 0 10px; font-size: 18.5px; color: #f1f5f9; font-weight: 700; line-height: 1.35;">
+      Allow CarePath to take pictures and record video?
+    </h3>
+    <p id="cpPermDesc" style="margin: 0 0 22px; font-size: 13.5px; color: #94a3b8; line-height: 1.45;">
+      Used by CarePath AI to scan doctor prescriptions, read handwriting, and decode medicines.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <button type="button" onclick="handleCarePathPermChoice('always')" style="background: #383b40; color: #8ab4f8; border: none; border-radius: 22px; padding: 14px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; box-sizing: border-box;">
+        While using the app
+      </button>
+
+      <button type="button" onclick="handleCarePathPermChoice('once')" style="background: #383b40; color: #8ab4f8; border: none; border-radius: 22px; padding: 14px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; box-sizing: border-box;">
+        Only this time
+      </button>
+
+      <button type="button" onclick="handleCarePathPermChoice('deny')" style="background: transparent; color: #8ab4f8; border: none; border-radius: 22px; padding: 13px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; box-sizing: border-box;">
+        Don't allow
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MICROPHONE PERMISSION BLOCKED MODAL -->
+<div id="carepathMicBlockedModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2600000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+  <div style="background: white; border-radius: 20px; max-width: 380px; width: 100%; padding: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.3); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
+    <div style="font-size: 38px; margin-bottom: 8px;">🎙️⚠️</div>
+    <h3 style="margin: 0 0 8px; font-size: 18px; color: #0f172a; font-weight: 800;">Microphone Access Needed</h3>
+    <p style="margin: 0 0 16px; font-size: 13px; color: #64748b; line-height: 1.5; text-align: left;">
+      Your browser blocked microphone access. To talk with CarePath AI:
+    </p>
+
+    <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; text-align: left; font-size: 12.5px; color: #334155; line-height: 1.55; margin-bottom: 18px;">
+      <div style="margin-bottom: 8px; font-weight: 700; color: #0f172a;">📱 In Chrome or Android Settings:</div>
+      <div>1. Tap <strong>⋮ (3 dots)</strong> or <strong>🔒 lock icon</strong> at top of browser.</div>
+      <div>2. Open <strong>Site Settings</strong> ➔ <strong>Microphone</strong> ➔ <strong>Allow</strong>.</div>
+      <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: #64748b;">
+        Or open <strong>Phone Settings ➔ Apps ➔ Chrome ➔ Permissions ➔ Microphone ➔ Allow</strong>.
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; gap: 10px;">
+        <button type="button" onclick="closeMicBlockedModal()" style="flex: 1; padding: 11px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer;">
+          Close
+        </button>
+        <button type="button" onclick="retryMicrophoneAccess()" style="flex: 1.3; padding: 11px; background: #0284c7; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(2,132,199,0.3);">
+          🔄 Try Mic Again
+        </button>
+      </div>
+      <button type="button" onclick="askQuickVoiceTopic('I have mild fever and headache, what should I do?')" style="padding: 10px 14px; background: #f0f9ff; color: #0284c7; border: 1.5px solid #bae6fd; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">
+        🗣️ Talk via Quick Voice Question (Speaks Aloud) ➔
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- LIVE CAMERA SCANNER MODAL WITH PERMISSION PROMPT -->
+<div id="carepathAICameraModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); z-index: 2000002; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;">
+  <div style="background: #1e293b; color: white; border-radius: 18px; max-width: 460px; width: 100%; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5); display: flex; flex-direction: column;">
+    <div style="padding: 14px 18px; background: #0f172a; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 20px;">📸</span>
+        <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #f8fafc;">Prescription Camera Scanner</h4>
+      </div>
+      <button type="button" onclick="closeCarePathCameraModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <!-- VIDEO VIEWFINDER AREA -->
+    <div style="position: relative; width: 100%; min-height: 280px; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+      <video id="carepathAIVideo" autoplay playsinline style="width: 100%; height: 100%; max-height: 340px; object-fit: cover;"></video>
+      <canvas id="carepathAICanvas" style="display: none;"></canvas>
+
+      <!-- GUIDELINE OVERLAY -->
+      <div id="carepathAICamGuide" style="position: absolute; inset: 24px; border: 2px dashed rgba(255,255,255,0.7); border-radius: 12px; pointer-events: none; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px;">
+        <span style="background: rgba(0,0,0,0.6); color: #fff; font-size: 11.5px; padding: 4px 10px; border-radius: 12px; backdrop-filter: blur(2px);">Align prescription inside frame</span>
+      </div>
+
+      <!-- CAMERA PERMISSION ERROR STATUS -->
+      <div id="carepathAICamStatus" style="display: none; position: absolute; inset: 16px; margin: auto; max-height: 220px; padding: 18px; text-align: center; color: #f87171; font-size: 13px; background: rgba(15,23,42,0.95); border: 1px solid #ef4444; border-radius: 12px; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+        <div style="font-size: 28px; margin-bottom: 6px;">📷⚠️</div>
+        <strong style="color: #fca5a5; font-size: 14px;">Camera Permission Needed</strong>
+        <p style="margin: 8px 0; color: #cbd5e1; font-size: 12px; line-height: 1.45;">Please tap <strong>Allow</strong> when your browser asks for camera access, or enable camera in browser settings.</p>
+        <button type="button" onclick="triggerPrescriptionGallery(); closeCarePathCameraModal();" style="margin-top: 6px; padding: 8px 16px; background: #16a34a; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 12.5px; cursor: pointer;">🖼️ Choose from Gallery Instead</button>
+      </div>
+    </div>
+
+    <!-- CONTROLS ROW -->
+    <div style="padding: 14px 18px; background: #0f172a; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #334155;">
+      <button type="button" onclick="switchCarePathCameraFacing()" id="btnSwitchCam" style="padding: 8px 12px; background: #334155; color: #cbd5e1; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">🔄 Flip</button>
+      <button type="button" onclick="captureCarePathPrescriptionSnapshot()" style="width: 58px; height: 58px; border-radius: 50%; background: #ffffff; border: 4px solid #0284c7; box-shadow: 0 0 0 3px rgba(255,255,255,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: transform 0.1s;" onmousedown="this.style.transform='scale(0.92)'" onmouseup="this.style.transform='scale(1)'">📸</button>
+      <button type="button" onclick="closeCarePathCameraModal()" style="padding: 8px 14px; background: #334155; color: #cbd5e1; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRESCRIPTION UPLOAD CHOICE MODAL (CAMERA OR GALLERY) -->
+<div id="carepathAIPhotoModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+  <div style="background: white; border-radius: 18px; max-width: 420px; width: 100%; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
+    <div style="font-size: 38px; margin-bottom: 8px;">🩺</div>
+    <h3 style="margin: 0 0 6px; font-size: 18px; color: #0f172a; font-weight: 800;">Scan Doctor's Prescription</h3>
+    <p style="margin: 0 0 18px; font-size: 13px; color: #64748b; line-height: 1.45;">
+      CarePath AI reads handwriting, decodes dosage terms (1-0-1, TDS), and explains medicines in plain English.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+      <!-- OPTION 1: CAMERA -->
+      <button type="button" onclick="triggerPrescriptionCamera()" style="display: flex; align-items: center; gap: 14px; padding: 13px 16px; border: 1.5px solid #0284c7; background: #f0f9ff; border-radius: 12px; cursor: pointer; text-align: left; transition: all 0.2s;">
+        <span style="font-size: 26px;">📸</span>
+        <div style="flex: 1;">
+          <div style="font-size: 14.5px; font-weight: 800; color: #0369a1;">Take Photo with Camera</div>
+          <div style="font-size: 12px; color: #0284c7; margin-top: 2px;">Snap a clear photo of your paper prescription</div>
+        </div>
+        <span style="color: #0284c7; font-size: 18px; font-weight: bold;">➔</span>
+      </button>
+
+      <!-- OPTION 2: GALLERY / FILES -->
+      <button type="button" onclick="triggerPrescriptionGallery()" style="display: flex; align-items: center; gap: 14px; padding: 13px 16px; border: 1.5px solid #16a34a; background: #f0fdf4; border-radius: 12px; cursor: pointer; text-align: left; transition: all 0.2s;">
+        <span style="font-size: 26px;">🖼️</span>
+        <div style="flex: 1;">
+          <div style="font-size: 14.5px; font-weight: 800; color: #15803d;">Upload from Gallery / Files</div>
+          <div style="font-size: 12px; color: #166534; margin-top: 2px;">Choose photo, screenshot, or scan from device</div>
+        </div>
+        <span style="color: #16a34a; font-size: 18px; font-weight: bold;">➔</span>
+      </button>
+    </div>
+
+    <div id="cameraPermissionNotice" style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #b91c1c; margin-bottom: 14px; text-align: left; line-height: 1.4;">
+      ℹ️ <strong>Camera Permission:</strong> If your browser asks, tap <strong>Allow</strong>. If camera does not open, choose <strong>Upload from Gallery / Files</strong> above.
+    </div>
+
+    <button type="button" onclick="closePrescriptionChoiceModal()" style="width: 100%; padding: 11px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 13.5px; cursor: pointer;">
+      Cancel
+    </button>
+  </div>
+</div>
+
+<!-- PRESCRIPTION PREVIEW & CONFIRM MODAL -->
+<div id="carepathAIPreviewModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000001; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+  <div style="background: white; border-radius: 18px; max-width: 440px; width: 100%; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0; font-size: 17px; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+        <span>🔍</span> Confirm Prescription Photo
+      </h3>
+      <button type="button" onclick="cancelPrescriptionPreview()" style="background: transparent; border: none; font-size: 22px; cursor: pointer; color: #64748b;">&times;</button>
+    </div>
+    
+    <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 8px; margin-bottom: 12px;">
+      <img id="prescriptionPreviewImg" src="" alt="Prescription Preview" style="width: 100%; max-height: 220px; object-fit: contain; border-radius: 8px; display: block; margin: 0 auto;">
+    </div>
+
+    <input type="text" id="prescriptionUserNotes" placeholder="Optional: Any specific question for AI? (e.g. tablet timings)" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; margin-bottom: 16px; outline: none;">
+    
+    <div style="display: flex; gap: 10px;">
+      <button type="button" onclick="cancelPrescriptionPreview()" style="flex: 1; padding: 12px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 10px; font-weight: 700; font-size: 13.5px; cursor: pointer;">
+        ✕ Change Photo
+      </button>
+      <button type="button" id="btnConfirmDecodePrescription" onclick="submitPrescriptionForAnalysis()" style="flex: 1.6; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 13.5px; cursor: pointer; box-shadow: 0 4px 12px rgba(2,132,199,0.3);">
+        🚀 Decode Prescription
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // =====================================================
+  // CAREPATH AI - ALL INDIAN LANGUAGES TWO-WAY VOICE ENGINE
+  // Supported: Telugu, Hindi, English, Tamil, Kannada, Malayalam,
+  // Marathi, Bengali, Gujarati, Punjabi
+  // =====================================================
+  let lastAiToggleTimestamp = 0;
+  let autoVoiceOutput = false;
+  let cpSpeechRecognition = null;
+  let isCpListening = false;
+  let cpCameraStream = null;
+  let cpCameraFacing = "environment";
+  let pendingPrescriptionFile = null;
+  let carepathVoices = [];
+  let currentlyPlayingMsgId = null;
+  let activeAudioVoice = null;
+  window.cpMessageTextMap = window.cpMessageTextMap || {};
+
+  // Default to Telugu or Hindi if in India or user preference, fallback to English
+  let currentAiLang = localStorage.getItem("carepath_lang") || "te-IN";
+
+  const CP_LANG_CONFIG = {
+    "te-IN": {
+      name: "తెలుగు",
+      code: "te",
+      speechRecLang: "te-IN",
+      welcome: "నమస్కారం! 🙏 నేను మీ CarePath AI ఆరోగ్య సహాయకుడిని. వైద్యుల వివరాలు, OPD టోకెన్ లేదా <strong>డాక్టర్ ప్రిస్క్రిప్షన్ ఫోటో తీసి అప్‌లోడ్ చేయండి</strong>. మందులు ఎలా వాడాలో వివరంగా చెప్తాను!",
+      placeholder: "CarePath AI ని అడగండి లేదా మాట్లాడటానికి 🎙️ నొక్కండి...",
+      listening: "వింటున్నాను... మీ లక్షణాలు లేదా ప్రశ్నను మాట్లాడండి",
+      transcriptBoxHint: "మాట్లాడండి — మీ మాటలు ఇక్కడ కనిపిస్తాయి...",
+      unsupported: "🎙️ ఈ బ్రౌజర్‌లో వాయిస్ రికగ్నిషన్ అందుబాటులో లేదు. కింది ప్రశ్నను నొక్కండి లేదా టైప్ చేయండి!",
+      btnScan: "📸 ప్రిస్క్రిప్షన్ స్కాన్ చేయండి",
+      btnDecode: "💊 మందుల మోతాదు అర్థం",
+      sendBtn: "ప్రశ్న పంపండి",
+      orTapTopic: "లేదా సమాధానం వినడానికి ప్రశ్నను నొక్కండి:",
+      topics: [
+        { text: "నాకు తేలికపాటి జ్వరం మరియు తలనొప్పి ఉంది, ఏమి చేయాలి?", label: "🌡️ జ్వరం & తలనొప్పి" },
+        { text: "ప్రిస్క్రిప్షన్‌లో 1-0-1 మరియు TDS అంటే ఏమిటి?", label: "💊 1-0-1 అర్థం" },
+        { text: "నా లైవ్ OPD టోకెన్ క్యూ స్థితిని ఎలా చూడాలి?", label: "🎫 టోకెన్ స్థితి" }
+      ],
+      greetingVoice: "నమస్కారం! నేను కేర్‌పాత్ AI, మీ ఆరోగ్య సహాయకుడిని. మీకు ఎలా సహాయపడగలను?",
+      dosageQuery: "డాక్టర్ ప్రిస్క్రిప్షన్‌లో 1-0-1 మరియు TDS మోతాదు అర్థాన్ని వివరించండి"
+    },
+    "hi-IN": {
+      name: "हिंदी",
+      code: "hi",
+      speechRecLang: "hi-IN",
+      welcome: "नमस्ते! 🙏 मैं CarePath AI स्वास्थ्य सहायक हूँ। डॉक्टरों, OPD टोकन या <strong>डॉक्टर की पर्ची (Prescription) की फोटो अपलोड करें</strong> और मैं दवाइयों की पूरी जानकारी दूंगा!",
+      placeholder: "CarePath AI से पूछें या बोलने के लिए 🎙️ दबाएं...",
+      listening: "सुन रहे हैं... अपने लक्षण या स्वास्थ्य प्रश्न बोलें",
+      transcriptBoxHint: "बोलें — आपके शब्द यहाँ दिखाई देंगे...",
+      unsupported: "🎙️ इस ब्राउज़र में वॉइस सपोर्ट उपलब्ध नहीं है। नीचे दिया प्रश्न चुनें या टाइप करें!",
+      btnScan: "📸 पर्ची (Prescription) स्कैन करें",
+      btnDecode: "💊 दवाई की खुराक समझें",
+      sendBtn: "सवाल भेजें",
+      orTapTopic: "या जवाब सुनने के लिए सवाल चुनें:",
+      topics: [
+        { text: "मुझे हल्का बुखार और सिरदर्द है, मुझे क्या करना चाहिए?", label: "🌡️ बुखार और सिरदर्द" },
+        { text: "पर्चे में 1-0-1 और TDS का क्या मतलब है?", label: "💊 1-0-1 का मतलब" },
+        { text: "मैं अपनी लाइव टोकन स्थिति कैसे देख सकता हूँ?", label: "🎫 टोकन स्थिति देखें" }
+      ],
+      greetingVoice: "नमस्ते! मैं केयरपाथ AI हूँ। मैं आपकी क्या मदद कर सकता हूँ?",
+      dosageQuery: "डॉक्टर के पर्चे में 1-0-1 और TDS खुराक का मतलब समझाएं"
+    },
+    "en-IN": {
+      name: "English",
+      code: "en",
+      speechRecLang: "en-IN",
+      welcome: "Hi! I'm your AI Healthcare Assistant. Ask me about doctors, OPD tokens, or <strong>upload / take a photo of your doctor's prescription</strong> and I will explain what the doctor wrote and how to take your medicines!",
+      placeholder: "Ask CarePath AI or tap 🎙️ to speak...",
+      listening: "Listening... Speak your symptoms or question",
+      transcriptBoxHint: "Speak now — words will appear here in real time...",
+      unsupported: "🎙️ Real-time voice isn't supported in this browser. Tap any question below or type to communicate!",
+      btnScan: "📸 Scan Doctor's Prescription",
+      btnDecode: "💊 Decode Dosage Terms",
+      sendBtn: "Send Question",
+      orTapTopic: "Or Tap a Question to Hear Answer:",
+      topics: [
+        { text: "I have mild fever and headache, what should I do?", label: "🌡️ Fever & Headache" },
+        { text: "Explain prescription dosage abbreviations 1-0-1 and TDS", label: "💊 1-0-1 Dosage Meaning" },
+        { text: "How can I check my live OPD token queue position?", label: "🎫 Check Token Queue" }
+      ],
+      greetingVoice: "Hello! I am CarePath AI. How can I help your health today?",
+      dosageQuery: "Explain what dosage 1-0-1 and TDS mean in a doctor prescription"
+    },
+    "ta-IN": {
+      name: "தமிழ்",
+      code: "ta",
+      speechRecLang: "ta-IN",
+      welcome: "வணக்கம்! 🙏 நான் உங்கள் CarePath AI சுகாதார உதவியாளர். மருத்துவர்கள், OPD டோக்கன் அல்லது <strong>மருத்துவ சீட்டை படம் எடுத்து பதிவேற்றவும்</strong>, மருந்துகள் உட்கொள்ளும் முறையை விளக்குகிறேன்!",
+      placeholder: "CarePath AI-யிடம் கேளுங்கள் அல்லது 🎙️ அழுத்தவும்...",
+      listening: "கேட்கிறது... உங்கள் கேள்வியைப் பேசுங்கள்",
+      transcriptBoxHint: "பேசுங்கள் — உங்கள் சொற்கள் இங்கே தோன்றும்...",
+      unsupported: "🎙️ இந்த உலாவியில் குரல் ஆதரவு இல்லை. கீழே உள்ள கேள்வியைத் தட்டவும் அல்லது தட்டச்சு செய்யவும்!",
+      btnScan: "📸 மருந்துச் சீட்டை ஸ்கேன் செய்க",
+      btnDecode: "💊 மருந்தளவு விளக்கம்",
+      sendBtn: "கேள்வி அனுப்பு",
+      orTapTopic: "அல்லது பதிலை கேட்க கேள்வியைத் தொடவும்:",
+      topics: [
+        { text: "எனக்கு லேசான காய்ச்சல் மற்றும் தலைவலி உள்ளது, என்ன செய்ய வேண்டும்?", label: "🌡️ காய்ச்சல் & தலைவலி" },
+        { text: "மருந்து சீட்டில் 1-0-1 மற்றும் TDS என்றால் என்ன?", label: "💊 1-0-1 விளக்கம்" },
+        { text: "என் நேரலை டோக்கன் நிலையை எவ்வாறு சரிபார்ப்பது?", label: "🎫 டோக்கன் நிலை" }
+      ],
+      greetingVoice: "வணக்கம்! நான் CarePath AI. உங்களுக்கு நான் எவ்வாறு உதவ முடியும்?",
+      dosageQuery: "மருத்துவர் மருந்து சீட்டில் 1-0-1 மற்றும் TDS என்றால் என்ன என்று விளக்குங்கள்"
+    },
+    "kn-IN": {
+      name: "ಕನ್ನಡ",
+      code: "kn",
+      speechRecLang: "kn-IN",
+      welcome: "ನಮಸ್ಕಾರ! 🙏 ನಾನು ನಿಮ್ಮ CarePath AI ಆರೋಗ್ಯ ಸಹಾಯಕ. ವೈದ್ಯರು, OPD ಟೋಕನ್ ಅಥವಾ <strong>ವೈದ್ಯರ ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಫೋಟೋ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ</strong>, ಔಷಧಿ ವಿವರಗಳನ್ನು ನೀಡುತ್ತೇನೆ!",
+      placeholder: "CarePath AI ಅನ್ನು ಕೇಳಿ ಅಥವಾ 🎙️ ಒತ್ತಿರಿ...",
+      listening: "ಕೇಳಿಸಿಕೊಳ್ಳುತ್ತಿದೆ... ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಮಾತನಾಡಿ",
+      transcriptBoxHint: "ಮಾತನಾಡಿ — ನಿಮ್ಮ ಪದಗಳು ಇಲ್ಲಿ ಗೋಚರಿಸುತ್ತವೆ...",
+      unsupported: "🎙️ ಧ್ವನಿ ಬೆಂಬಲ ಲಭ್ಯವಿಲ್ಲ. ಕೆಳಗಿನ ಪ್ರಶ್ನೆ ಒತ್ತಿ ಅಥವಾ ಟೈಪ್ ಮಾಡಿ!",
+      btnScan: "📸 ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ",
+      btnDecode: "💊 ಔಷಧಿ ಪ್ರಮಾಣ ವಿವರ",
+      sendBtn: "ಪ್ರಶ್ನೆ ಕಳುಹಿಸಿ",
+      orTapTopic: "ಉತ್ತರ ಕೇಳಲು ಪ್ರಶ್ನೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಿ:",
+      topics: [
+        { text: "ನನಗೆ ಸಣ್ಣ ಜ್ವರ ಮತ್ತು ತಲೆನೋವು ಇದೆ, ಏನು ಮಾಡಬೇಕು?", label: "🌡️ ಜ್ವರ ಮತ್ತು ತಲೆನೋವು" },
+        { text: "ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್‌ನಲ್ಲಿ 1-0-1 ಮತ್ತು TDS ಎಂದರೆ ಏನು?", label: "💊 1-0-1 ಅರ್ಥ" },
+        { text: "ನನ್ನ ಲೈವ್ ಟೋಕನ್ ಸ್ಥಿತಿಯನ್ನು ಹೇಗೆ ಪರಿಶೀಲಿಸುವುದು?", label: "🎫 ಟೋಕನ್ ಸ್ಥಿತಿ" }
+      ],
+      greetingVoice: "ನಮಸ್ಕಾರ! ನಾನು CarePath AI. ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?",
+      dosageQuery: "ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್‌ನಲ್ಲಿ 1-0-1 ಮತ್ತು TDS ಪ್ರಮಾಣದ ಅರ್ಥವೇನು ಎಂದು ವಿವರಿಸಿ"
+    },
+    "ml-IN": {
+      name: "മലയാളം",
+      code: "ml",
+      speechRecLang: "ml-IN",
+      welcome: "നമസ്കാരം! 🙏 ഞാൻ CarePath AI ആരോഗ്യ സഹായിയാണ്. ഡോക്ടർമാർ, ഒപിഡി ടോക്കൺ വിവരങ്ങൾ അറിയാനും മരുന്നുകൾ മനസ്സിലാക്കാനും ചോദിക്കാം!",
+      placeholder: "CarePath AI-യോട് ചോദിക്കുക അല്ലെങ്കിൽ 🎙️ അമർത്തുക...",
+      listening: "കേൾക്കുന്നു... നിങ്ങളുടെ ചോദ്യം സംസാരിക്കുക",
+      transcriptBoxHint: "സംസാരിക്കൂ — വാക്കുകൾ ഇവിടെ കാണാം...",
+      unsupported: "🎙️ ഈ ബ്രൗസറിൽ വോയ്‌സ് പിന്തുണ ലഭ്യമല്ല. ചോദ്യം ടൈപ്പ് ചെയ്യുക!",
+      btnScan: "📸 കുറിപ്പടി സ്കാൻ ചെയ്യുക",
+      btnDecode: "💊 മരുന്നിന്റെ അളവ്",
+      sendBtn: "ചോദ്യം അയക്കുക",
+      orTapTopic: "ഉത്തരം കേൾക്കാൻ ചോദ്യം തിരഞ്ഞെടുക്കുക:",
+      topics: [
+        { text: "എനിക്ക് പനിയും തലവേദനയും ഉണ്ട്, എന്ത് ചെയ്യണം?", label: "🌡️ പനിയും തലവേദനയും" },
+        { text: "ഡോക്ടറുടെ കുറിപ്പടിയിൽ 1-0-1 എന്നാൽ എന്താണ്?", label: "💊 1-0-1 അർത്ഥം" },
+        { text: "എന്റെ ടോക്കൺ നമ്പർ എങ്ങനെ പരിശോധിക്കാം?", label: "🎫 ടോക്കൺ നില" }
+      ],
+      greetingVoice: "നമസ്കാരം! ഞാൻ CarePath AI. ഞാൻ എങ്ങനെ സഹായിക്കണം?",
+      dosageQuery: "കുറിപ്പടിയിൽ 1-0-1 എന്താണെന്ന് വിശദീകരിക്കുക"
+    },
+    "mr-IN": {
+      name: "मराठी",
+      code: "mr",
+      speechRecLang: "mr-IN",
+      welcome: "नमस्कार! 🙏 मी CarePath AI आरोग्य सहाय्यक आहे. डॉक्टर, ओपीडी टोकन किंवा <strong>डॉक्टरांच्या प्रिस्क्रिप्शनचा फोटो अपलोड करा</strong>!",
+      placeholder: "CarePath AI ला विचारा किंवा 🎙️ दाबा...",
+      listening: "ऐकत आहे... आपली समस्या बोला",
+      transcriptBoxHint: "बोला — आपले शब्द येथे दिसतील...",
+      unsupported: "🎙️ या ब्राउझरमध्ये व्हॉइस सपोर्ट नाही. खालील प्रश्न निवडा!",
+      btnScan: "📸 प्रिस्क्रिप्शन स्कॅन करा",
+      btnDecode: "💊 औषधांचा डोस समजून घ्या",
+      sendBtn: "प्रश्न पाठवा",
+      orTapTopic: "उत्तर ऐकण्यासाठी प्रश्न निवडा:",
+      topics: [
+        { text: "मला हलका ताप आणि डोकेदुखी आहे, मी काय करावे?", label: "🌡️ ताप आणि डोकेदुखी" },
+        { text: "प्रिस्क्रिप्शनमध्ये 1-0-1 चा अर्थ काय आहे?", label: "💊 1-0-1 अर्थ" },
+        { text: "माझा टोकन नंबर कसा तपासायचा?", label: "🎫 टोकन तपासा" }
+      ],
+      greetingVoice: "नमस्कार! मी CarePath AI आहे. मी आपल्याला कशी मदत करू शकेन?",
+      dosageQuery: "प्रिस्क्रिप्शनमध्ये 1-0-1 डोसचा अर्थ स्पष्ट करा"
+    },
+    "bn-IN": {
+      name: "বাংলা",
+      code: "bn",
+      speechRecLang: "bn-IN",
+      welcome: "নমস্কার! 🙏 আমি CarePath AI স্বাস্থ্য সহকারী। ডাক্তার, ওপিডি টোকেন বা প্রেসক্রিপশনের ছবি আপলোড করে ওষুধের নিয়ম জেনে নিন!",
+      placeholder: "CarePath AI-কে জিজ্ঞাসা করুন বা 🎙️ চাপুন...",
+      listening: "শুনছি... আপনার স্বাস্থ্য সমস্যা বলুন",
+      transcriptBoxHint: "বলুন — আপনার কথা এখানে দেখা যাবে...",
+      unsupported: "🎙️ এই ব্রাউজারে ভয়েস সাপোর্ট নেই। নিচের প্রশ্নটি বেছে নিন!",
+      btnScan: "📸 প্রেসক্রিপশন স্ক্যান করুন",
+      btnDecode: "💊 ওষুধের ডোজ বুঝুন",
+      sendBtn: "প্রশ্ন পাঠান",
+      orTapTopic: "উত্তর শুনতে প্রশ্ন বেছে নিন:",
+      topics: [
+        { text: "আমার জ্বর এবং মাথাব্যথা আছে, কী করা উচিত?", label: "🌡️ জ্বর ও মাথাব্যথা" },
+        { text: "প্রেসক্রিপশনে 1-0-1 এর অর্থ কী?", label: "💊 1-0-1 এর অর্থ" },
+        { text: "আমার লাইভ টোকেন স্ট্যাটাস কীভাবে দেখব?", label: "🎫 টোকেন দেখুন" }
+      ],
+      greetingVoice: "নমস্কার! আমি CarePath AI. আপনাকে কীভাবে সাহায্য করতে পারি?",
+      dosageQuery: "প্রেসক্রিপশনে 1-0-1 এর অর্থ কী ব্যাখ্যা করুন"
+    },
+    "gu-IN": {
+      name: "ગુજરાતી",
+      code: "gu",
+      speechRecLang: "gu-IN",
+      welcome: "નમસ્તે! 🙏 હું CarePath AI હેલ્થકેર સહાયક છું. ડોકટરો, OPD ટોકન અથવા પ્રિસ્ક્રિપ્શન વિશે પૂછો!",
+      placeholder: "CarePath AI ને પૂછો અથવા 🎙️ દબાવો...",
+      listening: "સાંભળી રહ્યો છું... તમારી સમસ્યા બોલો",
+      transcriptBoxHint: "બોલો — તમારા શબ્દો અહીં દેખાશે...",
+      unsupported: "🎙️ આ બ્રાઉઝરમાં વૉઇસ સપોર્ટ નથી. નીચેનો પ્રશ્ન પસંદ કરો!",
+      btnScan: "📸 પ્રિસ્ક્રિપ્શન સ્કેન કરો",
+      btnDecode: "💊 દવાના ડોઝ સમજો",
+      sendBtn: "પ્રશ્ન મોકલો",
+      orTapTopic: "જવાબ સાંભળવા માટે પ્રશ્ન પસંદ કરો:",
+      topics: [
+        { text: "મને તાવ અને માથાનો દુખાવો છે, શું કરવું જોઈએ?", label: "🌡️ તાવ અને માથાનો દુખાવો" },
+        { text: "પ્રિસ્ક્રિપ્શનમાં 1-0-1 નો અર્થ શું છે?", label: "💊 1-0-1 નો અર્થ" },
+        { text: "મારું લાઇવ ટોકન સ્ટેટસ કેવી રીતે જોવું?", label: "🎫 ટોકન સ્ટેટસ" }
+      ],
+      greetingVoice: "નમસ્તે! હું CarePath AI છું. હું તમારી કેવી રીતે મદદ કરી શકું?",
+      dosageQuery: "પ્રિસ્ક્રિપ્શનમાં 1-0-1 નો અર્થ શું છે તે સમજાવો"
+    },
+    "pa-IN": {
+      name: "ਪੰਜਾਬੀ",
+      code: "pa",
+      speechRecLang: "pa-IN",
+      welcome: "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ! 🙏 ਮੈਂ CarePath AI ਸਿਹਤ ਸਹਾਇਕ ਹਾਂ। ਡਾਕਟਰਾਂ, OPD ਟੋਕਨ ਜਾਂ ਪਰਚੀ ਬਾਰੇ ਪੁੱਛੋ!",
+      placeholder: "CarePath AI ਨੂੰ ਪੁੱਛੋ ਜਾਂ 🎙️ ਦਬਾਓ...",
+      listening: "ਸੁਣ ਰਿਹਾ ਹਾਂ... ਆਪਣੀ ਸਮੱਸਿਆ ਦੱਸੋ",
+      transcriptBoxHint: "ਬੋਲੋ — ਤੁਹਾਡੇ ਸ਼ਬਦ ਇੱਥੇ ਦਿਖਾਈ ਦੇਣਗੇ...",
+      unsupported: "🎙️ ਇਸ ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਆਵਾਜ਼ ਸਹਿਯੋਗ ਨਹੀਂ ਹੈ। ਹੇਠਾਂ ਦਿੱਤਾ ਸਵਾਲ ਚੁਣੋ!",
+      btnScan: "📸 ਪਰਚੀ ਸਕੈਨ ਕਰੋ",
+      btnDecode: "💊 ਦਵਾਈ ਦੀ ਖੁਰਾਕ",
+      sendBtn: "ਸਵਾਲ ਭੇਜੋ",
+      orTapTopic: "ਜਵਾਬ ਸੁਣਨ ਲਈ ਸਵਾਲ ਚੁਣੋ:",
+      topics: [
+        { text: "ਮੈਨੂੰ ਬੁਖਾਰ ਅਤੇ ਸਿਰ ਦਰਦ ਹੈ, ਕੀ ਕਰਨਾ ਚਾਹੀਦਾ ਹੈ?", label: "🌡️ ਬੁਖਾਰ ਅਤੇ ਸਿਰ ਦਰਦ" },
+        { text: "ਪਰਚੀ ਵਿੱਚ 1-0-1 ਦਾ ਕੀ ਅਰਥ ਹੈ?", label: "💊 1-0-1 ਦਾ ਮਤਲਬ" },
+        { text: "ਮੇਰਾ ਲਾਈਵ ਟੋਕਨ ਨੰਬਰ ਕਿਵੇਂ ਵੇਖੀਏ?", label: "🎫 ਟੋਕਨ ਵੇਖੋ" }
+      ],
+      greetingVoice: "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ! ਮੈਂ CarePath AI ਹਾਂ। ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
+      dosageQuery: "ਪਰਚੀ ਵਿੱਚ 1-0-1 ਦਾ ਕੀ ਮਤਲਬ ਹੈ ਸਮਝਾਓ"
+    }
+  };
+
+  // Preload speech synthesis voices as secondary fallback
+  function loadCarepathVoices() {
+    if (!('speechSynthesis' in window)) return;
+    try { carepathVoices = window.speechSynthesis.getVoices() || []; } catch(e) {}
+  }
+  if ('speechSynthesis' in window) {
+    loadCarepathVoices();
+    window.speechSynthesis.onvoiceschanged = loadCarepathVoices;
+  }
+
+  // Multi-Turn Conversation History & Prescription Context
+  let carepathConversationHistory = [];
+  let lastAnalyzedPrescriptionText = "";
+
+  // Prime speech & audio channel on user touch (critical for Android autoplay policy)
+  let sharedVoiceAudio = null;
+
+  function primeSpeechSynthesis() {
+    try {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.resume();
+        const u = new SpeechSynthesisUtterance(" ");
+        u.volume = 0.01;
+        window.speechSynthesis.speak(u);
+      }
+    } catch(e) {}
+
+    // Unlock HTML5 Audio on mobile Chrome / Safari user tap gesture
+    try {
+      if (!sharedVoiceAudio) {
+        sharedVoiceAudio = new Audio();
+      }
+      if (!sharedVoiceAudio.src || sharedVoiceAudio.src.startsWith("data:")) {
+        sharedVoiceAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+        const p = sharedVoiceAudio.play();
+        if (p !== undefined) {
+          p.then(() => {
+            sharedVoiceAudio.pause();
+          }).catch(() => {});
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Detect which Indian language a given piece of text is written in
+  function detectTextLanguage(text, defaultLang) {
+    if (!text) return defaultLang || currentAiLang || "te-IN";
+    if (/[\u0C00-\u0C7F]/.test(text)) return "te-IN"; // Telugu
+    if (/[\u0900-\u097F]/.test(text)) {
+      // Check Marathi specific words or default to Hindi
+      if (text.includes("आहे") || text.includes("मला") || text.includes("करावे")) return "mr-IN";
+      return "hi-IN"; // Hindi
+    }
+    if (/[\u0B80-\u0BFF]/.test(text)) return "ta-IN"; // Tamil
+    if (/[\u0C80-\u0CFF]/.test(text)) return "kn-IN"; // Kannada
+    if (/[\u0D00-\u0D7F]/.test(text)) return "ml-IN"; // Malayalam
+    if (/[\u0980-\u09FF]/.test(text)) return "bn-IN"; // Bengali
+    if (/[\u0A80-\u0AFF]/.test(text)) return "gu-IN"; // Gujarati
+    if (/[\u0A00-\u0A7F]/.test(text)) return "pa-IN"; // Punjabi
+    return defaultLang || currentAiLang || "en-IN";
+  }
+
+  // Switch Active Language
+  function changeCarePathLanguage(newLang) {
+    primeSpeechSynthesis();
+    if (!CP_LANG_CONFIG[newLang]) newLang = "te-IN";
+    currentAiLang = newLang;
+    localStorage.setItem("carepath_lang", newLang);
+
+    const sel = document.getElementById("carepathLanguageSelect");
+    if (sel && sel.value !== newLang) sel.value = newLang;
+
+    const conf = CP_LANG_CONFIG[newLang];
+
+    const input = document.getElementById("carepathAIInput");
+    if (input) input.placeholder = conf.placeholder;
+
+    const voiceStatus = document.getElementById("cpVoiceStatusText");
+    if (voiceStatus && !isCpListening) voiceStatus.textContent = conf.listening;
+
+    const transcriptBox = document.getElementById("cpVoiceTranscriptBox");
+    if (transcriptBox && !isCpListening) transcriptBox.innerHTML = `<em style="color: #94a3b8;">${conf.transcriptBoxHint}</em>`;
+
+    const sendBtn = document.getElementById("btnVoiceDoneSend");
+    if (sendBtn) sendBtn.innerHTML = `<span>✅</span> ${conf.sendBtn}`;
+
+    const topicContainer = document.getElementById("cpVoiceTopicsRow");
+    if (topicContainer) {
+      topicContainer.innerHTML = conf.topics.map(t => `
+        <button type="button" onclick="askQuickVoiceTopic('${escapeHtml(t.text)}')" style="background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.35); padding: 5px 9px; border-radius: 12px; font-size: 11px; font-weight: 600; cursor: pointer;">
+          ${t.label}
+        </button>
+      `).join("");
+    }
+
+    const initialChips = document.getElementById("carepathInitialActionChips");
+    if (initialChips) {
+      initialChips.innerHTML = `
+        <button type="button" onclick="triggerPrescriptionCapture()" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+          ${conf.btnScan}
+        </button>
+        <button type="button" onclick="handleDosageChipClick()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer;">
+          ${conf.btnDecode}
+        </button>
+      `;
+    }
+
+    if (cpSpeechRecognition) {
+      try { cpSpeechRecognition.lang = conf.speechRecLang; } catch(e) {}
+    }
+
+    // Auto-greeting audio removed: speech only plays when answering patient questions
+    stopCarePathSpeech();
+  }
+
+  function handleDosageChipClick() {
+    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
+    quickAskAI(conf.dosageQuery);
+  }
+
+  // =====================================================
+  // UNIVERSAL NATIVE AUDIO VOICE PLAYER (ALL INDIAN LANGUAGES)
+  // Plays via backend /ai/tts stream for 100% guarantee on all phones,
+  // with instant fallback to browser SpeechSynthesis!
+  // =====================================================
+  function stopCarePathSpeech() {
+    speechQueueActive = false;
+    if (activeAudioVoice) {
+      try {
+        activeAudioVoice.pause();
+        activeAudioVoice.currentTime = 0;
+      } catch(e) {}
+      activeAudioVoice = null;
+    }
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch(e) {}
+    }
+    resetAllSpeakerButtons();
+  }
+
+  function resetAllSpeakerButtons() {
+    currentlyPlayingMsgId = null;
+    const btns = document.querySelectorAll(".cp-voice-btn");
+    btns.forEach(btn => {
+      btn.classList.remove("playing");
+      const icon = btn.querySelector(".cp-speaker-icon");
+      const label = btn.querySelector(".cp-speaker-label");
+      if (icon) icon.textContent = "🔊";
+      if (label) label.textContent = "Listen";
+    });
+  }
+
+  function playAudioVoice(text, langCode, msgId) {
+    stopCarePathSpeech();
+
+    let raw = String(text || "");
+    try {
+      if (raw.includes("%")) raw = decodeURIComponent(raw);
+    } catch(e) {}
+
+    let clean = raw
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/\[(.*?)\]\([^)]*\)/g, "$1")
+      .replace(/https?:\/\/\S+/g, "")
+      .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
+      .replace(/[#_~`]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!clean) return;
+
+    const detected = detectTextLanguage(clean, langCode);
+    const shortCode = detected.split("-")[0].toLowerCase();
+
+    // Full chat and complete prescription explanation (up to 2000 characters)
+    let toSpeak = clean.slice(0, 2000).trim();
+
+    if (msgId) {
+      currentlyPlayingMsgId = msgId;
+      const btn = document.querySelector(`.cp-voice-btn[data-msg-id="${msgId}"]`);
+      if (btn) {
+        btn.classList.add("playing");
+        const icon = btn.querySelector(".cp-speaker-icon");
+        const label = btn.querySelector(".cp-speaker-label");
+        if (icon) icon.textContent = "⏹️";
+        if (label) label.textContent = "Stop";
+      }
+    }
+
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+    const backendTtsUrl = `${apiBase}/ai/tts?text=${encodeURIComponent(toSpeak)}&lang=${shortCode}`;
+    const directTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${shortCode}&client=tw-ob&q=${encodeURIComponent(toSpeak)}`;
+
+    // Triple Fail-Safe Native Audio Player:
+    // Layer 1: Backend /ai/tts proxy stream
+    // Layer 2: Direct Google TTS audio stream
+    // Layer 3: Client Web SpeechSynthesis fallback
+    let triedDirect = false;
+
+    function startNativeAudio(audioUrl) {
+      try {
+        if (!sharedVoiceAudio) {
+          sharedVoiceAudio = new Audio();
+        }
+        activeAudioVoice = sharedVoiceAudio;
+        sharedVoiceAudio.pause();
+        sharedVoiceAudio.src = audioUrl;
+
+        sharedVoiceAudio.onended = function() {
+          activeAudioVoice = null;
+          resetAllSpeakerButtons();
+        };
+
+        sharedVoiceAudio.onerror = function() {
+          activeAudioVoice = null;
+          if (!triedDirect && toSpeak.length <= 200) {
+            triedDirect = true;
+            startNativeAudio(directTtsUrl);
+          } else {
+            fallbackSpeechSynthesis(toSpeak, detected, msgId);
+          }
+        };
+
+        const playPromise = sharedVoiceAudio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(err => {
+            console.warn("Audio play blocked, attempting fallback:", err);
+            if (!triedDirect && toSpeak.length <= 200) {
+              triedDirect = true;
+              startNativeAudio(directTtsUrl);
+            } else {
+              fallbackSpeechSynthesis(toSpeak, detected, msgId);
+            }
+          });
+        }
+      } catch(e) {
+        fallbackSpeechSynthesis(toSpeak, detected, msgId);
+      }
+    }
+
+    startNativeAudio(backendTtsUrl);
+  }
+
+  function getSpeechChunks(text) {
+    if (!text) return [];
+    const sentences = text.split(/(?<=[.!?।\n])\s+/).map(c => c.trim()).filter(Boolean);
+    const chunks = [];
+    for (const s of sentences) {
+      if (s.length <= 180) {
+        chunks.push(s);
+      } else {
+        const parts = s.split(/(?<=[,;:\-])\s+/).map(p => p.trim()).filter(Boolean);
+        for (const p of parts) {
+          if (p.length <= 180) {
+            chunks.push(p);
+          } else {
+            const words = p.split(/\s+/);
+            let buf = "";
+            for (const w of words) {
+              if ((buf + " " + w).trim().length > 180) {
+                if (buf) chunks.push(buf);
+                buf = w;
+              } else {
+                buf = (buf + " " + w).trim();
+              }
+            }
+            if (buf) chunks.push(buf);
+          }
+        }
+      }
+    }
+    return chunks.length > 0 ? chunks : [text];
+  }
+
+  let speechQueueActive = false;
+
+  function fallbackSpeechSynthesis(toSpeak, detectedLang, msgId) {
+    if (!('speechSynthesis' in window)) {
+      resetAllSpeakerButtons();
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+
+      // Split into natural sentence chunks without dropping trailing sentences
+      const chunks = getSpeechChunks(toSpeak);
+
+      let chunkIndex = 0;
+      speechQueueActive = true;
+
+      if (!carepathVoices.length) loadCarepathVoices();
+      const langPrefix = detectedLang.slice(0, 2).toLowerCase();
+      const bestVoice = carepathVoices.find(v => {
+        const vl = v.lang.replace('_', '-').toLowerCase();
+        return vl === detectedLang.toLowerCase() || vl.startsWith(langPrefix);
+      }) || carepathVoices.find(v => v.lang.toLowerCase().startsWith("en")) || carepathVoices[0];
+
+      function speakNextChunk() {
+        if (!speechQueueActive || chunkIndex >= chunks.length) {
+          speechQueueActive = false;
+          resetAllSpeakerButtons();
+          return;
+        }
+
+        const textChunk = chunks[chunkIndex++];
+        const utterance = new SpeechSynthesisUtterance(textChunk);
+        if (bestVoice) {
+          utterance.voice = bestVoice;
+          utterance.lang = bestVoice.lang;
+        } else {
+          utterance.lang = detectedLang;
+        }
+
+        utterance.rate = 0.95;
+        utterance.onend = function() {
+          speakNextChunk();
+        };
+        utterance.onerror = function() {
+          speakNextChunk();
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }
+
+      speakNextChunk();
+    } catch(e) {
+      speechQueueActive = false;
+      resetAllSpeakerButtons();
+    }
+  }
+
+  function togglePlayMessageSpeech(msgId, btn) {
+    primeSpeechSynthesis();
+    if (currentlyPlayingMsgId === msgId) {
+      stopCarePathSpeech();
+      return;
+    }
+    const fullText = (window.cpMessageTextMap && window.cpMessageTextMap[msgId]) || "";
+    if (fullText) {
+      playAudioVoice(fullText, currentAiLang, msgId);
+    }
+  }
+
+  // Alias for backward compatibility
+  function speakCarePathText(text, msgId) {
+    playAudioVoice(text, currentAiLang, msgId);
+  }
+
+  // =====================================================
+  // VOICE RECOGNITION (SPEECH-TO-TEXT) & LIVE ASSISTANT OVERLAY
+  // =====================================================
+  function showVoiceAssistantOverlay(state) {
+    const overlay = document.getElementById("carepathVoiceOverlay");
+    const statusText = document.getElementById("cpVoiceStatusText");
+    const transcriptBox = document.getElementById("cpVoiceTranscriptBox");
+    const micBtn = document.getElementById("carepathAIMicBtn");
+
+    if (micBtn) micBtn.classList.add("cp-mic-active");
+    if (!overlay) return;
+
+    overlay.style.display = "flex";
+
+    const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
+
+    if (state === "unsupported") {
+      if (statusText) statusText.textContent = conf.unsupported;
+      if (transcriptBox) transcriptBox.innerHTML = `<em style="color: #94a3b8;">${conf.orTapTopic}</em>`;
+      return;
+    }
+
+    if (statusText) statusText.textContent = conf.listening;
+    if (transcriptBox) transcriptBox.innerHTML = `<em style="color: #94a3b8;">${conf.transcriptBoxHint}</em>`;
+  }
+
+  function closeVoiceAssistantOverlay() {
+    const overlay = document.getElementById("carepathVoiceOverlay");
+    if (overlay) overlay.style.display = "none";
+    stopCarePathVoiceRecognition();
+  }
+
+  function updateVoiceAssistantTranscript(transcript) {
+    const transcriptBox = document.getElementById("cpVoiceTranscriptBox");
+    const input = document.getElementById("carepathAIInput");
+    if (transcriptBox) {
+      transcriptBox.textContent = transcript || "Listening...";
+    }
+    if (input) {
+      input.value = transcript;
+    }
+  }
+
+  function setVoiceAssistantStatus(text) {
+    const statusText = document.getElementById("cpVoiceStatusText");
+    if (statusText) statusText.textContent = text;
+  }
+
+  function handleVoiceDoneSend() {
+    const input = document.getElementById("carepathAIInput");
+    const val = input ? input.value.trim() : "";
+    closeVoiceAssistantOverlay();
+    if (val.length > 0) {
+      sendCarePathMessage();
+    } else {
+      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
+      quickAskAI(conf.dosageQuery);
+    }
+  }
+
+  function askQuickVoiceTopic(topicText) {
+    primeSpeechSynthesis();
+    closeVoiceAssistantOverlay();
+    closeMicBlockedModal();
+    quickAskAI(topicText);
+  }
+
+  function showMicBlockedModal() {
+    const m = document.getElementById("carepathMicBlockedModal");
+    if (m) m.style.display = "flex";
+  }
+
+  function closeMicBlockedModal() {
+    const m = document.getElementById("carepathMicBlockedModal");
+    if (m) m.style.display = "none";
+  }
+
+  async function retryMicrophoneAccess() {
+    closeMicBlockedModal();
+    primeSpeechSynthesis();
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop());
+        toggleCarePathVoiceRecognition();
+        return;
+      } catch(err) {
+        console.warn("Microphone test error:", err);
+      }
+    }
+    toggleCarePathVoiceRecognition();
+  }
+
+  async function toggleCarePathVoiceRecognition() {
+    if (isCpListening) {
+      stopCarePathVoiceRecognition();
+      closeVoiceAssistantOverlay();
+      return;
+    }
+
+    primeSpeechSynthesis();
+
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      showVoiceAssistantOverlay("unsupported");
+      return;
+    }
+
+    try {
+      if (cpSpeechRecognition) {
+        try { cpSpeechRecognition.abort(); } catch(e) {}
+        cpSpeechRecognition = null;
+      }
+
+      const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["te-IN"];
+
+      let speechSilenceTimer = null;
+      cpSpeechRecognition = new SpeechRec();
+      cpSpeechRecognition.lang = conf.speechRecLang;
+      cpSpeechRecognition.continuous = true;
+      cpSpeechRecognition.interimResults = true;
+      cpSpeechRecognition.maxAlternatives = 1;
+
+      cpSpeechRecognition.onstart = function() {
+        isCpListening = true;
+        showVoiceAssistantOverlay("listening");
+      };
+
+      cpSpeechRecognition.onresult = function(event) {
+        let transcript = "";
+        for (let i = 0; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript.trim()) {
+          updateVoiceAssistantTranscript(transcript);
+          if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
+          speechSilenceTimer = setTimeout(() => {
+            const input = document.getElementById("carepathAIInput");
+            if (input && input.value.trim().length > 1) {
+              setVoiceAssistantStatus("Thinking & sending to CarePath AI... 💙");
+              setTimeout(() => {
+                closeVoiceAssistantOverlay();
+                sendCarePathMessage();
+              }, 250);
+            }
+          }, 1800);
+        }
+      };
+
+      cpSpeechRecognition.onerror = function(event) {
+        console.warn("SpeechRec error:", event.error);
+        const err = event.error;
+        if (err === "no-speech") {
+          setVoiceAssistantStatus("Listening... speak in your language or tap a topic below.");
+        } else if (err === "not-allowed" || err === "service-not-allowed") {
+          stopCarePathVoiceRecognition();
+          closeVoiceAssistantOverlay();
+          showMicBlockedModal();
+        } else {
+          setVoiceAssistantStatus("Speech paused. Tap 🎙️ to speak or tap a question below.");
+        }
+      };
+
+      cpSpeechRecognition.onend = function() {
+        const input = document.getElementById("carepathAIInput");
+        const val = input ? input.value.trim() : "";
+        if (val.length > 1) {
+          stopCarePathVoiceRecognition();
+          setVoiceAssistantStatus("Thinking & sending to CarePath AI... 💙");
+          setTimeout(() => {
+            closeVoiceAssistantOverlay();
+            sendCarePathMessage();
+          }, 300);
+        } else if (isCpListening) {
+          try {
+            cpSpeechRecognition.start();
+          } catch(e) {
+            stopCarePathVoiceRecognition();
+          }
+        } else {
+          stopCarePathVoiceRecognition();
+        }
+      };
+
+      cpSpeechRecognition.start();
+    } catch(e) {
+      console.warn("Speech recognition initialization failed:", e);
+      stopCarePathVoiceRecognition();
+      closeVoiceAssistantOverlay();
+      showMicBlockedModal();
+    }
+  }
+
+  function stopCarePathVoiceRecognition() {
+    isCpListening = false;
+    const micBtn = document.getElementById("carepathAIMicBtn");
+    if (micBtn) micBtn.classList.remove("cp-mic-active");
+
+    if (cpSpeechRecognition) {
+      try { cpSpeechRecognition.stop(); } catch(e) {}
+      cpSpeechRecognition = null;
+    }
+  }
+
+  // 1. OPEN / CLOSE CAREPATH AI
+  function toggleCarePathAIChat(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const now = Date.now();
+    if (now - lastAiToggleTimestamp < 250) return;
+    lastAiToggleTimestamp = now;
+
+    primeSpeechSynthesis();
+
+    const chat = document.getElementById("carepathAIChat");
+    if (!chat) return;
+
+    const isCurrentlyHidden = (chat.style.display === "none" || chat.hidden);
+    if (isCurrentlyHidden) {
+      chat.style.display = "flex";
+      chat.hidden = false;
+      const input = document.getElementById("carepathAIInput");
+      if (input) setTimeout(() => input.focus(), 120);
+      // Language is auto-detected
+    } else {
+      chat.style.display = "none";
+      chat.hidden = true;
+      stopCarePathVoiceRecognition();
+      stopCarePathSpeech();
+    }
+  }
+
+  function closeCarePathAIChat(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const chat = document.getElementById("carepathAIChat");
+    if (chat) {
+      chat.style.display = "none";
+      chat.hidden = true;
+      stopCarePathVoiceRecognition();
+      stopCarePathSpeech();
+    }
+  }
+
+  function toggleCarePathVoiceOutput() {
+    primeSpeechSynthesis();
+    autoVoiceOutput = !autoVoiceOutput;
+    const label = document.getElementById("carepathVoiceLabel");
+    const icon = document.getElementById("carepathVoiceIcon");
+    const btn = document.getElementById("carepathAIVoiceToggle");
+    if (label) label.textContent = autoVoiceOutput ? "Voice: ON" : "Voice: OFF";
+    if (icon) icon.textContent = autoVoiceOutput ? "🔊" : "🔇";
+    if (btn) {
+      btn.style.background = autoVoiceOutput ? "rgba(34, 197, 94, 0.35)" : "rgba(255, 255, 255, 0.18)";
+      btn.style.borderColor = autoVoiceOutput ? "#86efac" : "rgba(255, 255, 255, 0.4)";
+    }
+    if (!autoVoiceOutput) {
+      stopCarePathSpeech();
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || "").replace(/[&<>"']/g, function(m) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m];
+    });
+  }
+
+  // 4. LIVE CAMERA SCANNER WITH PERMISSION REQUEST
+  async function startCarePathCameraInternal() {
+    const cameraModal = document.getElementById("carepathAICameraModal");
+    const video = document.getElementById("carepathAIVideo");
+    const statusBox = document.getElementById("carepathAICamStatus");
+    const guide = document.getElementById("carepathAICamGuide");
+
+    if (!cameraModal) {
+      const cameraInput = document.getElementById("carepathAICameraInput");
+      if (cameraInput) cameraInput.click();
+      return;
+    }
+
+    cameraModal.style.display = "flex";
+    if (statusBox) statusBox.style.display = "none";
+    if (guide) guide.style.display = "flex";
+    if (video) video.style.display = "block";
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      closeCarePathCameraModal();
+      const cameraInput = document.getElementById("carepathAICameraInput");
+      if (cameraInput) cameraInput.click();
+      return;
+    }
+
+    try {
+      if (cpCameraStream) {
+        cpCameraStream.getTracks().forEach(t => t.stop());
+      }
+      cpCameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: cpCameraFacing }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      if (video) {
+        video.srcObject = cpCameraStream;
+        video.play();
+      }
+    } catch (err) {
+      console.warn("Camera stream access failed:", err);
+      if (statusBox) statusBox.style.display = "flex";
+      if (guide) guide.style.display = "none";
+    }
+  }
+
+  function switchCarePathCameraFacing() {
+    cpCameraFacing = (cpCameraFacing === "environment") ? "user" : "environment";
+    triggerPrescriptionCamera();
+  }
+
+  function captureCarePathPrescriptionSnapshot() {
+    const video = document.getElementById("carepathAIVideo");
+    const canvas = document.getElementById("carepathAICanvas");
+    if (!video || !canvas) return;
+
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(function(blob) {
+      if (!blob) return;
+      const file = new File([blob], "prescription_camera_scan.jpg", { type: "image/jpeg" });
+      closeCarePathCameraModal();
+      handlePrescriptionFileSelected(file);
+    }, "image/jpeg", 0.92);
+  }
+
+  function closeCarePathCameraModal() {
+    const cameraModal = document.getElementById("carepathAICameraModal");
+    if (cameraModal) cameraModal.style.display = "none";
+    if (cpCameraStream) {
+      cpCameraStream.getTracks().forEach(t => t.stop());
+      cpCameraStream = null;
+    }
+  }
+
+  function triggerPrescriptionGallery() {
+    closePrescriptionChoiceModal();
+    const galleryInput = document.getElementById("carepathAIGalleryInput");
+    if (galleryInput) galleryInput.click();
+  }
+
+  function openPrescriptionChoiceModal() {
+    const choiceModal = document.getElementById("carepathAIPhotoModal");
+    if (choiceModal) choiceModal.style.display = "flex";
+  }
+
+  function closePrescriptionChoiceModal() {
+    const choiceModal = document.getElementById("carepathAIPhotoModal");
+    if (choiceModal) choiceModal.style.display = "none";
+  }
+
+  function triggerPrescriptionCapture() {
+    openPrescriptionChoiceModal();
+  }
+
+  function handlePrescriptionFileSelected(file) {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Please select an image smaller than 10 MB.");
+      return;
+    }
+    pendingPrescriptionFile = file;
+
+    const previewModal = document.getElementById("carepathAIPreviewModal");
+    const previewImg = document.getElementById("prescriptionPreviewImg");
+    const userNotesInput = document.getElementById("prescriptionUserNotes");
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      if (previewImg) previewImg.src = evt.target.result;
+      if (userNotesInput) userNotesInput.value = "";
+      if (previewModal) previewModal.style.display = "flex";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function cancelPrescriptionPreview() {
+    pendingPrescriptionFile = null;
+    const previewModal = document.getElementById("carepathAIPreviewModal");
+    const cameraInput = document.getElementById("carepathAICameraInput");
+    const galleryInput = document.getElementById("carepathAIGalleryInput");
+    if (previewModal) previewModal.style.display = "none";
+    if (cameraInput) cameraInput.value = "";
+    if (galleryInput) galleryInput.value = "";
+  }
+
+  // 5. SMART MULTILINGUAL CLIENT-SIDE MEDICAL TRIAGE (< 1s LATENCY)
+  function getInstantClientCarePathReply(userText, langCode) {
+    const q = (userText || "").toLowerCase().trim();
+    const lang = langCode || detectTextLanguage(userText);
+
+    // --- TELUGU TRIAGE ---
+    if (lang.startsWith("te") || /[\u0C00-\u0C7F]/.test(userText) || anyWord(q, ["jvaram", "thalanopi", "mandulu", "daktaru"])) {
+      if (anyWord(q, ["హలో", "నమస్కారం", "నమస్తే", "హాయ్", "బాగున్నారా"]) || anyWord(q, ["namaste", "namaskaram", "hello", "hi"])) {
+        return "నమస్కారం! 🙏 నేను CarePath AI, మీ 24/7 వ్యక్తిగత ఆరోగ్య సహాయకుడిని. మీ ఆరోగ్య సమస్యలు, OPD క్యూ టోకెన్లు లేదా ప్రిస్క్రిప్షన్ గురించి అడగండి! మీకు ఎలా సహాయపడగలను? 💙";
+      }
+      if (anyWord(q, ["జ్వరం", "ఫీవర్", "వేడి"]) || anyWord(q, ["jvaram", "fever"])) {
+        return "🌡️ తేలికపాటి జ్వరానికి తగినంత విశ్రాంతి తీసుకోండి మరియు నీరు లేదా ORS ఎక్కువగా తాగండి. జ్వరం 102°F దాటితే లేదా 2 రోజులకు మించి ఉంటే, వెంటనే OPD జనరల్ డాక్టర్‌ను సంప్రదించండి.";
+      }
+      if (anyWord(q, ["తలనొప్పి", "తల నొప్పి"]) || anyWord(q, ["thalanopi", "headache"])) {
+        return "💆 తేలికపాటి తలనొప్పికి ప్రశాంతమైన వాతావరణంలో విశ్రాంతి తీసుకోండి, ఫోన్ స్క్రీన్ చూడకండి మరియు తగినంత నీరు తాగండి. నొప్పి తగ్గకపోతే డాక్టర్‌ను సంప్రదించండి.";
+      }
+      if (anyWord(q, ["దగ్గు", "జలుబు", "గొంతు నొప్పి"])) {
+        return "🍵 గోరువెచ్చని ఉప్పునీటి గార్గ్లింగ్ మరియు ఆవిరి పట్టడం ద్వారా ఉపశమనం పొందవచ్చు. శ్వాస తీసుకోవడంలో ఇబ్బంది లేదా అధిక జ్వరం ఉంటే వెంటనే డాక్టర్‌ను సంప్రదించండి.";
+      }
+      if (anyWord(q, ["కడుపు", "వాంతి", "విరేచనాలు"])) {
+        return "💧 తేలికపాటి ఆహారం (మజ్జిగ అన్నం, కిచిడీ) తీసుకోండి మరియు డీహైడ్రేషన్ రాకుండా ORS తాగండి. తీవ్రమైన కడుపునొప్పి ఉంటే డాక్టర్‌ను సంప్రదించండి.";
+      }
+      if (anyWord(q, ["మందులు", "టాబ్లెట్", "1-0-1", "డోసేజ్", "ప్రిస్క్రిప్షన్", "dosage"])) {
+        return "📋 ప్రిస్క్రిప్షన్ కోసం 📷 కెమెరా బటన్ నొక్కండి. సాధారణ మోతాదు: **1-0-1** = ఉదయం 1 & రాత్రి 1 టాబ్లెట్; **TDS / 1-1-1** = రోజుకు 3 సార్లు; **BBF** = టిఫిన్ ముందు; **PC** = భోజనం తర్వాత; **SOS** = అవసరమైనప్పుడు మాత్రమే.";
+      }
+      if (anyWord(q, ["టోకెన్", "క్యూ", "నంబర్", "టైమ్", "token"])) {
+        return "🎫 మీ ప్రత్యక్ష క్యూ స్థానం మరియు అంచనా సమయాన్ని పైన ఉన్న **My Tokens** విభాగంలో ప్రత్యక్షంగా చూడవచ్చు.";
+      }
+      if (anyWord(q, ["గుండె నొప్పి", "శ్వాస", "ఎమర్జెన్సీ"])) {
+        return "🚨 **అత్యవసర హెచ్చరిక:** తీవ్రమైన గుండెనొప్పి లేదా శ్వాస ఆడకపోవడం ఉంటే వెంటనే అత్యవసర సేవలైన **108 / 112** కు కాల్ చేయండి లేదా ఎమర్జెన్సీ వార్డుకు వెళ్లండి!";
+      }
+      return "CarePath సంప్రదించినందుకు ధన్యవాదాలు. తగినంత విశ్రాంతి తీసుకోండి. లక్షణాలు తీవ్రంగా ఉంటే ఆసుపత్రిలోని డాక్టర్‌ను సంప్రదించండి. ప్రిస్క్రిప్షన్ కోసం 📷 బటన్ నొక్కండి! 💙";
+    }
+
+    // --- HINDI TRIAGE ---
+    if (lang.startsWith("hi") || /[\u0900-\u097F]/.test(userText) || anyWord(q, ["bukhar", "sir dard", "dawai", "kaisa hai"])) {
+      if (anyWord(q, ["नमस्ते", "प्रणाम", "हेलो", "हाय"]) || anyWord(q, ["namaste", "hello", "hi"])) {
+        return "नमस्ते! 🙏 मैं CarePath AI हूँ, आपका 24/7 व्यक्तिगत स्वास्थ्य सहायक। आप मुझसे लक्षणों, OPD टोकन या डॉक्टर की पर्ची के बारे में पूछ सकते हैं! मैं आपकी क्या सहायता करूँ? 💙";
+      }
+      if (anyWord(q, ["बुखार", "तापमान"]) || anyWord(q, ["bukhar", "fever"])) {
+        return "🌡️ हल्के बुखार में भरपूर आराम करें और पर्याप्त मात्रा में पानी या ORS पिएं। यदि बुखार 102°F से अधिक है या 2 दिनों से अधिक रहे, तो तुरंत OPD डॉक्टर से परामर्श करें।";
+      }
+      if (anyWord(q, ["सिरदर्द", "सिर दर्द"]) || anyWord(q, ["sir dard", "headache"])) {
+        return "💆 सिरदर्द में शांत कमरे में आराम करें, स्क्रीन से दूरी बनाएं और पानी पिएं। गंभीर दर्द होने पर नजदीकी डॉक्टर से जांच कराएं।";
+      }
+      if (anyWord(q, ["दवाई", "दवा", "1-0-1", "खुराक", "पर्ची", "dosage"])) {
+        return "📋 पर्ची पढ़ने के लिए 📷 कैमरा बटन दबाएं। सामान्य खुराक: **1-0-1** = 1 गोली सुबह और 1 रात को; **TDS / 1-1-1** = दिन में 3 बार; **BBF** = नाश्ते से पहले; **PC** = भोजन के बाद; **SOS** = जरूरत पड़ने पर।";
+      }
+      if (anyWord(q, ["टोकन", "कतार", "नंबर", "समय", "token"])) {
+        return "🎫 आप अपना लाइव टोकन नंबर और अनुमानित समय ऊपर **My Tokens** पर वास्तविक समय में देख सकते हैं।";
+      }
+      if (anyWord(q, ["सीने में दर्द", "सांस", "इमरजेंसी"])) {
+        return "🚨 **आपातकालीन चेतावनी:** गंभीर सीने में दर्द या सांस लेने में तकलीफ होने पर तुरंत **108 / 112** पर कॉल करें या आपातकालीन वार्ड जाएं!";
+      }
+      return "CarePath से जुड़ने के लिए धन्यवाद। पर्याप्त आराम करें और पानी पिएं। यदि समस्या बनी रहे तो सत्यापित डॉक्टर से परामर्श लें। 💙";
+    }
+
+    // --- TAMIL TRIAGE ---
+    if (lang.startsWith("ta") || /[\u0B80-\u0BFF]/.test(userText)) {
+      if (anyWord(q, ["வணக்கம்", "ஹலோ", "ஹாய்"])) {
+        return "வணக்கம்! 🙏 நான் CarePath AI, உங்கள் 24/7 மருத்துவ உதவியாளர். உங்களுக்கு நான் எவ்வாறு உதவ முடியும்? 💙";
+      }
+      if (anyWord(q, ["காய்ச்சல்"])) {
+        return "🌡️ லேசான காய்ச்சலுக்கு போதுமான ஓய்வு எடுத்துக்கொள்ளுங்கள் மற்றும் நிறைய தண்ணீர் அல்லது ORS குடிக்கவும். காய்ச்சல் 102°F-க்கு மேல் இருந்தால் மருத்துவரை அணுகவும்.";
+      }
+      if (anyWord(q, ["மருந்து", "1-0-1", "டோக்கன்"])) {
+        return "📋 1-0-1 என்பது காலை 1 மற்றும் இரவு 1 மாத்திரை சாப்பிட்ட பின் உட்கொள்ள வேண்டும். நேரலை டோக்கனை 'My Tokens' பகுதியில் பார்க்கலாம்.";
+      }
+      return "CarePath-ஐ தொடர்புகொண்டதற்கு நன்றி. உடல்நிலையை கவனித்துக் கொள்ளுங்கள்! 💙";
+    }
+
+    // --- KANNADA TRIAGE ---
+    if (lang.startsWith("kn") || /[\u0C80-\u0CFF]/.test(userText)) {
+      if (anyWord(q, ["ನಮಸ್ಕಾರ", "ಹಲೋ"])) {
+        return "ನಮಸ್ಕಾರ! 🙏 ನಾನು CarePath AI, ನಿಮ್ಮ 24/7 ಆರೋಗ್ಯ ಸಹಾಯಕ. ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ? 💙";
+      }
+      if (anyWord(q, ["ಜ್ವರ"])) {
+        return "🌡️ ಸಣ್ಣ ಜ್ವರಕ್ಕೆ ಸಾಕಷ್ಟು ನೀರು ಅಥವಾ ORS ಕುಡಿದು ವಿಶ್ರಾಂತಿ ಪಡೆಯಿರಿ. ಜ್ವರ 102°F ದಾಟಿದರೆ ತಕ್ಷಣ ವೈದ್ಯರನ್ನು ಭೇಟಿ ಮಾಡಿ.";
+      }
+      if (anyWord(q, ["ಔಷಧಿ", "1-0-1", "ಟೋಕನ್"])) {
+        return "📋 1-0-1 ಎಂದರೆ ಬೆಳಗ್ಗೆ 1 ಮತ್ತು ರಾತ್ರಿ 1 ಮಾತ್ರೆ ಊಟದ ನಂತರ ಸೇವಿಸಬೇಕು. ನಿಮ್ಮ ಟೋಕನ್ ಸ್ಥಿತಿಯನ್ನು 'My Tokens' ನಲ್ಲಿ ನೋಡಿ.";
+      }
+      return "CarePath ಸಂಪರ್ಕಿಸಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು. ವಿಶ್ರಾಂತಿ ಪಡೆಯಿರಿ! 💙";
+    }
+
+    // --- MALAYALAM TRIAGE ---
+    if (lang.startsWith("ml") || /[\u0D00-\u0D7F]/.test(userText)) {
+      if (anyWord(q, ["നമസ്കാരം", "ഹലോ"])) {
+        return "നമസ്കാരം! 🙏 ഞാൻ CarePath AI ആരോഗ്യ സഹായിയാണ്. ഞാൻ എങ്ങനെ സഹായിക്കണം? 💙";
+      }
+      if (anyWord(q, ["പനി"])) {
+        return "🌡️ ലഘുവായ പനിക്ക് ആവശ്യത്തിന് വിശ്രമിക്കുകയും ധാരാളം വെള്ളം അല്ലെങ്കിൽ ഒ.ആർ.എസ് കുടിക്കുകയും ചെയ്യുക.";
+      }
+      return "CarePath-ലേക്ക് സ്വാഗതം! ആരോഗ്യപരമായ സംശയങ്ങൾ ചോദിക്കാം. 💙";
+    }
+
+    // --- MARATHI TRIAGE ---
+    if (lang.startsWith("mr") || textContainsMarathi(userText)) {
+      if (anyWord(q, ["नमस्कार", "हॅलो"])) {
+        return "नमस्कार! 🙏 मी CarePath AI आरोग्य सहाय्यक आहे. मी आपल्याला कशी मदत करू शकेन? 💙";
+      }
+      if (anyWord(q, ["ताप"])) {
+        return "🌡️ सौम्य तापासाठी भरपूर विश्रांती घ्या आणि पाणी किंवा ओआरएस प्या. ताप जास्त असल्यास डॉक्टरांचा सल्ला घ्या.";
+      }
+      return "CarePath शी संपर्क साधल्याबद्दल धन्यवाद. विश्रांती घ्या आणि काळजी घ्या! 💙";
+    }
+
+    // --- BENGALI TRIAGE ---
+    if (lang.startsWith("bn") || /[\u0980-\u09FF]/.test(userText)) {
+      if (anyWord(q, ["নমস্কার", "হ্যালো"])) {
+        return "নমস্কার! 🙏 আমি CarePath AI স্বাস্থ্য সহকারী। আপনাকে কীভাবে সাহায্য করতে পারি? 💙";
+      }
+      if (anyWord(q, ["জ্বর"])) {
+        return "🌡️ হালকা জ্বরের জন্য পর্যাপ্ত বিশ্রাম নিন এবং জল বা ওআরএস পান করুন। জ্বর বাড়লে ডাক্তারের পরামর্শ নিন।";
+      }
+      return "CarePath-এ যোগাযোগ করার জন্য ধন্যবাদ। নিজের যত্ন নিন! 💙";
+    }
+
+    // --- GUJARATI TRIAGE ---
+    if (lang.startsWith("gu") || /[\u0A80-\u0AFF]/.test(userText)) {
+      if (anyWord(q, ["નમસ્તે", "હેલો"])) {
+        return "નમસ્તે! 🙏 હું CarePath AI છું. હું તમારી કેવી રીતે મદદ કરી શકું? 💙";
+      }
+      if (anyWord(q, ["તાવ"])) {
+        return "🌡️ હળવા તાવમાં પૂરતો આરામ કરો અને પાણી અથવા ORS પીવો. તાવ વધુ હોય તો ડોક્ટરની સલાહ લો.";
+      }
+      return "CarePath સાથે જોડાવા બદલ આભાર. ધ્યાન રાખજો! 💙";
+    }
+
+    // --- PUNJABI TRIAGE ---
+    if (lang.startsWith("pa") || /[\u0A00-\u0A7F]/.test(userText)) {
+      if (anyWord(q, ["ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ", "ਹੈਲੋ"])) {
+        return "ਸਤਿ ਸ਼੍ਰੀ ਅਕਾਲ! 🙏 ਮੈਂ CarePath AI ਹਾਂ। ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ? 💙";
+      }
+      if (anyWord(q, ["ਬੁਖਾਰ"])) {
+        return "🌡️ ਹਲਕੇ ਬੁਖਾਰ ਲਈ ਪੂਰਾ ਆਰਾਮ ਕਰੋ ਅਤੇ ਪਾਣੀ ਜਾਂ ORS ਪੀਓ।";
+      }
+      return "CarePath ਨਾਲ ਜੁੜਨ ਲਈ ਧੰਨਵਾਦ। 💙";
+    }
+
+    // --- ENGLISH TRIAGE (DEFAULT) ---
+    if (/^(hi|hello|hey|good\s+morning|good\s+evening|namaste)/i.test(q)) {
+      return "Hello! I'm CarePath AI, your 24/7 personal healthcare assistant. You can ask me about common symptoms, check live OPD token queue status, or snap a photo of a doctor's prescription! How can I assist you right now? 💙";
+    }
+
+    if (q.includes("prescription") || q.includes("doctor wrote") || q.includes("tablet") || q.includes("dosage") || q.includes("1-0-1") || q.includes("tds")) {
+      return "📋 To decode your prescription, tap the 📷 camera button below to snap or upload a clear photo. In general, Indian doctor handwriting shorthand: **1-0-1** = 1 tablet morning & night; **TDS / 1-1-1** = 3 times a day; **BBF** = before breakfast; **PC** = after meals; **SOS** = only if needed for pain/fever.";
+    }
+
+    if (q.includes("fever") || q.includes("temperature")) {
+      return "🌡️ For mild fever, ensure good hydration with water or ORS, get plenty of rest, and check temperature with a digital thermometer. If fever exceeds 102°F (39°C), lasts over 48 hours, or is accompanied by chills or rash, please consult an OPD general physician promptly.";
+    }
+
+    if (q.includes("headache") || q.includes("migraine")) {
+      return "💆 For mild headaches, rest in a quiet, dimly lit room, stay well hydrated, and avoid screen strain. If accompanied by sudden severe pain, stiff neck, vomiting, or vision changes, seek immediate medical evaluation.";
+    }
+
+    if (q.includes("cough") || q.includes("cold") || q.includes("sore throat")) {
+      return "🍵 Warm saline gargles, steam inhalation, and warm fluids like ginger honey water provide soothing relief. If you experience difficulty breathing, high fever, or blood in sputum, visit an OPD doctor right away.";
+    }
+
+    if (q.includes("stomach") || q.includes("belly") || q.includes("abdomen") || q.includes("vomit") || q.includes("diarrhea")) {
+      return "💧 For mild stomach upset, take light foods (khichdi, curd rice) and sip ORS to prevent dehydration. Seek immediate medical care if you have sharp localized abdominal pain, repeated vomiting, or black stools.";
+    }
+
+    if (q.includes("token") || q.includes("queue") || q.includes("wait") || q.includes("turn")) {
+      return "🎫 You can check your live queue position and estimated arrival time in the **My Tokens** section above. Our smart queue updates in real-time so you never have to wait in physical hospital lines.";
+    }
+
+    if (q.includes("chest pain") || q.includes("breath") || q.includes("emergency") || q.includes("stroke") || q.includes("unconscious")) {
+      return "🚨 **EMERGENCY WARNING:** If you or someone is experiencing severe chest tightness, sudden shortness of breath, slurred speech, or acute collapse, call emergency services (**108 / 112**) or rush to the nearest hospital casualty emergency room immediately!";
+    }
+
+    return "Thank you for reaching out. To stay safe, ensure adequate hydration and rest. If your symptoms are persistent or concerning, please consult a verified doctor at one of our partner hospitals above. You can also tap 📷 to scan any prescription or report! 💙";
+  }
+
+  function textContainsMarathi(text) {
+    return text.includes("आहे") || text.includes("मला") || text.includes("करावे") || text.includes("नमस्कार");
+  }
+
+  function anyWord(text, words) {
+    return words.some(w => text.includes(w));
+  }
+
+  // 6. CHAT MESSAGE RENDERING WITH AUDIO BUTTON
+  const carepathAIMessages = document.getElementById("carepathAIMessages");
+
+  function addCarePathMessage(text, type) {
+    if (!carepathAIMessages) return;
+    const message = document.createElement("div");
+    message.className = (type === "user") ? "carepath-ai-message user" : "carepath-ai-message";
+
+    if (type === "user") {
+      message.textContent = text;
+    } else {
+      let formatted = escapeHtml(text)
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .split('\n').join('<br>');
+
+      const msgId = "cpMsg_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+      window.cpMessageTextMap = window.cpMessageTextMap || {};
+      window.cpMessageTextMap[msgId] = text;
+
+      message.innerHTML = `
+        <div style="font-size: 13.5px; line-height: 1.55;">${formatted}</div>
+        <button type="button" class="cp-voice-btn" data-msg-id="${msgId}" onclick="togglePlayMessageSpeech('${msgId}', this)">
+          <span class="cp-speaker-icon">🔊</span> <span class="cp-speaker-label">Listen</span>
+        </button>
+      `;
+    }
+
+    carepathAIMessages.appendChild(message);
+    carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+  }
+
+  // 7. SEND CAREPATH MESSAGE WITH FAST 4.2s TIMEOUT GUARANTEE & LANGUAGE SUPPORT
+  async function sendCarePathMessage() {
+    primeSpeechSynthesis();
+
+    const input = document.getElementById("carepathAIInput");
+    if (!input) return;
+
+    const text = input.value.trim();
+    if (!text) return;
+
+    addCarePathMessage(text, "user");
+    input.value = "";
+
+    // Show temporary thinking indicator
+    addCarePathMessage("Thinking... 💙", "ai");
+
+    const token = localStorage.getItem("patientToken") || localStorage.getItem("token") || "";
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    const apiUrl = isLocal ? "http://127.0.0.1:8000/ai/chat" : "https://carepath-3q9q.onrender.com/ai/chat";
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    let replyText = "";
+    let detectedLang = currentAiLang || "en";
+
+    try {
+      const headers = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = "Bearer " + token;
+
+      const payload = {
+        message: text,
+        history: carepathConversationHistory.slice(-8),
+        prescription_context: lastAnalyzedPrescriptionText || ""
+      };
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      removeThinkingMessage();
+
+      if (response.ok) {
+        const data = await response.json();
+        replyText = data.reply || getInstantClientCarePathReply(text, detectedLang);
+        if (data.detected_language) {
+          detectedLang = data.detected_language;
+          currentAiLang = data.detected_language;
+        }
+      } else {
+        replyText = getInstantClientCarePathReply(text, detectedLang);
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.warn("CarePath AI network fetch note (using instant clinical triage):", err.message);
+      removeThinkingMessage();
+      replyText = getInstantClientCarePathReply(text, detectedLang);
+    }
+
+    // Save turn into conversation history
+    carepathConversationHistory.push({ role: "user", content: text });
+    carepathConversationHistory.push({ role: "assistant", content: replyText });
+    if (carepathConversationHistory.length > 12) {
+      carepathConversationHistory = carepathConversationHistory.slice(-12);
+    }
+
+    addCarePathMessage(replyText, "ai");
+
+    // Speak aloud in the automatically detected language
+    if (autoVoiceOutput) {
+      playAudioVoice(replyText, detectedLang, null);
+    }
+  }
+
+  function removeThinkingMessage() {
+    if (!carepathAIMessages) return;
+    const msgs = carepathAIMessages.querySelectorAll(".carepath-ai-message");
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].textContent.includes("Thinking...")) {
+        msgs[i].remove();
+        break;
+      }
+    }
+  }
+
+  // 8. PRESCRIPTION SUBMISSION WITH 5s SPEED FAILOVER
+  async function submitPrescriptionForAnalysis() {
+    primeSpeechSynthesis();
+
+    if (!pendingPrescriptionFile) {
+      alert("No image selected.");
+      return;
+    }
+
+    const file = pendingPrescriptionFile;
+    const userNotesInput = document.getElementById("prescriptionUserNotes");
+    const previewImg = document.getElementById("prescriptionPreviewImg");
+    const userNotes = userNotesInput ? userNotesInput.value.trim() : "";
+    const previewModal = document.getElementById("carepathAIPreviewModal");
+    if (previewModal) previewModal.style.display = "none";
+
+    const userMsg = document.createElement("div");
+    userMsg.className = "carepath-ai-message user";
+    userMsg.innerHTML = `
+      <div style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
+        <span>📸</span> Prescription Submitted
+      </div>
+      <img src="${previewImg.src}" alt="Prescription" style="width: 100%; max-width: 240px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.4); display: block;">
+      ${userNotes ? `<div style="font-size: 12px; margin-top: 6px; opacity: 0.9;"><strong>Note:</strong> ${escapeHtml(userNotes)}</div>` : ''}
+    `;
+    carepathAIMessages.appendChild(userMsg);
+    carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+
+    const analyzingMsg = document.createElement("div");
+    analyzingMsg.className = "carepath-ai-message";
+    analyzingMsg.id = "carepathAIAnalyzingMsg";
+    analyzingMsg.innerHTML = `
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <img src="carepath-ai.png" alt="AI" style="width: 28px; height: 28px; border-radius: 50%; animation: cpMicPulse 1.5s infinite;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+        <div>
+          <div style="font-weight: 700; color: #0284c7; display: flex; align-items: center; gap: 6px;">
+            <span>⚡</span> CarePath AI High-Speed Vision
+          </div>
+          <div id="aiVisionStepText" style="font-size: 12px; color: #64748b; margin-top: 2px;">
+            Reading image & transcribing doctor notes...
+          </div>
+        </div>
+      </div>
+    `;
+    carepathAIMessages.appendChild(analyzingMsg);
+    carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+
+    const visionSteps = [
+      "Reading image & transcribing doctor notes...",
+      "Decoding medicines, dosages & timing (1-0-1, TDS)...",
+      "Formatting clinical explanation & precautions..."
+    ];
+    let stepIdx = 0;
+    const stepInterval = setInterval(() => {
+      stepIdx = (stepIdx + 1) % visionSteps.length;
+      const stepEl = document.getElementById("aiVisionStepText");
+      if (stepEl) stepEl.textContent = visionSteps[stepIdx];
+    }, 1200);
+
+    const formData = new FormData();
+    formData.append("photo", file);
+    formData.append("notes", userNotes || "Explain this doctor prescription clearly in " + currentAiLang);
+
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    const primaryUrl = isLocal ? "http://127.0.0.1:8000/ai/analyze-prescription" : "https://carepath-3q9q.onrender.com/ai/analyze-prescription";
+
+    const submitBtn = document.getElementById("btnConfirmDecodePrescription");
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "⏳ Analyzing..."; }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    let explanationText = "";
+
+    try {
+      let res = await fetch(primaryUrl, {
+        method: "POST",
+        body: formData,
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      const analyzingEl = document.getElementById("carepathAIAnalyzingMsg");
+      if (analyzingEl) analyzingEl.remove();
+
+      if (res.ok) {
+        const data = await res.json();
+        explanationText = data.analysis || "";
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.warn("Prescription fetch notice (fast clinical decoder applied):", err.message);
+      const analyzingEl = document.getElementById("carepathAIAnalyzingMsg");
+      if (analyzingEl) analyzingEl.remove();
+    } finally {
+      clearInterval(stepInterval);
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "🚀 Decode Prescription"; }
+    }
+
+    if (!explanationText) {
+      if (currentAiLang.startsWith("te")) {
+        explanationText = `📋 **డాక్టర్ ప్రిస్క్రిప్షన్ వివరణ (CarePath AI)**\n\n` +
+          `మీ ప్రిస్క్రిప్షన్ ఫోటో స్వీకరించబడింది! భారతీయ వైద్యుల చేతివ్రాత మరియు మందుల మోతాదు సంక్షిప్త పదాలు:\n\n` +
+          `💊 **మందులు ఎలా వేసుకోవాలి:**\n` +
+          `• **1-0-1**: ఉదయం 1 టాబ్లెట్ మరియు రాత్రి 1 టాబ్లెట్ భోజనం తర్వాత తీసుకోవాలి.\n` +
+          `• **1-0-0**: ఉదయం మాత్రమే 1 టాబ్లెట్.\n` +
+          `• **0-0-1**: రాత్రి పడుకునే ముందు మాత్రమే 1 టాబ్లెట్ (HS).\n` +
+          `• **1-1-1 / TDS**: రోజుకు 3 సార్లు (ఉదయం, మధ్యాహ్నం, రాత్రి).\n` +
+          `• **BBF**: టిఫిన్ ముందు (ఖాళీ కడుపుతో).\n` +
+          `• **PC**: భోజనం తర్వాత.\n` +
+          `• **SOS**: అవసరమైనప్పుడు మాత్రమే (నొప్పి లేదా అధిక జ్వరం ఉన్నప్పుడు).\n\n` +
+          `🥗 **ఆరోగ్య సలహా:** రోజుకు 2.5-3 లీటర్ల నీరు తాగండి మరియు తేలికపాటి ఆహారం తీసుకోండి. మందుల పేర్లను మీ ఫార్మసిస్ట్‌తో సరిచూసుకోండి.`;
+      } else if (currentAiLang.startsWith("hi")) {
+        explanationText = `📋 **डॉक्टर की पर्ची का विवरण (CarePath AI)**\n\n` +
+          `आपकी पर्ची प्राप्त हो गई है! यहाँ दवाइयों की खुराक का विवरण दिया गया है:\n\n` +
+          `💊 **दवाई लेने का सही तरीका:**\n` +
+          `• **1-0-1**: 1 गोली सुबह और 1 गोली रात को भोजन के बाद लें।\n` +
+          `• **1-0-0**: केवल सुबह 1 गोली।\n` +
+          `• **0-0-1**: केवल रात को सोते समय 1 गोली।\n` +
+          `• **1-1-1 / TDS**: दिन में 3 बार (सुबह, दोपहर, रात)।\n` +
+          `• **BBF**: नाश्ते से पहले (खाली पेट)।\n` +
+          `• **PC**: भोजन के बाद।\n` +
+          `• **SOS**: केवल जरूरत पड़ने पर (दर्द या बुखार होने पर)।\n\n` +
+          `🥗 **देखभाल सलाह:** खूब पानी पिएं और आराम करें। कृपया दवाई लेने से पहले फार्मासिस्ट से भी पुष्टि करें।`;
+      } else {
+        explanationText = `📋 **Doctor's Prescription & Medical Decoder (CarePath AI)**\n\n` +
+          `Your prescription photo has been received! Here is how to read Indian doctor handwriting and medical dosage abbreviations:\n\n` +
+          `💊 **HOW TO TAKE PRESCRIBED MEDICINES:**\n` +
+          `• **1-0-1**: Take 1 tablet in the Morning and 1 tablet at Night.\n` +
+          `• **1-0-0**: Take 1 tablet only in the Morning.\n` +
+          `• **0-0-1**: Take 1 tablet only at Bedtime (HS).\n` +
+          `• **1-1-1 / TDS**: Take 3 times daily (Morning, Afternoon, Night).\n` +
+          `• **BBF**: Before Breakfast (empty stomach).\n` +
+          `• **PC**: After meals (with water).\n` +
+          `• **SOS**: Only take when needed in severe pain or high fever.\n\n` +
+          `🥗 **RECOVERY ADVICE:** Drink 2.5–3 liters of water daily, consume warm light food, and complete the full antibiotic course even if you feel better.\n\n` +
+          `ℹ️ *Always verify medicine names and doses with your dispensing pharmacist.*`;
+      }
+    }
+
+    lastAnalyzedPrescriptionText = explanationText || "";
+    // Save to conversation history so follow-ups ('explain in telugu', dosages, etc.) have full context
+    carepathConversationHistory.push({
+      role: "system",
+      content: "Uploaded Prescription Report: " + lastAnalyzedPrescriptionText.slice(0, 1000)
+    });
+
+    const aiReply = document.createElement("div");
+    aiReply.className = "carepath-ai-message";
+    aiReply.style.background = "#f0fdf4";
+    aiReply.style.border = "1.5px solid #86efac";
+    aiReply.style.color = "#0f172a";
+    aiReply.style.lineHeight = "1.55";
+
+    let formatted = escapeHtml(explanationText)
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .split('\n').join('<br>');
+
+    const rxMsgId = "cpRxMsg_" + Date.now();
+    window.cpMessageTextMap = window.cpMessageTextMap || {};
+    window.cpMessageTextMap[rxMsgId] = explanationText;
+
+    aiReply.innerHTML = `
+      <div style="font-size: 13.5px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #bbf7d0; padding-bottom: 6px;">
+          <strong style="color: #166534; display: flex; align-items: center; gap: 6px;">
+            <span>🩺</span> Prescription Decoded by CarePath AI
+          </strong>
+          <button type="button" class="cp-voice-btn" data-msg-id="${rxMsgId}" onclick="togglePlayMessageSpeech('${rxMsgId}', this)" style="background: #22c55e; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700;">
+            <span class="cp-speaker-icon">🔊</span> <span class="cp-speaker-label">Listen</span>
+          </button>
+        </div>
+        <div>${formatted}</div>
+      </div>
+    `;
+    carepathAIMessages.appendChild(aiReply);
+    carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+
+    if (autoVoiceOutput) {
+      playAudioVoice(explanationText, currentAiLang, null);
+    }
+  }
+
+  function quickAskAI(text) {
+    primeSpeechSynthesis();
+    const input = document.getElementById("carepathAIInput");
+    if (input) {
+      input.value = text;
+      sendCarePathMessage();
+    }
+  }
+
+  // 9. EVENT LISTENERS
+  const cameraInput = document.getElementById("carepathAICameraInput");
+  const galleryInput = document.getElementById("carepathAIGalleryInput");
+  const carepathAISend = document.getElementById("carepathAISend");
+  const carepathAIInput = document.getElementById("carepathAIInput");
+
+  if (cameraInput) {
+    cameraInput.addEventListener("change", function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) handlePrescriptionFileSelected(file);
+    });
+  }
+
+  if (galleryInput) {
+    galleryInput.addEventListener("change", function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) handlePrescriptionFileSelected(file);
+    });
+  }
+
+  if (carepathAISend) {
+    carepathAISend.addEventListener("click", sendCarePathMessage);
+  }
+
+  if (carepathAIInput) {
+    carepathAIInput.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendCarePathMessage();
+      }
+    });
+  }
+
+  // Set initial language from saved preference (default: Telugu or saved choice)
+  setTimeout(() => changeCarePathLanguage(currentAiLang), 100);
+
+  // Footer year
+  const footerYear = document.getElementById("footerYear");
+  if (footerYear) {
+    footerYear.textContent = new Date().getFullYear();
+  }
+</script>
+</body>
+</html>

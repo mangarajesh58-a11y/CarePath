@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="color-scheme" content="light dark">
+
+  <title>CarePath - Patient Profile & Preferences</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="carepath-ai-small.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+
+  <!-- Immediate Theme Engine to Prevent FOUC -->
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem("carepath_theme") || "system";
+        let isDark = false;
+        if (theme === "dark") {
+          isDark = true;
+        } else if (theme === "light") {
+          isDark = false;
+        } else {
+          isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        }
+        if (isDark) {
+          document.documentElement.setAttribute("data-theme", "dark");
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.setAttribute("data-theme", "light");
+          document.documentElement.classList.remove("dark");
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-border: #bfdbfe;
+      --primary-glow: rgba(37, 99, 235, 0.25);
+      --secondary: #06b6d4;
+      --success: #059669;
+      --success-light: #ecfdf5;
+      --success-border: #a7f3d0;
+      --warning: #d97706;
+      --warning-light: #fffbeb;
+      --warning-border: #fde68a;
+      --danger: #dc2626;
+      --danger-light: #fef2f2;
+      --danger-border: #fecaca;
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --purple-border: #ddd6fe;
+
+      /* Light Mode Palette */
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-card-subtle: #f8fafc;
+      --border-color: #e2e8f0;
+      --border-subtle: #f1f5f9;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-subtle: #94a3b8;
+      --input-bg: #ffffff;
+      --input-border: #cbd5e1;
+      --topbar-bg: rgba(255, 255, 255, 0.94);
+      --dock-bg: rgba(255, 255, 255, 0.95);
+      --shadow-card: 0 2px 6px -1px rgba(15, 23, 42, 0.04), 0 8px 16px -2px rgba(15, 23, 42, 0.03);
+      --shadow-elevated: 0 12px 28px -6px rgba(15, 23, 42, 0.09);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 22px;
+      --radius-pill: 9999px;
+
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --transition-smooth: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    [data-theme="dark"],
+    :root.dark {
+      /* Dark Mode Palette */
+      --bg-page: #071329;
+      --bg-card: #0d1a33;
+      --bg-card-subtle: #15223e;
+      --border-color: #223254;
+      --border-subtle: #192744;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      --input-bg: #111d38;
+      --input-border: #2b3d63;
+      --topbar-bg: rgba(13, 26, 51, 0.94);
+      --dock-bg: rgba(13, 26, 51, 0.95);
+      --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.35);
+      --shadow-elevated: 0 14px 30px rgba(0, 0, 0, 0.5);
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-page);
+      background-image: 
+        radial-gradient(600px 300px at 50% 0px, rgba(37, 99, 235, 0.08), transparent),
+        radial-gradient(400px 300px at 100% 200px, rgba(6, 182, 212, 0.05), transparent);
+      background-attachment: fixed;
+      color: var(--text-main);
+      min-height: 100vh;
+      padding-top: max(var(--safe-top), 10px);
+      padding-bottom: calc(var(--safe-bottom) + 88px);
+      -webkit-font-smoothing: antialiased;
+      transition: background-color var(--transition-smooth), color var(--transition-smooth);
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 12px 14px;
+    }
+
+    /* =====================================================
+       TOP APP BAR
+    ===================================================== */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--topbar-bg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 14px;
+      margin: -12px -14px 16px -14px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      transition: background-color var(--transition-smooth), border-color var(--transition-smooth);
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: var(--transition-smooth);
+    }
+
+    .back-btn:active {
+      transform: scale(0.96);
+      background: var(--border-color);
+    }
+
+    .topbar-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+    }
+
+    .btn-logout {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--danger);
+      font-size: 16px;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-logout:active {
+      transform: scale(0.92);
+      background: var(--danger-light);
+    }
+
+    /* =====================================================
+       PROFILE HERO CARD
+    ===================================================== */
+    .hero-profile-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: 22px 18px;
+      box-shadow: var(--shadow-card);
+      text-align: center;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: background-color var(--transition-smooth), border-color var(--transition-smooth);
+    }
+
+    .hero-profile-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 68px;
+      background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+      opacity: 0.15;
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-top: 10px;
+      margin-bottom: 12px;
+    }
+
+    .avatar-circle {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+      color: white;
+      font-size: 28px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+      border: 3.5px solid var(--bg-card);
+      margin: 0 auto;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .verified-badge {
+      position: absolute;
+      bottom: 2px;
+      right: 0;
+      background: #10b981;
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      border: 2.5px solid var(--bg-card);
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+    }
+
+    .hero-name {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      letter-spacing: -0.3px;
+    }
+
+    .hero-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 11px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .meta-pill-patient {
+      background: rgba(37, 99, 235, 0.1);
+      border-color: rgba(37, 99, 235, 0.25);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* =====================================================
+       THEME SELECTION CARD (LIGHT / DARK / SYSTEM)
+    ===================================================== */
+    .section-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 16px;
+      transition: background-color var(--transition-smooth), border-color var(--transition-smooth);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.2px;
+    }
+
+    .section-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .theme-card {
+      background: var(--bg-card-subtle);
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      position: relative;
+    }
+
+    .theme-card:active {
+      transform: scale(0.96);
+    }
+
+    .theme-card.active {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.08);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+
+    .theme-icon {
+      font-size: 24px;
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+
+    .theme-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 2px;
+    }
+
+    .theme-sublabel {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .theme-check-dot {
+      display: none;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--primary);
+      margin: 4px auto 0 auto;
+    }
+
+    .theme-card.active .theme-check-dot {
+      display: block;
+    }
+
+    /* =====================================================
+       FORM CONTROLS
+    ===================================================== */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      letter-spacing: -0.1px;
+    }
+
+    .input-field {
+      width: 100%;
+      height: 44px;
+      padding: 10px 13px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--text-main);
+      font-size: 13.5px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color var(--transition-smooth), box-shadow var(--transition-smooth);
+    }
+
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .input-field:disabled,
+    .input-field[readonly] {
+      opacity: 0.65;
+      background: var(--bg-card-subtle);
+      cursor: not-allowed;
+    }
+
+    .field-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .btn-save {
+      width: 100%;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      border: none;
+      font-size: 14.5px;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      transition: var(--transition-smooth);
+      margin-top: 6px;
+    }
+
+    .btn-save:active {
+      transform: scale(0.98);
+      filter: brightness(0.95);
+    }
+
+    .btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Message Box */
+    .status-alert {
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .status-alert.success {
+      display: block;
+      background: var(--success-light);
+      border: 1px solid var(--success-border);
+      color: var(--success);
+    }
+
+    .status-alert.error {
+      display: block;
+      background: var(--danger-light);
+      border: 1px solid var(--danger-border);
+      color: var(--danger);
+    }
+
+    /* =====================================================
+       QUICK SHORTCUTS
+    ===================================================== */
+    .shortcut-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .shortcut-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      color: var(--text-main);
+      transition: var(--transition-smooth);
+    }
+
+    .shortcut-item:active {
+      transform: scale(0.98);
+      background: var(--border-color);
+    }
+
+    .shortcut-icon {
+      font-size: 20px;
+    }
+
+    .shortcut-info {
+      flex: 1;
+    }
+
+    .shortcut-info h4 {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .shortcut-info p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .shortcut-arrow {
+      color: var(--text-subtle);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    /* Unauthenticated card */
+    .guest-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: 32px 20px;
+      text-align: center;
+      margin-top: 20px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .guest-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .guest-card h2 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .guest-card p {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.45;
+    }
+
+    .btn-login-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--primary);
+      color: white;
+      text-decoration: none;
+      font-size: 14.5px;
+      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      transition: var(--transition-smooth);
+    }
+
+    .btn-login-cta:active {
+      transform: scale(0.98);
+    }
+
+    /* =====================================================
+       NATIVE MOBILE BOTTOM NAVIGATION DOCK
+    ===================================================== */
+    .mobile-bottom-dock {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 999;
+      background: var(--dock-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border-color);
+      padding: 6px 12px calc(var(--safe-bottom) + 6px) 12px;
+      box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.08);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      transition: background-color var(--transition-smooth), border-color var(--transition-smooth);
+    }
+
+    .dock-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 12px;
+      transition: var(--transition-smooth);
+      min-width: 58px;
+      position: relative;
+    }
+
+    .dock-item:active {
+      transform: scale(0.92);
+    }
+
+    .dock-item.active {
+      color: var(--primary);
+    }
+
+    .dock-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .dock-ai-pill {
+      background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+      color: white !important;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+      margin-top: -6px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+
+    <!-- Sticky Top Navigation Bar -->
+    <header class="topbar">
+      <a href="dashboard.html" class="back-btn" aria-label="Back to dashboard">
+        <span>←</span>
+        <span>Hospitals</span>
+      </a>
+      <h1 class="topbar-title">👤 Patient Profile</h1>
+      <button type="button" class="btn-logout" id="btnLogoutTop" title="Sign Out" onclick="handleLogout()">
+        🚪
+      </button>
+    </header>
+
+    <!-- Guest / Unauthenticated State -->
+    <div id="guestState" class="guest-card" style="display: none;">
+      <div class="guest-icon">🔒</div>
+      <h2>Patient Sign In Required</h2>
+      <p>Sign in to view and edit your profile, track booked OPD tokens in real-time, and access CarePath AI.</p>
+      <a href="login.html" class="btn-login-cta">
+        <span>🔑 Sign In to Continue</span>
+      </a>
+    </div>
+
+    <!-- Authenticated Content Container -->
+    <div id="authenticatedContent">
+
+      <!-- Status / Feedback Alert -->
+      <div id="statusAlert" class="status-alert" role="alert"></div>
+
+      <!-- Hero Profile Card -->
+      <section class="hero-profile-card">
+        <div class="avatar-wrapper">
+          <div class="avatar-circle" id="avatarCircle">P</div>
+          <span class="verified-badge" title="Verified Patient">✓</span>
+        </div>
+        <h2 class="hero-name" id="heroName">Loading Profile...</h2>
+        <div class="hero-meta-row">
+          <span class="meta-pill meta-pill-patient">Verified Patient</span>
+          <span class="meta-pill" id="heroPhonePill">📱 Not set</span>
+          <span class="meta-pill" id="heroEmailPill">✉️ Loading...</span>
+        </div>
+      </section>
+
+      <!-- Appearance / Theme Selector Section -->
+      <section class="section-card">
+        <div class="section-header">
+          <h3 class="section-title">
+            <span>🌓</span>
+            <span>Appearance & Theme</span>
+          </h3>
+        </div>
+        <p class="section-desc">Choose whether you prefer a bright interface or an eye-friendly dark experience.</p>
+
+        <div class="theme-grid">
+          <!-- Light Theme -->
+          <div class="theme-card" id="themeCardLight" onclick="setAppTheme('light')">
+            <span class="theme-icon">☀️</span>
+            <div class="theme-label">Light</div>
+            <div class="theme-sublabel">Clean & bright</div>
+            <div class="theme-check-dot"></div>
+          </div>
+
+          <!-- Dark Theme -->
+          <div class="theme-card" id="themeCardDark" onclick="setAppTheme('dark')">
+            <span class="theme-icon">🌙</span>
+            <div class="theme-label">Dark</div>
+            <div class="theme-sublabel">Eye-friendly</div>
+            <div class="theme-check-dot"></div>
+          </div>
+
+          <!-- System Default -->
+          <div class="theme-card" id="themeCardSystem" onclick="setAppTheme('system')">
+            <span class="theme-icon">📱</span>
+            <div class="theme-label">System</div>
+            <div class="theme-sublabel">Auto match OS</div>
+            <div class="theme-check-dot"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Edit Profile Information Form -->
+      <section class="section-card">
+        <div class="section-header">
+          <h3 class="section-title">
+            <span>✏️</span>
+            <span>Edit Personal Details</span>
+          </h3>
+        </div>
+        <p class="section-desc">Keep your medical contact information updated for OPD appointments and token SMS alerts.</p>
+
+        <form id="editProfileForm" onsubmit="handleSaveProfile(event)">
+          <div class="form-group">
+            <label for="fullName">Full Name *</label>
+            <input type="text" id="fullName" class="input-field" required placeholder="Enter your full name">
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Phone Number *</label>
+            <input type="tel" id="phone" class="input-field" required placeholder="10-digit mobile number" pattern="[0-9]{10}">
+            <div class="field-hint">Used for OPD token calling alerts and WhatsApp notifications.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" class="input-field" readonly disabled>
+            <div class="field-hint">Linked to your Google / Login account.</div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="age">Age</label>
+              <input type="number" id="age" class="input-field" min="1" max="120" placeholder="e.g. 28">
+            </div>
+
+            <div class="form-group">
+              <label for="gender">Gender</label>
+              <select id="gender" class="input-field">
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="bloodGroup">Blood Group</label>
+              <select id="bloodGroup" class="input-field">
+                <option value="">Select group</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="emergencyContact">Emergency Phone</label>
+              <input type="tel" id="emergencyContact" class="input-field" placeholder="Family / Relative phone">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="address">Address / City</label>
+            <input type="text" id="address" class="input-field" placeholder="e.g. Nagar Kurnool, Telangana">
+          </div>
+
+          <button type="submit" id="btnSaveProfile" class="btn-save">
+            <span>💾 Save Profile Changes</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- Quick Shortcuts -->
+      <section class="section-card">
+        <h3 class="section-title" style="margin-bottom: 12px;">
+          <span>⚡</span>
+          <span>Quick Actions</span>
+        </h3>
+        <div class="shortcut-list">
+          <a href="my-tokens.html" class="shortcut-item">
+            <span class="shortcut-icon">🎟️</span>
+            <div class="shortcut-info">
+              <h4>My Booked OPD Tokens</h4>
+              <p>Check live queue status, ETA, and room number</p>
+            </div>
+            <span class="shortcut-arrow">→</span>
+          </a>
+
+          <a href="dashboard.html" class="shortcut-item">
+            <span class="shortcut-icon">🏥</span>
+            <div class="shortcut-info">
+              <h4>Explore Hospitals & Doctors</h4>
+              <p>Book next available consultation slot</p>
+            </div>
+            <span class="shortcut-arrow">→</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Sign Out Action -->
+      <div style="margin-top: 10px; margin-bottom: 24px;">
+        <button type="button" onclick="handleLogout()" style="width: 100%; height: 44px; border-radius: var(--radius-md); background: transparent; border: 1.5px solid var(--danger); color: var(--danger); font-size: 13.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>🚪 Sign Out of Account</span>
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Native Mobile Bottom Navigation Dock -->
+  <nav class="mobile-bottom-dock" aria-label="Mobile Navigation">
+    <a href="dashboard.html" class="dock-item">
+      <span class="dock-icon">🏥</span>
+      <span>Hospitals</span>
+    </a>
+    <a href="my-tokens.html" class="dock-item">
+      <span class="dock-icon">🎟️</span>
+      <span>Tokens</span>
+    </a>
+    <a href="dashboard.html?ai=open" class="dock-item dock-ai-pill">
+      <span class="dock-icon">🤖</span>
+      <span>AI Scan</span>
+    </a>
+    <a href="profile.html" class="dock-item active">
+      <span class="dock-icon">👤</span>
+      <span>Profile</span>
+    </a>
+  </nav>
+
+  <!-- Profile & Theme Script Logic -->
+  <script>
+    "use strict";
+
+    const API = "https://carepath-3q9q.onrender.com";
+
+    function byId(id) {
+      return document.getElementById(id);
+    }
+
+    function getPatientToken() {
+      return localStorage.getItem("patientToken") || localStorage.getItem("patient_token") || "";
+    }
+
+    function showAlert(message, type) {
+      const alertBox = byId("statusAlert");
+      if (!alertBox) return;
+      alertBox.textContent = message;
+      alertBox.className = "status-alert " + type;
+      alertBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      if (type === "success") {
+        setTimeout(() => {
+          alertBox.style.display = "none";
+        }, 5000);
+      }
+    }
+
+    /* =====================================================
+       THEME CONTROLLER (LIGHT / DARK / SYSTEM)
+    ===================================================== */
+    function setAppTheme(theme) {
+      localStorage.setItem("carepath_theme", theme);
+      applyTheme(theme);
+    }
+
+    function applyTheme(theme) {
+      // Highlight active theme card
+      const cards = {
+        light: byId("themeCardLight"),
+        dark: byId("themeCardDark"),
+        system: byId("themeCardSystem")
+      };
+
+      Object.keys(cards).forEach(key => {
+        if (cards[key]) {
+          cards[key].classList.toggle("active", key === theme);
+        }
+      });
+
+      let isDark = false;
+      if (theme === "dark") {
+        isDark = true;
+      } else if (theme === "light") {
+        isDark = false;
+      } else {
+        isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      }
+
+      if (isDark) {
+        document.documentElement.setAttribute("data-theme", "dark");
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.setAttribute("data-theme", "light");
+        document.documentElement.classList.remove("dark");
+      }
+    }
+
+    // Listen for OS theme changes if in system mode
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e => {
+        const currentPref = localStorage.getItem("carepath_theme") || "system";
+        if (currentPref === "system") {
+          applyTheme("system");
+        }
+      });
+    }
+
+    /* =====================================================
+       INITIALIZE PROFILE
+    ===================================================== */
+    async function initProfile() {
+      // 1. Initialize Theme UI
+      const savedTheme = localStorage.getItem("carepath_theme") || "system";
+      applyTheme(savedTheme);
+
+      // 2. Check Auth
+      const token = getPatientToken();
+      const localName = localStorage.getItem("patientName") || "";
+      const localEmail = localStorage.getItem("patientEmail") || "";
+      const localPhone = localStorage.getItem("patientPhone") || "";
+      const credential = sessionStorage.getItem("patientGoogleCredential");
+
+      // Check if user has any identity or credential
+      if (!token && !localEmail && !credential) {
+        byId("guestState").style.display = "block";
+        byId("authenticatedContent").style.display = "none";
+        return;
+      }
+
+      // Pre-populate with localStorage first (instant rendering)
+      if (localName) {
+        byId("heroName").textContent = localName;
+        byId("fullName").value = localName;
+        byId("avatarCircle").textContent = getInitials(localName);
+      }
+      if (localEmail) {
+        byId("email").value = localEmail;
+        byId("heroEmailPill").textContent = "✉️ " + localEmail;
+      }
+      if (localPhone) {
+        byId("phone").value = localPhone;
+        byId("heroPhonePill").textContent = "📱 " + localPhone;
+      }
+
+      // If in Google onboarding stage (phone missing)
+      if (credential && !token) {
+        showAlert("Please complete your phone number below to finish Google sign-in.", "success");
+      }
+
+      // 3. Fetch latest profile from backend if token exists
+      if (token) {
+        try {
+          const res = await fetch(`${API}/patients/me`, {
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.patient) {
+              const p = data.patient;
+              if (p.full_name) {
+                byId("heroName").textContent = p.full_name;
+                byId("fullName").value = p.full_name;
+                byId("avatarCircle").textContent = getInitials(p.full_name);
+                localStorage.setItem("patientName", p.full_name);
+              }
+              if (p.email) {
+                byId("email").value = p.email;
+                byId("heroEmailPill").textContent = "✉️ " + p.email;
+                localStorage.setItem("patientEmail", p.email);
+              }
+              if (p.phone) {
+                byId("phone").value = p.phone;
+                byId("heroPhonePill").textContent = "📱 " + p.phone;
+                localStorage.setItem("patientPhone", p.phone);
+              }
+              if (p.age != null) byId("age").value = p.age;
+              if (p.gender) byId("gender").value = p.gender;
+              if (p.blood_group) byId("bloodGroup").value = p.blood_group;
+              if (p.emergency_contact) byId("emergencyContact").value = p.emergency_contact;
+              if (p.address) byId("address").value = p.address;
+            }
+          }
+        } catch (err) {
+          console.warn("Could not fetch remote profile:", err);
+        }
+      }
+    }
+
+    function getInitials(name) {
+      if (!name) return "P";
+      const parts = name.trim().split(" ");
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return name.slice(0, 2).toUpperCase();
+    }
+
+    /* =====================================================
+       SAVE PROFILE
+    ===================================================== */
+    async function handleSaveProfile(event) {
+      event.preventDefault();
+      const btn = byId("btnSaveProfile");
+      const token = getPatientToken();
+      const credential = sessionStorage.getItem("patientGoogleCredential");
+
+      const fullName = byId("fullName").value.trim();
+      const phone = byId("phone").value.trim();
+      const ageVal = byId("age").value ? parseInt(byId("age").value, 10) : null;
+      const gender = byId("gender").value;
+      const bloodGroup = byId("bloodGroup").value;
+      const emergencyContact = byId("emergencyContact").value.trim();
+      const address = byId("address").value.trim();
+
+      if (!fullName) {
+        showAlert("Please enter your full name.", "error");
+        return;
+      }
+
+      if (!phone || phone.length < 10) {
+        showAlert("Please enter a valid 10-digit mobile number.", "error");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = "<span>⏳ Saving Profile...</span>";
+
+      try {
+        // Case A: Google onboarding credential without Bearer token
+        if (credential && !token) {
+          const res = await fetch(`${API}/patients/profile`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ credential: credential, phone: phone })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Unable to save profile.");
+
+          sessionStorage.removeItem("patientGoogleCredential");
+          if (data.patient) {
+            if (data.patient.id) localStorage.setItem("patientId", data.patient.id);
+            if (data.patient.full_name) localStorage.setItem("patientName", data.patient.full_name);
+            if (data.patient.email) localStorage.setItem("patientEmail", data.patient.email);
+            if (data.patient.phone) localStorage.setItem("patientPhone", data.patient.phone);
+          }
+          showAlert("✓ Profile saved successfully! Redirecting to dashboard...", "success");
+          setTimeout(() => { window.location.href = "dashboard.html"; }, 1000);
+          return;
+        }
+
+        // Case B: Logged in via Bearer token
+        const payload = {
+          full_name: fullName,
+          phone: phone,
+          age: ageVal,
+          gender: gender,
+          blood_group: bloodGroup,
+          emergency_contact: emergencyContact,
+          address: address
+        };
+
+        const res = await fetch(`${API}/patients/me`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Unable to update profile.");
+        }
+
+        // Update local state
+        localStorage.setItem("patientName", fullName);
+        localStorage.setItem("patientPhone", phone);
+        byId("heroName").textContent = fullName;
+        byId("heroPhonePill").textContent = "📱 " + phone;
+        byId("avatarCircle").textContent = getInitials(fullName);
+
+        showAlert("✓ Profile changes saved successfully!", "success");
+
+      } catch (err) {
+        console.error("Save profile error:", err);
+        showAlert(err.message || "Failed to save profile. Please check your network.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = "<span>💾 Save Profile Changes</span>";
+      }
+    }
+
+    /* =====================================================
+       LOGOUT
+    ===================================================== */
+    function handleLogout() {
+      if (confirm("Are you sure you want to sign out of CarePath?")) {
+        localStorage.removeItem("patientToken");
+        localStorage.removeItem("patient_token");
+        localStorage.removeItem("patientName");
+        localStorage.removeItem("patientEmail");
+        localStorage.removeItem("patientPhone");
+        localStorage.removeItem("patientId");
+        sessionStorage.clear();
+        window.location.href = "login.html";
+      }
+    }
+
+    // Boot
+    window.addEventListener("DOMContentLoaded", initProfile);
+  </script>
+</body>
+</html>

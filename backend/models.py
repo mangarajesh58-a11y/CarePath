@@ -125,6 +125,7 @@ class Doctor(Base):
     photo_base64 = Column(Text, nullable=True)
     room_number = Column(String(50), nullable=True)
     daily_token_limit = Column(Integer, default=50, nullable=True)
+    token_fee = Column(Integer, default=50, nullable=True)
 
     # Legacy doctor availability fields
     # Retained for backward compatibility.
