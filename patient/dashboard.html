@@ -1604,7 +1604,11 @@
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   cursor: pointer !important;
   box-shadow: 0 6px 22px rgba(124, 58, 237, 0.55), 0 0 18px rgba(56, 189, 248, 0.4) !important;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease !important;
+  transition: width 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              border-radius 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s ease,
+              transform 0.25s ease !important;
   text-decoration: none !important;
   overflow: hidden !important;
   width: auto !important;
@@ -1616,7 +1620,7 @@
 
 .carepath-ai-floating-btn:hover,
 #carepathAIButton:hover {
-  transform: translateY(-2px) scale(1.05) !important;
+  transform: translateY(-2px) scale(1.04) !important;
   box-shadow: 0 10px 28px rgba(124, 58, 237, 0.7), 0 0 24px rgba(56, 189, 248, 0.55) !important;
   color: #ffffff !important;
 }
@@ -1643,7 +1647,7 @@
   flex-shrink: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 /* Typography with cinematic sliding/collapsing animation */
@@ -1662,13 +1666,13 @@
   margin-left: 8px !important;
   padding: 0 !important;
   display: inline-block !important;
-  transition: max-width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.35s ease,
-              transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-              margin 0.35s ease !important;
+  transition: max-width 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              margin 0.55s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-/* Collapsed Circular Emblem State (When scrolling up) */
+/* Collapsed Circular Emblem State (When scrolling down: slowly remove name, show only logo) */
 .carepath-ai-floating-btn.ai-btn-collapsed,
 #carepathAIButton.ai-btn-collapsed {
   padding: 6px !important;
@@ -1676,6 +1680,10 @@
   height: 46px !important;
   border-radius: 50% !important;
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6), 0 0 16px rgba(56, 189, 248, 0.45) !important;
+  transition: width 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              border-radius 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s ease !important;
 }
 
 .carepath-ai-floating-btn.ai-btn-collapsed .ai-btn-label,
@@ -1683,12 +1691,16 @@
 #carepathAIButton.ai-btn-collapsed span:not(.ai-badge) {
   max-width: 0 !important;
   opacity: 0 !important;
-  transform: translateX(10px) !important;
+  transform: translateX(12px) !important;
   margin-left: 0 !important;
   pointer-events: none !important;
+  transition: max-width 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.45s ease,
+              transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              margin 0.5s ease !important;
 }
 
-/* Hovering over collapsed button always expands full name smoothly */
+/* Hovering over collapsed button expands full name smoothly */
 .carepath-ai-floating-btn.ai-btn-collapsed:hover,
 #carepathAIButton.ai-btn-collapsed:hover {
   padding: 6px 16px 6px 6px !important;
@@ -4553,6 +4565,8 @@ function escapeHtml(str) {
 <script>
   // =====================================================
   // CAREPATH AI CINEMATIC SCROLL MOTION
+  // Scroll Down: slowly remove name, showing only circle logo
+  // Scroll Up: slowly slowly expand full name with cinematic motion
   // =====================================================
   (function initCarePathAIScrollMotion() {
     let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
@@ -4564,11 +4578,12 @@ function escapeHtml(str) {
       const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
       const diff = currentScrollY - lastScrollY;
 
-      // Scrolling up: smoothly collapse label, showing only circular logo emblem
-      // Scrolling down or near top of page: expand with cinematic motion
-      if (diff < -4 && currentScrollY > 60) {
+      // Scroll DOWN: slowly remove name, show only circular logo
+      if (diff > 5 && currentScrollY > 50) {
         btn.classList.add("ai-btn-collapsed");
-      } else if (diff > 4 || currentScrollY <= 30) {
+      }
+      // Scroll UP or near top: slowly slowly full name with cinematic motion
+      else if (diff < -5 || currentScrollY <= 30) {
         btn.classList.remove("ai-btn-collapsed");
       }
 
@@ -4576,10 +4591,10 @@ function escapeHtml(str) {
 
       clearTimeout(scrollTimer);
       scrollTimer = setTimeout(function() {
-        if ((window.pageYOffset || document.documentElement.scrollTop || 0) < 40) {
+        if ((window.pageYOffset || document.documentElement.scrollTop || 0) <= 30) {
           btn.classList.remove("ai-btn-collapsed");
         }
-      }, 1500);
+      }, 1200);
     }, { passive: true });
   })();
 </script>
