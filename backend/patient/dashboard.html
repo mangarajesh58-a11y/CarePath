@@ -1517,10 +1517,23 @@
       line-height: 1;
     }
 
-    /* Tablet and Desktop Responsiveness (>= 768px) */
+    /* Tablet and Desktop Full Screen Responsiveness (>= 768px) */
     @media (min-width: 768px) {
       .app-shell {
-        max-width: 960px !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+      }
+      .topbar {
+        padding: 12px 24px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .page-content {
+        padding: 18px 24px 40px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
       .desktop-top-nav {
         display: flex !important;
@@ -1530,27 +1543,39 @@
       }
       html, body {
         padding-bottom: 40px !important;
+        width: 100% !important;
+        max-width: 100% !important;
       }
       .quick-action-grid {
         grid-template-columns: repeat(4, 1fr) !important;
-        gap: 12px !important;
+        gap: 14px !important;
+        width: 100% !important;
       }
       .hospital-list {
         display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 18px !important;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)) !important;
+        gap: 20px !important;
+        width: 100% !important;
       }
       .hospital-card {
         margin-bottom: 0 !important;
+        width: 100% !important;
       }
     }
 
-    @media (min-width: 1040px) {
-      .app-shell {
-        max-width: 1080px !important;
+    @media (min-width: 1200px) {
+      .topbar {
+        padding: 14px 36px !important;
       }
       .page-content {
-        padding: 16px 20px 36px !important;
+        padding: 20px 36px 44px !important;
+      }
+      .quick-action-grid {
+        gap: 18px !important;
+      }
+      .hospital-list {
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)) !important;
+        gap: 22px !important;
       }
     }
   </style>
@@ -1588,7 +1613,17 @@
         </a>
       </nav>
 
-      <div class="topbar-actions">
+            <div class="topbar-actions">
+        <button
+          type="button"
+          id="btnToggleFullscreen"
+          class="btn-topbar-icon"
+          onclick="toggleFullScreenMode()"
+          title="Toggle Full Screen Mode"
+          aria-label="Full Screen"
+        >
+          ⛶
+        </button>
         <button
           type="button"
           id="btnHospitalChat"
@@ -4327,6 +4362,28 @@ function escapeHtml(str) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+  // =====================================================
+  // FULL SCREEN MODE TOGGLE
+  // =====================================================
+  function toggleFullScreenMode() {
+    try {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        const root = document.documentElement;
+        if (root.requestFullscreen) {
+          root.requestFullscreen();
+        } else if (root.webkitRequestFullscreen) {
+          root.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+    } catch(e) {}
+  }
 </script>
 </body>
 </html>
