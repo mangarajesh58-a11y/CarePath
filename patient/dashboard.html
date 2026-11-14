@@ -1472,6 +1472,87 @@
       }
     }
 
+    /* Hide token fee badge on dashboard */
+    .hospital-fee {
+      display: none !important;
+    }
+
+    /* Desktop Navigation in Topbar */
+    .desktop-top-nav {
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .desktop-nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 12px;
+      color: #94a3bd;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      background: rgba(17, 26, 48, 0.7);
+    }
+
+    .desktop-nav-link:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .desktop-nav-link.active {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .desktop-nav-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    /* Tablet and Desktop Responsiveness (>= 768px) */
+    @media (min-width: 768px) {
+      .app-shell {
+        max-width: 960px !important;
+      }
+      .desktop-top-nav {
+        display: flex !important;
+      }
+      .mobile-bottom-dock {
+        display: none !important;
+      }
+      html, body {
+        padding-bottom: 40px !important;
+      }
+      .quick-action-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 12px !important;
+      }
+      .hospital-list {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 18px !important;
+      }
+      .hospital-card {
+        margin-bottom: 0 !important;
+      }
+    }
+
+    @media (min-width: 1040px) {
+      .app-shell {
+        max-width: 1080px !important;
+      }
+      .page-content {
+        padding: 16px 20px 36px !important;
+      }
+    }
   </style>
 </head>
 
@@ -1486,6 +1567,26 @@
           <h1>CarePath <span class="brand-status-tag">OPD Live</span></h1>
         </div>
       </div>
+
+      <!-- Desktop Navigation Bar (Visible on tablets & desktop >= 768px) -->
+      <nav class="desktop-top-nav" aria-label="Desktop Navigation">
+        <a href="dashboard.html" class="desktop-nav-link active">
+          <span class="desktop-nav-icon">🏥</span>
+          <span>Hospitals</span>
+        </a>
+        <a href="doctor.html" class="desktop-nav-link">
+          <span class="desktop-nav-icon">🩺</span>
+          <span>Doctors</span>
+        </a>
+        <a href="my-tokens.html" class="desktop-nav-link">
+          <span class="desktop-nav-icon">🎟️</span>
+          <span>Tokens</span>
+        </a>
+        <a href="profile.html" class="desktop-nav-link">
+          <span class="desktop-nav-icon">👤</span>
+          <span>Profile</span>
+        </a>
+      </nav>
 
       <div class="topbar-actions">
         <button
@@ -1626,13 +1727,7 @@
         >
           ✓ Verified
         </button>
-        <button
-          type="button"
-          class="filter-chip"
-          data-filter="lowfee"
-        >
-          ₹ Low Fee
-        </button>
+
       </section>
 
       <!-- Quick Specialties -->

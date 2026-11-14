@@ -785,9 +785,6 @@
         );
       }
 
-      cover.appendChild(
-        makeElement("span", "hospital-fee", "Token fee ₹" + tokenFee(hospital))
-      );
 
       card.appendChild(cover);
 
