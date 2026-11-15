@@ -153,19 +153,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (path.includes("hospitals.html")) {
         loadHospitals();
-    const commParam = new URLSearchParams(window.location.search);
-    if (commParam.get("open_comm") === "true") {
-        setTimeout(() => {
-            if (typeof openGeneralDirectCommunicationModal === "function") {
-                openGeneralDirectCommunicationModal();
-            }
-        }, 800);
+        const commParam = new URLSearchParams(window.location.search);
+        if (commParam.get("open_comm") === "true") {
+            setTimeout(() => {
+                if (typeof openGeneralDirectCommunicationModal === "function") {
+                    openGeneralDirectCommunicationModal();
+                }
+            }, 800);
+        }
     }
 
+    if (path.includes("patients.html")) {
+        if (typeof loadAdminPatients === "function") {
+            loadAdminPatients();
+        }
     }
 
     if (path.includes("payments.html")) {
         loadPayments();
+        if (typeof loadHospitalLedger === "function") loadHospitalLedger();
+        if (typeof loadSettlementsHistory === "function") loadSettlementsHistory();
+        if (typeof loadFailedRefunds === "function") loadFailedRefunds();
     }
 
     if (path.includes("tokens.html")) {
@@ -3505,6 +3513,13 @@ async function sendCommModalMessage() {
 window.openDirectCommModal = openDirectCommModal;
 window.closeDirectCommModal = closeDirectCommModal;
 window.openGeneralDirectCommunicationModal = openGeneralDirectCommunicationModal;
+
+function openDirectHospitalComm(target = 'all') {
+    if (typeof openGeneralDirectCommunicationModal === "function") {
+        openGeneralDirectCommunicationModal();
+    }
+}
+window.openDirectHospitalComm = openDirectHospitalComm;
 window.onCommHospitalSelectChange = onCommHospitalSelectChange;
 window.switchHospitalModalTab = switchHospitalModalTab;
 window.refreshCurrentCommMessages = refreshCurrentCommMessages;
@@ -4890,6 +4905,9 @@ function switchDashboardModule(moduleId, scrollIntoView = true) {
     }
 
     if (moduleId === "payouts") {
+        if (typeof loadHospitalLedger === "function") {
+            loadHospitalLedger();
+        }
         if (typeof loadPayments === "function") {
             loadPayments();
         }
@@ -4908,6 +4926,40 @@ function switchDashboardModule(moduleId, scrollIntoView = true) {
 }
 window.switchDashboardModule = switchDashboardModule;
 
+function switchPayoutTab(tab) {
+    const tabLedger = document.getElementById("payoutTabLedger");
+    const tabTokens = document.getElementById("payoutTabTokens");
+    const wrapLedger = document.getElementById("payoutWrapperLedger");
+    const wrapTokens = document.getElementById("payoutWrapperTokens");
+
+    if (tab === "tokens") {
+        if (tabLedger) {
+            tabLedger.style.background = "#f1f5f9";
+            tabLedger.style.color = "#475569";
+        }
+        if (tabTokens) {
+            tabTokens.style.background = "#2563eb";
+            tabTokens.style.color = "#ffffff";
+        }
+        if (wrapLedger) wrapLedger.style.display = "none";
+        if (wrapTokens) wrapTokens.style.display = "block";
+        if (typeof loadPayments === "function") loadPayments();
+    } else {
+        if (tabLedger) {
+            tabLedger.style.background = "#2563eb";
+            tabLedger.style.color = "#ffffff";
+        }
+        if (tabTokens) {
+            tabTokens.style.background = "#f1f5f9";
+            tabTokens.style.color = "#475569";
+        }
+        if (wrapLedger) wrapLedger.style.display = "block";
+        if (wrapTokens) wrapTokens.style.display = "none";
+        if (typeof loadHospitalLedger === "function") loadHospitalLedger();
+    }
+}
+window.switchPayoutTab = switchPayoutTab;
+
 async function loadDirectAdPricing() {
     try {
         const resPricing = await fetch(`${API}/admin/ad-pricing`, {
@@ -4923,7 +4975,7 @@ async function loadDirectAdPricing() {
             if (durationInput) durationInput.value = dataPricing.ad_duration_days ?? 30;
         }
 
-        const resContact = await fetch(`${API}/admin/contact-settings`, {
+        const resContact = await fetch(`${API}/admin/contact`, {
             headers: getAdminAuthHeaders()
         });
         const dataContact = await readResponse(resContact);
@@ -4966,7 +5018,7 @@ async function saveDirectAdPricing() {
         if (!res1.ok) throw new Error(d1.detail || "Failed to update ad fees");
 
         // Save Platform Convenience Fee
-        const res2 = await fetch(`${API}/admin/contact-settings`, {
+        const res2 = await fetch(`${API}/admin/contact`, {
             method: "PUT",
             headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
@@ -5027,6 +5079,9 @@ async function loadDirectAuditTrail() {
             else if (action.includes("REJECT") || action.includes("DELETE")) { badgeBg = "#fee2e2"; badgeColor = "#991b1b"; }
             else if (action.includes("FEE") || action.includes("SETTLE")) { badgeBg = "#fef3c7"; badgeColor = "#92400e"; }
 
+            const rawTime = item.created_at || item.timestamp;
+            const timeStr = rawTime ? rawTime.replace("T", " ").slice(0, 19) : "—";
+
             html += `
                 <div class="audit-log-item" style="display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f1f5f9;">
                     <span class="audit-badge" style="background: ${badgeBg}; color: ${badgeColor}; align-self: flex-start; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800;">
@@ -5035,7 +5090,7 @@ async function loadDirectAuditTrail() {
                     <div style="flex: 1;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                             <strong style="color: #0f172a; font-size: 13.5px;">${escapeHtml(item.admin_email || "System Admin")}</strong>
-                            <span style="font-size: 11px; color: #94a3b8;">${item.timestamp ? item.timestamp.replace("T", " ").slice(0, 19) : "—"}</span>
+                            <span style="font-size: 11px; color: #94a3b8;">${timeStr}</span>
                         </div>
                         <div style="font-size: 12.5px; color: #475569;">${escapeHtml(item.details || item.target || "Operation logged successfully.")}</div>
                     </div>
@@ -5048,6 +5103,90 @@ async function loadDirectAuditTrail() {
     }
 }
 window.loadDirectAuditTrail = loadDirectAuditTrail;
+
+async function sendDirectDashboardNotice() {
+    const targetSelect = document.getElementById("directNoticeTargetHospital");
+    const subjInput = document.getElementById("directNoticeSubject");
+    const bodyInput = document.getElementById("directNoticeBody");
+    const btn = document.getElementById("btnDispatchDashboardNotice");
+
+    const target = targetSelect ? targetSelect.value : "all";
+    const subject = subjInput ? subjInput.value.trim() : "";
+    const message = bodyInput ? bodyInput.value.trim() : "";
+
+    if (!subject) {
+        alert("Please enter a notice subject.");
+        if (subjInput) subjInput.focus();
+        return;
+    }
+    if (!message) {
+        alert("Please enter the message body.");
+        if (bodyInput) bodyInput.focus();
+        return;
+    }
+
+    const originalText = btn ? btn.textContent : "📤 Dispatch Notice Now";
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "⏳ Dispatching...";
+    }
+
+    try {
+        let targets = [];
+        if (target === "all") {
+            const list = window.allLoadedHospitals || [];
+            if (list.length > 0) {
+                targets = list.map(h => h.id);
+            } else {
+                const resHosp = await fetch(`${API}/admin/hospitals`, { headers: getAdminAuthHeaders() });
+                const dHosp = await readResponse(resHosp);
+                const fetchedList = Array.isArray(dHosp) ? dHosp : (dHosp.hospitals || []);
+                targets = fetchedList.map(h => h.id);
+            }
+        } else {
+            targets = [Number(target)];
+        }
+
+        if (targets.length === 0) {
+            alert("No registered hospitals found to dispatch notice to.");
+            return;
+        }
+
+        let sentCount = 0;
+        for (const hid of targets) {
+            try {
+                const res = await fetch(`${API}/admin/hospitals/${hid}/messages`, {
+                    method: "POST",
+                    headers: {
+                        ...getAdminAuthHeaders(),
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        subject: subject,
+                        message: message,
+                        priority: "normal",
+                        send_email: true
+                    })
+                });
+                if (res.ok) sentCount++;
+            } catch (err) {
+                console.warn(`Error sending notice to hospital ${hid}:`, err);
+            }
+        }
+
+        alert(`✅ Notice successfully dispatched to ${sentCount} hospital desk(s)!`);
+        if (subjInput) subjInput.value = "";
+        if (bodyInput) bodyInput.value = "";
+    } catch (e) {
+        alert("❌ Failed to dispatch notice: " + (e.message || "Network error"));
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+}
+window.sendDirectDashboardNotice = sendDirectDashboardNotice;
 
 document.addEventListener("DOMContentLoaded", function () {
     highlightActiveBottomNav();

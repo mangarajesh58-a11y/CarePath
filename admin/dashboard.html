@@ -800,14 +800,14 @@
                     <thead>
                         <tr style="background: #f8fafc; color: #475569; border-bottom: 1.5px solid #e2e8f0;">
                             <th style="padding: 12px 14px;">ID</th>
-                            <th style="padding: 12px 14px;">Hospital Name</th>
-                            <th style="padding: 12px 14px;">City / Address</th>
-                            <th style="padding: 12px 14px;">Contact</th>
-                            <th style="padding: 12px 14px;">Clinical License</th>
-                            <th style="padding: 12px 14px;">Expiry Date</th>
+                            <th style="padding: 12px 14px;">Hospital</th>
+                            <th style="padding: 12px 14px;">City</th>
+                            <th style="padding: 12px 14px;">License ID</th>
+                            <th style="padding: 12px 14px;">Token Fee</th>
                             <th style="padding: 12px 14px;">Status</th>
-                            <th style="padding: 12px 14px;">Visibility</th>
-                            <th style="padding: 12px 14px; text-align: center;">Action</th>
+                            <th style="padding: 12px 14px;">Published</th>
+                            <th style="padding: 12px 14px;">Doctors</th>
+                            <th style="padding: 12px 14px; text-align: center;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="hospitalTableBody">
@@ -896,25 +896,58 @@
                     <p>Track settled patient OPD payments, developer platform fees, and hospital payout distribution</p>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <button type="button" onclick="loadPayments()" style="padding: 7px 14px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; color: #334155;">🔄 Refresh</button>
+                    <button type="button" onclick="loadHospitalLedger(); loadPayments();" style="padding: 7px 14px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; color: #334155;">🔄 Refresh</button>
                     <a href="payments.html" style="padding: 7px 14px; background: #16a34a; color: white; border-radius: 8px; font-size: 12.5px; font-weight: 700; text-decoration: none;">Full Settlement Ledger &rarr;</a>
                 </div>
             </div>
 
-            <div class="table-card" style="padding: 0; overflow-x: auto;">
+            <!-- SUB-TABS: LEDGER VS TOKENS -->
+            <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+                <button type="button" id="payoutTabLedger" onclick="switchPayoutTab('ledger')" style="padding: 8px 18px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    🏥 Hospital Balances & Settle UTR
+                </button>
+                <button type="button" id="payoutTabTokens" onclick="switchPayoutTab('tokens')" style="padding: 8px 18px; background: #f1f5f9; color: #475569; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    🎫 Token OPD Transactions
+                </button>
+            </div>
+
+            <!-- WRAPPER 1: HOSPITAL BALANCES LEDGER -->
+            <div id="payoutWrapperLedger" class="table-card" style="padding: 0; overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
                     <thead>
                         <tr style="background: #f8fafc; color: #475569; border-bottom: 1.5px solid #e2e8f0;">
-                            <th style="padding: 12px 14px;">Token ID</th>
+                            <th style="padding: 12px 14px;">Hospital</th>
+                            <th style="padding: 12px 14px;">Bank / UPI Details</th>
+                            <th style="padding: 12px 14px;">Paid Tokens</th>
+                            <th style="padding: 12px 14px;">OPD Fee</th>
+                            <th style="padding: 12px 14px;">Commission</th>
+                            <th style="padding: 12px 14px;">Net Payable</th>
+                            <th style="padding: 12px 14px;">Settled</th>
+                            <th style="padding: 12px 14px;">Pending Balance</th>
+                            <th style="padding: 12px 14px; text-align: center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ledgerTableBody">
+                        <tr><td colspan="9" class="loading">Loading hospital balance ledger...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- WRAPPER 2: TOKEN TRANSACTIONS -->
+            <div id="payoutWrapperTokens" class="table-card" style="display: none; padding: 0; overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                    <thead>
+                        <tr style="background: #f8fafc; color: #475569; border-bottom: 1.5px solid #e2e8f0;">
+                            <th style="padding: 12px 14px;">ID</th>
                             <th style="padding: 12px 14px;">Patient</th>
                             <th style="padding: 12px 14px;">Hospital</th>
+                            <th style="padding: 12px 14px;">Department</th>
                             <th style="padding: 12px 14px;">Doctor</th>
-                            <th style="padding: 12px 14px;">Hospital Fee</th>
+                            <th style="padding: 12px 14px;">Token Fee</th>
                             <th style="padding: 12px 14px;">Platform Fee</th>
                             <th style="padding: 12px 14px;">Total Paid</th>
-                            <th style="padding: 12px 14px;">Payment Status</th>
-                            <th style="padding: 12px 14px;">Date</th>
-                            <th style="padding: 12px 14px; text-align: center;">Action</th>
+                            <th style="padding: 12px 14px;">Status</th>
+                            <th style="padding: 12px 14px;">Cashfree / Ref ID</th>
                         </tr>
                     </thead>
                     <tbody id="paymentTableBody">
@@ -954,7 +987,7 @@
                         <label style="display: block; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">Message Body</label>
                         <textarea id="directNoticeBody" rows="4" placeholder="Enter detailed administrative notice or directive..." style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; outline: none; box-sizing: border-box; resize: vertical;"></textarea>
                     </div>
-                    <button type="button" onclick="alert('Notice dispatched successfully to hospital desks!')" style="padding: 10px 20px; background: #0891b2; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 13.5px; cursor: pointer;">
+                    <button type="button" id="btnDispatchDashboardNotice" onclick="sendDirectDashboardNotice()" style="padding: 10px 20px; background: #0891b2; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 13.5px; cursor: pointer;">
                         📤 Dispatch Notice Now
                     </button>
                 </div>
@@ -1090,6 +1123,168 @@
                 Close
             </button>
         </div>
+    </div>
+</div>
+
+<!-- HOSPITAL DETAILS MODAL -->
+<div id="hospitalDetailsModal" class="hospital-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modalHospitalName">
+    <div class="hospital-modal-content">
+        <button type="button" class="modal-close" onclick="closeHospitalDetails()" aria-label="Close hospital details">&times;</button>
+        <h2 id="modalHospitalName">Hospital Details</h2>
+        <div style="display: flex; gap: 8px; margin: 15px 0 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+            <button type="button" id="tabBtnDetails" onclick="switchHospitalModalTab('details')" style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer;">📋 Hospital Info & Documents</button>
+            <button type="button" id="tabBtnComm" onclick="switchHospitalModalTab('comm')" style="background: #f1f5f9; color: #475569; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer;">💬 Direct Communication & Notices</button>
+        </div>
+        <div id="hospitalModalDetailsTab">
+            <div id="hospitalDetailsContent">Select a hospital to view its details.</div>
+            <hr>
+            <h3>🖼️ Hospital Cover Photo</h3>
+            <p id="hospitalPhotoMessage" role="status" aria-live="polite">No hospital photo loaded yet.</p>
+            <img id="hospitalPhotoPreview" alt="Hospital cover photo" src="" style="display:none; width:100%; max-width:720px; max-height:360px; object-fit:cover; border-radius:10px; border:1px solid #ddd; background:#f5f5f5;">
+            <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input type="file" id="adminPhotoFileInput" accept="image/jpeg,image/png,image/webp" style="font-size: 13px;">
+                <button type="button" class="view-btn" onclick="adminUploadHospitalPhoto()" style="padding: 6px 12px; font-size: 13px;">📷 Upload / Change Photo</button>
+            </div>
+            <hr>
+            <h3>📄 Hospital Registration Certificate</h3>
+            <p id="certificateFileName" aria-live="polite">No certificate selected.</p>
+            <iframe id="certificateViewer" title="Hospital registration certificate preview" src="about:blank" style="display: block; width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 6px; background: #f5f5f5;"></iframe>
+            <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <input type="file" id="adminCertificateFileInput" accept="application/pdf,image/jpeg,image/png" style="font-size: 13px;">
+                <button type="button" class="view-btn" onclick="adminUploadHospitalCertificate()" style="padding: 6px 12px; font-size: 13px;">📄 Upload / Replace Certificate</button>
+            </div>
+            <p id="certificateModalMessage" role="status" aria-live="polite"></p>
+            <div class="action-buttons">
+                <button type="button" class="approve-btn" id="verifyCertificateButton" onclick="verifyHospitalCertificateFromModal()" disabled>✓ Verify Certificate</button>
+                <button type="button" class="reject-btn" id="rejectCertificateButton" onclick="rejectHospitalCertificateFromModal()" disabled>✕ Reject Certificate</button>
+                <button type="button" class="view-btn" onclick="closeHospitalDetails()">Close</button>
+            </div>
+            <hr>
+        </div>
+        <div id="hospitalModalCommTab">
+            <div style="margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 17px; color: #0f172a;">💬 Direct Communication with Hospital</h3>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <a id="btnHospitalWhatsApp" href="#" target="_blank" class="view-btn" style="background: #25D366; color: white; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 6px 14px; border-radius: 6px; font-weight: 700;">🟢 WhatsApp Direct Chat</a>
+                        <a id="btnHospitalCall" href="#" class="view-btn" style="background: #0284c7; color: white; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 6px 14px; border-radius: 6px; font-weight: 700;">📞 Call Hospital</a>
+                    </div>
+                </div>
+                <div id="hospitalMessagesContainer" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; max-height: 250px; overflow-y: auto; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;">
+                    <div style="text-align: center; color: #64748b; font-size: 13px;">Loading conversation...</div>
+                </div>
+                <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 16px;">
+                    <div style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 8px;">✉️ Send Official Direct Message / Notice to Hospital</div>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="adminMsgSubject" placeholder="Subject (e.g. License renewal, bank details update, inquiry)" style="padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none;">
+                        <select id="adminMsgPriority" style="padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background: white;">
+                            <option value="normal">Priority: Normal Notice</option>
+                            <option value="urgent">Priority: 🚨 Urgent Action</option>
+                            <option value="compliance">Priority: ⚠️ Compliance / Documents</option>
+                        </select>
+                    </div>
+                    <textarea id="adminMsgText" rows="2" placeholder="Type your direct message to this hospital..." style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit; margin-bottom: 8px; resize: vertical; outline: none;"></textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <label style="font-size: 12.5px; color: #475569; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <input type="checkbox" id="adminMsgSendEmail" checked style="width: 15px; height: 15px;">
+                            <span>Also dispatch email copy to hospital email</span>
+                        </label>
+                        <button type="button" id="btnAdminSendMsg" class="publish-btn" onclick="sendDirectMessageToHospital()" style="padding: 8px 18px; font-size: 13px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;">🚀 Send Message</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DEDICATED DIRECT COMMUNICATION MODAL -->
+<div id="directCommModal" class="hospital-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="commModalTitle">
+    <div class="hospital-modal-content" style="max-width: 820px; padding: 24px; border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,0.25);">
+        <button type="button" class="modal-close" onclick="closeDirectCommModal()" aria-label="Close communication modal">&times;</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h2 id="commModalTitle" style="margin: 0; font-size: 20px; color: #0f172a; display: flex; align-items: center; gap: 8px;">💬 Direct Communication with Hospital</h2>
+                <div style="margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span id="commModalHospitalBadge" style="font-size: 13px; font-weight: 700; color: #1e40af; background: #dbeafe; padding: 3px 10px; border-radius: 20px;">Hospital Name</span>
+                    <span id="commModalCityBadge" style="font-size: 12px; color: #64748b;"></span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <a id="commModalWhatsAppBtn" href="#" target="_blank" class="view-btn" style="background: #25D366; color: white; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 16px; border-radius: 8px; font-weight: 700; box-shadow: 0 2px 6px rgba(37,211,102,0.3);">🟢 WhatsApp Direct</a>
+                <a id="commModalCallBtn" href="#" class="view-btn" style="background: #0284c7; color: white; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 8px 16px; border-radius: 8px; font-weight: 700; box-shadow: 0 2px 6px rgba(2,132,199,0.3);">📞 Call</a>
+            </div>
+        </div>
+        <div id="commModalHospitalPicker" style="display: none; margin-bottom: 14px; background: #eff6ff; padding: 12px 14px; border-radius: 8px; border: 1px solid #bfdbfe;">
+            <label style="font-size: 12.5px; font-weight: 700; color: #1e40af; display: block; margin-bottom: 6px;">Select Hospital to Communicate With:</label>
+            <select id="commModalHospitalSelect" onchange="onCommHospitalSelectChange(this.value)" style="width: 100%; padding: 9px 12px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 13px; background: white; outline: none;"></select>
+        </div>
+        <div style="font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Messages History Thread</span>
+            <button type="button" onclick="refreshCurrentCommMessages()" style="background: transparent; border: none; color: #2563eb; cursor: pointer; font-size: 12px; font-weight: 600;">🔄 Refresh Thread</button>
+        </div>
+        <div id="commModalMessagesContainer" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; height: 280px; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="text-align: center; color: #64748b; font-size: 13px; padding: 20px 0;">Loading conversation...</div>
+        </div>
+        <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <div style="font-weight: 700; font-size: 13.5px; color: #1e293b; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">✉️ Send Official Direct Message / Notice to Hospital</div>
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="commModalMsgSubject" placeholder="Subject (e.g. License renewal, inspection, bank update)" style="padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none;">
+                <select id="commModalMsgPriority" style="padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; outline: none; background: white;">
+                    <option value="normal">Priority: Normal Notice</option>
+                    <option value="urgent">Priority: 🚨 Urgent</option>
+                    <option value="compliance">Priority: ⚠️ Compliance</option>
+                </select>
+            </div>
+            <textarea id="commModalMsgText" rows="3" placeholder="Type your message here..." style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit; margin-bottom: 10px; resize: vertical; outline: none;"></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <label style="font-size: 13px; color: #475569; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="commModalSendEmail" checked style="width: 16px; height: 16px;">
+                    <span>Also dispatch email copy to hospital email</span>
+                </label>
+                <button type="button" id="btnCommModalSend" onclick="sendCommModalMessage()" style="padding: 9px 22px; font-size: 13.5px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(37,99,235,0.3);">🚀 Send Message</button>
+            </div>
+        </div>
+        <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+            <button type="button" class="view-btn" onclick="closeDirectCommModal()" style="padding: 8px 20px; font-size: 13px;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- RECORD SETTLEMENT MODAL -->
+<div id="settleModal" class="settle-modal" style="display: none;" onclick="if(event.target===this)closeSettlementModal()">
+    <div class="settle-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3>💸 Record Hospital Payout Settlement</h3>
+            <button type="button" onclick="closeSettlementModal()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+        <div style="background: #f8fafc; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px;">
+            <div><strong>Hospital:</strong> <span id="modalHospName">—</span></div>
+            <div style="color: #64748b; margin-top: 4px;"><strong>Bank / UPI:</strong> <span id="modalBankDetails">—</span></div>
+            <div style="margin-top: 4px; color: #ea580c; font-weight: 700;"><strong>Unsettled Balance:</strong> <span id="modalPendingBal">₹0</span></div>
+        </div>
+        <form id="settlementForm" onsubmit="submitSettlement(event)">
+            <input type="hidden" id="modalHospId">
+            <div class="settle-field">
+                <label for="settleAmount">Settlement Amount (₹) *</label>
+                <input type="number" id="settleAmount" step="0.01" min="1" required>
+            </div>
+            <div class="settle-field">
+                <label for="settleUtr">UTR / Bank Reference / Transaction Number *</label>
+                <input type="text" id="settleUtr" placeholder="e.g., HDFC0001928347 or UPI Ref ID" required>
+            </div>
+            <div class="settle-field">
+                <label for="settleDate">Settlement Date *</label>
+                <input type="date" id="settleDate" required>
+            </div>
+            <div class="settle-field">
+                <label for="settleNotes">Notes / Remittance Info (Optional)</label>
+                <textarea id="settleNotes" placeholder="e.g. Weekly OPD consultation payout" rows="2"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" id="btnSubmitSettle" style="flex: 1; padding: 12px; background: #16a34a; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">✓ Record Settlement</button>
+                <button type="button" onclick="closeSettlementModal()" style="padding: 12px 20px; background: #e2e8f0; color: #475569; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancel</button>
+            </div>
+        </form>
     </div>
 </div>
 

@@ -8052,6 +8052,7 @@ def update_ad_pricing(
 
 @app.get("/platform/contact")
 @app.get("/admin/contact")
+@app.get("/admin/contact-settings")
 def get_platform_contact(db: Session = Depends(get_db)):
     contact = get_or_create_contact_settings(db)
     return {
@@ -8073,6 +8074,8 @@ def get_platform_contact(db: Session = Depends(get_db)):
 
 @app.post("/admin/contact")
 @app.put("/admin/contact")
+@app.post("/admin/contact-settings")
+@app.put("/admin/contact-settings")
 def update_platform_contact(
     data: PlatformContactUpdateRequest,
     db: Session = Depends(get_db),
