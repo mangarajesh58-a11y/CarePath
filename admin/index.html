@@ -59,43 +59,47 @@
         </h2>
 
 
-        <!-- EMAIL -->
+        <form id="adminLoginForm" onsubmit="event.preventDefault(); adminLogin();">
+            <!-- EMAIL -->
 
-        <label for="adminEmail">
-            Email
-        </label>
+            <label for="adminEmail">
+                Email
+            </label>
 
-        <input
-            type="email"
-            id="adminEmail"
-            placeholder="Enter admin email"
-            autocomplete="email"
-        >
-
-
-        <!-- PASSWORD -->
-
-        <label for="adminPassword">
-            Password
-        </label>
-
-        <input
-            type="password"
-            id="adminPassword"
-            placeholder="Enter password"
-            autocomplete="current-password"
-        >
+            <input
+                type="email"
+                id="adminEmail"
+                placeholder="Enter admin email"
+                autocomplete="email"
+                required
+            >
 
 
-        <!-- NORMAL LOGIN -->
+            <!-- PASSWORD -->
 
-        <button
-            type="button"
-            id="adminLoginButton"
-            onclick="adminLogin()"
-        >
-            Login
-        </button>
+            <label for="adminPassword">
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="adminPassword"
+                placeholder="Enter password"
+                autocomplete="current-password"
+                required
+            >
+
+
+            <!-- NORMAL LOGIN -->
+
+            <button
+                type="submit"
+                id="adminLoginButton"
+                onclick="adminLogin()"
+            >
+                Login
+            </button>
+        </form>
 
 
         <!-- DIVIDER -->

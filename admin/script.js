@@ -122,6 +122,7 @@ function requireAdminLogin() {
 
     return true;
 }
+window.requireAdminLogin = requireAdminLogin;
 
 // =====================================================
 // PAGE LOAD
@@ -135,14 +136,32 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("Current page:", path);
 
     const isLoginPage =
+        path === "" ||
+        path === "/" ||
+        path.endsWith("/") ||
+        path.endsWith("/admin") ||
         path.endsWith("/admin/") ||
-        path.endsWith("/admin/index.html") ||
-        path.endsWith("index.html");
+        path.endsWith("/index.html") ||
+        path.endsWith("index.html") ||
+        document.getElementById("adminLoginButton") !== null;
 
     if (!isLoginPage) {
         if (!requireAdminLogin()) {
             return;
         }
+    } else {
+        const emailIn = document.getElementById("adminEmail");
+        const passIn = document.getElementById("adminPassword");
+        [emailIn, passIn].forEach(input => {
+            if (input) {
+                input.addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        adminLogin();
+                    }
+                });
+            }
+        });
     }
 
     if (path.includes("dashboard.html")) {
@@ -190,6 +209,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // =====================================================
 
 async function adminLogin() {
+    const btn = document.getElementById("adminLoginButton");
     const emailInput = document.getElementById("adminEmail");
     const passwordInput = document.getElementById("adminPassword");
 
@@ -207,13 +227,18 @@ async function adminLogin() {
         return;
     }
 
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Logging in...";
+    }
+
     try {
         showLoginMessage(
             "Logging in...",
             "success"
         );
 
-        const response = await fetch(
+        const response = await fetchWithRetry(
             `${API}/admin/login`,
             {
                 method: "POST",
@@ -224,7 +249,9 @@ async function adminLogin() {
                     email: email,
                     password: password
                 })
-            }
+            },
+            1,
+            2000
         );
 
         const data = await readResponse(response);
@@ -277,14 +304,13 @@ async function adminLogin() {
         );
 
         showLoginMessage(
-            "Login successful",
+            "Login successful! Opening dashboard...",
             "success"
         );
 
         setTimeout(() => {
-            window.location.href =
-                `${FRONTEND}/dashboard.html`;
-        }, 500);
+            window.location.href = "dashboard.html";
+        }, 350);
 
     } catch (error) {
         console.error(
@@ -294,11 +320,17 @@ async function adminLogin() {
 
         showLoginMessage(
             error.message ||
-            "Cannot connect to CarePath FastAPI.",
+            "Cannot connect to CarePath backend. Please verify your internet connection or server status.",
             "error"
         );
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "Login";
+        }
     }
 }
+window.adminLogin = adminLogin;
 
 // =====================================================
 // GOOGLE ADMIN LOGIN
@@ -322,7 +354,7 @@ async function handleGoogleLogin(response) {
             "success"
         );
 
-        const result = await fetch(
+        const result = await fetchWithRetry(
             `${API}/auth/google`,
             {
                 method: "POST",
@@ -333,7 +365,9 @@ async function handleGoogleLogin(response) {
                     credential: response.credential,
                     role: "admin"
                 })
-            }
+            },
+            1,
+            2000
         );
 
         const data =
@@ -394,9 +428,8 @@ async function handleGoogleLogin(response) {
         );
 
         setTimeout(() => {
-            window.location.href =
-                `${FRONTEND}/dashboard.html`;
-        }, 500);
+            window.location.href = "dashboard.html";
+        }, 350);
 
     } catch (error) {
         console.error(
@@ -406,11 +439,12 @@ async function handleGoogleLogin(response) {
 
         showLoginMessage(
             error.message ||
-            "Cannot connect to CarePath FastAPI.",
+            "Cannot connect to CarePath backend.",
             "error"
         );
     }
 }
+window.handleGoogleLogin = handleGoogleLogin;
 
 // =====================================================
 // LOGIN MESSAGE
@@ -4340,43 +4374,6 @@ function renderOnlineUsers(role) {
     html += `</div>`;
 
     bodies.forEach(b => b.innerHTML = html);
-}
-                <div style="display: flex; align-items: center; gap: 12px; min-width: 220px;">
-                    <div style="position: relative; width: 38px; height: 38px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1.5px solid #bfdbfe;">
-                        ${isPatient ? "👤" : isHospital ? "🏥" : "🛡️"}
-                        <span style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid white;"></span>
-                    </div>
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <strong style="color: #0f172a; font-size: 14px;">${escapeHtml(u.name || "Anonymous User")}</strong>
-                            ${roleBadge}
-                        </div>
-                        <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
-                            ${escapeHtml(u.email || u.phone || "No direct contact")}
-                            ${u.phone && u.email ? ` • 📞 ${escapeHtml(u.phone)}` : ""}
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div style="text-align: right;">
-                        <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Current Activity</div>
-                        <div style="font-size: 12.5px; color: #0284c7; font-weight: 600; font-family: monospace;">${escapeHtml(u.current_page || "Active in session")}</div>
-                    </div>
-
-                    <div style="text-align: right; min-width: 80px;">
-                        <span class="badge-tag badge-online" style="display: inline-flex; align-items: center; gap: 4px;">
-                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a;"></span>
-                            ${timeDisplay}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    html += `</div>`;
-
-    body.innerHTML = html;
 }
 
 function openOnlineUsersModal() {
