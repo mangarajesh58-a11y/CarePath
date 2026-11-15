@@ -214,101 +214,175 @@
         </div>
     </div>
 
-    <!-- WELCOME -->
-    <div class="welcome">
-        <h2>Welcome, Admin</h2>
-        <p>Real-time healthcare platform operations, peak hour trends, payouts, and hospital compliance oversight.</p>
+    <!-- EXECUTIVE HERO & SYSTEM STATUS -->
+    <div class="hero-welcome">
+        <div class="hero-top-row">
+            <div class="hero-greeting">
+                <h2>Hello, Administrator 👋</h2>
+                <p id="heroDateTimeDisplay">Live Healthcare Operations & Infrastructure Oversight</p>
+            </div>
+            <div class="hero-status-badge">
+                <span class="pulse-dot"></span>
+                <span>System Operational • API v11.0</span>
+            </div>
+        </div>
+
+        <div class="hero-chips-row">
+            <div class="hero-chip" style="cursor: pointer;" onclick="openOnlineUsersModal()">
+                <span>🟢 Online Sessions:</span>
+                <strong id="heroOnlineCount">0</strong>
+            </div>
+            <div class="hero-chip">
+                <span>⚡ Platform Fee:</span>
+                <strong id="heroPlatformFee">₹10</strong>
+            </div>
+            <div class="hero-chip">
+                <span>💰 Today's OPD Gross:</span>
+                <strong id="heroTodayGross">₹0</strong>
+            </div>
+        </div>
     </div>
 
-    <!-- STATISTICS -->
-    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
-        <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='hospitals.html'">
-            <div class="stat-icon">🏥</div>
-            <div>
-                <span>Hospitals</span>
-                <strong id="hospitalCount">0</strong>
-            </div>
-        </div>
+    <!-- QUICK ACTIONS APP SHORTCUTS -->
+    <div class="quick-actions-bar">
+        <a href="patients.html" class="quick-action-btn">
+            <span class="quick-action-icon">👥</span>
+            <span>Patients Roster</span>
+        </a>
+        <a href="tokens.html" class="quick-action-btn">
+            <span class="quick-action-icon">🎫</span>
+            <span>Live Tokens</span>
+        </a>
+        <a href="hospitals.html" class="quick-action-btn">
+            <span class="quick-action-icon">🏥</span>
+            <span>Hospitals Network</span>
+        </a>
+        <button type="button" class="quick-action-btn" onclick="openOnlineUsersModal()">
+            <span class="quick-action-icon">🟢</span>
+            <span>Online Users</span>
+        </button>
+        <a href="contact-settings.html" class="quick-action-btn">
+            <span class="quick-action-icon">⚙️</span>
+            <span>Ad Pricing & Fees</span>
+        </a>
+        <a href="payments.html" class="quick-action-btn">
+            <span class="quick-action-icon">💳</span>
+            <span>Payout Ledger</span>
+        </a>
+        <a href="broadcasts.html" class="quick-action-btn">
+            <span class="quick-action-icon">📢</span>
+            <span>Alert Broadcasts</span>
+        </a>
+        <button type="button" class="quick-action-btn" onclick="openAuditLogModal()">
+            <span class="quick-action-icon">🛡️</span>
+            <span>Audit Trail</span>
+        </button>
+    </div>
 
-        <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='patients.html'">
-            <div class="stat-icon">👥</div>
-            <div>
-                <span>Patients</span>
-                <strong id="patientCount">0</strong>
-            </div>
-        </div>
-
-        <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='tokens.html'">
-            <div class="stat-icon">💳</div>
-            <div>
-                <span>Paid Tokens</span>
-                <strong id="paymentCount">0</strong>
-            </div>
-        </div>
-
-        <div class="stat-card" style="cursor: pointer;" onclick="window.location.href='tokens.html'">
-            <div class="stat-icon">🎫</div>
-            <div>
-                <span>Total Bookings</span>
-                <strong id="tokenCount">0</strong>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon">💰</div>
-            <div>
-                <span>Platform Revenue</span>
-                <strong id="platformRevenue">₹0</strong>
-            </div>
-        </div>
-
+    <!-- KEY PERFORMANCE INDICATORS -->
+    <div class="stats-grid">
         <div class="stat-card" style="cursor: pointer; border-left: 4px solid #22c55e;" onclick="openOnlineUsersModal()">
-            <div class="stat-icon" style="position: relative;">
+            <div class="stat-icon" style="background: #f0fdf4; color: #16a34a; position: relative;">
                 🟢
-                <span style="position: absolute; top: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s infinite;"></span>
+                <span style="position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s infinite;"></span>
             </div>
             <div>
                 <span>Online Users</span>
                 <strong id="onlineUsersCount" style="color: #16a34a;">0</strong>
+                <small>Active in last 3 mins</small>
+            </div>
+        </div>
+
+        <div class="stat-card" style="cursor: pointer; border-left: 4px solid #0284c7;" onclick="window.location.href='patients.html'">
+            <div class="stat-icon" style="background: #f0f9ff; color: #0284c7;">👥</div>
+            <div>
+                <span>Registered Patients</span>
+                <strong id="patientCount" style="color: #0284c7;">0</strong>
+                <small>Full demographic profiles</small>
+            </div>
+        </div>
+
+        <div class="stat-card" style="cursor: pointer; border-left: 4px solid #7c3aed;" onclick="window.location.href='tokens.html'">
+            <div class="stat-icon" style="background: #faf5ff; color: #7c3aed;">🎫</div>
+            <div>
+                <span>Total Bookings</span>
+                <strong id="tokenCount" style="color: #7c3aed;">0</strong>
+                <small>Consultations across OPD</small>
+            </div>
+        </div>
+
+        <div class="stat-card" style="cursor: pointer; border-left: 4px solid #0891b2;" onclick="window.location.href='hospitals.html'">
+            <div class="stat-icon" style="background: #ecfeff; color: #0891b2;">🏥</div>
+            <div>
+                <span>Verified Hospitals</span>
+                <strong id="hospitalCount" style="color: #0891b2;">0</strong>
+                <small>Clinical establishment network</small>
+            </div>
+        </div>
+
+        <div class="stat-card" style="cursor: pointer; border-left: 4px solid #16a34a;" onclick="window.location.href='tokens.html'">
+            <div class="stat-icon" style="background: #f0fdf4; color: #16a34a;">💳</div>
+            <div>
+                <span>Paid Tokens</span>
+                <strong id="paymentCount" style="color: #16a34a;">0</strong>
+                <small>Settled consultations</small>
+            </div>
+        </div>
+
+        <div class="stat-card" style="cursor: pointer; border-left: 4px solid #f59e0b;" onclick="window.location.href='payments.html'">
+            <div class="stat-icon" style="background: #fffbeb; color: #d97706;">💰</div>
+            <div>
+                <span>Platform Revenue</span>
+                <strong id="platformRevenue" style="color: #d97706;">₹0</strong>
+                <small>Platform conven. share</small>
             </div>
         </div>
     </div>
 
-    <!-- REVENUE OVERVIEW -->
+    <!-- REVENUE & SETTLEMENT HUB -->
     <div class="revenue-card">
-        <h2>💰 Financial Breakdown & Payment Splits</h2>
-        <div class="revenue-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
-            <div style="background: #f0f9ff; padding: 12px; border-radius: 10px; border: 1.5px solid #bae6fd;">
-                <span style="color: #0369a1; font-weight: 700;">Today's Collection</span>
+        <div class="revenue-card-header">
+            <h2>💰 Financial Breakdown & Revenue Distribution</h2>
+            <span style="font-size: 12px; color: #64748b; font-weight: 600;">Razorpay Gateway Verified</span>
+        </div>
+
+        <!-- Highlight Hero Split -->
+        <div class="revenue-hero-split">
+            <div>
+                <span class="revenue-hero-label">Developer Total Net Revenue</span>
+                <div style="font-size: 12px; color: #166534; margin-top: 2px;">Combined platform convenience fees + dynamic banner & video ad fees</div>
+            </div>
+            <strong id="developerTotalRevenue" class="revenue-hero-amount">₹0</strong>
+        </div>
+
+        <div class="revenue-grid">
+            <div style="background: #f0f9ff; border: 1.5px solid #bae6fd;">
+                <span style="color: #0369a1;">📅 Today's Collection</span>
                 <strong id="adminTodayCollection" style="color: #0284c7; font-size: 20px;">₹0</strong>
             </div>
-            <div style="background: #faf5ff; padding: 12px; border-radius: 10px; border: 1.5px solid #e9d5ff;">
-                <span style="color: #6b21a8; font-weight: 700;">This Month's Collection</span>
+            <div style="background: #faf5ff; border: 1.5px solid #e9d5ff;">
+                <span style="color: #6b21a8;">🗓️ This Month</span>
                 <strong id="adminMonthCollection" style="color: #7c3aed; font-size: 20px;">₹0</strong>
             </div>
             <div>
-                <span>Token Fee (To Hospitals)</span>
+                <span>🏥 Token Fee (To Hospitals)</span>
                 <strong id="tokenRevenue">₹0</strong>
             </div>
             <div>
-                <span>Platform Fees (To Developer)</span>
-                <strong id="platformRevenue2">₹0</strong>
+                <span>⚡ Platform Fee (Developer)</span>
+                <strong id="platformRevenue2" style="color: #0284c7;">₹0</strong>
             </div>
             <div>
-                <span>Banner Ads (To Developer)</span>
-                <strong id="bannerAdsRevenue">₹0</strong>
+                <span>🖼️ Banner Ads (Developer)</span>
+                <strong id="bannerAdsRevenue" style="color: #6b21a8;">₹0</strong>
             </div>
             <div>
-                <span>Video Spotlight Ads (To Developer)</span>
+                <span>🎥 Video Spotlight (Developer)</span>
                 <strong id="videoAdsRevenue" style="color: #7c3aed;">₹0</strong>
             </div>
-            <div>
-                <span>Developer Total Net</span>
-                <strong id="developerTotalRevenue" style="color: #16a34a;">₹0</strong>
-            </div>
-            <div>
-                <span>Total Gross Collected</span>
-                <strong id="totalCollected">₹0</strong>
+            <div style="grid-column: 1 / -1; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <span style="margin-bottom: 0;">Total Gross Collected (Platform + Hospitals)</span>
+                <strong id="totalCollected" style="font-size: 22px; color: #0f172a;">₹0</strong>
             </div>
         </div>
     </div>
@@ -428,69 +502,116 @@
     </div>
 
     <!-- MANAGEMENT ACTIONS GRID -->
+    <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <span>⚡</span> Platform Operations & Management
+        </h2>
+        <span style="font-size: 12px; color: #64748b; font-weight: 600; background: #f1f5f9; padding: 4px 10px; border-radius: 999px;">8 Core Modules</span>
+    </div>
+
     <div class="dashboard-grid">
         <!-- HOSPITALS -->
-        <div class="dashboard-card">
-            <div class="card-icon">🏥</div>
-            <h3>Hospitals</h3>
-            <p>Verify licenses, inspect certificates, and manage public hospital visibility.</p>
-            <button type="button" onclick="window.location.href='hospitals.html'">Manage Hospitals</button>
+        <div class="dashboard-card" style="border-top: 4px solid #2563eb;">
+            <div class="card-top">
+                <div class="card-icon" style="background: #eff6ff; color: #2563eb;">🏥</div>
+                <div>
+                    <h3>Hospitals</h3>
+                    <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">Verification & Directory</span>
+                </div>
+            </div>
+            <p>Verify licenses, inspect certificates, review pending hospital registrations, and manage public hospital visibility.</p>
+            <button type="button" onclick="window.location.href='hospitals.html'">Manage Hospitals &rarr;</button>
         </div>
 
         <!-- PATIENTS DIRECTORY -->
         <div class="dashboard-card" style="border-top: 4px solid #0284c7;">
-            <div class="card-icon" style="color: #0284c7;">👥</div>
-            <h3>Patient Records Database</h3>
-            <p>Explore all registered patients, demographic profiles, and complete multi-hospital token histories.</p>
-            <button type="button" style="background: #0284c7; color: white;" onclick="window.location.href='patients.html'">View All Patients</button>
+            <div class="card-top">
+                <div class="card-icon" style="background: #f0f9ff; color: #0284c7;">👥</div>
+                <div>
+                    <h3>Patient Database</h3>
+                    <span style="font-size: 11.5px; color: #0284c7; font-weight: 600;">360° Demographics & History</span>
+                </div>
+            </div>
+            <p>Explore all registered patients, demographic records, contact details, and cross-hospital OPD consultation histories.</p>
+            <button type="button" style="background: #0284c7;" onclick="window.location.href='patients.html'">Explore Patients &rarr;</button>
+        </div>
+
+        <!-- PATIENT TOKENS -->
+        <div class="dashboard-card" style="border-top: 4px solid #7c3aed;">
+            <div class="card-top">
+                <div class="card-icon" style="background: #f5f3ff; color: #7c3aed;">🎫</div>
+                <div>
+                    <h3>Patient Tokens</h3>
+                    <span style="font-size: 11.5px; color: #7c3aed; font-weight: 600;">Live & Historical OPD Queues</span>
+                </div>
+            </div>
+            <p>Monitor live consultations, doctor room assignments, patient waiting times, and detailed consultation dossiers.</p>
+            <button type="button" style="background: #7c3aed;" onclick="window.location.href='tokens.html'">View All Tokens &rarr;</button>
         </div>
 
         <!-- PAYMENTS & SETTLEMENTS -->
-        <div class="dashboard-card">
-            <div class="card-icon">💳</div>
-            <h3>Payments & Settlements</h3>
-            <p>Hospital ledger balances, payout settlement logs (UTR), and refund retries.</p>
-            <button type="button" onclick="window.location.href='payments.html'">Open Payout Ledger</button>
+        <div class="dashboard-card" style="border-top: 4px solid #16a34a;">
+            <div class="card-top">
+                <div class="card-icon" style="background: #f0fdf4; color: #16a34a;">💳</div>
+                <div>
+                    <h3>Payouts & Settlements</h3>
+                    <span style="font-size: 11.5px; color: #16a34a; font-weight: 600;">Ledgers & UTR Transfers</span>
+                </div>
+            </div>
+            <p>Inspect hospital payout balances, verify bank details, log bank UTR settlement numbers, and review payment splits.</p>
+            <button type="button" style="background: #16a34a;" onclick="window.location.href='payments.html'">Open Payout Ledger &rarr;</button>
         </div>
 
-        <!-- TOKENS -->
-        <div class="dashboard-card">
-            <div class="card-icon">🎫</div>
-            <h3>Patient Tokens</h3>
-            <p>Monitor live and historical OPD consultations across all hospitals.</p>
-            <button type="button" onclick="window.location.href='tokens.html'">View All Tokens</button>
+        <!-- DYNAMIC ADS & PLATFORM SETTINGS -->
+        <div class="dashboard-card" style="border-top: 4px solid #f59e0b;">
+            <div class="card-top">
+                <div class="card-icon" style="background: #fffbeb; color: #d97706;">⚙️</div>
+                <div>
+                    <h3>Dynamic Pricing & Settings</h3>
+                    <span style="font-size: 11.5px; color: #d97706; font-weight: 600;">Token, Banner & Video Ad Fees</span>
+                </div>
+            </div>
+            <p>Configure dynamic token booking fees (₹10 default), separate banner and video spotlight advertising rates, and contact info.</p>
+            <button type="button" style="background: #d97706;" onclick="window.location.href='contact-settings.html'">Configure Fees &rarr;</button>
         </div>
 
-        <!-- PLATFORM CONTACT & DYNAMIC FEES -->
-        <div class="dashboard-card">
-            <div class="card-icon">⚙️</div>
-            <h3>Platform Settings & Fees</h3>
-            <p>Dynamic platform fee (₹10 default), business details, and compliance terms.</p>
-            <button type="button" onclick="window.location.href='contact-settings.html'">Configure Settings</button>
+        <!-- DIRECT HOSPITAL MESSAGES -->
+        <div class="dashboard-card" style="border-top: 4px solid #06b6d4;">
+            <div class="card-top">
+                <div class="card-icon" style="background: #ecfeff; color: #0891b2;">💬</div>
+                <div>
+                    <h3>Hospital Communications</h3>
+                    <span style="font-size: 11.5px; color: #0891b2; font-weight: 600;">Real-time Direct Chat</span>
+                </div>
+            </div>
+            <p>Send direct administrative messages, compliance notices, and real-time operational alerts directly to hospital desks.</p>
+            <button type="button" style="background: #0891b2;" onclick="window.location.href='hospitals.html?open_comm=true'">Open Messages &rarr;</button>
         </div>
 
-        <!-- DIRECT HOSPITAL COMMUNICATION -->
-        <div class="dashboard-card" style="border-top: 4px solid #2563eb;">
-            <div class="card-icon" style="color: #2563eb;">💬</div>
-            <h3>Hospital Communication</h3>
-            <p>Direct notices, compliance alerts, and messaging threads with hospitals.</p>
-            <button type="button" style="background: #2563eb; color: #ffffff; font-weight: 700;" onclick="window.location.href='hospitals.html?open_comm=true'">💬 Open Messages</button>
-        </div>
-
-        <!-- AUDIT LOGS -->
+        <!-- AUDIT LOG TRAIL -->
         <div class="dashboard-card" style="border-top: 4px solid #475569;">
-            <div class="card-icon" style="color: #475569;">🛡️</div>
-            <h3>Admin Audit Logs</h3>
-            <p>Immutable activity log of approvals, rejections, fee changes, and settlements.</p>
-            <button type="button" style="background: #475569; color: white;" onclick="openAuditLogModal()">🛡️ View Audit Trail</button>
+            <div class="card-top">
+                <div class="card-icon" style="background: #f8fafc; color: #475569;">🛡️</div>
+                <div>
+                    <h3>Audit Trail & Compliance</h3>
+                    <span style="font-size: 11.5px; color: #475569; font-weight: 600;">Immutable Security Log</span>
+                </div>
+            </div>
+            <p>Inspect immutable logs of hospital approvals, rejections, fee adjustments, payouts, and administrative overrides.</p>
+            <button type="button" style="background: #475569;" onclick="openAuditLogModal()">View Audit Trail &rarr;</button>
         </div>
 
         <!-- EMERGENCY BROADCASTS -->
         <div class="dashboard-card" style="border-top: 4px solid #dc2626;">
-            <div class="card-icon" style="color: #dc2626;">📢</div>
-            <h3>Emergency Broadcasts</h3>
-            <p>Push real-time alert banners across patient & hospital interfaces.</p>
-            <button type="button" style="background: #dc2626; color: white;" onclick="window.location.href='broadcasts.html'">Manage Broadcasts</button>
+            <div class="card-top">
+                <div class="card-icon" style="background: #fef2f2; color: #dc2626;">📢</div>
+                <div>
+                    <h3>Emergency Broadcasts</h3>
+                    <span style="font-size: 11.5px; color: #dc2626; font-weight: 600;">System-wide Flash Banners</span>
+                </div>
+            </div>
+            <p>Push instant emergency alerts, severe weather notices, and OPD outage announcements across patient and hospital apps.</p>
+            <button type="button" style="background: #dc2626;" onclick="window.location.href='broadcasts.html'">Push Broadcast &rarr;</button>
         </div>
     </div>
 

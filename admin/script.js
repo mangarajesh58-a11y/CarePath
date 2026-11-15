@@ -147,6 +147,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (path.includes("dashboard.html")) {
         loadDashboard();
+        updateHeroDateTime();
+        setInterval(updateHeroDateTime, 30000);
     }
 
     if (path.includes("hospitals.html")) {
@@ -531,6 +533,33 @@ function saveAdminDashboardToCache() {
 }
 
 // =====================================================
+// LIVE HERO DATE & TIME
+// =====================================================
+
+function updateHeroDateTime() {
+    const el = document.getElementById("heroDateTimeDisplay");
+    if (!el) return;
+    try {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("en-IN", {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
+        const timeStr = now.toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true
+        });
+        el.textContent = `🕒 ${dateStr} • ${timeStr} IST`;
+    } catch (e) {
+        el.textContent = "🕒 Live";
+    }
+}
+window.updateHeroDateTime = updateHeroDateTime;
+
+// =====================================================
 // LOAD ADMIN DASHBOARD (PARALLEL & INSTANT)
 // =====================================================
 
@@ -745,6 +774,11 @@ async function loadRevenue() {
         if (totalCollected) {
             totalCollected.textContent =
                 `₹${totalCollectedValue}`;
+        }
+
+        const heroTodayGross = document.getElementById("heroTodayGross");
+        if (heroTodayGross) {
+            heroTodayGross.textContent = `₹${totalCollectedValue}`;
         }
 
         const tokenCount =
@@ -4105,6 +4139,10 @@ async function loadOnlineUsersCount() {
         if (headerOnlineEl) {
             headerOnlineEl.textContent = data.total_online || 0;
         }
+        const heroOnlineEl = document.getElementById("heroOnlineCount");
+        if (heroOnlineEl) {
+            heroOnlineEl.textContent = data.total_online || 0;
+        }
     } catch (e) {
         console.warn("Could not load online users count:", e);
     }
@@ -4138,6 +4176,8 @@ async function loadOnlineUsers() {
         if (countHospitals) countHospitals.textContent = data.hospitals_online || 0;
         const dashCount = document.getElementById("onlineUsersCount");
         if (dashCount) dashCount.textContent = data.total_online || 0;
+        const heroOnline = document.getElementById("heroOnlineCount");
+        if (heroOnline) heroOnline.textContent = data.total_online || 0;
 
         renderOnlineUsers(window.onlineUserFilterRole || "all");
     } catch (error) {
