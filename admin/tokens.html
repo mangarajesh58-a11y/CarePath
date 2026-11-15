@@ -25,31 +25,42 @@
 <div class="page-container">
 
 
-    <!-- HEADER -->
-
-    <header>
-
-        <div>
-
-            <h1>
-                🎫 Patient Tokens
-            </h1>
-
-            <p>
-                Monitor hospital token activity
-            </p>
-
+    <!-- MOBILE APP HEADER -->
+    <header class="app-header">
+        <div class="header-brand">
+            <a href="dashboard.html" style="text-decoration: none; font-size: 20px; color: #1e293b; margin-right: 4px; display: flex; align-items: center;">←</a>
+            <img src="carepath-ai-small.png" alt="CarePath AI Logo" class="app-logo">
+            <div>
+                <h1>Patient Tokens</h1>
+                <p>Live OPD Consultations</p>
+            </div>
         </div>
 
-
-        <button
-            type="button"
-            class="logout"
-            onclick="adminLogout()"
-        >
-            Logout
-        </button>
-
+        <div class="header-actions">
+            <!-- Three Dots (Kebab Menu) Button -->
+            <div class="kebab-menu-container">
+                <button type="button" class="btn-kebab" onclick="toggleKebabMenu(event)" aria-label="More options" title="Menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2.2"></circle>
+                        <circle cx="12" cy="12" r="2.2"></circle>
+                        <circle cx="12" cy="19" r="2.2"></circle>
+                    </svg>
+                </button>
+                <div id="kebabDropdown" class="kebab-dropdown">
+                    <div class="kebab-header">Token Quick Actions</div>
+                    <a href="javascript:void(0)" onclick="loadTokens()"><span class="kebab-icon">🔄</span> Refresh Tokens</a>
+                    <a href="javascript:void(0)" onclick="exportTokensCSV()"><span class="kebab-icon">📥</span> Export CSV Tokens</a>
+                    <div class="kebab-divider"></div>
+                    <a href="dashboard.html"><span class="kebab-icon">🏠</span> Admin Dashboard</a>
+                    <a href="patients.html"><span class="kebab-icon">👥</span> Patient Directory</a>
+                    <a href="hospitals.html"><span class="kebab-icon">🏥</span> Hospitals</a>
+                    <a href="contact-settings.html"><span class="kebab-icon">⚙️</span> Settings & Fees</a>
+                    <a href="payments.html"><span class="kebab-icon">💳</span> Payout Ledger</a>
+                    <div class="kebab-divider"></div>
+                    <a href="javascript:void(0)" onclick="adminLogout()" class="kebab-logout"><span class="kebab-icon">🚪</span> Logout</a>
+                </div>
+            </div>
+        </div>
     </header>
 
 
@@ -219,6 +230,7 @@
 <!-- 360° TOKEN CONSULTATION DOSSIER MODAL -->
 <div id="tokenDossierModal" class="dossier-modal" style="display: none;" onclick="if(event.target===this)closeTokenDossier()">
     <div class="dossier-modal-content">
+        <div class="bottom-sheet-handle"></div>
         <div class="dossier-modal-header">
             <div>
                 <h3 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
@@ -240,6 +252,30 @@
         </div>
     </div>
 </div>
+
+<!-- FIXED MOBILE BOTTOM NAVIGATION -->
+<nav class="mobile-bottom-nav">
+    <a href="dashboard.html" class="nav-item" id="navHome">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+    </a>
+    <a href="patients.html" class="nav-item" id="navPatients">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Patients</span>
+    </a>
+    <a href="tokens.html" class="nav-item active" id="navTokens">
+        <span class="nav-icon">🎫</span>
+        <span class="nav-label">Tokens</span>
+    </a>
+    <a href="hospitals.html" class="nav-item" id="navHospitals">
+        <span class="nav-icon">🏥</span>
+        <span class="nav-label">Hospitals</span>
+    </a>
+    <a href="contact-settings.html" class="nav-item" id="navSettings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+    </a>
+</nav>
 
 <!-- ADMIN JAVASCRIPT -->
 <script src="script.js"></script>

@@ -345,13 +345,41 @@
 <body>
 <div class="dashboard">
 
-    <!-- HEADER -->
-    <header>
-        <div>
-            <h1>🏥 CarePath</h1>
-            <p>Platform Administration & Emergency Center</p>
+    <!-- MOBILE APP HEADER -->
+    <header class="app-header">
+        <div class="header-brand">
+            <a href="dashboard.html" style="text-decoration: none; font-size: 20px; color: #1e293b; margin-right: 4px; display: flex; align-items: center;">←</a>
+            <img src="carepath-ai-small.png" alt="CarePath AI Logo" class="app-logo">
+            <div>
+                <h1>Broadcasts</h1>
+                <p>Emergency Banners & Alerts</p>
+            </div>
         </div>
-        <button type="button" class="logout" onclick="adminLogout()">Logout</button>
+
+        <div class="header-actions">
+            <!-- Three Dots (Kebab Menu) Button -->
+            <div class="kebab-menu-container">
+                <button type="button" class="btn-kebab" onclick="toggleKebabMenu(event)" aria-label="More options" title="Menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2.2"></circle>
+                        <circle cx="12" cy="12" r="2.2"></circle>
+                        <circle cx="12" cy="19" r="2.2"></circle>
+                    </svg>
+                </button>
+                <div id="kebabDropdown" class="kebab-dropdown">
+                    <div class="kebab-header">Broadcast Actions</div>
+                    <a href="javascript:void(0)" onclick="loadBroadcastsList()"><span class="kebab-icon">🔄</span> Reload Broadcasts</a>
+                    <div class="kebab-divider"></div>
+                    <a href="dashboard.html"><span class="kebab-icon">🏠</span> Admin Dashboard</a>
+                    <a href="patients.html"><span class="kebab-icon">👥</span> Patient Directory</a>
+                    <a href="tokens.html"><span class="kebab-icon">🎫</span> Patient Tokens</a>
+                    <a href="hospitals.html"><span class="kebab-icon">🏥</span> Hospitals</a>
+                    <a href="contact-settings.html"><span class="kebab-icon">⚙️</span> Settings & Fees</a>
+                    <div class="kebab-divider"></div>
+                    <a href="javascript:void(0)" onclick="adminLogout()" class="kebab-logout"><span class="kebab-icon">🚪</span> Logout</a>
+                </div>
+            </div>
+        </div>
     </header>
 
     <div class="page-container" style="padding: 0;">
@@ -513,6 +541,30 @@
         </div>
     </div>
 </div>
+
+<!-- FIXED MOBILE BOTTOM NAVIGATION -->
+<nav class="mobile-bottom-nav">
+    <a href="dashboard.html" class="nav-item" id="navHome">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+    </a>
+    <a href="patients.html" class="nav-item" id="navPatients">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Patients</span>
+    </a>
+    <a href="tokens.html" class="nav-item" id="navTokens">
+        <span class="nav-icon">🎫</span>
+        <span class="nav-label">Tokens</span>
+    </a>
+    <a href="hospitals.html" class="nav-item" id="navHospitals">
+        <span class="nav-icon">🏥</span>
+        <span class="nav-label">Hospitals</span>
+    </a>
+    <a href="contact-settings.html" class="nav-item" id="navSettings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+    </a>
+</nav>
 
 <script src="script.js"></script>
 <script>

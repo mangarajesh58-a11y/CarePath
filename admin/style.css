@@ -1078,3 +1078,380 @@ tbody tr:hover td {
     color: #b45309;
     border: 1px solid #fde68a;
 }
+
+/* ============================================================
+   MOBILE APP EXPERIENCE & THREE-DOTS (KEBAB) MENU
+   ============================================================ */
+
+/* App Container padding for bottom nav */
+.dashboard,
+.page-container {
+    padding-bottom: calc(85px + env(safe-area-inset-bottom, 15px)) !important;
+}
+
+/* App Header styling */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 14px 20px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 10px;
+    z-index: 99;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.app-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.header-brand h1 {
+    font-size: 20px;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.2;
+    font-weight: 800;
+}
+
+.header-brand p {
+    color: #64748b;
+    font-size: 11.5px;
+    margin: 2px 0 0;
+    font-weight: 500;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Live Online Status Pill */
+.live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.live-pill:hover {
+    background: #dcfce7;
+    transform: translateY(-1px);
+}
+
+.pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+    animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+/* Three Dots (Kebab) Menu Container & Button */
+.kebab-menu-container {
+    position: relative;
+    display: inline-block;
+}
+
+.btn-kebab {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.btn-kebab:hover, .btn-kebab:active, .btn-kebab.active {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #2563eb;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+}
+
+/* Kebab Dropdown Menu */
+.kebab-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #ffffff;
+    min-width: 220px;
+    border-radius: 14px;
+    box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    padding: 8px;
+    z-index: 1000;
+    animation: fadeInScale 0.18s ease-out;
+}
+
+.kebab-dropdown.show {
+    display: block;
+}
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.94) translateY(-6px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.kebab-header {
+    padding: 8px 12px 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #94a3b8;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.kebab-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    color: #334155;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.kebab-dropdown a:hover {
+    background: #f1f5f9;
+    color: #0284c7;
+}
+
+.kebab-icon {
+    font-size: 15px;
+    width: 20px;
+    text-align: center;
+}
+
+.kebab-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 6px 0;
+}
+
+.kebab-logout {
+    color: #dc2626 !important;
+}
+
+.kebab-logout:hover {
+    background: #fef2f2 !important;
+    color: #b91c1c !important;
+}
+
+/* Row-level Three-Dots Kebab Action Menu */
+.row-kebab-container {
+    position: relative;
+    display: inline-block;
+}
+
+.btn-row-kebab {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #475569;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    padding: 0;
+}
+
+.btn-row-kebab:hover, .btn-row-kebab:active {
+    background: #eff6ff;
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+.row-kebab-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #ffffff;
+    min-width: 190px;
+    border-radius: 12px;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.06);
+    padding: 6px;
+    z-index: 999;
+    text-align: left;
+}
+
+.row-kebab-menu.show {
+    display: block;
+    animation: fadeInScale 0.15s ease-out;
+}
+
+.row-kebab-menu button, .row-kebab-menu a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: background 0.15s;
+}
+
+.row-kebab-menu button:hover, .row-kebab-menu a:hover {
+    background: #f1f5f9;
+    color: #2563eb;
+}
+
+/* ============================================================
+   FIXED MOBILE BOTTOM NAVIGATION BAR
+   ============================================================ */
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.05);
+    z-index: 9990;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #64748b;
+    padding: 6px 12px;
+    border-radius: 10px;
+    transition: all 0.2s;
+    flex: 1;
+    max-width: 80px;
+}
+
+.nav-icon {
+    font-size: 20px;
+    margin-bottom: 3px;
+    transition: transform 0.2s;
+}
+
+.nav-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.nav-item:hover {
+    color: #2563eb;
+}
+
+.nav-item:active .nav-icon {
+    transform: scale(1.15);
+}
+
+.nav-item.active {
+    color: #2563eb;
+}
+
+.nav-item.active .nav-icon {
+    transform: translateY(-2px);
+}
+
+.nav-item.active .nav-label {
+    font-weight: 800;
+    color: #2563eb;
+}
+
+/* Bottom Sheet Modal Transform for Mobile Screens */
+@media (max-width: 768px) {
+    .dossier-modal, .audit-modal {
+        align-items: flex-end !important;
+        padding: 0 !important;
+    }
+
+    .dossier-modal-content, .audit-modal-card {
+        border-radius: 22px 22px 0 0 !important;
+        max-height: 88vh !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    .bottom-sheet-handle {
+        width: 40px;
+        height: 5px;
+        background: #cbd5e1;
+        border-radius: 999px;
+        margin: 10px auto 4px;
+        display: block;
+    }
+
+    .app-header {
+        border-radius: 0 0 16px 16px;
+        margin-left: -12px;
+        margin-right: -12px;
+        margin-top: -12px;
+        padding: 12px 16px;
+    }
+
+    .header-brand h1 {
+        font-size: 18px;
+    }
+}
+
+@keyframes slideUpSheet {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+

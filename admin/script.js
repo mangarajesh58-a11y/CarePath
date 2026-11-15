@@ -2237,9 +2237,26 @@ function renderTokensTable(tokens) {
                 </span>
             </td>
             <td style="text-align: center;">
-                <button type="button" onclick="openTokenDossier(${token.id})" style="padding: 6px 12px; background: #0284c7; color: white; border: none; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
-                    🔍 360° Dossier
-                </button>
+                <div style="display: inline-flex; align-items: center; gap: 6px;">
+                    <button type="button" onclick="openTokenDossier(${token.id})" style="padding: 6px 10px; background: #0284c7; color: white; border: none; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                        🔍 Dossier
+                    </button>
+                    <div class="row-kebab-container">
+                        <button type="button" class="btn-row-kebab" onclick="toggleRowKebab('tokenKebab_${token.id}', event)" title="More options">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="12" cy="5" r="2.2"></circle>
+                                <circle cx="12" cy="12" r="2.2"></circle>
+                                <circle cx="12" cy="19" r="2.2"></circle>
+                            </svg>
+                        </button>
+                        <div id="tokenKebab_${token.id}" class="row-kebab-menu">
+                            <button type="button" onclick="openTokenDossier(${token.id})"><span>🔍</span> View 360° Dossier</button>
+                            <button type="button" onclick="copyToClipboard('${escapeHtml(String(token.token_number || ''))}', 'Token #${escapeHtml(String(token.token_number || ''))} copied!')"><span>📋</span> Copy Token Number</button>
+                            ${token.patient_full_details?.phone ? `<a href="tel:${escapeHtml(token.patient_full_details.phone)}"><span>📞</span> Call Patient</a>` : ''}
+                            ${token.patient_full_details?.email ? `<a href="mailto:${escapeHtml(token.patient_full_details.email)}"><span>✉️</span> Email Patient</a>` : ''}
+                        </div>
+                    </div>
+                </div>
             </td>
         `;
 
@@ -4084,6 +4101,10 @@ async function loadOnlineUsersCount() {
         if (countEl) {
             countEl.textContent = data.total_online || 0;
         }
+        const headerOnlineEl = document.getElementById("headerOnlineCount");
+        if (headerOnlineEl) {
+            headerOnlineEl.textContent = data.total_online || 0;
+        }
     } catch (e) {
         console.warn("Could not load online users count:", e);
     }
@@ -4351,10 +4372,27 @@ function renderAdminPatients(patients) {
                 <td><span style="font-size: 12.5px; color: #475569;">${escapeHtml(p.address || "—")}</span></td>
                 <td style="text-align: center;">${tokenBadge}</td>
                 <td><span style="font-size: 12px; color: #64748b;">${p.created_at ? p.created_at.split("T")[0] : "—"}</span></td>
-                <td>
-                    <button type="button" class="btn-action btn-view" onclick="openPatientDossier(${p.id})">
-                        📋 Full Dossier
-                    </button>
+                <td style="text-align: center;">
+                    <div style="display: inline-flex; align-items: center; gap: 6px;">
+                        <button type="button" class="btn-action btn-view" onclick="openPatientDossier(${p.id})">
+                            📋 Dossier
+                        </button>
+                        <div class="row-kebab-container">
+                            <button type="button" class="btn-row-kebab" onclick="toggleRowKebab('patientKebab_${p.id}', event)" title="More options">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="5" r="2.2"></circle>
+                                    <circle cx="12" cy="12" r="2.2"></circle>
+                                    <circle cx="12" cy="19" r="2.2"></circle>
+                                </svg>
+                            </button>
+                            <div id="patientKebab_${p.id}" class="row-kebab-menu">
+                                <button type="button" onclick="openPatientDossier(${p.id})"><span>📋</span> View 360° Profile</button>
+                                ${p.phone ? `<a href="tel:${escapeHtml(p.phone)}"><span>📞</span> Call Patient</a>` : ''}
+                                ${p.email ? `<a href="mailto:${escapeHtml(p.email)}"><span>✉️</span> Email Patient</a>` : ''}
+                                <button type="button" onclick="copyToClipboard('${p.id}', 'Patient ID #${p.id} copied!')"><span>🆔</span> Copy Patient ID</button>
+                            </div>
+                        </div>
+                    </div>
                 </td>
             </tr>
         `;
@@ -4574,3 +4612,106 @@ if (typeof window !== "undefined") {
     setTimeout(sendAdminHeartbeat, 2000);
     setInterval(sendAdminHeartbeat, 45000);
 }
+
+// =========================================================
+// MOBILE APP NAVIGATION & THREE-DOTS (KEBAB) MENU ENGINE
+// =========================================================
+
+function toggleKebabMenu(event) {
+    if (event) event.stopPropagation();
+    const dropdown = document.getElementById("kebabDropdown");
+    const btn = event ? event.currentTarget : null;
+    if (!dropdown) return;
+
+    const isOpen = dropdown.classList.contains("show");
+    // Close other dropdowns first
+    document.querySelectorAll(".kebab-dropdown.show, .row-kebab-menu.show").forEach(el => el.classList.remove("show"));
+
+    if (!isOpen) {
+        dropdown.classList.add("show");
+        if (btn) btn.classList.add("active");
+    } else {
+        dropdown.classList.remove("show");
+        if (btn) btn.classList.remove("active");
+    }
+}
+window.toggleKebabMenu = toggleKebabMenu;
+
+function toggleRowKebab(menuId, event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById(menuId);
+    if (!menu) return;
+
+    const isOpen = menu.classList.contains("show");
+    // Close other dropdowns
+    document.querySelectorAll(".kebab-dropdown.show, .row-kebab-menu.show").forEach(el => el.classList.remove("show"));
+
+    if (!isOpen) {
+        menu.classList.add("show");
+    }
+}
+window.toggleRowKebab = toggleRowKebab;
+
+function refreshCurrentPage() {
+    window.location.reload();
+}
+window.refreshCurrentPage = refreshCurrentPage;
+
+function copyToClipboard(text, msg) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert(msg || "Copied to clipboard!");
+        }).catch(() => {
+            alert("Copied: " + text);
+        });
+    } else {
+        alert("Copied: " + text);
+    }
+}
+window.copyToClipboard = copyToClipboard;
+
+function highlightActiveBottomNav() {
+    const path = window.location.pathname.toLowerCase();
+    const navItems = {
+        "dashboard.html": "navHome",
+        "patients.html": "navPatients",
+        "tokens.html": "navTokens",
+        "hospitals.html": "navHospitals",
+        "contact-settings.html": "navSettings"
+    };
+
+    let matched = false;
+    for (const [page, navId] of Object.entries(navItems)) {
+        const el = document.getElementById(navId);
+        if (el) {
+            if (path.includes(page)) {
+                el.classList.add("active");
+                matched = true;
+            } else {
+                el.classList.remove("active");
+            }
+        }
+    }
+
+    if (!matched && (path.endsWith("/admin/") || path.endsWith("/admin") || path.endsWith("/index.html"))) {
+        const homeEl = document.getElementById("navHome");
+        if (homeEl) homeEl.classList.add("active");
+    }
+}
+window.highlightActiveBottomNav = highlightActiveBottomNav;
+
+// Global click-away listener for three-dots menus
+document.addEventListener("click", function (e) {
+    if (!e.target.closest(".kebab-menu-container")) {
+        const dropdown = document.getElementById("kebabDropdown");
+        if (dropdown) dropdown.classList.remove("show");
+        document.querySelectorAll(".btn-kebab.active").forEach(b => b.classList.remove("active"));
+    }
+    if (!e.target.closest(".row-kebab-container")) {
+        document.querySelectorAll(".row-kebab-menu.show").forEach(m => m.classList.remove("show"));
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    highlightActiveBottomNav();
+});
