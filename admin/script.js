@@ -579,7 +579,11 @@ async function loadDashboard() {
             loadAdminCollectionSummary(),
             loadAnalytics(),
             loadOnlineUsersCount(),
-            loadDashboardPatientsCount()
+            loadDashboardPatientsCount(),
+            loadDirectAdPricing(),
+            loadAdminPatients(),
+            loadTokens(),
+            loadOnlineUsers()
         ]);
 
         saveAdminDashboardToCache();
@@ -638,6 +642,18 @@ async function loadDashboardHospitals() {
         if (hospitalCount) {
             hospitalCount.textContent =
                 hospitals.length;
+        }
+
+        const cardHosp = document.getElementById("cardHospitalCount");
+        if (cardHosp) cardHosp.textContent = `${hospitals.length} Hospitals`;
+
+        const noticeSelect = document.getElementById("directNoticeTargetHospital");
+        if (noticeSelect && hospitals.length > 0) {
+            let opts = '<option value="all">📢 All Registered Hospitals (Platform-wide)</option>';
+            hospitals.forEach(h => {
+                opts += `<option value="${h.id}">${escapeHtml(h.name || "Hospital")} (${escapeHtml(h.city || "OPD")})</option>`;
+            });
+            noticeSelect.innerHTML = opts;
         }
 
     } catch (error) {
@@ -800,6 +816,11 @@ async function loadRevenue() {
             paymentCount.textContent =
                 totalTokens;
         }
+
+        const cardToken = document.getElementById("cardTokenCount");
+        if (cardToken) cardToken.textContent = `${totalTokens} Bookings`;
+        const cardSettled = document.getElementById("cardSettledAmount");
+        if (cardSettled) cardSettled.textContent = `₹${totalCollectedValue}`;
 
     } catch (error) {
         console.error(
@@ -4150,10 +4171,15 @@ async function loadOnlineUsersCount() {
 window.loadOnlineUsersCount = loadOnlineUsersCount;
 
 async function loadOnlineUsers() {
-    const body = document.getElementById("onlineUsersBody");
-    if (!body) return;
+    const bodies = [
+        document.getElementById("onlineUsersBody"),
+        document.getElementById("directOnlineUsersBody")
+    ].filter(Boolean);
+    if (bodies.length === 0) return;
 
-    body.innerHTML = `<p style="text-align: center; color: #94a3b8; padding: 24px;">Scanning platform for active online sessions...</p>`;
+    bodies.forEach(b => {
+        b.innerHTML = `<p style="text-align: center; color: #94a3b8; padding: 24px;">Scanning platform for active online sessions...</p>`;
+    });
 
     try {
         const response = await fetch(`${API}/admin/online-users`, {
@@ -4168,21 +4194,25 @@ async function loadOnlineUsers() {
         window.allOnlineUsers = data.users || [];
 
         // Update count badges
-        const countAll = document.getElementById("onlineCountAll");
-        if (countAll) countAll.textContent = data.total_online || 0;
-        const countPatients = document.getElementById("onlineCountPatients");
-        if (countPatients) countPatients.textContent = data.patients_online || 0;
-        const countHospitals = document.getElementById("onlineCountHospitals");
-        if (countHospitals) countHospitals.textContent = data.hospitals_online || 0;
+        const countAlls = [document.getElementById("onlineCountAll"), document.getElementById("directOnlineCountAll")].filter(Boolean);
+        countAlls.forEach(el => el.textContent = data.total_online || 0);
+        const countPatients = [document.getElementById("onlineCountPatients"), document.getElementById("directOnlineCountPatients")].filter(Boolean);
+        countPatients.forEach(el => el.textContent = data.patients_online || 0);
+        const countHospitals = [document.getElementById("onlineCountHospitals"), document.getElementById("directOnlineCountHospitals")].filter(Boolean);
+        countHospitals.forEach(el => el.textContent = data.hospitals_online || 0);
         const dashCount = document.getElementById("onlineUsersCount");
         if (dashCount) dashCount.textContent = data.total_online || 0;
         const heroOnline = document.getElementById("heroOnlineCount");
         if (heroOnline) heroOnline.textContent = data.total_online || 0;
+        const cardOnline = document.getElementById("cardOnlineCount");
+        if (cardOnline) cardOnline.textContent = `${data.total_online || 0} Online`;
 
         renderOnlineUsers(window.onlineUserFilterRole || "all");
     } catch (error) {
         console.error("Load online users error:", error);
-        body.innerHTML = `<p style="text-align: center; color: #dc2626; padding: 24px;">Failed to fetch online users: ${escapeHtml(error.message)}</p>`;
+        bodies.forEach(b => {
+            b.innerHTML = `<p style="text-align: center; color: #dc2626; padding: 24px;">Failed to fetch online users: ${escapeHtml(error.message)}</p>`;
+        });
     }
 }
 window.loadOnlineUsers = loadOnlineUsers;
@@ -4191,31 +4221,36 @@ function filterOnlineUsers(role) {
     window.onlineUserFilterRole = role;
 
     // Update active tab styles
-    const btnAll = document.getElementById("onlineFilterAll");
-    const btnPatients = document.getElementById("onlineFilterPatients");
-    const btnHospitals = document.getElementById("onlineFilterHospitals");
+    const btnAlls = [document.getElementById("onlineFilterAll"), document.getElementById("directOnlineFilterAll")].filter(Boolean);
+    const btnPatients = [document.getElementById("onlineFilterPatients"), document.getElementById("directOnlineFilterPatients")].filter(Boolean);
+    const btnHospitals = [document.getElementById("onlineFilterHospitals"), document.getElementById("directOnlineFilterHospitals")].filter(Boolean);
 
-    if (btnAll && btnPatients && btnHospitals) {
-        btnAll.style.background = role === "all" ? "#2563eb" : "#f8fafc";
-        btnAll.style.color = role === "all" ? "white" : "#475569";
-        btnAll.style.border = role === "all" ? "none" : "1px solid #cbd5e1";
-
-        btnPatients.style.background = role === "patient" ? "#2563eb" : "#f8fafc";
-        btnPatients.style.color = role === "patient" ? "white" : "#475569";
-        btnPatients.style.border = role === "patient" ? "none" : "1px solid #cbd5e1";
-
-        btnHospitals.style.background = role === "hospital" ? "#2563eb" : "#f8fafc";
-        btnHospitals.style.color = role === "hospital" ? "white" : "#475569";
-        btnHospitals.style.border = role === "hospital" ? "none" : "1px solid #cbd5e1";
-    }
+    btnAlls.forEach(b => {
+        b.style.background = role === "all" ? "#2563eb" : "#f8fafc";
+        b.style.color = role === "all" ? "white" : "#475569";
+        b.style.border = role === "all" ? "none" : "1px solid #cbd5e1";
+    });
+    btnPatients.forEach(b => {
+        b.style.background = role === "patient" ? "#2563eb" : "#f8fafc";
+        b.style.color = role === "patient" ? "white" : "#475569";
+        b.style.border = role === "patient" ? "none" : "1px solid #cbd5e1";
+    });
+    btnHospitals.forEach(b => {
+        b.style.background = role === "hospital" ? "#2563eb" : "#f8fafc";
+        b.style.color = role === "hospital" ? "white" : "#475569";
+        b.style.border = role === "hospital" ? "none" : "1px solid #cbd5e1";
+    });
 
     renderOnlineUsers(role);
 }
 window.filterOnlineUsers = filterOnlineUsers;
 
 function renderOnlineUsers(role) {
-    const body = document.getElementById("onlineUsersBody");
-    if (!body) return;
+    const bodies = [
+        document.getElementById("onlineUsersBody"),
+        document.getElementById("directOnlineUsersBody")
+    ].filter(Boolean);
+    if (bodies.length === 0) return;
 
     let list = window.allOnlineUsers || [];
     if (role && role !== "all") {
@@ -4223,13 +4258,14 @@ function renderOnlineUsers(role) {
     }
 
     if (list.length === 0) {
-        body.innerHTML = `
+        const emptyHtml = `
             <div style="text-align: center; padding: 36px 20px; color: #94a3b8;">
                 <div style="font-size: 32px; margin-bottom: 8px;">💤</div>
                 <div style="font-weight: 700; color: #64748b;">No active ${role === "all" ? "users" : role + "s"} online right now</div>
                 <div style="font-size: 12px; margin-top: 4px;">Active sessions within the last 3 minutes will appear here automatically.</div>
             </div>
         `;
+        bodies.forEach(b => b.innerHTML = emptyHtml);
         return;
     }
 
@@ -4252,7 +4288,44 @@ function renderOnlineUsers(role) {
         }
 
         html += `
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid #f1f5f9; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #f1f5f9; gap: 12px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 220px;">
+                    <div style="position: relative; width: 38px; height: 38px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1.5px solid #bfdbfe;">
+                        ${isPatient ? "👤" : isHospital ? "🏥" : "🛡️"}
+                        <span style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid white;"></span>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <strong style="color: #0f172a; font-size: 14px;">${escapeHtml(u.name || "Anonymous User")}</strong>
+                            ${roleBadge}
+                        </div>
+                        <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                            ${escapeHtml(u.email || u.phone || "No direct contact")}
+                            ${u.phone && u.email ? ` • 📞 ${escapeHtml(u.phone)}` : ""}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Current Activity</div>
+                        <div style="font-size: 12.5px; color: #0284c7; font-weight: 600; font-family: monospace;">${escapeHtml(u.current_page || "Active in session")}</div>
+                    </div>
+
+                    <div style="text-align: right; min-width: 80px;">
+                        <span class="badge-tag badge-online" style="display: inline-flex; align-items: center; gap: 4px;">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a;"></span>
+                            ${timeDisplay}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += `</div>`;
+
+    bodies.forEach(b => b.innerHTML = html);
+}
                 <div style="display: flex; align-items: center; gap: 12px; min-width: 220px;">
                     <div style="position: relative; width: 38px; height: 38px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1.5px solid #bfdbfe;">
                         ${isPatient ? "👤" : isHospital ? "🏥" : "🛡️"}
@@ -4322,6 +4395,8 @@ async function loadDashboardPatientsCount() {
         const count = Array.isArray(data) ? data.length : data.patients?.length || 0;
         const el = document.getElementById("patientCount");
         if (el) el.textContent = count;
+        const cardPat = document.getElementById("cardPatientCount");
+        if (cardPat) cardPat.textContent = `${count} Patients`;
     } catch (e) {
         console.warn("Could not load dashboard patients count:", e);
     }
@@ -4751,6 +4826,228 @@ document.addEventListener("click", function (e) {
         document.querySelectorAll(".row-kebab-menu.show").forEach(m => m.classList.remove("show"));
     }
 });
+
+// =========================================================
+// DIRECT 8 CORE MODULES DASHBOARD ENGINE
+// =========================================================
+
+let _activeDashboardModule = "overview";
+let _onlineUsersLiveTimer = null;
+
+function switchDashboardModule(moduleId, scrollIntoView = true) {
+    _activeDashboardModule = moduleId;
+
+    // Update pill buttons
+    document.querySelectorAll(".module-nav-pill").forEach(pill => {
+        if (pill.getAttribute("data-module") === moduleId) {
+            pill.classList.add("active");
+        } else {
+            pill.classList.remove("active");
+        }
+    });
+
+    // Update views
+    document.querySelectorAll(".module-workspace-view").forEach(view => {
+        if (view.id === `view_${moduleId}`) {
+            view.classList.add("active");
+        } else {
+            view.classList.remove("active");
+        }
+    });
+
+    // Module-specific initializers
+    if (moduleId === "onlineUsers") {
+        loadOnlineUsers();
+        if (_onlineUsersLiveTimer) clearInterval(_onlineUsersLiveTimer);
+        _onlineUsersLiveTimer = setInterval(loadOnlineUsers, 15000);
+    } else {
+        if (_onlineUsersLiveTimer) {
+            clearInterval(_onlineUsersLiveTimer);
+            _onlineUsersLiveTimer = null;
+        }
+    }
+
+    if (moduleId === "patients") {
+        if (typeof loadAdminPatients === "function") {
+            loadAdminPatients();
+        }
+    }
+
+    if (moduleId === "tokens") {
+        if (typeof loadTokens === "function") {
+            loadTokens();
+        }
+    }
+
+    if (moduleId === "hospitals") {
+        if (typeof loadHospitals === "function") {
+            loadHospitals();
+        }
+    }
+
+    if (moduleId === "pricing") {
+        loadDirectAdPricing();
+    }
+
+    if (moduleId === "payouts") {
+        if (typeof loadPayments === "function") {
+            loadPayments();
+        }
+    }
+
+    if (moduleId === "audits") {
+        loadDirectAuditTrail();
+    }
+
+    if (scrollIntoView) {
+        const workspaceEl = document.getElementById("directModulesWorkspace");
+        if (workspaceEl) {
+            workspaceEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }
+}
+window.switchDashboardModule = switchDashboardModule;
+
+async function loadDirectAdPricing() {
+    try {
+        const resPricing = await fetch(`${API}/admin/ad-pricing`, {
+            headers: getAdminAuthHeaders()
+        });
+        const dataPricing = await readResponse(resPricing);
+        if (dataPricing && dataPricing.success !== false) {
+            const bannerInput = document.getElementById("directBannerAdFee");
+            if (bannerInput) bannerInput.value = dataPricing.banner_ad_fee ?? 999;
+            const videoInput = document.getElementById("directVideoAdFee");
+            if (videoInput) videoInput.value = dataPricing.video_ad_fee ?? 1999;
+            const durationInput = document.getElementById("directAdDurationDays");
+            if (durationInput) durationInput.value = dataPricing.ad_duration_days ?? 30;
+        }
+
+        const resContact = await fetch(`${API}/admin/contact-settings`, {
+            headers: getAdminAuthHeaders()
+        });
+        const dataContact = await readResponse(resContact);
+        if (dataContact && dataContact.success !== false) {
+            const platformInput = document.getElementById("directPlatformFee");
+            if (platformInput) platformInput.value = dataContact.platform_fee ?? 10;
+        }
+    } catch (e) {
+        console.warn("Direct ad pricing load error:", e);
+    }
+}
+window.loadDirectAdPricing = loadDirectAdPricing;
+
+async function saveDirectAdPricing() {
+    const btn = document.getElementById("btnSaveDirectPricing");
+    const msg = document.getElementById("directPricingMsg");
+    const platformFee = Number(document.getElementById("directPlatformFee")?.value || 10);
+    const bannerAdFee = Number(document.getElementById("directBannerAdFee")?.value || 999);
+    const videoAdFee = Number(document.getElementById("directVideoAdFee")?.value || 1999);
+    const adDurationDays = Number(document.getElementById("directAdDurationDays")?.value || 30);
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+    }
+    if (msg) msg.style.display = "none";
+
+    try {
+        // Save Ad Rates
+        const res1 = await fetch(`${API}/admin/ad-pricing`, {
+            method: "PUT",
+            headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                banner_ad_fee: bannerAdFee,
+                video_ad_fee: videoAdFee,
+                ad_duration_days: adDurationDays
+            })
+        });
+        const d1 = await readResponse(res1);
+        if (!res1.ok) throw new Error(d1.detail || "Failed to update ad fees");
+
+        // Save Platform Convenience Fee
+        const res2 = await fetch(`${API}/admin/contact-settings`, {
+            method: "PUT",
+            headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                platform_fee: platformFee
+            })
+        });
+        const d2 = await readResponse(res2);
+
+        // Update hero and revenue cards
+        const heroPf = document.getElementById("heroPlatformFee");
+        if (heroPf) heroPf.textContent = `₹${platformFee}`;
+
+        if (msg) {
+            msg.className = "message success";
+            msg.textContent = "✅ Dynamic Ad & Platform Fees successfully updated!";
+            msg.style.display = "block";
+            setTimeout(() => { msg.style.display = "none"; }, 4000);
+        }
+    } catch (err) {
+        if (msg) {
+            msg.className = "message error";
+            msg.textContent = "❌ " + err.message;
+            msg.style.display = "block";
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "💾 Save Dynamic Pricing";
+        }
+    }
+}
+window.saveDirectAdPricing = saveDirectAdPricing;
+
+async function loadDirectAuditTrail() {
+    const listEl = document.getElementById("directAuditTrailList");
+    if (!listEl) return;
+    listEl.innerHTML = `<p style="text-align: center; color: #94a3b8; padding: 20px;">Fetching immutable audit logs...</p>`;
+
+    try {
+        const response = await fetch(`${API}/admin/audit-logs`, {
+            headers: getAdminAuthHeaders()
+        });
+        const data = await readResponse(response);
+        if (!response.ok) throw new Error(getErrorMessage(data, `HTTP ${response.status}`));
+
+        const logs = data.logs || (Array.isArray(data) ? data : []);
+        if (logs.length === 0) {
+            listEl.innerHTML = `<p style="text-align: center; color: #94a3b8; padding: 20px;">No audit trail events recorded yet.</p>`;
+            return;
+        }
+
+        let html = "";
+        logs.forEach(item => {
+            const action = (item.action || "AUDIT").toUpperCase();
+            let badgeBg = "#f1f5f9";
+            let badgeColor = "#475569";
+            if (action.includes("APPROV")) { badgeBg = "#dcfce7"; badgeColor = "#166534"; }
+            else if (action.includes("REJECT") || action.includes("DELETE")) { badgeBg = "#fee2e2"; badgeColor = "#991b1b"; }
+            else if (action.includes("FEE") || action.includes("SETTLE")) { badgeBg = "#fef3c7"; badgeColor = "#92400e"; }
+
+            html += `
+                <div class="audit-log-item" style="display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f1f5f9;">
+                    <span class="audit-badge" style="background: ${badgeBg}; color: ${badgeColor}; align-self: flex-start; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800;">
+                        ${escapeHtml(action)}
+                    </span>
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <strong style="color: #0f172a; font-size: 13.5px;">${escapeHtml(item.admin_email || "System Admin")}</strong>
+                            <span style="font-size: 11px; color: #94a3b8;">${item.timestamp ? item.timestamp.replace("T", " ").slice(0, 19) : "—"}</span>
+                        </div>
+                        <div style="font-size: 12.5px; color: #475569;">${escapeHtml(item.details || item.target || "Operation logged successfully.")}</div>
+                    </div>
+                </div>
+            `;
+        });
+        listEl.innerHTML = html;
+    } catch (e) {
+        listEl.innerHTML = `<p style="text-align: center; color: #dc2626; padding: 20px;">Failed to load audit logs: ${escapeHtml(e.message)}</p>`;
+    }
+}
+window.loadDirectAuditTrail = loadDirectAuditTrail;
 
 document.addEventListener("DOMContentLoaded", function () {
     highlightActiveBottomNav();
