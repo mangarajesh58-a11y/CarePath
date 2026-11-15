@@ -2406,7 +2406,8 @@ function exportTokensCSV() {
     window.allAdminTokens.forEach(t => {
         const p = t.patient_full_details || {};
         const h = t.hospital_details || {};
-        csv += `"${t.id || ''}","${t.token_number || ''}","${(t.patient_name || p.name || '').replace(/"/g, '""')}","${p.phone || ''}","${p.email || ''}","${p.age || ''}","${p.gender || ''}","${p.blood_group || ''}","${(p.address || '').replace(/"/g, '""')}","${(t.hospital || h.name || '').replace(/"/g, '""')}","${h.phone || ''}","${(t.department || '').replace(/"/g, '""')}","${(t.doctor || '').replace(/"/g, '""')}","${t.room_number || ''}","${t.appointment_date || ''}","${t.status || ''}","${t.payment_status || ''}",${t.token_fee || 0},${t.platform_fee || 0},${t.total_amount || 0},"${t.razorpay_order_id || ''}","${t.razorpay_payment_id || ''}"\n`;
+        const patName = t.patient_name || p.full_name || p.name || p.patient_name || '';
+        csv += `"${t.id || ''}","${t.token_number || ''}","${patName.replace(/"/g, '""')}","${p.phone || ''}","${p.email || ''}","${p.age || ''}","${p.gender || ''}","${p.blood_group || ''}","${(p.address || '').replace(/"/g, '""')}","${(t.hospital || h.name || '').replace(/"/g, '""')}","${h.phone || ''}","${(t.department || '').replace(/"/g, '""')}","${(t.doctor || '').replace(/"/g, '""')}","${t.room_number || ''}","${t.appointment_date || ''}","${t.status || ''}","${t.payment_status || ''}",${t.token_fee || 0},${t.platform_fee || 0},${t.total_amount || 0},"${t.razorpay_order_id || ''}","${t.razorpay_payment_id || ''}"\n`;
     });
 
     const uri = encodeURI(csv);
@@ -2447,7 +2448,7 @@ function openTokenDossier(tokenId) {
             <div class="dossier-grid">
                 <div class="dossier-item">
                     <label>Full Patient Name</label>
-                    <strong>${escapeHtml(p.name || token.patient_name || "Unknown")}</strong>
+                    <strong>${escapeHtml(p.full_name || p.name || p.patient_name || token.patient_name || "Unknown")}</strong>
                 </div>
                 <div class="dossier-item">
                     <label>Phone Number</label>
@@ -4519,7 +4520,7 @@ function renderAdminPatients(patients) {
             <tr>
                 <td><strong>${p.id}</strong></td>
                 <td>
-                    <strong style="color: #0f172a; font-size: 14px;">${escapeHtml(p.name || "Unknown")}</strong>
+                    <strong style="color: #0f172a; font-size: 14px;">${escapeHtml(p.full_name || p.name || p.patient_name || "Unknown Patient")}</strong>
                 </td>
                 <td>${p.age ? p.age + " yrs" : "—"} / ${escapeHtml(p.gender || "—")}</td>
                 <td>${bloodBadge}</td>
@@ -4564,7 +4565,7 @@ function filterPatients() {
     const bloodVal = (document.getElementById("patientBloodFilter")?.value || "").toUpperCase().trim();
 
     const filtered = window.allAdminPatients.filter(p => {
-        const name = String(p.name || "").toLowerCase();
+        const name = String(p.full_name || p.name || p.patient_name || "").toLowerCase();
         const phone = String(p.phone || "").toLowerCase();
         const email = String(p.email || "").toLowerCase();
         const address = String(p.address || "").toLowerCase();
@@ -4590,7 +4591,7 @@ function exportPatientsCSV() {
     csv += "Patient ID,Full Name,Age,Gender,Blood Group,Phone,Email,Address,Emergency Contact,Total Bookings,Registration Date\n";
 
     window.allAdminPatients.forEach(p => {
-        csv += `"${p.id}","${(p.name || '').replace(/"/g, '""')}","${p.age || ''}","${p.gender || ''}","${p.blood_group || ''}","${p.phone || ''}","${p.email || ''}","${(p.address || '').replace(/"/g, '""')}","${p.emergency_contact || ''}",${p.total_tokens || 0},"${p.created_at || ''}"\n`;
+        csv += `"${p.id}","${(p.full_name || p.name || p.patient_name || '').replace(/"/g, '""')}","${p.age || ''}","${p.gender || ''}","${p.blood_group || ''}","${p.phone || ''}","${p.email || ''}","${(p.address || '').replace(/"/g, '""')}","${p.emergency_contact || ''}",${p.total_tokens || 0},"${p.created_at || ''}"\n`;
     });
 
     const uri = encodeURI(csv);
@@ -4690,7 +4691,7 @@ async function openPatientDossier(patientId) {
                     </div>
                     <div class="dossier-item">
                         <label>Full Name</label>
-                        <strong style="color: #0f172a; font-size: 15px;">${escapeHtml(p.name || "Unknown")}</strong>
+                        <strong style="color: #0f172a; font-size: 15px;">${escapeHtml(p.full_name || p.name || p.patient_name || "Unknown Patient")}</strong>
                     </div>
                     <div class="dossier-item">
                         <label>Age & Gender</label>

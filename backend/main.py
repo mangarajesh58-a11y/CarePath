@@ -8373,9 +8373,12 @@ def get_admin_patients_directory(
     )
 
     for p in patients:
+        pat_name = p.full_name or "Unknown Patient"
         results.append({
             "id": p.id,
-            "full_name": p.full_name,
+            "name": pat_name,
+            "full_name": pat_name,
+            "patient_name": pat_name,
             "email": p.email,
             "phone": p.phone or "—",
             "age": p.age,
@@ -8458,11 +8461,14 @@ def get_admin_patient_dossier(
             "created_at": t.created_at.isoformat() if t.created_at else None,
         })
 
+    pat_name = patient.full_name or "Unknown Patient"
     return {
         "success": True,
         "patient": {
             "id": patient.id,
-            "full_name": patient.full_name,
+            "name": pat_name,
+            "full_name": pat_name,
+            "patient_name": pat_name,
             "email": patient.email,
             "phone": patient.phone or "—",
             "age": patient.age,
@@ -9559,9 +9565,12 @@ def admin_tokens(
             patient = email_patient_map.get(token.patient_email.strip().lower())
 
         if patient:
+            p_name = patient.full_name or "Unknown Patient"
             d["patient_full_details"] = {
                 "id": patient.id,
-                "full_name": patient.full_name,
+                "name": p_name,
+                "full_name": p_name,
+                "patient_name": p_name,
                 "email": patient.email,
                 "phone": patient.phone or "—",
                 "age": patient.age or "—",
@@ -9572,9 +9581,12 @@ def admin_tokens(
                 "created_at": patient.created_at.isoformat() if patient.created_at else None,
             }
         else:
+            w_name = token.patient_name or "Walk-in Patient"
             d["patient_full_details"] = {
                 "id": None,
-                "full_name": token.patient_name,
+                "name": w_name,
+                "full_name": w_name,
+                "patient_name": w_name,
                 "email": token.patient_email or "—",
                 "phone": token.patient_phone or "—",
                 "age": token.patient_age or "—",
