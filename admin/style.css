@@ -107,29 +107,38 @@ body {
    LOGIN BUTTON
    ============================================================ */
 
-.form-card > button {
+.form-card button,
+.form-card form button,
+.form-card > button,
+#adminLoginButton,
+.admin-login-btn {
     width: 100%;
-
-    margin-top: 25px;
-
+    margin-top: 22px;
     padding: 14px;
-
     border: none;
-    border-radius: 9px;
-
+    border-radius: 10px;
     background: #2563eb;
     color: #ffffff;
-
     font-size: 16px;
-    font-weight: 600;
-
+    font-weight: 700;
     cursor: pointer;
-
     transition: 0.2s;
+    display: block;
+    box-sizing: border-box;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
-.form-card > button:hover {
+.form-card button:hover,
+.form-card form button:hover,
+.form-card > button:hover,
+#adminLoginButton:hover,
+.admin-login-btn:hover {
     background: #1d4ed8;
+}
+
+.form-card button:active,
+#adminLoginButton:active {
+    transform: scale(0.99);
 }
 
 
