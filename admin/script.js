@@ -199,6 +199,11 @@ document.addEventListener("DOMContentLoaded", function () {
         loadTokens();
     }
 
+    if (path.includes("online-users.html")) {
+        loadOnlineUsers();
+        setInterval(loadOnlineUsers, 15000);
+    }
+
     if (isLoginPage) {
         console.log("Admin login page loaded.");
     }
@@ -4243,11 +4248,11 @@ async function loadOnlineUsers() {
         window.allOnlineUsers = data.users || [];
 
         // Update count badges
-        const countAlls = [document.getElementById("onlineCountAll"), document.getElementById("directOnlineCountAll")].filter(Boolean);
+        const countAlls = [document.getElementById("onlineCountAll"), document.getElementById("directOnlineCountAll"), document.getElementById("btnOnlineCountAll")].filter(Boolean);
         countAlls.forEach(el => el.textContent = data.total_online || 0);
-        const countPatients = [document.getElementById("onlineCountPatients"), document.getElementById("directOnlineCountPatients")].filter(Boolean);
+        const countPatients = [document.getElementById("onlineCountPatients"), document.getElementById("directOnlineCountPatients"), document.getElementById("btnOnlineCountPatients")].filter(Boolean);
         countPatients.forEach(el => el.textContent = data.patients_online || 0);
-        const countHospitals = [document.getElementById("onlineCountHospitals"), document.getElementById("directOnlineCountHospitals")].filter(Boolean);
+        const countHospitals = [document.getElementById("onlineCountHospitals"), document.getElementById("directOnlineCountHospitals"), document.getElementById("btnOnlineCountHospitals")].filter(Boolean);
         countHospitals.forEach(el => el.textContent = data.hospitals_online || 0);
         const dashCount = document.getElementById("onlineUsersCount");
         if (dashCount) dashCount.textContent = data.total_online || 0;
@@ -4273,6 +4278,7 @@ function filterOnlineUsers(role) {
     const btnAlls = [document.getElementById("onlineFilterAll"), document.getElementById("directOnlineFilterAll")].filter(Boolean);
     const btnPatients = [document.getElementById("onlineFilterPatients"), document.getElementById("directOnlineFilterPatients")].filter(Boolean);
     const btnHospitals = [document.getElementById("onlineFilterHospitals"), document.getElementById("directOnlineFilterHospitals")].filter(Boolean);
+    const btnDoctors = [document.getElementById("onlineFilterDoctors")].filter(Boolean);
 
     btnAlls.forEach(b => {
         b.style.background = role === "all" ? "#2563eb" : "#f8fafc";
@@ -4289,6 +4295,11 @@ function filterOnlineUsers(role) {
         b.style.color = role === "hospital" ? "white" : "#475569";
         b.style.border = role === "hospital" ? "none" : "1px solid #cbd5e1";
     });
+    btnDoctors.forEach(b => {
+        b.style.background = role === "doctor" ? "#2563eb" : "#f8fafc";
+        b.style.color = role === "doctor" ? "white" : "#475569";
+        b.style.border = role === "doctor" ? "none" : "1px solid #cbd5e1";
+    });
 
     renderOnlineUsers(role);
 }
@@ -4303,7 +4314,13 @@ function renderOnlineUsers(role) {
 
     let list = window.allOnlineUsers || [];
     if (role && role !== "all") {
-        list = list.filter(u => String(u.role || "").toLowerCase() === role.toLowerCase());
+        list = list.filter(u => {
+            const r = String(u.role || "").toLowerCase();
+            if (role === "doctor") {
+                return r === "doctor" || r.includes("doctor");
+            }
+            return r === role.toLowerCase();
+        });
     }
 
     if (list.length === 0) {
@@ -4322,11 +4339,14 @@ function renderOnlineUsers(role) {
     list.forEach(u => {
         const isPatient = u.role === "patient";
         const isHospital = u.role === "hospital";
+        const isDoctor = u.role === "doctor" || String(u.role || "").toLowerCase().includes("doctor");
         const roleBadge = isPatient
             ? `<span class="badge-tag badge-patient">👤 Patient</span>`
             : isHospital
                 ? `<span class="badge-tag badge-hospital">🏥 Hospital Staff</span>`
-                : `<span class="badge-tag badge-admin">🛡️ Admin</span>`;
+                : isDoctor
+                    ? `<span class="badge-tag" style="background: #faf5ff; color: #7c3aed;">🩺 Doctor</span>`
+                    : `<span class="badge-tag badge-admin">🛡️ Admin</span>`;
 
         const lastActiveSec = u.last_seen_seconds_ago ?? 0;
         let timeDisplay = "Just now";
@@ -4336,11 +4356,14 @@ function renderOnlineUsers(role) {
             timeDisplay = `${lastActiveSec}s ago`;
         }
 
+        const patientId = u.patient_id || u.user_id || "";
+        const canOpenDossier = isPatient && patientId;
+
         html += `
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #f1f5f9; gap: 12px; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 12px; min-width: 220px;">
                     <div style="position: relative; width: 38px; height: 38px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1.5px solid #bfdbfe;">
-                        ${isPatient ? "👤" : isHospital ? "🏥" : "🛡️"}
+                        ${isPatient ? "👤" : isHospital ? "🏥" : isDoctor ? "🩺" : "🛡️"}
                         <span style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid white;"></span>
                     </div>
                     <div>
@@ -4367,6 +4390,12 @@ function renderOnlineUsers(role) {
                             ${timeDisplay}
                         </span>
                     </div>
+
+                    ${canOpenDossier ? `
+                    <button type="button" onclick="openPatientDossier('${escapeHtml(patientId)}')" style="padding: 6px 12px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                        Dossier &rarr;
+                    </button>
+                    ` : ""}
                 </div>
             </div>
         `;
@@ -4840,85 +4869,24 @@ document.addEventListener("click", function (e) {
 });
 
 // =========================================================
-// DIRECT 8 CORE MODULES DASHBOARD ENGINE
+// 8 CORE STANDALONE MODULES ROUTING ENGINE
 // =========================================================
 
-let _activeDashboardModule = "overview";
-let _onlineUsersLiveTimer = null;
+function switchDashboardModule(moduleId) {
+    const routeMap = {
+        onlineUsers: "online-users.html",
+        patients: "patients.html",
+        tokens: "tokens.html",
+        hospitals: "hospitals.html",
+        pricing: "contact-settings.html",
+        payouts: "payments.html",
+        messages: "hospitals.html?open_comm=true",
+        audits: "broadcasts.html",
+        overview: "dashboard.html"
+    };
 
-function switchDashboardModule(moduleId, scrollIntoView = true) {
-    _activeDashboardModule = moduleId;
-
-    // Update pill buttons
-    document.querySelectorAll(".module-nav-pill").forEach(pill => {
-        if (pill.getAttribute("data-module") === moduleId) {
-            pill.classList.add("active");
-        } else {
-            pill.classList.remove("active");
-        }
-    });
-
-    // Update views
-    document.querySelectorAll(".module-workspace-view").forEach(view => {
-        if (view.id === `view_${moduleId}`) {
-            view.classList.add("active");
-        } else {
-            view.classList.remove("active");
-        }
-    });
-
-    // Module-specific initializers
-    if (moduleId === "onlineUsers") {
-        loadOnlineUsers();
-        if (_onlineUsersLiveTimer) clearInterval(_onlineUsersLiveTimer);
-        _onlineUsersLiveTimer = setInterval(loadOnlineUsers, 15000);
-    } else {
-        if (_onlineUsersLiveTimer) {
-            clearInterval(_onlineUsersLiveTimer);
-            _onlineUsersLiveTimer = null;
-        }
-    }
-
-    if (moduleId === "patients") {
-        if (typeof loadAdminPatients === "function") {
-            loadAdminPatients();
-        }
-    }
-
-    if (moduleId === "tokens") {
-        if (typeof loadTokens === "function") {
-            loadTokens();
-        }
-    }
-
-    if (moduleId === "hospitals") {
-        if (typeof loadHospitals === "function") {
-            loadHospitals();
-        }
-    }
-
-    if (moduleId === "pricing") {
-        loadDirectAdPricing();
-    }
-
-    if (moduleId === "payouts") {
-        if (typeof loadHospitalLedger === "function") {
-            loadHospitalLedger();
-        }
-        if (typeof loadPayments === "function") {
-            loadPayments();
-        }
-    }
-
-    if (moduleId === "audits") {
-        loadDirectAuditTrail();
-    }
-
-    if (scrollIntoView) {
-        const workspaceEl = document.getElementById("directModulesWorkspace");
-        if (workspaceEl) {
-            workspaceEl.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
+    if (routeMap[moduleId]) {
+        window.location.href = routeMap[moduleId];
     }
 }
 window.switchDashboardModule = switchDashboardModule;
