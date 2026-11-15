@@ -242,6 +242,44 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Dynamic Advertisement Pricing Engine -->
+                <div class="form-field full-width" style="background: #faf5ff; border: 1.5px solid #d8b4fe; padding: 18px; border-radius: 12px; margin-top: 10px;">
+                    <div style="margin-bottom: 14px;">
+                        <label style="color: #6b21a8; font-size: 15px; margin-top: 0;">📢 Dynamic Advertisement & Spotlight Fee Engine</label>
+                        <div style="font-size: 12px; color: #475569; margin-top: 2px;">
+                            Configure flexible pricing for hospital promotional campaigns. Banner ads and video spotlight campaigns have distinct, customizable fees.
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                        <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e9d5ff;">
+                            <label for="bannerAdFee" style="font-size: 12px; color: #6b21a8; margin-top: 0;">🖼️ Standard Banner Ad Fee (₹) *</label>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                                <span style="font-size: 16px; font-weight: 800; color: #6b21a8;">₹</span>
+                                <input type="number" id="bannerAdFee" min="0" max="50000" style="font-size: 16px; font-weight: 700; color: #6b21a8;" required>
+                            </div>
+                            <span class="field-hint">Static image ad banner on patient dashboard</span>
+                        </div>
+
+                        <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e9d5ff;">
+                            <label for="videoAdFee" style="font-size: 12px; color: #7c3aed; margin-top: 0;">🎥 Video Spotlight Ad Fee (₹) *</label>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                                <span style="font-size: 16px; font-weight: 800; color: #7c3aed;">₹</span>
+                                <input type="number" id="videoAdFee" min="0" max="100000" style="font-size: 16px; font-weight: 700; color: #7c3aed;" required>
+                            </div>
+                            <span class="field-hint">Interactive video story spotlight on patient dashboard</span>
+                        </div>
+
+                        <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e9d5ff;">
+                            <label for="adDurationDays" style="font-size: 12px; color: #475569; margin-top: 0;">⏱️ Active Campaign Duration (Days) *</label>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                                <input type="number" id="adDurationDays" min="1" max="365" style="font-size: 16px; font-weight: 700; color: #334155;" required>
+                                <span style="font-size: 13px; font-weight: 600; color: #64748b;">Days</span>
+                            </div>
+                            <span class="field-hint">Duration the hospital ad remains active after payment</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <button type="submit" id="btnSaveContact" class="btn-save">
@@ -275,6 +313,14 @@
                     <strong>Support Hours</strong>
                     <span id="prevWorkingHours">Mon - Sat: 9:00 AM - 7:00 PM IST</span>
                 </div>
+                <div class="preview-item">
+                    <strong>Banner Ad Fee</strong>
+                    <span id="prevBannerAdFee" style="font-weight: 700; color: #6b21a8;">₹999 / campaign</span>
+                </div>
+                <div class="preview-item">
+                    <strong>Video Spotlight Fee</strong>
+                    <span id="prevVideoAdFee" style="font-weight: 700; color: #7c3aed;">₹1,999 / campaign</span>
+                </div>
                 <div class="preview-item" style="grid-column: 1 / -1;">
                     <strong>Physical Operating Address</strong>
                     <span id="prevAddress">Bhubaneswar / Cuttack, Odisha, India - 751024</span>
@@ -292,7 +338,7 @@
 requireAdminLogin();
 
 // Live input sync to preview
-const fields = ["businessName", "supportEmail", "supportPhone", "workingHours", "operatingAddress"];
+const fields = ["businessName", "supportEmail", "supportPhone", "workingHours", "operatingAddress", "bannerAdFee", "videoAdFee", "adDurationDays", "platformFee"];
 fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) {
@@ -305,6 +351,15 @@ function updatePreview() {
     const feeVal = document.getElementById("platformFee") ? document.getElementById("platformFee").value : "10";
     if (document.getElementById("prevPlatformFee")) {
         document.getElementById("prevPlatformFee").textContent = `₹${feeVal} per booking`;
+    }
+    const bannerVal = document.getElementById("bannerAdFee") ? document.getElementById("bannerAdFee").value : "999";
+    const videoVal = document.getElementById("videoAdFee") ? document.getElementById("videoAdFee").value : "1999";
+    const durVal = document.getElementById("adDurationDays") ? document.getElementById("adDurationDays").value : "30";
+    if (document.getElementById("prevBannerAdFee")) {
+        document.getElementById("prevBannerAdFee").textContent = `₹${bannerVal} (${durVal} days)`;
+    }
+    if (document.getElementById("prevVideoAdFee")) {
+        document.getElementById("prevVideoAdFee").textContent = `₹${videoVal} (${durVal} days)`;
     }
     document.getElementById("prevSupportEmail").textContent = document.getElementById("supportEmail").value || "—";
     document.getElementById("prevSupportPhone").textContent = document.getElementById("supportPhone").value || "—";
@@ -338,6 +393,15 @@ async function loadContactSettings() {
             if (document.getElementById("platformFee")) {
                 document.getElementById("platformFee").value = data.platform_fee ?? 10;
             }
+            if (document.getElementById("bannerAdFee")) {
+                document.getElementById("bannerAdFee").value = data.banner_ad_fee ?? 999;
+            }
+            if (document.getElementById("videoAdFee")) {
+                document.getElementById("videoAdFee").value = data.video_ad_fee ?? 1999;
+            }
+            if (document.getElementById("adDurationDays")) {
+                document.getElementById("adDurationDays").value = data.ad_duration_days ?? 30;
+            }
             updatePreview();
         }
     } catch (err) {
@@ -359,7 +423,10 @@ async function handleSaveContact(event) {
         operating_address: document.getElementById("operatingAddress").value.trim(),
         grievance_officer: document.getElementById("grievanceOfficer").value.trim(),
         grievance_email: document.getElementById("grievanceEmail").value.trim(),
-        platform_fee: parseInt(document.getElementById("platformFee")?.value || "10", 10)
+        platform_fee: parseInt(document.getElementById("platformFee")?.value || "10", 10),
+        banner_ad_fee: parseFloat(document.getElementById("bannerAdFee")?.value || "999"),
+        video_ad_fee: parseFloat(document.getElementById("videoAdFee")?.value || "1999"),
+        ad_duration_days: parseInt(document.getElementById("adDurationDays")?.value || "30", 10)
     };
 
     btn.disabled = true;
@@ -380,7 +447,7 @@ async function handleSaveContact(event) {
         }
 
         msg.className = "message success";
-        msg.textContent = "✓ Official contact details updated successfully! These details are now live across patient pages and payment gateway policies.";
+        msg.textContent = "✓ Official contact details & dynamic ad fees updated successfully! These details are now live across patient pages and payment gateway policies.";
         msg.style.display = "block";
         updatePreview();
     } catch (err) {

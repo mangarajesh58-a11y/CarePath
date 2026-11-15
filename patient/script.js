@@ -1698,3 +1698,42 @@ function logout() {
         "index.html";
 
 }
+
+// =========================================================
+// LIVE USER PRESENCE HEARTBEAT
+// =========================================================
+
+function sendPatientHeartbeat() {
+    try {
+        const patientId = localStorage.getItem("patientId");
+        const patientName = localStorage.getItem("patientName");
+        const patientEmail = localStorage.getItem("patientEmail");
+        const patientPhone = localStorage.getItem("patientPhone");
+        const token = localStorage.getItem("patientToken") || localStorage.getItem("token") || "";
+
+        const payload = {
+            user_id: patientId ? String(patientId) : (patientPhone || patientEmail || "guest_patient"),
+            user_role: "patient",
+            user_name: patientName || (patientPhone ? `Patient (${patientPhone})` : "Active Patient"),
+            user_email: patientEmail || null,
+            user_phone: patientPhone || null,
+            current_page: window.location.pathname.split("/").pop() || "patient_app"
+        };
+
+        const headers = { "Content-Type": "application/json" };
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        fetch(`${API}/api/heartbeat`, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify(payload)
+        }).catch(() => {});
+    } catch (e) {}
+}
+
+if (typeof window !== "undefined") {
+    setTimeout(sendPatientHeartbeat, 1500);
+    setInterval(sendPatientHeartbeat, 45000);
+}

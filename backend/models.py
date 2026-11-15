@@ -313,6 +313,9 @@ class PlatformContact(Base):
     grievance_email = Column(String(255), default="mangarajesh58@gmail.com")
     working_hours = Column(String(100), default="Mon - Sat: 9:00 AM - 7:00 PM IST")
     platform_fee = Column(Integer, default=10, nullable=False)
+    banner_ad_fee = Column(Float, default=999.0, nullable=False)
+    video_ad_fee = Column(Float, default=1999.0, nullable=False)
+    ad_duration_days = Column(Integer, default=30, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class HospitalClosure(Base):
@@ -336,6 +339,10 @@ class HospitalAdvertisement(Base):
     target_phone = Column(String(50), nullable=True)
     target_link = Column(String(500), nullable=True)
     amount_paid = Column(Float, default=999.0)
+    ad_type = Column(String(50), default="banner", nullable=False)  # banner, video
+    video_url = Column(String(500), nullable=True)
+    video_duration_seconds = Column(Integer, nullable=True)
+    fee_charged = Column(Float, nullable=True)
     payment_status = Column(String(50), default="pending", index=True)  # pending, paid, expired
     cashfree_order_id = Column(String(255), unique=True, index=True, nullable=True)
     cashfree_payment_id = Column(String(255), nullable=True)
@@ -406,3 +413,18 @@ class AdminAuditLog(Base):
     details = Column(Text, nullable=True)
     ip_address = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class UserPresence(Base):
+    __tablename__ = "user_presences"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=True, index=True)
+    user_role = Column(String(50), nullable=False, index=True)  # patient, hospital, admin, visitor
+    user_name = Column(String(255), nullable=False)
+    user_email = Column(String(255), nullable=True)
+    user_phone = Column(String(50), nullable=True)
+    current_page = Column(String(255), nullable=True)
+    last_seen_at = Column(DateTime, default=datetime.utcnow, index=True)
+    ip_address = Column(String(100), nullable=True)
+

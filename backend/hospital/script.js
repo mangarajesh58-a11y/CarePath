@@ -3579,3 +3579,42 @@ async function saveDoctorFullProfile(event) {
     }
 }
 window.saveDoctorFullProfile = saveDoctorFullProfile;
+
+// =========================================================
+// LIVE HOSPITAL PRESENCE HEARTBEAT
+// =========================================================
+
+function sendHospitalHeartbeat() {
+    try {
+        const hospId = localStorage.getItem("hospital_id");
+        const hospName = localStorage.getItem("hospital_name");
+        const hospEmail = localStorage.getItem("hospital_email");
+        const token = localStorage.getItem("token") || localStorage.getItem("hospitalToken") || "";
+
+        const payload = {
+            user_id: hospId ? String(hospId) : (hospEmail || "hospital_user"),
+            user_role: "hospital",
+            user_name: hospName || "Hospital Staff",
+            user_email: hospEmail || null,
+            user_phone: null,
+            current_page: window.location.pathname.split("/").pop() || "hospital_app"
+        };
+
+        const headers = { "Content-Type": "application/json" };
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        fetch(`${API}/api/heartbeat`, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify(payload)
+        }).catch(() => {});
+    } catch (e) {}
+}
+
+if (typeof window !== "undefined") {
+    setTimeout(sendHospitalHeartbeat, 1500);
+    setInterval(sendHospitalHeartbeat, 45000);
+}
+

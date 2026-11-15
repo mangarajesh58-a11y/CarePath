@@ -14,7 +14,7 @@ import logging
 from email.message import EmailMessage
 
 from datetime import datetime,date, timedelta
-from typing import Optional, List
+from typing import Optional, List, Union, Any
 
 import razorpay
 import requests
@@ -90,6 +90,7 @@ from models import (
     HospitalDirectMessage,
     HospitalSettlement,
     AdminAuditLog,
+    UserPresence,
 )
 from fastapi.responses import FileResponse, Response, JSONResponse
 
@@ -1170,23 +1171,26 @@ Base.metadata.create_all(
 # DATABASE MIGRATION
 # ============================================================
 
+_migration_table_columns_cache = {}
+
 def add_column_if_missing(
     table_name,
     column_name,
     column_definition,
 ):
+    global _migration_table_columns_cache
+    if table_name not in _migration_table_columns_cache:
+        try:
+            inspector = inspect(engine)
+            _migration_table_columns_cache[table_name] = {
+                column["name"]
+                for column in inspector.get_columns(table_name)
+            }
+        except Exception as e:
+            print(f"Warning inspecting table {table_name}:", e)
+            _migration_table_columns_cache[table_name] = set()
 
-    inspector = inspect(engine)
-
-    existing_columns = {
-        column["name"]
-        for column in inspector.get_columns(
-            table_name
-        )
-    }
-
-    if column_name in existing_columns:
-
+    if column_name in _migration_table_columns_cache[table_name]:
         return
 
     import re
@@ -1195,7 +1199,6 @@ def add_column_if_missing(
         col_def = re.sub(r'\bDATETIME\b', 'TIMESTAMP', col_def, flags=re.IGNORECASE)
 
     with engine.begin() as connection:
-
         connection.execute(
             text(
                 f"""
@@ -1205,6 +1208,7 @@ def add_column_if_missing(
                 """
             )
         )
+    _migration_table_columns_cache[table_name].add(column_name)
 
 
 def run_database_migration():
@@ -1574,6 +1578,9 @@ def run_database_migration():
     # --------------------------------------------------------
     platform_contact_columns = {
         "platform_fee": f"INT NOT NULL DEFAULT {PLATFORM_FEE}",
+        "banner_ad_fee": "FLOAT NOT NULL DEFAULT 999.0",
+        "video_ad_fee": "FLOAT NOT NULL DEFAULT 1999.0",
+        "ad_duration_days": "INT NOT NULL DEFAULT 30",
     }
     for column_name, definition in platform_contact_columns.items():
         try:
@@ -1584,6 +1591,25 @@ def run_database_migration():
             )
         except Exception as error:
             print(f"Platform contacts migration warning ({column_name}):", error)
+
+    # --------------------------------------------------------
+    # HOSPITAL ADVERTISEMENTS (Banner & Video Ads)
+    # --------------------------------------------------------
+    ad_columns = {
+        "ad_type": "VARCHAR(50) NOT NULL DEFAULT 'banner'",
+        "video_url": "VARCHAR(500) NULL",
+        "video_duration_seconds": "INT NULL",
+        "fee_charged": "FLOAT NULL",
+    }
+    for column_name, definition in ad_columns.items():
+        try:
+            add_column_if_missing(
+                "hospital_advertisements",
+                column_name,
+                definition,
+            )
+        except Exception as error:
+            print(f"Hospital ads migration warning ({column_name}):", error)
 
     # --------------------------------------------------------
     # HOSPITAL DIRECT MESSAGES (Patient Inquiries & Direct Replies)
@@ -7923,6 +7949,9 @@ def complete_token(
 class PlatformContactUpdateRequest(BaseModel):
     business_name: str | None = None
     platform_fee: int | None = None
+    banner_ad_fee: float | None = None
+    video_ad_fee: float | None = None
+    ad_duration_days: int | None = None
     support_email: str | None = None
     support_phone: str | None = None
     operating_address: str | None = None
@@ -7943,6 +7972,9 @@ def get_or_create_contact_settings(db: Session) -> PlatformContact:
             grievance_email="mangarajesh58@gmail.com",
             working_hours="Mon - Sat: 9:00 AM - 7:00 PM IST",
             platform_fee=PLATFORM_FEE,
+            banner_ad_fee=999.0,
+            video_ad_fee=1999.0,
+            ad_duration_days=30,
         )
         db.add(contact)
         db.commit()
@@ -7954,6 +7986,68 @@ def get_or_create_contact_settings(db: Session) -> PlatformContact:
 def get_platform_fee_public(db: Session = Depends(get_db)):
     fee = get_current_platform_fee(db)
     return {"success": True, "platform_fee": fee}
+
+
+@app.get("/api/ad-pricing")
+@app.get("/admin/ad-pricing")
+def get_ad_pricing(db: Session = Depends(get_db)):
+    """Public and admin endpoint returning dynamic fees for Banner Ads and Video Spotlight Ads."""
+    contact = get_or_create_contact_settings(db)
+    return {
+        "success": True,
+        "banner_ad_fee": float(getattr(contact, "banner_ad_fee", 999.0) or 999.0),
+        "video_ad_fee": float(getattr(contact, "video_ad_fee", 1999.0) or 1999.0),
+        "ad_duration_days": int(getattr(contact, "ad_duration_days", 30) or 30),
+    }
+
+
+class AdPricingUpdateRequest(BaseModel):
+    banner_ad_fee: Optional[float] = None
+    video_ad_fee: Optional[float] = None
+    ad_duration_days: Optional[int] = None
+
+
+@app.put("/admin/ad-pricing")
+def update_ad_pricing(
+    data: AdPricingUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """Admin-only endpoint to update Banner and Video ad rates dynamically."""
+    contact = get_or_create_contact_settings(db)
+    changes = []
+    if data.banner_ad_fee is not None and data.banner_ad_fee >= 0:
+        contact.banner_ad_fee = float(data.banner_ad_fee)
+        changes.append(f"Banner: ₹{contact.banner_ad_fee}")
+    if data.video_ad_fee is not None and data.video_ad_fee >= 0:
+        contact.video_ad_fee = float(data.video_ad_fee)
+        changes.append(f"Video: ₹{contact.video_ad_fee}")
+    if data.ad_duration_days is not None and data.ad_duration_days > 0:
+        contact.ad_duration_days = int(data.ad_duration_days)
+        changes.append(f"Duration: {contact.ad_duration_days} days")
+
+    contact.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(contact)
+
+    log_admin_action(
+        db,
+        current_user.get("email", "admin"),
+        "UPDATE_AD_PRICING",
+        target_type="SETTING",
+        target_id="ad_pricing",
+        details="; ".join(changes) if changes else "No changes applied"
+    )
+
+    return {
+        "success": True,
+        "message": "Advertisement pricing updated successfully.",
+        "pricing": {
+            "banner_ad_fee": contact.banner_ad_fee,
+            "video_ad_fee": contact.video_ad_fee,
+            "ad_duration_days": contact.ad_duration_days,
+        }
+    }
 
 
 @app.get("/platform/contact")
@@ -7970,6 +8064,9 @@ def get_platform_contact(db: Session = Depends(get_db)):
         "grievance_email": contact.grievance_email,
         "working_hours": contact.working_hours,
         "platform_fee": getattr(contact, "platform_fee", PLATFORM_FEE),
+        "banner_ad_fee": float(getattr(contact, "banner_ad_fee", 999.0) or 999.0),
+        "video_ad_fee": float(getattr(contact, "video_ad_fee", 1999.0) or 1999.0),
+        "ad_duration_days": int(getattr(contact, "ad_duration_days", 30) or 30),
         "updated_at": contact.updated_at.isoformat() if contact.updated_at else None,
     }
 
@@ -8007,6 +8104,28 @@ def update_platform_contact(
             target_id="platform_fee",
             details=f"Platform convenience fee updated to ₹{contact.platform_fee}"
         )
+    if data.banner_ad_fee is not None and data.banner_ad_fee >= 0:
+        contact.banner_ad_fee = float(data.banner_ad_fee)
+        log_admin_action(
+            db,
+            current_user.get("email", "admin"),
+            "UPDATE_BANNER_AD_FEE",
+            target_type="SETTING",
+            target_id="banner_ad_fee",
+            details=f"Banner ad fee updated to ₹{contact.banner_ad_fee}"
+        )
+    if data.video_ad_fee is not None and data.video_ad_fee >= 0:
+        contact.video_ad_fee = float(data.video_ad_fee)
+        log_admin_action(
+            db,
+            current_user.get("email", "admin"),
+            "UPDATE_VIDEO_AD_FEE",
+            target_type="SETTING",
+            target_id="video_ad_fee",
+            details=f"Video spotlight ad fee updated to ₹{contact.video_ad_fee}"
+        )
+    if data.ad_duration_days is not None and data.ad_duration_days > 0:
+        contact.ad_duration_days = int(data.ad_duration_days)
 
     contact.updated_at = datetime.utcnow()
     db.commit()
@@ -8014,7 +8133,7 @@ def update_platform_contact(
 
     return {
         "success": True,
-        "message": "Platform contact details updated successfully.",
+        "message": "Platform contact and fee settings updated successfully.",
         "contact": {
             "business_name": contact.business_name,
             "support_email": contact.support_email,
@@ -8023,8 +8142,336 @@ def update_platform_contact(
             "grievance_officer": contact.grievance_officer,
             "grievance_email": contact.grievance_email,
             "working_hours": contact.working_hours,
+            "platform_fee": getattr(contact, "platform_fee", PLATFORM_FEE),
+            "banner_ad_fee": float(getattr(contact, "banner_ad_fee", 999.0) or 999.0),
+            "video_ad_fee": float(getattr(contact, "video_ad_fee", 1999.0) or 1999.0),
+            "ad_duration_days": int(getattr(contact, "ad_duration_days", 30) or 30),
             "updated_at": contact.updated_at.isoformat() if contact.updated_at else None,
         },
+    }
+
+
+# ============================================================
+# REAL-TIME ONLINE USERS & PRESENCE ENGINE
+# ============================================================
+
+class HeartbeatRequest(BaseModel):
+    user_id: Optional[Union[int, str]] = None
+    role: Optional[str] = None
+    user_role: Optional[str] = None
+    name: Optional[str] = None
+    user_name: Optional[str] = None
+    email: Optional[str] = None
+    user_email: Optional[str] = None
+    phone: Optional[str] = None
+    user_phone: Optional[str] = None
+    current_page: Optional[str] = None
+
+
+@app.post("/api/heartbeat")
+async def register_heartbeat(
+    request: Request,
+    data: Optional[HeartbeatRequest] = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Real-time active presence heartbeat endpoint.
+    Automatically captures active users from Patient App, Hospital Portal, and Admin Portal.
+    """
+    raw_uid = data.user_id if data else None
+    user_id = None
+    if raw_uid is not None:
+        try:
+            user_id = int(raw_uid)
+        except (ValueError, TypeError):
+            user_id = None
+
+    role = ((data.user_role or data.role) if data and (data.user_role or data.role) else "visitor").lower()
+    name = ((data.user_name or data.name) if data and (data.user_name or data.name) else "").strip() or None
+    email = ((data.user_email or data.email) if data and (data.user_email or data.email) else "").strip() or None
+    phone = ((data.user_phone or data.phone) if data and (data.user_phone or data.phone) else "").strip() or None
+    page = (data.current_page.strip() if data and data.current_page else None)
+
+    # Auto-decode Bearer JWT if provided
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            token_str = auth_header.split(" ")[1]
+            payload = jwt.decode(token_str, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            user_id = int(payload.get("sub"))
+            role = payload.get("role", role)
+        except Exception:
+            pass
+
+    # Lookup profile info from DB if missing
+    if user_id:
+        if role == "patient" and (not name or not email or not phone):
+            p = db.query(Patient).filter(Patient.id == user_id).first()
+            if p:
+                name = name or p.full_name
+                email = email or p.email
+                phone = phone or p.phone
+        elif role == "hospital" and (not name or not email):
+            h = db.query(Hospital).filter(Hospital.id == user_id).first()
+            if h:
+                name = name or h.name
+                email = email or h.email
+                phone = phone or h.phone
+        elif role == "admin" and not name:
+            a = db.query(Admin).filter(Admin.id == user_id).first()
+            if a:
+                name = name or a.email
+                email = email or a.email
+
+    name = name or ("Visitor" if role == "visitor" else f"{role.capitalize()} #{user_id or 1}")
+    client_ip = request.client.host if request.client else None
+
+    now = datetime.utcnow()
+    presence = None
+    if user_id and role != "visitor":
+        presence = db.query(UserPresence).filter(
+            UserPresence.user_id == user_id,
+            UserPresence.user_role == role
+        ).first()
+    elif client_ip:
+        presence = db.query(UserPresence).filter(
+            UserPresence.ip_address == client_ip,
+            UserPresence.user_role == role
+        ).first()
+
+    if presence:
+        presence.user_name = name
+        presence.user_email = email or presence.user_email
+        presence.user_phone = phone or presence.user_phone
+        presence.current_page = page or presence.current_page
+        presence.last_seen_at = now
+        presence.ip_address = client_ip or presence.ip_address
+    else:
+        presence = UserPresence(
+            user_id=user_id,
+            user_role=role,
+            user_name=name,
+            user_email=email,
+            user_phone=phone,
+            current_page=page,
+            last_seen_at=now,
+            ip_address=client_ip,
+        )
+        db.add(presence)
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+
+    return {"status": "ok", "online": True, "server_time": now.isoformat()}
+
+
+@app.get("/admin/online-users")
+def get_admin_online_users(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """
+    Returns list of currently online users (active within the last 3 minutes).
+    Includes breakdown of Patients vs Hospitals vs Admins.
+    """
+    now = datetime.utcnow()
+    active_cutoff = now - timedelta(minutes=3)
+
+    # Clean up stale records older than 2 hours to keep table lean
+    try:
+        db.query(UserPresence).filter(UserPresence.last_seen_at < (now - timedelta(hours=2))).delete(synchronize_session=False)
+        db.commit()
+    except Exception:
+        db.rollback()
+
+    active_presences = (
+        db.query(UserPresence)
+        .filter(UserPresence.last_seen_at >= active_cutoff)
+        .order_by(UserPresence.last_seen_at.desc())
+        .all()
+    )
+
+    user_list = []
+    patients_count = 0
+    hospitals_count = 0
+    admins_count = 0
+    visitors_count = 0
+
+    for u in active_presences:
+        seconds_ago = int((now - u.last_seen_at).total_seconds())
+        if u.user_role == "patient":
+            patients_count += 1
+        elif u.user_role == "hospital":
+            hospitals_count += 1
+        elif u.user_role == "admin":
+            admins_count += 1
+        else:
+            visitors_count += 1
+
+        user_list.append({
+            "id": u.id,
+            "user_id": u.user_id,
+            "role": u.user_role,
+            "name": u.user_name,
+            "email": u.user_email or "—",
+            "phone": u.user_phone or "—",
+            "current_page": u.current_page or "Active",
+            "last_seen_at": u.last_seen_at.isoformat(),
+            "seconds_ago": seconds_ago,
+            "time_ago_str": "Just now" if seconds_ago < 30 else f"{seconds_ago // 60}m ago",
+        })
+
+    total_registered_patients = db.query(func.count(Patient.id)).scalar() or 0
+    total_registered_hospitals = db.query(func.count(Hospital.id)).scalar() or 0
+
+    return {
+        "success": True,
+        "total_online": len(active_presences),
+        "patients_online": patients_count,
+        "hospitals_online": hospitals_count,
+        "admins_online": admins_count,
+        "visitors_online": visitors_count,
+        "total_registered_patients": total_registered_patients,
+        "total_registered_hospitals": total_registered_hospitals,
+        "users": user_list,
+    }
+
+
+# ============================================================
+# MASTER ADMIN - PATIENTS DIRECTORY & 360° DOSSIER
+# ============================================================
+
+@app.get("/admin/patients")
+def get_admin_patients_directory(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """
+    Returns every patient record in the database with demographics, contact details,
+    account creation date, and total tokens booked.
+    """
+    patients = db.query(Patient).order_by(Patient.created_at.desc()).all()
+    results = []
+
+    # Batch token count calculations
+    token_counts = dict(
+        db.query(Token.patient_id, func.count(Token.id))
+        .filter(Token.patient_id != None)
+        .group_by(Token.patient_id)
+        .all()
+    )
+    active_token_counts = dict(
+        db.query(Token.patient_id, func.count(Token.id))
+        .filter(Token.patient_id != None, Token.status.in_(["waiting", "serving"]))
+        .group_by(Token.patient_id)
+        .all()
+    )
+
+    for p in patients:
+        results.append({
+            "id": p.id,
+            "full_name": p.full_name,
+            "email": p.email,
+            "phone": p.phone or "—",
+            "age": p.age,
+            "gender": p.gender or "—",
+            "blood_group": p.blood_group or "—",
+            "address": p.address or "—",
+            "emergency_contact": p.emergency_contact or "—",
+            "google_id": bool(p.google_id),
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+            "total_tokens": token_counts.get(p.id, 0),
+            "active_tokens": active_token_counts.get(p.id, 0),
+        })
+
+    return {
+        "success": True,
+        "count": len(results),
+        "patients": results,
+    }
+
+
+@app.get("/admin/patients/{patient_id}")
+def get_admin_patient_dossier(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """
+    Returns a patient's full details and medical booking dossier, including every token
+    booked, which hospital they booked at, which doctor, department, and payment breakdown.
+    """
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient record not found.")
+
+    # Match tokens by patient_id, phone, or email
+    filter_conds = [Token.patient_id == patient.id]
+    if patient.phone:
+        clean_p = patient.phone.strip().replace(" ", "").replace("-", "")
+        filter_conds.append(Token.patient_phone == patient.phone)
+        filter_conds.append(Token.patient_phone == clean_p)
+    if patient.email:
+        filter_conds.append(func.lower(Token.patient_email) == patient.email.strip().lower())
+
+    tokens = (
+        db.query(Token)
+        .filter(or_(*filter_conds))
+        .order_by(Token.appointment_date.desc(), Token.created_at.desc())
+        .all()
+    )
+
+    token_history = []
+    for t in tokens:
+        hospital = None
+        if t.hospital_id:
+            hospital = db.query(Hospital).filter(Hospital.id == t.hospital_id).first()
+        if not hospital and t.hospital:
+            hospital = db.query(Hospital).filter(Hospital.name == t.hospital).first()
+
+        token_history.append({
+            "token_id": t.id,
+            "token_number": t.token_number,
+            "appointment_date": str(t.appointment_date) if t.appointment_date else "—",
+            "status": t.status,
+            "hospital_name": hospital.name if hospital else (t.hospital or "—"),
+            "hospital_id": t.hospital_id,
+            "hospital_phone": hospital.phone if hospital else "—",
+            "hospital_city": hospital.city if hospital else "—",
+            "hospital_address": hospital.address if hospital else "—",
+            "department": t.department,
+            "doctor": t.doctor,
+            "doctor_room_number": t.doctor_room_number or t.room_number or "—",
+            "booking_type": t.booking_type or "ONLINE",
+            "token_fee": float(t.token_fee or 0),
+            "platform_fee": float(t.platform_fee or 0),
+            "total_amount": float(t.total_amount or 0),
+            "payment_status": t.payment_status or "—",
+            "cashfree_order_id": t.cashfree_order_id or "—",
+            "cashfree_payment_id": t.cashfree_payment_id or "—",
+            "notes": t.notes,
+            "created_at": t.created_at.isoformat() if t.created_at else None,
+        })
+
+    return {
+        "success": True,
+        "patient": {
+            "id": patient.id,
+            "full_name": patient.full_name,
+            "email": patient.email,
+            "phone": patient.phone or "—",
+            "age": patient.age,
+            "gender": patient.gender or "—",
+            "blood_group": patient.blood_group or "—",
+            "address": patient.address or "—",
+            "emergency_contact": patient.emergency_contact or "—",
+            "google_id": bool(patient.google_id),
+            "created_at": patient.created_at.isoformat() if patient.created_at else None,
+            "total_tokens_booked": len(token_history),
+        },
+        "tokens": token_history,
     }
 
 
@@ -9004,7 +9451,13 @@ def admin_revenue(
 
     hospital_revenue = sum(int(token.token_fee or 0) for token in paid_tokens)
     platform_revenue = sum(int(token.platform_fee or 0) for token in paid_tokens)
-    ads_revenue = sum(int(ad.amount_paid or 0) for ad in paid_ads)
+    
+    paid_banner_ads = [ad for ad in paid_ads if getattr(ad, "ad_type", "banner") != "video"]
+    paid_video_ads = [ad for ad in paid_ads if getattr(ad, "ad_type", "banner") == "video"]
+    banner_ads_revenue = sum(int(ad.amount_paid or 0) for ad in paid_banner_ads)
+    video_ads_revenue = sum(int(ad.amount_paid or 0) for ad in paid_video_ads)
+    ads_revenue = banner_ads_revenue + video_ads_revenue
+
     total_developer_revenue = platform_revenue + ads_revenue
     total_collected = sum(int(token.total_amount or 0) for token in paid_tokens) + ads_revenue
     token_count = len(paid_tokens)
@@ -9016,7 +9469,11 @@ def admin_revenue(
         "token_revenue": hospital_revenue,
         "platform_revenue": platform_revenue,
         "ads_revenue": ads_revenue,
+        "banner_ads_revenue": banner_ads_revenue,
+        "video_ads_revenue": video_ads_revenue,
         "ads_count": ads_count,
+        "banner_ads_count": len(paid_banner_ads),
+        "video_ads_count": len(paid_video_ads),
         "developer_total_revenue": total_developer_revenue,
         "total_revenue": total_developer_revenue,
         "total_collected": total_collected,
@@ -9070,18 +9527,73 @@ def admin_tokens(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("admin")),
 ):
+    """
+    Returns all hospital tokens enriched with full patient details (demographics, contact)
+    and complete hospital details for 360-degree admin visibility.
+    """
     tokens = (
         db.query(Token)
         .order_by(
+            Token.appointment_date.desc(),
             Token.created_at.desc()
         )
         .all()
     )
 
-    return [
-        token_to_dict(token)
-        for token in tokens
-    ]
+    # Pre-load hospitals and patients in batch maps for 0ms execution
+    hospital_map = {h.id: h for h in db.query(Hospital).all()}
+    patient_map = {p.id: p for p in db.query(Patient).all()}
+    phone_patient_map = {p.phone.strip(): p for p in patient_map.values() if p.phone}
+    email_patient_map = {p.email.strip().lower(): p for p in patient_map.values() if p.email}
+
+    results = []
+    for token in tokens:
+        d = token_to_dict(token)
+        patient = patient_map.get(token.patient_id)
+        if not patient and token.patient_phone:
+            patient = phone_patient_map.get(token.patient_phone.strip())
+        if not patient and token.patient_email:
+            patient = email_patient_map.get(token.patient_email.strip().lower())
+
+        if patient:
+            d["patient_full_details"] = {
+                "id": patient.id,
+                "full_name": patient.full_name,
+                "email": patient.email,
+                "phone": patient.phone or "—",
+                "age": patient.age or "—",
+                "gender": patient.gender or "—",
+                "blood_group": patient.blood_group or "—",
+                "address": patient.address or "—",
+                "emergency_contact": patient.emergency_contact or "—",
+                "created_at": patient.created_at.isoformat() if patient.created_at else None,
+            }
+        else:
+            d["patient_full_details"] = {
+                "id": None,
+                "full_name": token.patient_name,
+                "email": token.patient_email or "—",
+                "phone": token.patient_phone or "—",
+                "age": token.patient_age or "—",
+                "gender": token.patient_gender or "—",
+                "blood_group": "—",
+                "address": "Walk-in registration",
+                "emergency_contact": "—",
+                "created_at": token.created_at.isoformat() if token.created_at else None,
+            }
+
+        hosp = hospital_map.get(token.hospital_id)
+        d["hospital_details"] = {
+            "id": hosp.id if hosp else token.hospital_id,
+            "name": hosp.name if hosp else (token.hospital or "—"),
+            "city": hosp.city if hosp else "—",
+            "phone": hosp.phone if hosp else "—",
+            "address": hosp.address if hosp else "—",
+            "operating_hours": getattr(hosp, "operating_hours_12h", "09:00 AM - 09:00 PM") if hosp else "09:00 AM - 09:00 PM",
+        }
+        results.append(d)
+
+    return results
 
 # ============================================================
 # TOKEN COLLECTION HISTORY (PER DAY & PER MONTH)
@@ -10231,11 +10743,14 @@ async def create_hospital_ad_order(
     description: str = Form(""),
     target_phone: str = Form(""),
     target_link: str = Form(""),
-    photo: UploadFile = File(...),
+    ad_type: str = Form("banner"),  # 'banner' or 'video'
+    video_url: str = Form(""),
+    photo: UploadFile = File(None),
+    custom_fee: Optional[float] = Form(None),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
 ):
-    """Create a 30-day advertisement order with Cashfree payment session (INR 999)."""
+    """Create an advertisement order with Cashfree payment session using dynamic Admin-configured fees."""
     try:
         if hospital_id != current_user["user_id"]:
             raise HTTPException(status_code=403, detail="Unauthorized to create ads for another hospital.")
@@ -10247,30 +10762,48 @@ async def create_hospital_ad_order(
         if not title or len(title.strip()) < 3:
             raise HTTPException(status_code=400, detail="Please provide a valid campaign title.")
 
-        content = await photo.read(MAX_HOSPITAL_PHOTO_SIZE + 1)
-        if not content:
-            raise HTTPException(status_code=400, detail="Please upload a promotional banner photo.")
-        if len(content) > MAX_HOSPITAL_PHOTO_SIZE:
-            raise HTTPException(status_code=413, detail="Banner photo must be 5 MB or smaller.")
+        ad_type_clean = (ad_type or "banner").strip().lower()
+        if ad_type_clean not in ("banner", "video"):
+            ad_type_clean = "banner"
 
-        content_type = (photo.content_type or "").lower()
-        ext = ALLOWED_HOSPITAL_PHOTO_TYPES.get(content_type, ".jpg")
-        filename = f"ad_{hospital_id}_{uuid.uuid4().hex[:12]}{ext}"
-        
-        # Ensure dir exists and try writing to disk safely
-        try:
-            os.makedirs(HOSPITAL_AD_DIR, exist_ok=True)
-            local_path = os.path.join(HOSPITAL_AD_DIR, filename)
-            with open(local_path, "wb") as f:
-                f.write(content)
-        except Exception as write_err:
-            logging.warning("Could not cache ad image to disk: %s", write_err)
+        # Determine dynamic fee from platform settings
+        contact = get_or_create_contact_settings(db)
+        if ad_type_clean == "video":
+            default_fee = getattr(contact, "video_ad_fee", 1999.0) or 1999.0
+        else:
+            default_fee = getattr(contact, "banner_ad_fee", 999.0) or 999.0
 
-        img_base64 = base64.b64encode(content).decode("utf-8")
-        img_url = f"/hospital-ads/{filename}"
+        amount = float(custom_fee if custom_fee and custom_fee > 0 else default_fee)
+
+        img_base64 = None
+        img_url = None
+
+        if photo and hasattr(photo, "read"):
+            content = await photo.read(MAX_HOSPITAL_PHOTO_SIZE + 1)
+            if content:
+                if len(content) > MAX_HOSPITAL_PHOTO_SIZE:
+                    raise HTTPException(status_code=413, detail="Banner photo must be 5 MB or smaller.")
+                content_type = (photo.content_type or "").lower()
+                ext = ALLOWED_HOSPITAL_PHOTO_TYPES.get(content_type, ".jpg")
+                filename = f"ad_{hospital_id}_{uuid.uuid4().hex[:12]}{ext}"
+                try:
+                    os.makedirs(HOSPITAL_AD_DIR, exist_ok=True)
+                    local_path = os.path.join(HOSPITAL_AD_DIR, filename)
+                    with open(local_path, "wb") as f:
+                        f.write(content)
+                except Exception as write_err:
+                    logging.warning("Could not cache ad image to disk: %s", write_err)
+
+                img_base64 = base64.b64encode(content).decode("utf-8")
+                img_url = f"/hospital-ads/{filename}"
+
+        if not img_url and not (video_url and video_url.strip()):
+            if ad_type_clean == "video":
+                raise HTTPException(status_code=400, detail="Please provide a promo video URL or thumbnail.")
+            else:
+                raise HTTPException(status_code=400, detail="Please upload a promotional banner photo.")
 
         order_id = f"ad_{hospital_id}_{secrets.token_hex(6)}"
-        amount = float(HOSPITAL_AD_FEE)
 
         # Clean phone for Cashfree payload (needs 10 digits)
         raw_digits = "".join([c for c in str(target_phone or hospital.phone or "9999999999") if c.isdigit()])
@@ -10283,9 +10816,12 @@ async def create_hospital_ad_order(
             description=description.strip() if description else None,
             image_url=img_url,
             image_base64=img_base64,
+            ad_type=ad_type_clean,
+            video_url=video_url.strip() if video_url else None,
             target_phone=target_phone.strip() if target_phone else (hospital.phone or ""),
             target_link=target_link.strip() if target_link else "",
             amount_paid=amount,
+            fee_charged=amount,
             payment_status="pending",
             cashfree_order_id=order_id,
             is_active=False,
@@ -10314,9 +10850,9 @@ async def create_hospital_ad_order(
             "order_meta": {
                 "return_url": "https://carepath-hospital-ten.vercel.app/ads.html?ad_order_id={order_id}"
             },
-            "order_note": f"CarePath 30-Day Ad Campaign for {hospital.name[:40]}",
+            "order_note": f"CarePath {ad_type_clean.capitalize()} Campaign for {hospital.name[:40]}",
             "order_tags": {
-                "campaign_type": "hospital_30d_banner_ad",
+                "campaign_type": f"hospital_{ad_type_clean}_ad",
                 "hospital_id": str(hospital_id),
                 "revenue_type": "app_developer_direct_income",
                 "amount": str(amount),
@@ -10529,9 +11065,12 @@ def get_active_ads(db: Session = Depends(get_db)):
             "hospital_image": hospital.image_url or "",
             "title": ad.title,
             "description": ad.description or "",
+            "ad_type": getattr(ad, "ad_type", "banner") or "banner",
             "image_url": ad.image_url,
+            "video_url": ad.video_url or "",
             "target_phone": ad.target_phone or hospital.phone or "",
             "target_link": ad.target_link or "",
+            "fee_charged": float(ad.fee_charged or ad.amount_paid or 0),
             "days_remaining": max(0, (ad.expires_at - now).days) if ad.expires_at else 0,
         })
 

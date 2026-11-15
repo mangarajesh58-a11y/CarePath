@@ -548,7 +548,9 @@ async function loadDashboard() {
             loadDashboardHospitals(),
             loadRevenue(),
             loadAdminCollectionSummary(),
-            loadAnalytics()
+            loadAnalytics(),
+            loadOnlineUsersCount(),
+            loadDashboardPatientsCount()
         ]);
 
         saveAdminDashboardToCache();
@@ -711,12 +713,23 @@ async function loadRevenue() {
                 `₹${tokenRevenueValue}`;
         }
 
-        const adsRevenueValue = Number(data.ads_revenue || 0);
-        const devTotalValue = Number(data.developer_total_revenue ?? (platformRevenueValue + adsRevenueValue));
+        const bannerAdsRevenueValue = Number(data.banner_ads_revenue ?? data.ads_revenue ?? 0);
+        const videoAdsRevenueValue = Number(data.video_ads_revenue ?? 0);
+        const devTotalValue = Number(data.developer_total_revenue ?? (platformRevenueValue + bannerAdsRevenueValue + videoAdsRevenueValue));
+
+        const bannerAdsEl = document.getElementById("bannerAdsRevenue");
+        if (bannerAdsEl) {
+            bannerAdsEl.textContent = `₹${bannerAdsRevenueValue}`;
+        }
+
+        const videoAdsEl = document.getElementById("videoAdsRevenue");
+        if (videoAdsEl) {
+            videoAdsEl.textContent = `₹${videoAdsRevenueValue}`;
+        }
 
         const adsRevenue = document.getElementById("adsRevenue");
         if (adsRevenue) {
-            adsRevenue.textContent = `₹${adsRevenueValue}`;
+            adsRevenue.textContent = `₹${bannerAdsRevenueValue + videoAdsRevenueValue}`;
         }
 
         const developerTotalRevenue = document.getElementById("developerTotalRevenue");
@@ -2133,223 +2146,310 @@ async function hospitalAction(
 }
 
 // =====================================================
-// LOAD TOKENS
+// LOAD TOKENS & 360° CONSULTATION DOSSIER
 // ADMIN USES /admin/tokens
 // =====================================================
 
+window.allAdminTokens = [];
+
 async function loadTokens() {
-    console.log(
-        "Loading admin tokens..."
-    );
-
-    const tokenTableBody =
-        document.getElementById(
-            "tokenTableBody"
-        );
-
-    if (!tokenTableBody) {
-        return;
-    }
+    console.log("Loading admin tokens with full patient & hospital dossiers...");
+    const tokenTableBody = document.getElementById("tokenTableBody");
+    if (!tokenTableBody) return;
 
     tokenTableBody.innerHTML = `
         <tr>
-            <td
-                colspan="11"
-                class="loading"
-            >
-                Loading tokens...
-            </td>
+            <td colspan="12" class="loading">Loading tokens and 360° dossiers...</td>
         </tr>
     `;
 
     try {
-        const response =
-            await fetch(
-                `${API}/admin/tokens`,
-                {
-                    headers:
-                        getAdminAuthHeaders()
-                }
-            );
+        const response = await fetch(`${API}/admin/tokens`, {
+            headers: getAdminAuthHeaders()
+        });
 
-        const data =
-            await readResponse(
-                response
-            );
+        const data = await readResponse(response);
 
         if (!response.ok) {
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    `HTTP ${response.status}`
-                )
-            );
+            throw new Error(getErrorMessage(data, `HTTP ${response.status}`));
         }
 
-        const tokens =
-            Array.isArray(data)
-                ? data
-                : data.tokens || [];
+        const tokens = Array.isArray(data) ? data : data.tokens || [];
+        window.allAdminTokens = tokens;
 
-        if (tokens.length === 0) {
-            tokenTableBody.innerHTML = `
-                <tr>
-                    <td
-                        colspan="11"
-                        class="loading"
-                    >
-                        No tokens found.
-                    </td>
-                </tr>
-            `;
-
-            return;
-        }
-
-        tokenTableBody.innerHTML = "";
-
-        tokens.forEach(
-            function (token) {
-                const row =
-                    document.createElement(
-                        "tr"
-                    );
-
-                const paymentStatus =
-                    String(
-                        token.payment_status ||
-                        "-"
-                    ).toUpperCase();
-
-                const tokenStatus =
-                    String(
-                        token.status ||
-                        "-"
-                    ).toUpperCase();
-
-                row.innerHTML = `
-                    <td>
-                        ${escapeHtml(
-                            token.id ?? "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            token.patient_name || "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            token.hospital || "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            token.department || "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            token.doctor || "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            token.token_number ?? "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ₹${Number(
-                            token.token_fee || 0
-                        )}
-                    </td>
-
-                    <td>
-                        ₹${Number(
-                            token.platform_fee || 0
-                        )}
-                    </td>
-
-                    <td>
-                        ₹${Number(
-                            token.total_amount ||
-                            (
-                                Number(
-                                    token.token_fee || 0
-                                ) +
-                                Number(
-                                    token.platform_fee || 0
-                                )
-                            )
-                        )}
-                    </td>
-
-                    <td>
-                        <span
-                            class="status ${
-                                paymentStatus === "PAID"
-                                    ? "status-paid"
-                                    : "status-waiting"
-                            }"
-                        >
-                            ${escapeHtml(
-                                paymentStatus
-                            )}
-                        </span>
-                    </td>
-
-                    <td>
-                        <span
-                            class="status ${
-                                tokenStatus === "SERVING"
-                                    ? "status-serving"
-                                    : tokenStatus === "COMPLETED"
-                                        ? "status-completed"
-                                        : "status-waiting"
-                            }"
-                        >
-                            ${escapeHtml(
-                                tokenStatus
-                            )}
-                        </span>
-                    </td>
-                `;
-
-                tokenTableBody.appendChild(
-                    row
-                );
-            }
-        );
-
+        renderTokensTable(tokens);
     } catch (error) {
-        console.error(
-            "Token loading error:",
-            error
-        );
-
+        console.error("Token loading error:", error);
         tokenTableBody.innerHTML = `
             <tr>
-                <td
-                    colspan="11"
-                    class="loading"
-                >
-                    ❌ Unable to load tokens.
-                    <br><br>
-                    ${escapeHtml(
-                        error.message ||
-                        "Make sure FastAPI is running."
-                    )}
+                <td colspan="12" class="loading">
+                    ❌ Unable to load tokens.<br><br>
+                    ${escapeHtml(error.message || "Make sure FastAPI is running.")}
                 </td>
             </tr>
         `;
     }
 }
+window.loadTokens = loadTokens;
+
+function renderTokensTable(tokens) {
+    const tokenTableBody = document.getElementById("tokenTableBody");
+    if (!tokenTableBody) return;
+
+    if (!tokens || tokens.length === 0) {
+        tokenTableBody.innerHTML = `
+            <tr>
+                <td colspan="12" class="loading">No tokens found.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tokenTableBody.innerHTML = "";
+
+    tokens.forEach(function (token) {
+        const row = document.createElement("tr");
+
+        const paymentStatus = String(token.payment_status || "-").toUpperCase();
+        const tokenStatus = String(token.status || "-").toUpperCase();
+
+        row.innerHTML = `
+            <td>${escapeHtml(token.id ?? "-")}</td>
+            <td><strong>${escapeHtml(token.patient_name || "-")}</strong></td>
+            <td>${escapeHtml(token.hospital || "-")}</td>
+            <td>${escapeHtml(token.department || "-")}</td>
+            <td>${escapeHtml(token.doctor || "-")}</td>
+            <td><strong style="color: #0284c7;">#${escapeHtml(token.token_number ?? "-")}</strong></td>
+            <td>₹${Number(token.token_fee || 0)}</td>
+            <td>₹${Number(token.platform_fee || 0)}</td>
+            <td><strong>₹${Number(token.total_amount || (Number(token.token_fee || 0) + Number(token.platform_fee || 0)))}</strong></td>
+            <td>
+                <span class="status ${paymentStatus === "PAID" ? "status-paid" : "status-waiting"}">
+                    ${escapeHtml(paymentStatus)}
+                </span>
+            </td>
+            <td>
+                <span class="status ${
+                    tokenStatus === "SERVING" ? "status-serving" :
+                    tokenStatus === "COMPLETED" ? "status-completed" : "status-waiting"
+                }">
+                    ${escapeHtml(tokenStatus)}
+                </span>
+            </td>
+            <td style="text-align: center;">
+                <button type="button" onclick="openTokenDossier(${token.id})" style="padding: 6px 12px; background: #0284c7; color: white; border: none; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                    🔍 360° Dossier
+                </button>
+            </td>
+        `;
+
+        tokenTableBody.appendChild(row);
+    });
+}
+window.renderTokensTable = renderTokensTable;
+
+function filterTokens() {
+    if (!window.allAdminTokens) return;
+    const query = (document.getElementById("tokenSearchInput")?.value || "").toLowerCase().trim();
+    const statusVal = (document.getElementById("tokenStatusFilter")?.value || "").toLowerCase().trim();
+    const paymentVal = (document.getElementById("tokenPaymentFilter")?.value || "").toUpperCase().trim();
+
+    let filtered = window.allAdminTokens.filter(t => {
+        const idStr = String(t.id || "");
+        const tokenNum = String(t.token_number || "");
+        const pName = String(t.patient_name || "").toLowerCase();
+        const pPhone = String(t.patient_full_details?.phone || "").toLowerCase();
+        const pEmail = String(t.patient_full_details?.email || "").toLowerCase();
+        const hName = String(t.hospital || "").toLowerCase();
+        const docName = String(t.doctor || "").toLowerCase();
+        const dept = String(t.department || "").toLowerCase();
+
+        const matchesQuery = !query || idStr.includes(query) || tokenNum.includes(query) || pName.includes(query) || pPhone.includes(query) || pEmail.includes(query) || hName.includes(query) || docName.includes(query) || dept.includes(query);
+        const matchesStatus = !statusVal || String(t.status || "").toLowerCase() === statusVal;
+        const matchesPayment = !paymentVal || String(t.payment_status || "").toUpperCase() === paymentVal;
+
+        return matchesQuery && matchesStatus && matchesPayment;
+    });
+
+    renderTokensTable(filtered);
+}
+window.filterTokens = filterTokens;
+
+function exportTokensCSV() {
+    if (!window.allAdminTokens || window.allAdminTokens.length === 0) {
+        alert("No tokens available to export.");
+        return;
+    }
+
+    let csv = "data:text/csv;charset=utf-8,";
+    csv += "Token ID,Token Number,Patient Name,Patient Phone,Patient Email,Age,Gender,Blood Group,Patient Address,Hospital Name,Hospital Phone,Department,Doctor,Room,Appointment Date,Queue Status,Payment Status,Token Fee (INR),Platform Fee (INR),Total Amount (INR),Razorpay Order ID,Razorpay Payment ID\n";
+
+    window.allAdminTokens.forEach(t => {
+        const p = t.patient_full_details || {};
+        const h = t.hospital_details || {};
+        csv += `"${t.id || ''}","${t.token_number || ''}","${(t.patient_name || p.name || '').replace(/"/g, '""')}","${p.phone || ''}","${p.email || ''}","${p.age || ''}","${p.gender || ''}","${p.blood_group || ''}","${(p.address || '').replace(/"/g, '""')}","${(t.hospital || h.name || '').replace(/"/g, '""')}","${h.phone || ''}","${(t.department || '').replace(/"/g, '""')}","${(t.doctor || '').replace(/"/g, '""')}","${t.room_number || ''}","${t.appointment_date || ''}","${t.status || ''}","${t.payment_status || ''}",${t.token_fee || 0},${t.platform_fee || 0},${t.total_amount || 0},"${t.razorpay_order_id || ''}","${t.razorpay_payment_id || ''}"\n`;
+    });
+
+    const uri = encodeURI(csv);
+    const link = document.createElement("a");
+    link.href = uri;
+    link.download = `CarePath_Tokens_Master_${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+window.exportTokensCSV = exportTokensCSV;
+
+function openTokenDossier(tokenId) {
+    const modal = document.getElementById("tokenDossierModal");
+    const body = document.getElementById("tokenDossierBody");
+    if (!modal || !body) return;
+
+    modal.style.display = "flex";
+    body.innerHTML = `<p style="text-align: center; color: #94a3b8; padding: 24px;">Loading token dossier #${tokenId}...</p>`;
+
+    const token = (window.allAdminTokens || []).find(t => t.id === tokenId);
+    if (!token) {
+        body.innerHTML = `<p style="text-align: center; color: #dc2626; padding: 24px;">Token record #${tokenId} not found.</p>`;
+        return;
+    }
+
+    const p = token.patient_full_details || {};
+    const h = token.hospital_details || {};
+
+    const bloodBadge = p.blood_group ? `<span class="badge-tag badge-blood">🩸 ${escapeHtml(p.blood_group)}</span>` : '<span style="color: #94a3b8;">Not specified</span>';
+    const statusBadge = `<span class="status ${token.status === "serving" ? "status-serving" : token.status === "completed" ? "status-completed" : "status-waiting"}">${escapeHtml(String(token.status || "").toUpperCase())}</span>`;
+    const paymentBadge = `<span class="status ${token.payment_status === "PAID" ? "status-paid" : "status-waiting"}">${escapeHtml(String(token.payment_status || "PENDING").toUpperCase())}</span>`;
+
+    body.innerHTML = `
+        <!-- PATIENT FULL IDENTITY SECTION -->
+        <div class="dossier-section">
+            <h4>👤 Patient Identity & Demographic Profile</h4>
+            <div class="dossier-grid">
+                <div class="dossier-item">
+                    <label>Full Patient Name</label>
+                    <strong>${escapeHtml(p.name || token.patient_name || "Unknown")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Phone Number</label>
+                    <strong>${escapeHtml(p.phone || "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Email Address</label>
+                    <strong>${escapeHtml(p.email || "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Age / Gender</label>
+                    <strong>${p.age ? p.age + " yrs" : "—"} / ${escapeHtml(p.gender || "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Blood Group</label>
+                    <div>${bloodBadge}</div>
+                </div>
+                <div class="dossier-item">
+                    <label>Emergency Contact</label>
+                    <strong>${escapeHtml(p.emergency_contact || "—")}</strong>
+                </div>
+                <div class="dossier-item" style="grid-column: 1 / -1;">
+                    <label>Full Address / City</label>
+                    <strong>${escapeHtml(p.address || "—")}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- HOSPITAL & DOCTOR CONSULTATION DETAILS -->
+        <div class="dossier-section" style="border-left: 4px solid #2563eb;">
+            <h4>🏥 Hospital & Doctor Consultation Venue</h4>
+            <div class="dossier-grid">
+                <div class="dossier-item">
+                    <label>Hospital Name</label>
+                    <strong style="color: #1e40af; font-size: 15px;">${escapeHtml(token.hospital || h.name || "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Department / Speciality</label>
+                    <strong>${escapeHtml(token.department || "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Consulting Doctor</label>
+                    <strong style="color: #0f172a;">${escapeHtml(token.doctor || "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Consultation Room #</label>
+                    <strong>${escapeHtml(token.room_number || "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Hospital Phone</label>
+                    <strong>${escapeHtml(h.phone || "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Hospital Location / District</label>
+                    <strong>${escapeHtml(h.address || h.district || "—")}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOKEN QUEUE & STATUS DETAILS -->
+        <div class="dossier-section" style="border-left: 4px solid #0284c7;">
+            <h4>🎫 Token Queue & Appointment Details</h4>
+            <div class="dossier-grid">
+                <div class="dossier-item">
+                    <label>Token Number</label>
+                    <strong style="font-size: 20px; color: #0284c7;">#${escapeHtml(token.token_number ?? "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Live Queue Status</label>
+                    <div style="margin-top: 4px;">${statusBadge}</div>
+                </div>
+                <div class="dossier-item">
+                    <label>Appointment Date</label>
+                    <strong>${escapeHtml(token.appointment_date || "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Estimated Wait / ETA</label>
+                    <strong>${escapeHtml(token.estimated_time || "15 mins")}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAYMENT AUDIT & TRANSACTION BREAKDOWN -->
+        <div class="dossier-section" style="border-left: 4px solid #16a34a;">
+            <h4>💳 Financial Settlement & Payment Audit</h4>
+            <div class="dossier-grid">
+                <div class="dossier-item">
+                    <label>Doctor Consultation Fee</label>
+                    <strong>₹${Number(token.token_fee || 0)}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Platform Convenience Fee</label>
+                    <strong>₹${Number(token.platform_fee || 0)}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Total Gross Amount</label>
+                    <strong style="font-size: 18px; color: #16a34a;">₹${Number(token.total_amount || (Number(token.token_fee || 0) + Number(token.platform_fee || 0)))}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Payment Gateway Status</label>
+                    <div style="margin-top: 4px;">${paymentBadge}</div>
+                </div>
+                <div class="dossier-item">
+                    <label>Razorpay Order ID</label>
+                    <strong style="font-family: monospace; font-size: 12px;">${escapeHtml(token.razorpay_order_id || "—")}</strong>
+                </div>
+                <div class="dossier-item">
+                    <label>Razorpay Payment ID</label>
+                    <strong style="font-family: monospace; font-size: 12px; color: #0284c7;">${escapeHtml(token.razorpay_payment_id || "—")}</strong>
+                </div>
+            </div>
+        </div>
+    `;
+}
+window.openTokenDossier = openTokenDossier;
+
+function closeTokenDossier() {
+    const modal = document.getElementById("tokenDossierModal");
+    if (modal) modal.style.display = "none";
+}
+window.closeTokenDossier = closeTokenDossier;
 
 // =====================================================
 // LOAD PAYMENTS
@@ -3965,3 +4065,512 @@ function exportAdminCollectionCSV() {
     document.body.removeChild(link);
 }
 window.exportAdminCollectionCSV = exportAdminCollectionCSV;
+
+// =====================================================
+// LIVE ONLINE USERS ENGINE & DIRECTORY
+// =====================================================
+
+window.allOnlineUsers = [];
+window.onlineUserFilterRole = "all";
+
+async function loadOnlineUsersCount() {
+    try {
+        const response = await fetch(`${API}/admin/online-users`, {
+            headers: getAdminAuthHeaders()
+        });
+        if (!response.ok) return;
+        const data = await readResponse(response);
+        const countEl = document.getElementById("onlineUsersCount");
+        if (countEl) {
+            countEl.textContent = data.total_online || 0;
+        }
+    } catch (e) {
+        console.warn("Could not load online users count:", e);
+    }
+}
+window.loadOnlineUsersCount = loadOnlineUsersCount;
+
+async function loadOnlineUsers() {
+    const body = document.getElementById("onlineUsersBody");
+    if (!body) return;
+
+    body.innerHTML = `<p style="text-align: center; color: #94a3b8; padding: 24px;">Scanning platform for active online sessions...</p>`;
+
+    try {
+        const response = await fetch(`${API}/admin/online-users`, {
+            headers: getAdminAuthHeaders()
+        });
+
+        const data = await readResponse(response);
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, `HTTP ${response.status}`));
+        }
+
+        window.allOnlineUsers = data.users || [];
+
+        // Update count badges
+        const countAll = document.getElementById("onlineCountAll");
+        if (countAll) countAll.textContent = data.total_online || 0;
+        const countPatients = document.getElementById("onlineCountPatients");
+        if (countPatients) countPatients.textContent = data.patients_online || 0;
+        const countHospitals = document.getElementById("onlineCountHospitals");
+        if (countHospitals) countHospitals.textContent = data.hospitals_online || 0;
+        const dashCount = document.getElementById("onlineUsersCount");
+        if (dashCount) dashCount.textContent = data.total_online || 0;
+
+        renderOnlineUsers(window.onlineUserFilterRole || "all");
+    } catch (error) {
+        console.error("Load online users error:", error);
+        body.innerHTML = `<p style="text-align: center; color: #dc2626; padding: 24px;">Failed to fetch online users: ${escapeHtml(error.message)}</p>`;
+    }
+}
+window.loadOnlineUsers = loadOnlineUsers;
+
+function filterOnlineUsers(role) {
+    window.onlineUserFilterRole = role;
+
+    // Update active tab styles
+    const btnAll = document.getElementById("onlineFilterAll");
+    const btnPatients = document.getElementById("onlineFilterPatients");
+    const btnHospitals = document.getElementById("onlineFilterHospitals");
+
+    if (btnAll && btnPatients && btnHospitals) {
+        btnAll.style.background = role === "all" ? "#2563eb" : "#f8fafc";
+        btnAll.style.color = role === "all" ? "white" : "#475569";
+        btnAll.style.border = role === "all" ? "none" : "1px solid #cbd5e1";
+
+        btnPatients.style.background = role === "patient" ? "#2563eb" : "#f8fafc";
+        btnPatients.style.color = role === "patient" ? "white" : "#475569";
+        btnPatients.style.border = role === "patient" ? "none" : "1px solid #cbd5e1";
+
+        btnHospitals.style.background = role === "hospital" ? "#2563eb" : "#f8fafc";
+        btnHospitals.style.color = role === "hospital" ? "white" : "#475569";
+        btnHospitals.style.border = role === "hospital" ? "none" : "1px solid #cbd5e1";
+    }
+
+    renderOnlineUsers(role);
+}
+window.filterOnlineUsers = filterOnlineUsers;
+
+function renderOnlineUsers(role) {
+    const body = document.getElementById("onlineUsersBody");
+    if (!body) return;
+
+    let list = window.allOnlineUsers || [];
+    if (role && role !== "all") {
+        list = list.filter(u => String(u.role || "").toLowerCase() === role.toLowerCase());
+    }
+
+    if (list.length === 0) {
+        body.innerHTML = `
+            <div style="text-align: center; padding: 36px 20px; color: #94a3b8;">
+                <div style="font-size: 32px; margin-bottom: 8px;">💤</div>
+                <div style="font-weight: 700; color: #64748b;">No active ${role === "all" ? "users" : role + "s"} online right now</div>
+                <div style="font-size: 12px; margin-top: 4px;">Active sessions within the last 3 minutes will appear here automatically.</div>
+            </div>
+        `;
+        return;
+    }
+
+    let html = `<div style="divide-y: 1px solid #f1f5f9;">`;
+    list.forEach(u => {
+        const isPatient = u.role === "patient";
+        const isHospital = u.role === "hospital";
+        const roleBadge = isPatient
+            ? `<span class="badge-tag badge-patient">👤 Patient</span>`
+            : isHospital
+                ? `<span class="badge-tag badge-hospital">🏥 Hospital Staff</span>`
+                : `<span class="badge-tag badge-admin">🛡️ Admin</span>`;
+
+        const lastActiveSec = u.last_seen_seconds_ago ?? 0;
+        let timeDisplay = "Just now";
+        if (lastActiveSec > 60) {
+            timeDisplay = `${Math.floor(lastActiveSec / 60)} min ago`;
+        } else if (lastActiveSec > 0) {
+            timeDisplay = `${lastActiveSec}s ago`;
+        }
+
+        html += `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid #f1f5f9; gap: 12px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 220px;">
+                    <div style="position: relative; width: 38px; height: 38px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1.5px solid #bfdbfe;">
+                        ${isPatient ? "👤" : isHospital ? "🏥" : "🛡️"}
+                        <span style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; border: 2px solid white;"></span>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <strong style="color: #0f172a; font-size: 14px;">${escapeHtml(u.name || "Anonymous User")}</strong>
+                            ${roleBadge}
+                        </div>
+                        <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                            ${escapeHtml(u.email || u.phone || "No direct contact")}
+                            ${u.phone && u.email ? ` • 📞 ${escapeHtml(u.phone)}` : ""}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Current Activity</div>
+                        <div style="font-size: 12.5px; color: #0284c7; font-weight: 600; font-family: monospace;">${escapeHtml(u.current_page || "Active in session")}</div>
+                    </div>
+
+                    <div style="text-align: right; min-width: 80px;">
+                        <span class="badge-tag badge-online" style="display: inline-flex; align-items: center; gap: 4px;">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #16a34a;"></span>
+                            ${timeDisplay}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += `</div>`;
+
+    body.innerHTML = html;
+}
+
+function openOnlineUsersModal() {
+    const modal = document.getElementById("onlineUsersModal");
+    if (modal) {
+        modal.style.display = "flex";
+        loadOnlineUsers();
+    }
+}
+window.openOnlineUsersModal = openOnlineUsersModal;
+
+function closeOnlineUsersModal() {
+    const modal = document.getElementById("onlineUsersModal");
+    if (modal) modal.style.display = "none";
+}
+window.closeOnlineUsersModal = closeOnlineUsersModal;
+
+// =====================================================
+// MASTER PATIENTS DIRECTORY & PATIENT 360° DOSSIER
+// =====================================================
+
+window.allAdminPatients = [];
+
+async function loadDashboardPatientsCount() {
+    try {
+        const response = await fetch(`${API}/admin/patients`, {
+            headers: getAdminAuthHeaders()
+        });
+        if (!response.ok) return;
+        const data = await readResponse(response);
+        const count = Array.isArray(data) ? data.length : data.patients?.length || 0;
+        const el = document.getElementById("patientCount");
+        if (el) el.textContent = count;
+    } catch (e) {
+        console.warn("Could not load dashboard patients count:", e);
+    }
+}
+window.loadDashboardPatientsCount = loadDashboardPatientsCount;
+
+async function loadAdminPatients() {
+    console.log("Loading master patient database...");
+    const tbody = document.getElementById("patientTableBody");
+    const msg = document.getElementById("patientMessage");
+
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="10" class="loading">Loading patient database...</td></tr>`;
+    }
+
+    try {
+        const response = await fetch(`${API}/admin/patients`, {
+            headers: getAdminAuthHeaders()
+        });
+
+        const data = await readResponse(response);
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, `HTTP ${response.status}`));
+        }
+
+        const patients = Array.isArray(data) ? data : data.patients || [];
+        window.allAdminPatients = patients;
+
+        // Update metrics
+        const totalMetric = document.getElementById("totalPatientsMetric");
+        if (totalMetric) totalMetric.textContent = patients.length;
+
+        const withTokensMetric = document.getElementById("patientsWithTokensMetric");
+        const withTokensCount = patients.filter(p => Number(p.total_tokens || 0) > 0).length;
+        if (withTokensMetric) withTokensMetric.textContent = withTokensCount;
+
+        const totalTokensMetric = document.getElementById("totalConsultationsMetric");
+        const totalConsultations = patients.reduce((acc, p) => acc + Number(p.total_tokens || 0), 0);
+        if (totalTokensMetric) totalTokensMetric.textContent = totalConsultations;
+
+        const dashCount = document.getElementById("patientCount");
+        if (dashCount) dashCount.textContent = patients.length;
+
+        renderAdminPatients(patients);
+    } catch (error) {
+        console.error("Patients load error:", error);
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="10" class="loading">❌ Failed to load patients: ${escapeHtml(error.message)}</td></tr>`;
+        }
+        if (msg) {
+            msg.className = "message error";
+            msg.textContent = error.message;
+            msg.style.display = "block";
+        }
+    }
+}
+window.loadAdminPatients = loadAdminPatients;
+
+function renderAdminPatients(patients) {
+    const tbody = document.getElementById("patientTableBody");
+    const countDisplay = document.getElementById("displayedPatientCount");
+    if (!tbody) return;
+
+    if (countDisplay) {
+        countDisplay.textContent = (patients || []).length;
+    }
+
+    if (!patients || patients.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="loading">No patients match the search or filter criteria.</td></tr>`;
+        return;
+    }
+
+    let html = "";
+    patients.forEach(p => {
+        const bloodBadge = p.blood_group ? `<span class="badge-tag badge-blood">🩸 ${escapeHtml(p.blood_group)}</span>` : '<span style="color: #94a3b8;">—</span>';
+        const tokenBadge = `<span class="badge-tag" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 12px; font-weight: 800;">🎫 ${p.total_tokens || 0}</span>`;
+
+        html += `
+            <tr>
+                <td><strong>${p.id}</strong></td>
+                <td>
+                    <strong style="color: #0f172a; font-size: 14px;">${escapeHtml(p.name || "Unknown")}</strong>
+                </td>
+                <td>${p.age ? p.age + " yrs" : "—"} / ${escapeHtml(p.gender || "—")}</td>
+                <td>${bloodBadge}</td>
+                <td>${escapeHtml(p.phone || "—")}</td>
+                <td>${escapeHtml(p.email || "—")}</td>
+                <td><span style="font-size: 12.5px; color: #475569;">${escapeHtml(p.address || "—")}</span></td>
+                <td style="text-align: center;">${tokenBadge}</td>
+                <td><span style="font-size: 12px; color: #64748b;">${p.created_at ? p.created_at.split("T")[0] : "—"}</span></td>
+                <td>
+                    <button type="button" class="btn-action btn-view" onclick="openPatientDossier(${p.id})">
+                        📋 Full Dossier
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+window.renderAdminPatients = renderAdminPatients;
+
+function filterPatients() {
+    if (!window.allAdminPatients) return;
+    const query = (document.getElementById("patientSearchInput")?.value || "").toLowerCase().trim();
+    const bloodVal = (document.getElementById("patientBloodFilter")?.value || "").toUpperCase().trim();
+
+    const filtered = window.allAdminPatients.filter(p => {
+        const name = String(p.name || "").toLowerCase();
+        const phone = String(p.phone || "").toLowerCase();
+        const email = String(p.email || "").toLowerCase();
+        const address = String(p.address || "").toLowerCase();
+        const idStr = String(p.id || "");
+
+        const matchesQuery = !query || name.includes(query) || phone.includes(query) || email.includes(query) || address.includes(query) || idStr.includes(query);
+        const matchesBlood = !bloodVal || String(p.blood_group || "").toUpperCase() === bloodVal;
+
+        return matchesQuery && matchesBlood;
+    });
+
+    renderAdminPatients(filtered);
+}
+window.filterPatients = filterPatients;
+
+function exportPatientsCSV() {
+    if (!window.allAdminPatients || window.allAdminPatients.length === 0) {
+        alert("No patients available to export.");
+        return;
+    }
+
+    let csv = "data:text/csv;charset=utf-8,";
+    csv += "Patient ID,Full Name,Age,Gender,Blood Group,Phone,Email,Address,Emergency Contact,Total Bookings,Registration Date\n";
+
+    window.allAdminPatients.forEach(p => {
+        csv += `"${p.id}","${(p.name || '').replace(/"/g, '""')}","${p.age || ''}","${p.gender || ''}","${p.blood_group || ''}","${p.phone || ''}","${p.email || ''}","${(p.address || '').replace(/"/g, '""')}","${p.emergency_contact || ''}",${p.total_tokens || 0},"${p.created_at || ''}"\n`;
+    });
+
+    const uri = encodeURI(csv);
+    const link = document.createElement("a");
+    link.href = uri;
+    link.download = `CarePath_Patient_Directory_${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+window.exportPatientsCSV = exportPatientsCSV;
+
+async function openPatientDossier(patientId) {
+    const modal = document.getElementById("patientDossierModal");
+    const body = document.getElementById("patientDossierBody");
+    if (!modal || !body) return;
+
+    modal.style.display = "flex";
+    body.innerHTML = `<p style="text-align: center; color: #94a3b8; padding: 24px;">Loading patient profile #${patientId}...</p>`;
+
+    try {
+        const response = await fetch(`${API}/admin/patients/${patientId}`, {
+            headers: getAdminAuthHeaders()
+        });
+
+        const data = await readResponse(response);
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, `HTTP ${response.status}`));
+        }
+
+        const p = data.patient || {};
+        const tokens = data.tokens || [];
+
+        const bloodBadge = p.blood_group ? `<span class="badge-tag badge-blood">🩸 ${escapeHtml(p.blood_group)}</span>` : '<span style="color: #94a3b8;">Not specified</span>';
+
+        let tokensTableHtml = "";
+        if (tokens.length === 0) {
+            tokensTableHtml = `<p style="color: #94a3b8; font-size: 13px; margin: 12px 0;">No OPD consultations booked by this patient yet.</p>`;
+        } else {
+            tokensTableHtml = `
+                <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 10px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+                        <thead>
+                            <tr style="background: #f8fafc; color: #475569; border-bottom: 1.5px solid #e2e8f0;">
+                                <th style="padding: 10px 12px;">Token #</th>
+                                <th style="padding: 10px 12px;">Hospital</th>
+                                <th style="padding: 10px 12px;">Department</th>
+                                <th style="padding: 10px 12px;">Doctor</th>
+                                <th style="padding: 10px 12px;">Room</th>
+                                <th style="padding: 10px 12px;">Date</th>
+                                <th style="padding: 10px 12px;">Queue Status</th>
+                                <th style="padding: 10px 12px;">Payment</th>
+                                <th style="padding: 10px 12px; text-align: right;">Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            tokens.forEach(t => {
+                const isPaid = String(t.payment_status || "").toUpperCase() === "PAID";
+                tokensTableHtml += `
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 10px 12px; font-weight: 800; color: #0284c7;">#${t.token_number}</td>
+                        <td style="padding: 10px 12px; font-weight: 700; color: #0f172a;">${escapeHtml(t.hospital || "—")}</td>
+                        <td style="padding: 10px 12px;">${escapeHtml(t.department || "—")}</td>
+                        <td style="padding: 10px 12px;">${escapeHtml(t.doctor || "—")}</td>
+                        <td style="padding: 10px 12px;">${escapeHtml(t.room_number || "—")}</td>
+                        <td style="padding: 10px 12px; color: #64748b;">${escapeHtml(t.appointment_date || "—")}</td>
+                        <td style="padding: 10px 12px;">
+                            <span class="status ${t.status === "serving" ? "status-serving" : t.status === "completed" ? "status-completed" : "status-waiting"}" style="font-size: 11px;">
+                                ${escapeHtml(String(t.status || "").toUpperCase())}
+                            </span>
+                        </td>
+                        <td style="padding: 10px 12px;">
+                            <span class="status ${isPaid ? "status-paid" : "status-waiting"}" style="font-size: 11px;">
+                                ${escapeHtml(String(t.payment_status || "PENDING").toUpperCase())}
+                            </span>
+                        </td>
+                        <td style="padding: 10px 12px; text-align: right; font-weight: 700; color: #16a34a;">
+                            ₹${Number(t.total_amount || 0)}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tokensTableHtml += `</tbody></table></div>`;
+        }
+
+        body.innerHTML = `
+            <!-- DEMOGRAPHIC PROFILE -->
+            <div class="dossier-section">
+                <h4>👤 Patient Master Demographics</h4>
+                <div class="dossier-grid">
+                    <div class="dossier-item">
+                        <label>Patient ID</label>
+                        <strong>#${p.id}</strong>
+                    </div>
+                    <div class="dossier-item">
+                        <label>Full Name</label>
+                        <strong style="color: #0f172a; font-size: 15px;">${escapeHtml(p.name || "Unknown")}</strong>
+                    </div>
+                    <div class="dossier-item">
+                        <label>Age & Gender</label>
+                        <strong>${p.age ? p.age + " years old" : "—"} / ${escapeHtml(p.gender || "—")}</strong>
+                    </div>
+                    <div class="dossier-item">
+                        <label>Blood Group</label>
+                        <div>${bloodBadge}</div>
+                    </div>
+                    <div class="dossier-item">
+                        <label>Primary Phone</label>
+                        <strong>${escapeHtml(p.phone || "—")}</strong>
+                    </div>
+                    <div class="dossier-item">
+                        <label>Email Address</label>
+                        <strong>${escapeHtml(p.email || "—")}</strong>
+                    </div>
+                    <div class="dossier-item">
+                        <label>Emergency Contact</label>
+                        <strong>${escapeHtml(p.emergency_contact || "—")}</strong>
+                    </div>
+                    <div class="dossier-item">
+                        <label>Account Created Date</label>
+                        <strong>${p.created_at ? p.created_at.split("T")[0] : "—"}</strong>
+                    </div>
+                    <div class="dossier-item" style="grid-column: 1 / -1;">
+                        <label>Residential Address / City</label>
+                        <strong>${escapeHtml(p.address || "—")}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- APPOINTMENT & CONSULTATION HISTORY ACROSS ALL HOSPITALS -->
+            <div class="dossier-section" style="border-left: 4px solid #7c3aed;">
+                <h4>🎫 Cross-Hospital OPD Consultation History (${tokens.length} Total Bookings)</h4>
+                ${tokensTableHtml}
+            </div>
+        `;
+
+    } catch (error) {
+        console.error("Open patient dossier error:", error);
+        body.innerHTML = `<p style="text-align: center; color: #dc2626; padding: 24px;">Failed to load patient profile: ${escapeHtml(error.message)}</p>`;
+    }
+}
+window.openPatientDossier = openPatientDossier;
+
+function closePatientDossier() {
+    const modal = document.getElementById("patientDossierModal");
+    if (modal) modal.style.display = "none";
+}
+window.closePatientDossier = closePatientDossier;
+
+// =========================================================
+// LIVE ADMIN PRESENCE HEARTBEAT
+// =========================================================
+function sendAdminHeartbeat() {
+    try {
+        const token = localStorage.getItem("adminToken");
+        if (!token) return;
+        const payload = {
+            user_id: "admin_1",
+            user_role: "admin",
+            user_name: "Master Admin",
+            user_email: "admin@carepath.health",
+            current_page: window.location.pathname.split("/").pop() || "admin_dashboard"
+        };
+        fetch(`${API}/api/heartbeat`, {
+            method: "POST",
+            headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload)
+        }).catch(() => {});
+    } catch (e) {}
+}
+if (typeof window !== "undefined") {
+    setTimeout(sendAdminHeartbeat, 2000);
+    setInterval(sendAdminHeartbeat, 45000);
+}
