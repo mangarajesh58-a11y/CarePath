@@ -3,225 +3,476 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#2563eb">
     <title>Promote Hospital & Manage Ads - CarePath</title>
+    
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="carepath-ai-small.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+    
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 
     <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --primary-border: #bfdbfe;
+            --secondary: #06b6d4;
+            --purple: #7c3aed;
+            --purple-light: #f5f3ff;
+            --purple-border: #ddd6fe;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f4f7fb;
-            color: #172554;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f8fafc;
+            background-image: 
+                radial-gradient(600px 300px at 50% 0px, rgba(37, 99, 235, 0.05), transparent),
+                radial-gradient(400px 300px at 100% 200px, rgba(124, 58, 237, 0.04), transparent);
+            background-attachment: fixed;
+            color: var(--slate-900);
+            min-height: 100vh;
+            padding-top: var(--safe-top);
+            padding-bottom: calc(var(--safe-bottom) + 84px);
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior-y: contain;
+            overflow-x: hidden;
         }
 
-        .page-container {
+        /* =====================================================
+           MOBILE NATIVE APP BAR (TOP BAR)
+        ===================================================== */
+        .mobile-app-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+            padding: 10px 14px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
             width: 100%;
-            max-width: 1050px;
-            margin: auto;
-            padding: 25px;
         }
 
-        /* HEADER */
-        header {
-            background: white;
-            border-radius: 16px;
-            padding: 20px 25px;
+        @media (min-width: 900px) {
+            .mobile-app-header {
+                padding: 14px 24px;
+            }
+        }
+
+        .mobile-app-bar-inner {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            justify-content: space-between;
+            gap: 10px;
+            max-width: 1100px;
+            margin: 0 auto;
         }
 
-        header h1 {
-            margin: 0 0 5px;
-            color: #1976d2;
-            font-size: 26px;
+        .app-brand-left {
             display: flex;
             align-items: center;
             gap: 10px;
+            min-width: 0;
+            flex: 1;
         }
 
-        header p {
-            margin: 0;
-            color: #64748b;
-            font-size: 14px;
+        .app-back-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--slate-100);
+            color: var(--slate-700);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .app-back-btn:hover {
+            background: var(--slate-200);
+            color: var(--primary);
+        }
+
+        .app-brand-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(124, 58, 237, 0.25);
+            color: #ffffff;
+            font-size: 19px;
+            flex-shrink: 0;
+        }
+
+        .app-title-group {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .app-page-title {
+            font-size: 15.5px;
+            font-weight: 800;
+            color: var(--slate-900);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            letter-spacing: -0.3px;
+        }
+
+        .app-hospital-subtitle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: var(--slate-500);
+            font-weight: 600;
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .header-actions {
             display: flex;
-            gap: 12px;
             align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
         }
 
-        .btn-nav-dashboard {
-            background: #e2e8f0;
-            color: #1e293b;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 14px;
+        .btn-header-refresh {
+            background: var(--purple-light);
+            color: var(--purple);
+            border: 1px solid var(--purple-border);
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 800;
             cursor: pointer;
-            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-header-refresh:hover {
+            background: #ede9fe;
+        }
+
+        .btn-header-logout {
+            border: none;
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 7px 12px;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
 
-        .btn-nav-dashboard:hover {
-            background: #cbd5e1;
+        .btn-header-logout:hover {
+            background: #fecaca;
         }
 
-        .logout {
-            border: none;
-            background: #dc2626;
-            color: white;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
+        /* =====================================================
+           PAGE CONTAINER & RESPONSIVE CONSTRAINTS
+        ===================================================== */
+        .page-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 12px 14px 24px 14px;
         }
 
-        .logout:hover {
-            background: #b91c1c;
+        @media (min-width: 900px) {
+            .page-container {
+                max-width: 1100px;
+                padding: 18px 24px 30px 24px;
+            }
         }
 
-        /* HERO BANNER */
+        /* =====================================================
+           WELCOME HERO CARD
+        ===================================================== */
         .welcome-ad {
-            background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 50%, #1976d2 100%);
+            background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 55%, #2563eb 100%);
             color: white;
-            padding: 30px;
+            padding: 16px 18px;
             border-radius: 16px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 25px rgba(109, 40, 217, 0.25);
+            margin-bottom: 16px;
+            box-shadow: 0 8px 20px rgba(109, 40, 217, 0.2);
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 20px;
+            gap: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .welcome-ad {
+                padding: 22px 26px;
+                border-radius: 18px;
+                margin-bottom: 22px;
+            }
+        }
+
+        .welcome-ad-text {
+            flex: 1;
+            min-width: 220px;
         }
 
         .welcome-ad-text h2 {
-            margin: 0 0 8px;
-            font-size: 24px;
+            margin: 0 0 6px;
+            font-size: 16px;
+            font-weight: 800;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
+            letter-spacing: -0.2px;
+        }
+
+        @media (min-width: 768px) {
+            .welcome-ad-text h2 {
+                font-size: 20px;
+            }
         }
 
         .welcome-ad-text p {
             margin: 0;
             opacity: 0.95;
-            font-size: 15px;
-            line-height: 1.5;
-            max-width: 620px;
+            font-size: 12.5px;
+            line-height: 1.45;
+            color: #f5f3ff;
         }
 
         .welcome-ad-badge {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(8px);
-            border: 1.5px solid rgba(255, 255, 255, 0.4);
-            padding: 14px 22px;
-            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            padding: 8px 14px;
+            border-radius: 12px;
             text-align: right;
+            align-self: flex-start;
         }
 
         .welcome-ad-badge .rate {
-            font-size: 26px;
+            font-size: 16px;
             font-weight: 800;
             color: #ffffff;
+            letter-spacing: -0.3px;
         }
 
         .welcome-ad-badge .term {
-            font-size: 12px;
+            font-size: 10.5px;
             color: #ede9fe;
             font-weight: 600;
+            margin-top: 1px;
         }
 
-        /* GRID CONTENT */
+        /* =====================================================
+           RESPONSIVE GRID LAYOUT
+        ===================================================== */
         .ads-grid {
             display: grid;
-            grid-template-columns: 1.15fr 0.85fr;
-            gap: 25px;
+            grid-template-columns: 1fr;
+            gap: 16px;
             align-items: start;
         }
 
+        @media (min-width: 900px) {
+            .ads-grid {
+                grid-template-columns: 1.12fr 0.88fr;
+                gap: 22px;
+            }
+        }
+
         .form-card, .list-card {
-            background: white;
-            padding: 28px;
+            background: #ffffff;
+            padding: 16px 14px;
             border-radius: 16px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+        }
+
+        @media (min-width: 768px) {
+            .form-card, .list-card {
+                padding: 24px;
+            }
         }
 
         .card-header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 14px;
-            border-bottom: 1.5px solid #f1f5f9;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--slate-100);
         }
 
         .card-header-row h2 {
             margin: 0;
-            font-size: 20px;
-            color: #1e293b;
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--slate-900);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            letter-spacing: -0.2px;
         }
 
         .features-pill-row {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .feat-pill {
-            background: #f5f3ff;
-            color: #6d28d9;
-            border: 1px solid #ddd6fe;
-            padding: 5px 11px;
+            background: var(--purple-light);
+            color: var(--purple);
+            border: 1px solid var(--purple-border);
+            padding: 3px 8px;
             border-radius: 999px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
         }
 
-        /* FORM ELEMENTS */
+        /* =====================================================
+           FORMAT SWITCHER (BANNER VS VIDEO SPOTLIGHT)
+        ===================================================== */
+        .format-switcher-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .format-card {
+            border: 2px solid var(--slate-200);
+            border-radius: 12px;
+            background: #ffffff;
+            padding: 10px 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            user-select: none;
+        }
+
+        @media (min-width: 480px) {
+            .format-card {
+                padding: 12px 14px;
+                gap: 10px;
+            }
+        }
+
+        .format-card:hover {
+            border-color: #c084fc;
+            background: #faf5ff;
+        }
+
+        .format-card.active {
+            border-color: var(--purple);
+            background: #faf5ff;
+            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.12);
+        }
+
+        .format-icon {
+            font-size: 22px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 480px) {
+            .format-icon {
+                font-size: 26px;
+            }
+        }
+
+        .format-title {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 800;
+            color: var(--slate-900);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media (min-width: 480px) {
+            .format-title {
+                font-size: 13.5px;
+            }
+        }
+
+        .format-fee {
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        /* =====================================================
+           FORM CONTROLS & INPUTS
+        ===================================================== */
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 14px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             font-weight: 700;
-            font-size: 13px;
-            color: #334155;
+            font-size: 12.5px;
+            color: var(--slate-700);
         }
 
         .form-group input,
         .form-group textarea {
             width: 100%;
-            padding: 12px 14px;
-            border: 1.5px solid #cbd5e1;
+            padding: 10px 12px;
+            border: 1.5px solid var(--slate-300);
             border-radius: 10px;
-            font-size: 14px;
+            font-size: 13.5px;
             font-family: inherit;
-            color: #1e293b;
-            background: #f8fafc;
+            color: var(--slate-800);
+            background: var(--slate-50);
             outline: none;
             transition: all 0.2s;
             box-sizing: border-box;
@@ -229,178 +480,152 @@
 
         .form-group input:focus,
         .form-group textarea:focus {
-            border-color: #8b5cf6;
+            border-color: var(--purple);
             background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
         }
 
-        /* DROPZONE */
+        .form-row-2col {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 600px) {
+            .form-row-2col {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* DROPZONES */
         .ad-dropzone {
-            border: 2px dashed #cbd5e1;
+            border: 2px dashed var(--slate-300);
             border-radius: 12px;
-            padding: 24px 16px;
+            padding: 16px 12px;
             text-align: center;
-            background: #f8fafc;
+            background: var(--slate-50);
             cursor: pointer;
             transition: all 0.2s;
+            user-select: none;
         }
 
         .ad-dropzone:hover, .ad-dropzone.dragover {
-            border-color: #8b5cf6;
-            background: #f5f3ff;
+            border-color: var(--purple);
+            background: #faf5ff;
         }
 
         .ad-dropzone-icon {
-            font-size: 32px;
+            font-size: 28px;
             margin-bottom: 4px;
         }
 
         .ad-preview-wrapper {
-            margin-top: 12px;
+            margin-top: 10px;
             border-radius: 10px;
             overflow: hidden;
             display: none;
-            border: 1.5px solid #e2e8f0;
+            border: 1.5px solid var(--slate-200);
             position: relative;
-            max-height: 200px;
+            max-height: 180px;
             background: #000;
         }
 
         .ad-preview-wrapper img {
             width: 100%;
-            height: 200px;
+            height: 180px;
             object-fit: cover;
             display: block;
         }
 
         .ad-preview-badge {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(0, 0, 0, 0.7);
+            top: 6px;
+            right: 6px;
+            background: rgba(0, 0, 0, 0.75);
             color: #fff;
-            padding: 3px 8px;
+            padding: 2px 7px;
             border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        
-        /* AD FORMAT SWITCHER */
-        .format-card {
-            border: 2px solid #cbd5e1;
-            border-radius: 12px;
-            background: #ffffff;
-            padding: 14px 16px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .format-card:hover {
-            border-color: #a855f7;
-            background: #faf5ff;
-        }
-
-        .format-card.active {
-            border-color: #7c3aed;
-            background: #faf5ff;
-            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.15);
+            font-size: 10.5px;
+            font-weight: 700;
         }
 
         .video-source-pill {
-            padding: 6px 14px;
+            padding: 5px 11px;
             border-radius: 999px;
-            border: 1px solid #cbd5e1;
-            background: #f8fafc;
-            color: #475569;
-            font-size: 12px;
+            border: 1px solid var(--slate-300);
+            background: var(--slate-50);
+            color: var(--slate-600);
+            font-size: 11px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .video-source-pill.active {
-            background: #7c3aed;
+            background: var(--purple);
             color: #ffffff;
-            border-color: #7c3aed;
-        }
-
-        .badge-video {
-            background: #f3e8ff;
-            color: #7e22ce;
-            border: 1px solid #d8b4fe;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .badge-banner {
-            background: #eff6ff;
-            color: #1d4ed8;
-            border: 1px solid #bfdbfe;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
+            border-color: var(--purple);
         }
 
         /* PRICING BREAKDOWN BOX */
         .pricing-box {
-            background: #f8fafc;
-            border: 1.5px solid #e2e8f0;
+            background: var(--slate-50);
+            border: 1.5px solid var(--slate-200);
             border-radius: 12px;
-            padding: 14px 18px;
-            margin-bottom: 20px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
         }
 
         .pricing-row {
             display: flex;
             justify-content: space-between;
-            font-size: 13px;
-            color: #475569;
-            margin-bottom: 6px;
+            font-size: 12.5px;
+            color: var(--slate-600);
+            margin-bottom: 5px;
         }
 
         .pricing-row.total {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 800;
-            color: #1e293b;
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px dashed #cbd5e1;
+            color: var(--slate-900);
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px dashed var(--slate-300);
         }
 
         .pricing-row.total .price {
-            color: #7c3aed;
-            font-size: 18px;
+            color: var(--purple);
+            font-size: 17px;
         }
 
         /* SUBMIT BUTTON */
         .ad-submit-btn {
             width: 100%;
-            padding: 15px;
+            min-height: 48px;
+            padding: 12px 16px;
             border: none;
             border-radius: 12px;
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
             color: #ffffff;
-            font-size: 16px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 800;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
             transition: all 0.2s;
+            letter-spacing: 0.2px;
         }
 
         .ad-submit-btn:hover {
             opacity: 0.95;
             transform: translateY(-1px);
+        }
+
+        .ad-submit-btn:active {
+            transform: scale(0.98);
         }
 
         .ad-submit-btn:disabled {
@@ -412,38 +637,57 @@
         /* ALERT BOX */
         #adAlert {
             display: none;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border-radius: 10px;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 600;
-            margin-bottom: 18px;
+            margin-bottom: 14px;
             line-height: 1.4;
         }
 
-        /* CAMPAIGN LIST ITEMS */
+        /* =====================================================
+           CAMPAIGN LIST ITEMS (MOBILE OPTIMIZED)
+        ===================================================== */
         .ad-item {
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--slate-200);
             border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 14px;
+            padding: 12px;
+            margin-bottom: 12px;
             display: flex;
-            gap: 14px;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
             background: #ffffff;
             transition: all 0.2s;
         }
 
+        @media (min-width: 600px) {
+            .ad-item {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+            }
+        }
+
         .ad-item:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-            border-color: #cbd5e1;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            border-color: var(--slate-300);
+        }
+
+        .ad-item-main {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
         }
 
         .ad-thumb {
-            width: 85px;
-            height: 60px;
+            width: 70px;
+            height: 52px;
             border-radius: 8px;
             object-fit: cover;
-            background: #f1f5f9;
+            background: var(--slate-100);
             flex-shrink: 0;
         }
 
@@ -453,83 +697,208 @@
         }
 
         .ad-item-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0 0 4px;
+            font-size: 13.5px;
+            font-weight: 800;
+            color: var(--slate-900);
+            margin: 0;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .ad-item-meta {
-            font-size: 12px;
-            color: #64748b;
+            font-size: 11px;
+            color: var(--slate-500);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
+            margin-top: 3px;
+        }
+
+        .ad-item-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-end;
+            width: 100%;
+        }
+
+        @media (min-width: 600px) {
+            .ad-item-actions {
+                width: auto;
+            }
+        }
+
+        .btn-watch-ad {
+            background: var(--purple-light);
+            color: var(--purple);
+            border: 1px solid var(--purple-border);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 11.5px;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        @media (min-width: 600px) {
+            .btn-watch-ad {
+                flex: none;
+            }
+        }
+
+        .btn-delete-ad {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fca5a5;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 11.5px;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        @media (min-width: 600px) {
+            .btn-delete-ad {
+                flex: none;
+            }
+        }
+
+        .badge-video {
+            background: #f3e8ff;
+            color: #7e22ce;
+            border: 1px solid #d8b4fe;
+            padding: 2px 7px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .badge-banner {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            padding: 2px 7px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
         }
 
         .badge-active {
             background: #dcfce7;
             color: #15803d;
-            padding: 2px 8px;
+            padding: 2px 7px;
             border-radius: 999px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
         }
 
         .badge-expired {
             background: #fee2e2;
             color: #b91c1c;
-            padding: 2px 8px;
+            padding: 2px 7px;
             border-radius: 999px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
         }
 
         .badge-pending {
             background: #fef3c7;
             color: #b45309;
-            padding: 2px 8px;
+            padding: 2px 7px;
             border-radius: 999px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
         }
 
-        /* EMPTY STATE */
         .empty-ads {
             text-align: center;
-            padding: 40px 15px;
-            color: #94a3b8;
+            padding: 30px 15px;
+            color: var(--slate-400);
         }
 
         .empty-ads-icon {
-            font-size: 40px;
-            margin-bottom: 8px;
+            font-size: 34px;
+            margin-bottom: 6px;
         }
 
-        /* FOOTER / BACK */
-        .bottom-nav {
-            margin-top: 30px;
-            text-align: center;
+        /* =====================================================
+           FIXED BOTTOM APP NAVIGATION DOCK (NATIVE MOBILE DOCK)
+        ===================================================== */
+        .mobile-bottom-dock {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(226, 232, 240, 0.9);
+            padding: 6px 10px calc(var(--safe-bottom) + 6px) 10px;
+            box-shadow: 0 -4px 18px rgba(15, 23, 42, 0.06);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
         }
 
-        @media (max-width: 900px) {
-            .ads-grid {
-                grid-template-columns: 1fr;
+        .dock-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            text-decoration: none;
+            color: var(--slate-500);
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 6px 8px;
+            border-radius: 12px;
+            transition: all 0.15s ease;
+            min-width: 50px;
+            position: relative;
+            user-select: none;
+        }
+
+        .dock-item:active {
+            transform: scale(0.92);
+        }
+
+        .dock-item.active {
+            color: var(--primary);
+        }
+
+        .dock-icon {
+            font-size: 19px;
+            line-height: 1;
+        }
+
+        @media (max-width: 480px) {
+            .mobile-bottom-dock {
+                padding: 4px 4px calc(var(--safe-bottom) + 5px) 4px;
             }
 
-            header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
+            .dock-item {
+                min-width: 0;
+                flex: 1;
+                padding: 4px 1px;
+                font-size: 9.5px;
             }
 
-            .header-actions {
-                width: 100%;
-                justify-content: space-between;
+            .dock-icon {
+                font-size: 18px;
             }
         }
     </style>
@@ -537,25 +906,37 @@
 
 <body>
 
-<div class="page-container">
-
-    <!-- HEADER -->
-    <header>
-        <div>
-            <h1>📢 Promote Hospital</h1>
-            <p>Upload promotional banners and reach thousands of patients searching for care.</p>
-        </div>
-        <div class="header-actions">
-            <a href="dashboard.html" class="btn-nav-dashboard">← Back to Dashboard</a>
-            <button class="logout" id="logoutButton">Logout</button>
+    <!-- MOBILE NATIVE APP HEADER -->
+    <header class="mobile-app-header">
+        <div class="mobile-app-bar-inner">
+            <div class="app-brand-left">
+                <a href="dashboard.html" class="app-back-btn" aria-label="Back to Dashboard">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </a>
+                <div class="app-brand-avatar">📢</div>
+                <div class="app-title-group">
+                    <div class="app-page-title">Promote Hospital</div>
+                    <div class="app-hospital-subtitle" id="topHospitalName">Spotlight Ads & Campaigns</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="button" class="btn-header-refresh" onclick="loadCampaigns()" title="Refresh Campaigns" aria-label="Refresh">
+                    ↻
+                </button>
+                <button class="btn-header-logout" id="logoutButton" title="Logout">
+                    Logout
+                </button>
+            </div>
         </div>
     </header>
+
+<div class="page-container">
 
     <!-- WELCOME / VALUE PROP BANNER -->
     <div class="welcome-ad">
         <div class="welcome-ad-text">
-            <h2>⭐ Boost Patient Bookings with Sponsored Ads</h2>
-            <p>Your hospital banner is featured in the patient scrolling list <strong>after every 5 hospitals</strong>, rotating dynamically with direct "Book Appointment" and "Call" action buttons for 30 full days.</p>
+            <h2>⭐ Boost Patient Footfall with Ads</h2>
+            <p>Your hospital is featured in the patient discovery list <strong>after every 5 hospitals</strong>, rotating dynamically with direct booking buttons for 30 days.</p>
         </div>
         <div class="welcome-ad-badge">
             <div class="rate" id="welcomeRateDisplay">₹999 / ₹1,999</div>
@@ -563,7 +944,7 @@
         </div>
     </div>
 
-    <!-- MAIN TWO COLUMN GRID -->
+    <!-- MAIN GRID -->
     <div class="ads-grid">
 
         <!-- COLUMN 1: UPLOAD & LAUNCH FORM -->
@@ -573,32 +954,32 @@
             </div>
 
             <div class="features-pill-row">
-                <span class="feat-pill">✓ 30-Day Active Placement</span>
-                <span class="feat-pill">✓ Feed Injection (Every 5th Hospital)</span>
-                <span class="feat-pill">✓ Rotating Patient View</span>
+                <span class="feat-pill">✓ 30-Day Placement</span>
+                <span class="feat-pill">✓ Every 5th Hospital</span>
+                <span class="feat-pill">✓ Patient App Rotating View</span>
             </div>
 
             <div id="adAlert"></div>
 
             <form id="uploadAdForm">
                 <!-- CAMPAIGN FORMAT SELECTOR (BANNER VS VIDEO SPOTLIGHT) -->
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label style="font-weight: 800; font-size: 13.5px; color: #0f172a; margin-bottom: 8px; display: block;">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="font-weight: 800; font-size: 13px; color: var(--slate-900); margin-bottom: 8px; display: block;">
                         1. Choose Campaign Format *
                     </label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="format-switcher-grid">
                         <div id="formatCardBanner" class="format-card active" onclick="selectAdFormat('banner')">
-                            <div style="font-size: 28px;">🖼️</div>
-                            <div>
-                                <strong style="display: block; font-size: 14px; color: #0f172a;">Standard Banner</strong>
-                                <span style="font-size: 12px; color: #2563eb; font-weight: 700;">₹<span class="lbl-banner-fee">999</span> • 30 Days</span>
+                            <span class="format-icon">🖼️</span>
+                            <div style="min-width: 0; flex: 1;">
+                                <strong class="format-title">Standard Banner</strong>
+                                <span class="format-fee" style="color: #2563eb;">₹<span class="lbl-banner-fee">999</span> • 30 Days</span>
                             </div>
                         </div>
                         <div id="formatCardVideo" class="format-card" onclick="selectAdFormat('video')">
-                            <div style="font-size: 28px;">🎬</div>
-                            <div>
-                                <strong style="display: block; font-size: 14px; color: #0f172a;">Video Spotlight</strong>
-                                <span style="font-size: 12px; color: #7c3aed; font-weight: 700;">₹<span class="lbl-video-fee">1,999</span> • 30 Days</span>
+                            <span class="format-icon">🎬</span>
+                            <div style="min-width: 0; flex: 1;">
+                                <strong class="format-title">Video Spotlight</strong>
+                                <span class="format-fee" style="color: #7c3aed;">₹<span class="lbl-video-fee">1,999</span> • 30 Days</span>
                             </div>
                         </div>
                     </div>
@@ -609,8 +990,8 @@
                     <label for="bannerFileInput">Promotional Banner Photo * (JPG, PNG, or WebP - max 5MB)</label>
                     <div class="ad-dropzone" id="adDropzone">
                         <div class="ad-dropzone-icon">🖼️</div>
-                        <div style="font-size: 14px; font-weight: 700; color: #334155;">Click to browse or drag & drop photo here</div>
-                        <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Recommended: 16:9 ratio or 1200×500 px for optimal mobile & desktop clarity</div>
+                        <div style="font-size: 13.5px; font-weight: 700; color: var(--slate-700);">Click to browse or drag & drop photo here</div>
+                        <div style="font-size: 11px; color: var(--slate-400); margin-top: 3px;">Recommended: 16:9 ratio or 1200×500 px for optimal clarity</div>
                         <input type="file" id="bannerFileInput" accept="image/jpeg,image/png,image/webp" style="display: none;" required>
                     </div>
 
@@ -621,12 +1002,12 @@
                 </div>
 
                 <!-- SECTION B: VIDEO SPOTLIGHT UPLOAD (Visible for Video format) -->
-                <div id="videoSection" class="form-group" style="display: none; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                        <label style="font-weight: 800; font-size: 13.5px; color: #7c3aed; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <div id="videoSection" class="form-group" style="display: none; background: #faf5ff; border: 1.5px solid #e9d5ff; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+                        <label style="font-weight: 800; font-size: 13px; color: var(--purple); display: flex; align-items: center; gap: 6px; margin: 0;">
                             <span>🎬</span> Video Creative Source *
                         </label>
-                        <div style="display: flex; gap: 6px;">
+                        <div style="display: flex; gap: 5px;">
                             <button type="button" id="tabVideoFile" class="video-source-pill active" onclick="switchVideoSourceTab('file')">📁 Upload MP4 File</button>
                             <button type="button" id="tabVideoUrl" class="video-source-pill" onclick="switchVideoSourceTab('url')">🔗 Video Link URL</button>
                         </div>
@@ -636,70 +1017,69 @@
                     <div id="videoFileBlock">
                         <div class="ad-dropzone" id="videoDropzone" style="background: #ffffff;">
                             <div class="ad-dropzone-icon">🎬</div>
-                            <div style="font-size: 14px; font-weight: 700; color: #1e293b;" id="videoDropText">Click to browse or drag & drop video file</div>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Supported: MP4, WebM, MOV (Max 30 MB • Recommended 15 - 45 seconds)</div>
+                            <div style="font-size: 13.5px; font-weight: 700; color: var(--slate-800);" id="videoDropText">Click to browse or drag & drop video file</div>
+                            <div style="font-size: 11px; color: var(--slate-500); margin-top: 3px;">Supported: MP4, WebM, MOV (Max 30 MB • 15 - 45s recommended)</div>
                             <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/quicktime,video/ogg" style="display: none;">
                         </div>
                     </div>
 
                     <!-- Video URL Option -->
                     <div id="videoUrlBlock" style="display: none;">
-                        <input type="url" id="videoUrlInput" placeholder="e.g. https://example.com/promo.mp4 or YouTube video link" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;" oninput="onVideoUrlInputChange(this.value)">
-                        <div style="font-size: 11.5px; color: #64748b; margin-top: 4px;">Direct MP4/WebM video streams or YouTube URLs are supported.</div>
+                        <input type="url" id="videoUrlInput" placeholder="e.g. https://example.com/promo.mp4 or direct stream link" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid var(--slate-300); border-radius: 8px; font-size: 13px;" oninput="onVideoUrlInputChange(this.value)">
+                        <div style="font-size: 11px; color: var(--slate-500); margin-top: 4px;">Direct MP4/WebM video stream URLs are supported.</div>
                     </div>
 
                     <!-- Live Video Preview Player -->
-                    <div id="videoPreviewContainer" style="display: none; margin-top: 14px; border-radius: 10px; overflow: hidden; background: #000; border: 1.5px solid #cbd5e1; position: relative;">
-                        <video id="videoPreviewPlayer" controls playsinline style="width: 100%; max-height: 240px; display: block; margin: auto;"></video>
+                    <div id="videoPreviewContainer" style="display: none; margin-top: 10px; border-radius: 10px; overflow: hidden; background: #000; border: 1.5px solid var(--slate-300); position: relative;">
+                        <video id="videoPreviewPlayer" controls playsinline style="width: 100%; max-height: 200px; display: block; margin: auto;"></video>
                         <span class="ad-preview-badge" style="background: rgba(124, 58, 237, 0.85);">🎬 Live Video Preview</span>
                     </div>
 
                     <!-- Optional Poster / Thumbnail for Video -->
-                    <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #cbd5e1;">
-                        <label for="videoPosterInput" style="font-size: 12.5px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">
+                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #d8b4fe;">
+                        <label for="videoPosterInput" style="font-size: 12px; font-weight: 700; color: var(--slate-700); display: block; margin-bottom: 5px;">
                             Optional Cover Poster / Thumbnail (JPG, PNG - max 5MB)
                         </label>
-                        <input type="file" id="videoPosterInput" accept="image/jpeg,image/png,image/webp" style="font-size: 12px; color: #475569;">
+                        <input type="file" id="videoPosterInput" accept="image/jpeg,image/png,image/webp" style="font-size: 12px; color: var(--slate-600); width: 100%;">
                     </div>
                 </div>
 
-                <!-- CAMPAIGN TITLE -->
+                <!-- HEADLINE & DESCRIPTION -->
                 <div class="form-group">
-                    <label for="adTitle">Campaign Title / Headline *</label>
-                    <input type="text" id="adTitle" placeholder="e.g. Comprehensive Cardiac Camp - 20% Off" minlength="3" maxlength="255" required>
+                    <label for="adTitle">Campaign Headline / Title *</label>
+                    <input type="text" id="adTitle" placeholder="e.g. 50% Off Full Body Health Checkup This Month" required maxlength="120">
                 </div>
 
-                <!-- DESCRIPTION -->
                 <div class="form-group">
-                    <label for="adDesc">Campaign Details / Offer Description (Optional)</label>
-                    <textarea id="adDesc" rows="3" placeholder="e.g. Free ECG and blood pressure checkup included with doctor consultation. Walk-ins welcome daily 9 AM - 6 PM." maxlength="1000"></textarea>
+                    <label for="adDesc">Campaign Description / Highlights</label>
+                    <textarea id="adDesc" rows="2" placeholder="Briefly highlight key doctors, emergency care, or diagnostic packages available..." maxlength="280"></textarea>
                 </div>
 
-                                <!-- YOUR HOSPITAL'S DIRECT PATIENT LINK -->
-                <div class="form-group" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1.5px solid #86efac; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-                        <label style="margin: 0; font-weight: 700; font-size: 13.5px; color: #166534; display: flex; align-items: center; gap: 6px;">
-                            🏥 Your Direct Hospital Patient Link
+                <!-- 1-CLICK HOSPITAL DIRECT PATIENT LINK HELPER -->
+                <div class="form-group" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                        <label style="font-weight: 800; font-size: 12.5px; color: #166534; display: flex; align-items: center; gap: 6px; margin: 0;">
+                            <span>🏥</span> Hospital Direct Patient Link
                         </label>
-                        <div style="display: flex; gap: 8px;">
-                            <button type="button" onclick="copyHospitalDirectLink()" style="background: #16a34a; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                                📋 Copy Link
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <button type="button" onclick="copyHospitalDirectLink()" style="background: #ffffff; color: #16a34a; border: 1px solid #86efac; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+                                📋 Copy
                             </button>
-                            <button type="button" onclick="useAsAdTargetLink()" style="background: #2563eb; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                                🔗 Use in Target Link
+                            <button type="button" onclick="useAsAdTargetLink()" style="background: #16a34a; color: #ffffff; border: none; padding: 4px 9px; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+                                🔗 Use in Link
                             </button>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <input type="text" id="hospitalDirectLinkInput" readonly style="background: #ffffff; border: 1.5px solid #86efac; font-weight: 600; color: #15803d; font-size: 13px; font-family: monospace; padding: 10px 12px; border-radius: 8px; width: 100%; box-sizing: border-box;" value="Generating your direct link...">
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="text" id="hospitalDirectLinkInput" readonly style="background: #ffffff; border: 1px solid #86efac; font-weight: 600; color: #15803d; font-size: 12px; font-family: monospace; padding: 8px 10px; border-radius: 8px; width: 100%; box-sizing: border-box;" value="Generating your direct link...">
                     </div>
-                    <div style="font-size: 12px; color: #15803d; margin-top: 6px; line-height: 1.4;">
-                        ✨ When patients click this link (from your ad, WhatsApp, or website), CarePath directly opens your hospital details & appointment booking!
+                    <div style="font-size: 11px; color: #15803d; margin-top: 4px; line-height: 1.4;">
+                        ✨ When patients click this link, CarePath directly opens your hospital details & appointment booking.
                     </div>
                 </div>
 
-                <!-- CONTACT PHONE & TARGET URL -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <!-- CONTACT PHONE & TARGET URL (RESPONSIVE GRID) -->
+                <div class="form-row-2col">
                     <div class="form-group">
                         <label for="adPhone">Contact Phone Number</label>
                         <input type="tel" id="adPhone" placeholder="Contact number for patients">
@@ -744,10 +1124,10 @@
         <div class="list-card">
             <div class="card-header-row">
                 <h2>📋 My Campaigns (<span id="activeCount">0</span> Active)</h2>
-                <button type="button" onclick="loadCampaigns()" style="background: none; border: none; color: #1976d2; font-size: 13px; font-weight: 700; cursor: pointer;">↻ Refresh</button>
+                <button type="button" onclick="loadCampaigns()" style="background: none; border: none; color: var(--primary); font-size: 12.5px; font-weight: 700; cursor: pointer;">↻ Refresh</button>
             </div>
 
-            <div id="campaignsLoading" style="text-align: center; padding: 30px; color: #64748b;">
+            <div id="campaignsLoading" style="text-align: center; padding: 24px; color: var(--slate-500);">
                 <span>Loading your campaigns...</span>
             </div>
 
@@ -755,33 +1135,55 @@
 
             <div id="campaignsEmpty" class="empty-ads" style="display: none;">
                 <div class="empty-ads-icon">📢</div>
-                <div style="font-size: 15px; font-weight: 700; color: #475569;">No campaigns running yet</div>
-                <p style="font-size: 13px; margin: 6px 0 0; color: #64748b;">Fill out the form on the left to launch your first 30-day sponsored advertisement!</p>
+                <div style="font-size: 14px; font-weight: 700; color: var(--slate-700);">No campaigns running yet</div>
+                <p style="font-size: 12px; margin: 4px 0 0; color: var(--slate-500);">Fill out the form above to launch your first 30-day sponsored advertisement!</p>
             </div>
         </div>
 
     </div>
 
-
 <!-- VIDEO WATCH MODAL -->
-<div id="videoWatchModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999; align-items: center; justify-content: center; padding: 20px;" onclick="if(event.target===this)closeVideoWatchModal()">
+<div id="videoWatchModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999; align-items: center; justify-content: center; padding: 16px;" onclick="if(event.target===this)closeVideoWatchModal()">
     <div style="background: #0f172a; border-radius: 14px; max-width: 600px; width: 100%; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid #334155; color: white;">
-            <strong id="videoWatchTitle" style="font-size: 14px;">🎬 Video Ad Preview</strong>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #334155; color: white;">
+            <strong id="videoWatchTitle" style="font-size: 13.5px;">🎬 Video Ad Preview</strong>
             <button type="button" onclick="closeVideoWatchModal()" style="background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
         </div>
-        <div style="padding: 12px; background: #000;">
-            <video id="modalVideoPlayer" controls playsinline style="width: 100%; max-height: 380px; display: block; border-radius: 8px; margin: auto;"></video>
+        <div style="padding: 10px; background: #000;">
+            <video id="modalVideoPlayer" controls playsinline style="width: 100%; max-height: 360px; display: block; border-radius: 8px; margin: auto;"></video>
         </div>
     </div>
 </div>
 
-    <!-- BOTTOM NAVIGATION -->
-    <div class="bottom-nav">
-        <a href="dashboard.html" class="btn-nav-dashboard">← Back to Hospital Dashboard</a>
-    </div>
-
 </div>
+
+<!-- NATIVE MOBILE BOTTOM NAVIGATION DOCK -->
+<nav class="mobile-bottom-dock" aria-label="Mobile Navigation">
+    <a href="dashboard.html" class="dock-item">
+        <span class="dock-icon">🏠</span>
+        <span>Call</span>
+    </a>
+    <a href="token-queue.html" class="dock-item">
+        <span class="dock-icon">🎟️</span>
+        <span>Queue</span>
+    </a>
+    <a href="doctors.html" class="dock-item">
+        <span class="dock-icon">👨‍⚕️</span>
+        <span>Doctors</span>
+    </a>
+    <a href="patients.html" class="dock-item">
+        <span class="dock-icon">👥</span>
+        <span>Patients</span>
+    </a>
+    <a href="ads.html" class="dock-item active">
+        <span class="dock-icon">📢</span>
+        <span>Ads</span>
+    </a>
+    <a href="profile.html" class="dock-item">
+        <span class="dock-icon">🏥</span>
+        <span>Profile</span>
+    </a>
+</nav>
 
 <script>
 /* =====================================================
@@ -931,6 +1333,10 @@ async function loadHospitalInfo() {
             const phoneField = document.getElementById("adPhone");
             if (phoneField && !phoneField.value && storedHospital.phone) {
                 phoneField.value = storedHospital.phone;
+            }
+            if (storedHospital.name) {
+                const topName = document.getElementById("topHospitalName");
+                if (topName) topName.textContent = storedHospital.name;
             }
         }
     } catch (e) {
@@ -1240,6 +1646,12 @@ async function loadCampaigns() {
         loading.style.display = "none";
         container.style.display = "block";
 
+        const activeCountEl = document.getElementById("activeCount");
+        if (activeCountEl) {
+            const activeCount = (ads || []).filter(a => a.status === "active").length;
+            activeCountEl.textContent = activeCount.toString();
+        }
+
         if (!ads || ads.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
@@ -1264,29 +1676,29 @@ async function loadCampaigns() {
 
             return `
             <div class="ad-item">
-                <div style="display: flex; gap: 14px; align-items: center; flex: 1;">
+                <div class="ad-item-main">
                     ${bannerSrc 
                         ? `<img src="${bannerSrc}" alt="Ad" class="ad-thumb" onerror="this.style.display='none'">` 
                         : (isVideo ? `<div class="ad-thumb" style="display: flex; align-items: center; justify-content: center; background: #f3e8ff; font-size: 24px; border-radius: 8px;">🎬</div>` : "")}
                     <div class="ad-item-content">
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                             <span class="ad-item-title">${a.title}</span>
                             ${formatBadge}
                         </div>
-                        <div class="ad-item-meta" style="margin-top: 4px;">
+                        <div class="ad-item-meta">
                             <span class="${badgeClass}">${statusLabel}</span>
                             <span>Fee: ₹${a.amount_paid || (isVideo ? 1999 : 999)}</span>
                             ${a.expires_at ? `<span>Expires: ${new Date(a.expires_at).toLocaleDateString()}</span>` : ""}
                         </div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
+                <div class="ad-item-actions">
                     ${isVideo && videoSrc ? `
-                        <button type="button" onclick="watchVideoModal('${videoSrc}', '${encodeURIComponent(a.title)}')" style="background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; padding: 7px 12px; border-radius: 8px; font-weight: 700; font-size: 12.5px; cursor: pointer; white-space: nowrap;">
+                        <button type="button" class="btn-watch-ad" onclick="watchVideoModal('${videoSrc}', '${encodeURIComponent(a.title)}')">
                             ▶ Watch Video
                         </button>
                     ` : ""}
-                    <button type="button" onclick="deleteHospitalAd(${a.id})" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 0.2s;">
+                    <button type="button" class="btn-delete-ad" onclick="deleteHospitalAd(${a.id})">
                         🗑️ Delete
                     </button>
                 </div>
