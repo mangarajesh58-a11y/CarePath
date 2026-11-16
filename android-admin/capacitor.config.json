@@ -3,7 +3,6 @@
   "appName": "CarePath Admin",
   "webDir": "www",
   "server": {
-    "url": "https://carepath-admin.vercel.app",
-    "cleartext": false
+    "cleartext": true
   }
 }

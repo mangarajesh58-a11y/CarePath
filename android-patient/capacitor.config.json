@@ -3,7 +3,6 @@
   "appName": "CarePath",
   "webDir": "www",
   "server": {
-    "url": "https://carepath-3q9q.onrender.com/dashboard.html",
-    "cleartext": false
+    "cleartext": true
   }
 }
