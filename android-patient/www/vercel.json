@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/patient/:path*",
+      "destination": "/:path*"
+    }
+  ]
+}

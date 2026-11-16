@@ -416,14 +416,25 @@ ALLOWED_DOCTOR_PHOTO_TYPES = {
 }
 MAX_DOCTOR_PHOTO_SIZE = 5 * 1024 * 1024  # 5 MB
 
-# Public hospital advertisement banners
+# Public hospital advertisement videos & banners
 HOSPITAL_AD_DIR = os.path.join(
     os.path.dirname(__file__),
     "uploads",
     "hospital_ads",
 )
 os.makedirs(HOSPITAL_AD_DIR, exist_ok=True)
-HOSPITAL_AD_FEE = 999.0  # INR 999 for 30-day placement
+HOSPITAL_AD_VIDEO_DIR = os.path.join(HOSPITAL_AD_DIR, "videos")
+os.makedirs(HOSPITAL_AD_VIDEO_DIR, exist_ok=True)
+HOSPITAL_AD_FEE = 999.0  # INR 999 for 30-day banner placement
+HOSPITAL_VIDEO_AD_FEE = 1999.0  # INR 1999 for 30-day video spotlight placement
+ALLOWED_AD_VIDEO_TYPES = {
+    "video/mp4": ".mp4",
+    "video/webm": ".webm",
+    "video/ogg": ".ogv",
+    "video/quicktime": ".mov",
+    "video/x-matroska": ".mkv",
+}
+MAX_AD_VIDEO_SIZE = 30 * 1024 * 1024  # 30 MB
 
 
 
@@ -10746,6 +10757,17 @@ def get_hospital_ad_image(filename: str, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Advertisement banner not found")
 
 
+@app.get("/hospital-ads/videos/{filename}")
+def get_hospital_ad_video(filename: str):
+    """Serve uploaded video advertisement."""
+    safe_name = os.path.basename(filename)
+    local_path = os.path.join(HOSPITAL_AD_VIDEO_DIR, safe_name)
+    if os.path.isfile(local_path):
+        guessed_type, _ = mimetypes.guess_type(local_path)
+        return FileResponse(local_path, media_type=guessed_type or "video/mp4")
+    raise HTTPException(status_code=404, detail="Advertisement video not found")
+
+
 class VerifyAdPaymentRequest(BaseModel):
     cashfree_order_id: str
     ad_id: int
@@ -10761,6 +10783,7 @@ async def create_hospital_ad_order(
     ad_type: str = Form("banner"),  # 'banner' or 'video'
     video_url: str = Form(""),
     photo: UploadFile = File(None),
+    video_file: UploadFile = File(None),
     custom_fee: Optional[float] = Form(None),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("hospital")),
@@ -10797,7 +10820,7 @@ async def create_hospital_ad_order(
             content = await photo.read(MAX_HOSPITAL_PHOTO_SIZE + 1)
             if content:
                 if len(content) > MAX_HOSPITAL_PHOTO_SIZE:
-                    raise HTTPException(status_code=413, detail="Banner photo must be 5 MB or smaller.")
+                    raise HTTPException(status_code=413, detail="Banner/thumbnail photo must be 5 MB or smaller.")
                 content_type = (photo.content_type or "").lower()
                 ext = ALLOWED_HOSPITAL_PHOTO_TYPES.get(content_type, ".jpg")
                 filename = f"ad_{hospital_id}_{uuid.uuid4().hex[:12]}{ext}"
@@ -10812,11 +10835,35 @@ async def create_hospital_ad_order(
                 img_base64 = base64.b64encode(content).decode("utf-8")
                 img_url = f"/hospital-ads/{filename}"
 
-        if not img_url and not (video_url and video_url.strip()):
-            if ad_type_clean == "video":
-                raise HTTPException(status_code=400, detail="Please provide a promo video URL or thumbnail.")
-            else:
-                raise HTTPException(status_code=400, detail="Please upload a promotional banner photo.")
+        # Handle video file upload or video URL
+        final_video_url = None
+        if video_file and hasattr(video_file, "read"):
+            vcontent = await video_file.read(MAX_AD_VIDEO_SIZE + 1)
+            if vcontent:
+                if len(vcontent) > MAX_AD_VIDEO_SIZE:
+                    raise HTTPException(status_code=413, detail="Promotional video must be 30 MB or smaller.")
+                vcontent_type = (video_file.content_type or "").lower()
+                vext = ALLOWED_AD_VIDEO_TYPES.get(vcontent_type)
+                if not vext:
+                    orig_ext = os.path.splitext(video_file.filename or "")[1].lower()
+                    vext = orig_ext if orig_ext in (".mp4", ".webm", ".mov", ".ogv", ".mkv") else ".mp4"
+                vfilename = f"video_{hospital_id}_{uuid.uuid4().hex[:12]}{vext}"
+                try:
+                    os.makedirs(HOSPITAL_AD_VIDEO_DIR, exist_ok=True)
+                    vlocal_path = os.path.join(HOSPITAL_AD_VIDEO_DIR, vfilename)
+                    with open(vlocal_path, "wb") as vf:
+                        vf.write(vcontent)
+                    final_video_url = f"/hospital-ads/videos/{vfilename}"
+                except Exception as v_err:
+                    logging.warning("Could not save ad video to disk: %s", v_err)
+
+        if not final_video_url and video_url and video_url.strip():
+            final_video_url = video_url.strip()
+
+        if ad_type_clean == "video" and not final_video_url:
+            raise HTTPException(status_code=400, detail="Please upload a promotional video file or provide a video URL.")
+        elif ad_type_clean == "banner" and not img_url:
+            raise HTTPException(status_code=400, detail="Please upload a promotional banner photo.")
 
         order_id = f"ad_{hospital_id}_{secrets.token_hex(6)}"
 
@@ -10832,7 +10879,7 @@ async def create_hospital_ad_order(
             image_url=img_url,
             image_base64=img_base64,
             ad_type=ad_type_clean,
-            video_url=video_url.strip() if video_url else None,
+            video_url=final_video_url,
             target_phone=target_phone.strip() if target_phone else (hospital.phone or ""),
             target_link=target_link.strip() if target_link else "",
             amount_paid=amount,
@@ -11030,10 +11077,13 @@ def get_hospital_ads(
             "id": a.id,
             "title": a.title,
             "description": a.description,
+            "ad_type": getattr(a, "ad_type", "banner") or "banner",
             "image_url": a.image_url,
+            "video_url": a.video_url or "",
             "target_phone": a.target_phone,
             "target_link": a.target_link,
-            "amount_paid": a.amount_paid,
+            "amount_paid": float(a.fee_charged or a.amount_paid or 0),
+            "fee_charged": float(a.fee_charged or a.amount_paid or 0),
             "payment_status": a.payment_status,
             "is_active": a.is_active,
             "status": status,

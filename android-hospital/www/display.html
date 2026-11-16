@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarePath • Waiting Room Queue Display</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-elevated: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #0284c7;
+            --accent-glow: rgba(2, 132, 199, 0.4);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.3);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Bar */
+        header {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 2px solid var(--border);
+            padding: 16px 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand-wrap {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 4px 14px var(--accent-glow);
+        }
+
+        .brand-info h1 {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+        }
+
+        .brand-info p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .header-center {
+            text-align: center;
+        }
+
+        .live-clock {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #38bdf8;
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        .live-date {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 2px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .display-lang-select {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f1f5f9;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: inherit;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .display-lang-select:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.35);
+        }
+
+        .display-lang-select option, .display-lang-select optgroup {
+            background: #0f172a;
+            color: #f1f5f9;
+        }
+
+        .btn-ctrl {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-ctrl:hover {
+            background: var(--bg-elevated);
+            border-color: var(--accent);
+        }
+
+        .btn-ctrl.active {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--success);
+            color: #34d399;
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            padding: 32px 36px;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 32px;
+        }
+
+        /* Left: Currently Serving Panel */
+        .serving-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pulse-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 12px var(--success);
+            animation: pulse 1.6s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.5; }
+        }
+
+        .hero-serving-card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 2px solid #0284c7;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 12px 36px rgba(2, 132, 199, 0.2);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 380px;
+        }
+
+        .hero-serving-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #38bdf8, #10b981, #38bdf8);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .serving-label {
+            font-size: 20px;
+            font-weight: 800;
+            color: #38bdf8;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .giant-token-number {
+            font-size: 110px;
+            font-weight: 900;
+            line-height: 1;
+            color: #ffffff;
+            margin: 16px 0;
+            text-shadow: 0 4px 24px var(--accent-glow);
+            letter-spacing: -2px;
+        }
+
+        .serving-patient-name {
+            font-size: 32px;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 12px;
+        }
+
+        .serving-meta-wrap {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-top: 12px;
+            padding: 12px 24px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .meta-pill {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        .meta-pill span {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .meta-pill strong {
+            font-size: 18px;
+            color: #38bdf8;
+            font-weight: 700;
+        }
+
+        /* Multiple Doctors Serving Grid */
+        .serving-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        .serving-sub-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        /* PREVIOUS PATIENTS (RECENTLY CONSULTED) ON TV DISPLAY */
+        .previous-patients-section {
+            margin-top: 16px;
+        }
+
+        .prev-badge {
+            font-size: 12px;
+            color: #c4b5fd;
+            background: rgba(167, 139, 250, 0.15);
+            border: 1px solid rgba(167, 139, 250, 0.35);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+
+        .prev-patients-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .prev-patient-card {
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 14px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .prev-patient-card:hover {
+            border-color: rgba(167, 139, 250, 0.5);
+            background: rgba(30, 41, 59, 0.75);
+            transform: translateY(-2px);
+        }
+
+        .prev-card-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .prev-token-pill {
+            min-width: 44px;
+            height: 40px;
+            padding: 0 8px;
+            border-radius: 10px;
+            background: rgba(167, 139, 250, 0.18);
+            border: 1.5px solid #a78bfa;
+            color: #ede9fe;
+            font-size: 17px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .prev-card-details {
+            min-width: 0;
+        }
+
+        .prev-patient-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .prev-patient-doc {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .prev-status-tag {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #34d399;
+            background: rgba(52, 211, 153, 0.14);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            padding: 3px 8px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .prev-empty-notice {
+            color: #64748b;
+            font-size: 13.5px;
+            padding: 16px;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.3);
+            border: 1px dashed rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            grid-column: 1 / -1;
+        }
+
+        .sub-card-token {
+            font-size: 48px;
+            font-weight: 900;
+            color: #38bdf8;
+        }
+
+        .sub-card-patient {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 6px 0;
+            color: #ffffff;
+        }
+
+        .sub-card-doc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Right Panel: Upcoming Queue */
+        .queue-sidebar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+
+        .queue-list {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            max-height: calc(100vh - 280px);
+            padding-right: 4px;
+        }
+
+        .queue-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.2s ease;
+        }
+
+        .queue-item:hover {
+            transform: translateX(4px);
+            border-color: var(--accent);
+        }
+
+        .queue-item-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .token-circle-badge {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            background: rgba(2, 132, 199, 0.15);
+            border: 1.5px solid #0284c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            color: #38bdf8;
+        }
+
+        .queue-patient-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        .queue-patient-doc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .queue-item-right {
+            text-align: right;
+        }
+
+        .queue-eta-badge {
+            font-size: 12px;
+            font-weight: 700;
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.12);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Bottom Ticker Stats */
+        footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 16px 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .stats-ticker {
+            display: flex;
+            gap: 28px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-item strong {
+            color: #ffffff;
+            font-size: 16px;
+        }
+
+        /* Empty state */
+        .empty-serving {
+            color: var(--text-secondary);
+            font-size: 20px;
+            font-weight: 600;
+            padding: 60px 20px;
+        }
+
+        /* TV Audio Banner */
+        .tv-autoplay-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(90deg, #1e40af 0%, #2563eb 50%, #0284c7 100%);
+            color: #ffffff;
+            z-index: 99999;
+            padding: 12px 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            animation: slideDownBanner 0.3s ease-out;
+            box-sizing: border-box;
+        }
+
+        @keyframes slideDownBanner {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+
+        .tv-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            max-width: 1200px;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .tv-banner-icon {
+            font-size: 28px;
+            animation: pulseSpeaker 1.5s infinite;
+        }
+
+        @keyframes pulseSpeaker {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .tv-banner-text strong {
+            font-size: 15px;
+            font-weight: 800;
+            display: block;
+            margin-bottom: 2px;
+            letter-spacing: -0.2px;
+        }
+
+        .tv-banner-text p {
+            font-size: 12px;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .btn-tv-enable-audio {
+            background: #ffffff;
+            color: #1e40af;
+            border: none;
+            padding: 9px 18px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-tv-enable-audio:hover {
+            background: #f8fafc;
+            transform: scale(1.03);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+            .giant-token-number {
+                font-size: 80px;
+            }
+        }
+    </style>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="carepath-ai-small.png">
+</head>
+<body>
+
+    <!-- TV AUDIO UNLOCK BANNER (Click anywhere to activate loudspeaker) -->
+    <div id="tvAutoplayBanner" class="tv-autoplay-overlay" onclick="enableTvAudio()">
+        <div class="tv-banner-content">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="tv-banner-icon">🔊</span>
+                <div class="tv-banner-text">
+                    <strong>Click Anywhere to Activate TV Audio & Announcements</strong>
+                    <p>Browser requires 1 click to enable loudspeaker chime & patient calling voice.</p>
+                </div>
+            </div>
+            <button type="button" class="btn-tv-enable-audio">
+                Enable Sound 🔊
+            </button>
+        </div>
+    </div>
+
+    <header>
+        <div class="brand-wrap">
+            <div class="brand-logo">🏥</div>
+            <div class="brand-info">
+                <h1 id="hospitalNameDisplay">CarePath Hospital</h1>
+                <p id="hospitalSubDisplay">Waiting Room Live Display</p>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <div class="live-clock" id="clock">--:--:-- --</div>
+            <div class="live-date" id="dateDisplay">Loading date...</div>
+        </div>
+
+        <div class="header-controls">
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 14px;">🗣️</span>
+                <select id="displayAudioLang" class="display-lang-select" onchange="changeDisplayLanguage(this.value)" title="Choose Voice Announcement Language">
+                    <optgroup label="Single Indian Language">
+                        <option value="en-IN" selected>🇮🇳 Indian English (Default)</option>
+                        <option value="hi-IN">🇮🇳 Hindi (हिंदी)</option>
+                        <option value="te-IN">🇮🇳 Telugu (తెలుగు)</option>
+                        <option value="ta-IN">🇮🇳 Tamil (தமிழ்)</option>
+                        <option value="kn-IN">🇮🇳 Kannada (ಕನ್ನಡ)</option>
+                        <option value="ml-IN">🇮🇳 Malayalam (മലയാളം)</option>
+                        <option value="mr-IN">🇮🇳 Marathi (मराठी)</option>
+                        <option value="bn-IN">🇮🇳 Bengali (বাংলা)</option>
+                        <option value="gu-IN">🇮🇳 Gujarati (ગુજરાતી)</option>
+                        <option value="pa-IN">🇮🇳 Punjabi (ਪੰਜਾਬੀ)</option>
+                        <option value="or-IN">🇮🇳 Odia (ଓଡ଼ିଆ)</option>
+                        <option value="ur-IN">🇮🇳 Urdu (اردو)</option>
+                    </optgroup>
+                    <optgroup label="Bilingual Dual Announcement">
+                        <option value="en-IN+hi-IN">🇮🇳 English + Hindi</option>
+                        <option value="en-IN+te-IN">🇮🇳 English + Telugu</option>
+                        <option value="en-IN+ta-IN">🇮🇳 English + Tamil</option>
+                        <option value="en-IN+kn-IN">🇮🇳 English + Kannada</option>
+                        <option value="en-IN+ml-IN">🇮🇳 English + Malayalam</option>
+                        <option value="en-IN+bn-IN">🇮🇳 English + Bengali</option>
+                        <option value="en-IN+mr-IN">🇮🇳 English + Marathi</option>
+                        <option value="en-IN+gu-IN">🇮🇳 English + Gujarati</option>
+                    </optgroup>
+                </select>
+                
+            </div>
+            <button class="btn-ctrl active" id="btnAudio" title="Toggle audio announcements">
+                <span id="audioIcon">🔊</span> Audio Alert
+            </button>
+            <button class="btn-ctrl" id="btnFullscreen" title="Toggle full screen">
+                <span>⛶</span> Fullscreen
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- LEFT: Currently Serving Hero -->
+        <section class="serving-container">
+            <div class="section-title">
+                <div class="pulse-dot"></div>
+                Currently Calling / Inside Consultation
+            </div>
+
+            <div id="heroServingSection">
+                <div class="hero-serving-card">
+                    <div class="serving-label">Now Calling Token</div>
+                    <div class="giant-token-number" id="heroTokenNumber">--</div>
+                    <div class="serving-patient-name" id="heroPatientName">Waiting for consultation...</div>
+                    <div class="serving-meta-wrap">
+                        <div class="meta-pill">
+                            <span>Doctor</span>
+                            <strong id="heroDoctor">--</strong>
+                        </div>
+                        <div class="meta-pill">
+                            <span>Department</span>
+                            <strong id="heroDepartment">--</strong>
+                        </div>
+                        <div class="meta-pill">
+                            <span>Room</span>
+                            <strong id="heroRoom">OPD Room</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Doctors Serving Grid (if multi-doctor) -->
+            <div id="multiDoctorSection" style="display: none;">
+                <div class="section-title" style="margin-top: 8px;">
+                    Other Active Consultation Rooms
+                </div>
+                <div class="serving-grid" id="servingGrid"></div>
+            </div>
+
+            <!-- PREVIOUS PATIENTS (RECENTLY CONSULTED) ON TV -->
+            <div id="previousPatientSection" class="previous-patients-section">
+                <div class="section-title" style="margin-top: 18px; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 16px;">⏮️</span>
+                        <span>Previously Consulted Patients</span>
+                    </div>
+                    <span id="prevCountBadge" class="prev-badge">0 completed</span>
+                </div>
+                <div class="prev-patients-grid" id="prevPatientsGrid">
+                    <div class="prev-empty-notice">No completed consultations yet today.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT: Upcoming Queue Ticker -->
+        <aside class="queue-sidebar">
+            <div class="section-title" style="justify-content: space-between;">
+                <span>Upcoming Patients</span>
+                <span id="waitingCountBadge" style="font-size: 13px; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 10px; border-radius: 20px;">0 waiting</span>
+            </div>
+
+            <div class="queue-list" id="queueList">
+                <div style="text-align: center; color: var(--text-secondary); padding: 40px 0;">
+                    No patients currently in queue.
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <footer>
+        <div class="stats-ticker">
+            <div class="stat-item">Today's Completed: <strong id="statCompleted">0</strong></div>
+            <div class="stat-item">Currently Serving: <strong id="statServing">0</strong></div>
+            <div class="stat-item">Waiting in Lobby: <strong id="statWaiting">0</strong></div>
+        </div>
+        <div>
+            CarePath Live Queue System • Updated real-time
+        </div>
+    </footer>
+
+    <script src="./broadcast-banner.js"></script>
+    <script>
+        const API = "https://carepath-3q9q.onrender.com";
+        const urlParams = new URLSearchParams(window.location.search);
+        const hospitalId = urlParams.get("hospital_id") || urlParams.get("id") || localStorage.getItem("hospital_id") || "15";
+        if (hospitalId) localStorage.setItem("hospital_id", hospitalId);
+        const urlLang = urlParams.get("lang");
+        if (urlLang) localStorage.setItem("carepath_announcement_lang", urlLang);
+        let lastAnnouncedToken = null;
+        let lastAnnouncedCallKey = null;
+        let audioEnabled = true;
+
+        // 1. Digital Clock
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
+            const dateStr = now.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" });
+            document.getElementById("clock").textContent = timeStr;
+            document.getElementById("dateDisplay").textContent = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 2. Fullscreen Toggle
+        document.getElementById("btnFullscreen").addEventListener("click", () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        });
+
+        // 3. Robust Shared Audio Context & Autoplay Policy Unlock
+        let sharedDisplayAudioCtx = null;
+
+        function getDisplayAudioCtx() {
+            if (!sharedDisplayAudioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) sharedDisplayAudioCtx = new AudioContextClass();
+            }
+            if (sharedDisplayAudioCtx && sharedDisplayAudioCtx.state === "suspended") {
+                sharedDisplayAudioCtx.resume().catch(() => {});
+            }
+            return sharedDisplayAudioCtx;
+        }
+
+        function unlockDisplayAutoplay() {
+            const ctx = getDisplayAudioCtx();
+            if (ctx && ctx.state === "suspended") {
+                ctx.resume().catch(() => {});
+            }
+            if ("speechSynthesis" in window) {
+                try {
+                    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                } catch(e) {}
+            }
+            const banner = document.getElementById("tvAutoplayBanner");
+            if (banner) banner.style.display = "none";
+        }
+
+        ["click", "touchstart", "pointerdown", "keydown"].forEach(evt => {
+            document.addEventListener(evt, unlockDisplayAutoplay, { passive: true });
+        });
+
+        function playChime() {
+            if (!audioEnabled) return;
+            try {
+                const ctx = getDisplayAudioCtx();
+                if (!ctx) return;
+                if (ctx.state === "suspended") {
+                    ctx.resume().then(() => playDisplayChimeNodes(ctx)).catch(() => {});
+                } else {
+                    playDisplayChimeNodes(ctx);
+                }
+            } catch (e) {
+                console.warn("Audio chime error:", e);
+            }
+        }
+
+        function playDisplayChimeNodes(ctx) {
+            try {
+                const now = ctx.currentTime;
+                // High tone (523Hz - C5)
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = "sine";
+                osc1.frequency.setValueAtTime(523.25, now);
+                gain1.gain.setValueAtTime(0.3, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.6);
+
+                // Pleasant lower tone (659Hz - E5)
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = "sine";
+                osc2.frequency.setValueAtTime(659.25, now + 0.2);
+                gain2.gain.setValueAtTime(0.35, now + 0.2);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.2);
+                osc2.stop(now + 0.9);
+            } catch(e) {}
+        }
+
+        // 4. Indian Multilingual Speech Synthesis Announcement with Autoplay Unfreeze
+        const ANNOUNCEMENT_LANGUAGES = {
+    "en-IN": {
+        name: "Indian English",
+        langCode: "en-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `Dr. ${doc}` : "consultation room";
+            return `Attention please: Token number ${num}. ${p}please proceed to ${d}.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `Dr. ${doc}` : "consultation room";
+            return `Attention please: Token number ${num}. ${p}please proceed to ${d}.`;
+        }
+    },
+    "te-IN": {
+        name: "Telugu (తెలుగు)",
+        langCode: "te-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `డాక్టర్ ${doc}` : "కన్సల్టేషన్ గది";
+            return `దయచేసి వినండి: టోకెన్ నంబర్ ${num}. ${p}దయచేసి ${d} వద్దకు వెళ్ళండి.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Dayachesi vinandi: Token number ${num}. ${p}dayachesi ${d} vaddaku vellandi.`;
+        }
+    },
+    "hi-IN": {
+        name: "Hindi (हिंदी)",
+        langCode: "hi-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `डॉक्टर ${doc}` : "परामर्श कक्ष";
+            return `कृपया ध्यान दें: टोकन नंबर ${num}. ${p}कृपया ${d} के पास जाएं।`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Kripya dhyan dein: Token number ${num}. ${p}kripya ${d} ke paas jaayein.`;
+        }
+    },
+    "ta-IN": {
+        name: "Tamil (தமிழ்)",
+        langCode: "ta-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `மருத்துவர் ${doc}` : "மருத்துவ அறைக்கு";
+            return `கவனிக்கவும்: டோக்கன் எண் ${num}. ${p}தயவுசெய்து ${d} செல்லவும்.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Kavanikkavum: Token number ${num}. ${p}dayavuseidhu ${d} araikku sellavum.`;
+        }
+    },
+    "kn-IN": {
+        name: "Kannada (ಕನ್ನಡ)",
+        langCode: "kn-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ವೈದ್ಯರಾದ ${doc}` : "ಪರೀಕ್ಷಾ ಕೊಠಡಿಗೆ";
+            return `ದಯವಿಟ್ಟು ಗಮನಿಸಿ: ಟೋಕನ್ ಸಂಖ್ಯೆ ${num}. ${p}ದಯವಿಟ್ಟು ${d} ಬಳಿ ತೆರಳಿ.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Dayavittu gamanisi: Token number ${num}. ${p}dayavittu ${d} kothadige therali.`;
+        }
+    },
+    "ml-IN": {
+        name: "Malayalam (മലയാളം)",
+        langCode: "ml-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ഡോക്ടർ ${doc}` : "കൺസൾട്ടേഷൻ റൂമിലേക്ക്";
+            return `ദയവായി ശ്രദ്ധിക്കുക: ടോക്കൺ നമ്പർ ${num}. ${p}ദയവായി ${d} എത്തുക.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Dayavayi sredhdhikkoo: Token number ${num}. ${p}dayavayi ${d} muriyilekku pokuka.`;
+        }
+    },
+    "mr-IN": {
+        name: "Marathi (मराठी)",
+        langCode: "mr-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `डॉक्टर ${doc}` : "तपासणी खोलीत";
+            return `कृपया लक्ष द्या: टोकन क्रमांक ${num}. ${p}कृपया ${d} यांच्याकडे जावे.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Kripaya lakshya dya: Token kramank ${num}. ${p}kripaya ${d} kade jaave.`;
+        }
+    },
+    "bn-IN": {
+        name: "Bengali (বাংলা)",
+        langCode: "bn-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ডাক্তার ${doc}` : "পরামর্শ কক্ষে";
+            return `অনুগ্রহ করে শুনবেন: টোকেন নম্বর ${num}। ${p}অনুগ্রহ করে ${d}-এর কাছে যান।`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Onugroho kore shunun: Token number ${num}. ${p}onugroho kore ${d}-er kache jaan.`;
+        }
+    },
+    "gu-IN": {
+        name: "Gujarati (ગુજરાતી)",
+        langCode: "gu-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ડોક્ટર ${doc}` : "કન્સલ્ટેશન રૂમમાં";
+            return `કૃપા કરીને ધ્યાન આપો: ટોકન નંબર ${num}. ${p}કૃપા કરીને ${d} પાસે જાઓ.`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Krupa kari dhyan aapo: Token number ${num}. ${p}krupa kari ${d} paase jaav.`;
+        }
+    },
+    "pa-IN": {
+        name: "Punjabi (ਪੰਜਾਬੀ)",
+        langCode: "pa-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ਡਾਕਟਰ ${doc}` : "ਕੰਸਲਟੇਸ਼ਨ ਰੂਮ";
+            return `ਕਿਰਪਾ ਕਰਕੇ ਧਿਆਨ ਦਿਓ: ਟੋਕਨ ਨੰਬਰ ${num}। ${p}ਕਿਰਪਾ ਕਰਕੇ ${d} ਕੋਲ ਜਾਓ।`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Kripa karke dhyan diyo: Token number ${num}. ${p}kripa karke ${d} kol jaao.`;
+        }
+    },
+    "or-IN": {
+        name: "Odia (ଓଡ଼ିଆ)",
+        langCode: "or-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `ଡାକ୍ତର ${doc}` : "ପରାମର୍ଶ କୋଠରୀକୁ";
+            return `ଦୟାକରି ଧ୍ୟାନ ଦିଅନ୍ତୁ: ଟୋକନ ନମ୍ବର ${num}। ${p}ଦୟାକରି ${d} ପାଖକୁ ଯାଆନ୍ତୁ।`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Dayakari dhyana diantu: Token number ${num}. ${p}dayakari ${d} paakhaku jaantu.`;
+        }
+    },
+    "ur-IN": {
+        name: "Urdu (اردو)",
+        langCode: "ur-IN",
+        format: (num, name, doc) => {
+            const p = name ? `${name}، ` : "";
+            const d = doc ? `ڈاکٹر ${doc}` : "معائنہ روم";
+            return `براہ کرم توجہ فرمائیں: ٹوکن نمبر ${num}۔ ${p}براہ کرم ${d} کے پاس تشریف لے جائیں۔`;
+        },
+        phoneticFormat: (num, name, doc) => {
+            const p = name ? `${name}, ` : "";
+            const d = doc ? `doctor ${doc}` : "consultation room";
+            return `Barahe karam tawajjoh farmaein: Token number ${num}. ${p}barahe karam ${d} ke paas tashreef le jayein.`;
+        }
+    }
+};
+
+        function getDisplayLanguage() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get("lang") || localStorage.getItem("carepath_display_announcement_lang") || "en-IN";
+        }
+
+        function changeDisplayLanguage(langKey) {
+            localStorage.setItem("carepath_display_announcement_lang", langKey);
+            const sel = document.getElementById("displayLangSelect");
+            if (sel && sel.value !== langKey) sel.value = langKey;
+        }
+
+        function initDisplayLanguage() {
+            const activeLang = getDisplayLanguage();
+            const sel = document.getElementById("displayLangSelect");
+            if (sel) sel.value = activeLang;
+        }
+
+        function getDisplayVoiceAndPhrase(langCode, num, name, doc) {
+            const langDef = ANNOUNCEMENT_LANGUAGES[langCode] || ANNOUNCEMENT_LANGUAGES["en-IN"];
+            const targetBase = (langDef.langCode || "en-IN").split("-")[0].toLowerCase();
+            const voices = ("speechSynthesis" in window) ? (window.speechSynthesis.getVoices() || []) : [];
+
+            // 1. Check for native regional voice
+            let nativeVoice = null;
+            if (targetBase !== "en") {
+                nativeVoice = voices.find(v => v.lang && v.lang.toLowerCase() === langDef.langCode.toLowerCase());
+                if (!nativeVoice) {
+                    nativeVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(targetBase));
+                }
+                if (!nativeVoice) {
+                    const langKeywords = {
+                        "te": ["telugu"],
+                        "hi": ["hindi", "kalpana", "hemant"],
+                        "ta": ["tamil", "valluvar"],
+                        "kn": ["kannada"],
+                        "ml": ["malayalam"],
+                        "mr": ["marathi"],
+                        "bn": ["bengali", "bangla"],
+                        "gu": ["gujarati"],
+                        "pa": ["punjabi"],
+                        "ur": ["urdu"]
+                    };
+                    const kws = langKeywords[targetBase] || [];
+                    for (const kw of kws) {
+                        nativeVoice = voices.find(v => (v.name || "").toLowerCase().includes(kw));
+                        if (nativeVoice) break;
+                    }
+                }
+            }
+
+            if (nativeVoice) {
+                return {
+                    phrase: langDef.format(num, name, doc),
+                    lang: langDef.langCode,
+                    voice: nativeVoice,
+                    isNative: true
+                };
+            }
+
+            // 2. If no native voice, use Indian English voice with phonetic pronunciation
+            let fallbackVoice = voices.find(v => v.lang && v.lang.toLowerCase() === "en-in");
+            if (!fallbackVoice) {
+                fallbackVoice = voices.find(v => /india|ravi|heera|veena|priya|neerja|rishi|sangeeta/i.test(v.name || ""));
+            }
+            if (!fallbackVoice) {
+                fallbackVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith("en")) || voices[0] || null;
+            }
+
+            const phrase = (langDef.phoneticFormat && targetBase !== "en")
+                ? langDef.phoneticFormat(num, name, doc)
+                : langDef.format(num, name, doc);
+
+            return {
+                phrase: phrase,
+                lang: "en-IN",
+                voice: fallbackVoice,
+                isNative: false
+            };
+        }
+
+        window._displaySpeechUtterance = null;
+
+        function speakDisplayPhrase(speechConfig, callback) {
+            if (!("speechSynthesis" in window)) {
+                if (callback) callback();
+                return;
+            }
+
+            try {
+                const text = typeof speechConfig === "string" ? speechConfig : speechConfig.phrase;
+                const lang = typeof speechConfig === "string" ? "en-IN" : speechConfig.lang;
+                const voice = typeof speechConfig === "object" ? speechConfig.voice : null;
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.88;
+                utterance.pitch = 1.0;
+                utterance.lang = lang || "en-IN";
+                if (voice) utterance.voice = voice;
+
+                let finished = false;
+                const finish = () => {
+                    if (finished) return;
+                    finished = true;
+                    window._displaySpeechUtterance = null;
+                    if (callback) callback();
+                };
+
+                utterance.onend = finish;
+                utterance.onerror = (e) => {
+                    console.warn("TV Speech error:", e);
+                    finish();
+                };
+
+                const fallbackTimer = setTimeout(() => {
+                    if (!finished) {
+                        console.warn("TV Speech fallback timeout invoked");
+                        finish();
+                    }
+                }, Math.max(5000, text.length * 130));
+
+                const originalFinish = finish;
+                const wrappedFinish = () => {
+                    clearTimeout(fallbackTimer);
+                    originalFinish();
+                };
+                utterance.onend = wrappedFinish;
+                utterance.onerror = wrappedFinish;
+
+                window._displaySpeechUtterance = utterance;
+
+                setTimeout(() => {
+                    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+                    window.speechSynthesis.speak(utterance);
+                }, 40);
+
+            } catch (err) {
+                console.warn("Speech synthesis exception:", err);
+                if (callback) callback();
+            }
+        }
+
+        function announceToken(tokenNumber, patientName, doctor) {
+            if (!audioEnabled) return;
+
+            unlockDisplayAutoplay();
+            playChime();
+
+            const selectedSetting = getDisplayLanguage();
+            const langCodes = selectedSetting.split("+");
+
+            const safeName = (patientName && patientName !== "Patient") ? patientName : "";
+            const safeDoc = doctor || "";
+
+            // Prepare utterances using phonetic or native voice per language
+            const queueItems = [];
+            langCodes.forEach(code => {
+                const speechConfig = getDisplayVoiceAndPhrase(code, tokenNumber, safeName, safeDoc);
+                queueItems.push(speechConfig);
+            });
+
+            // Prevent duplicate identical phrases
+            const uniqueQueue = [];
+            queueItems.forEach(item => {
+                if (!uniqueQueue.some(u => u.phrase === item.phrase)) {
+                    uniqueQueue.push(item);
+                }
+            });
+
+            setTimeout(() => {
+                if (!audioEnabled) return;
+                if (!("speechSynthesis" in window)) return;
+
+                window.speechSynthesis.cancel();
+
+                const executeStep = (idx) => {
+                    if (idx >= uniqueQueue.length) return;
+                    const item = uniqueQueue[idx];
+                    speakDisplayPhrase(item, () => {
+                        if (idx + 1 < uniqueQueue.length) {
+                            setTimeout(() => executeStep(idx + 1), 350);
+                        }
+                    });
+                };
+
+                executeStep(0);
+            }, 700);
+        }
+
+        function testDisplayVoice() {
+            enableTvAudio();
+            announceToken("105", "Ramesh Kumar", "Sharma");
+        }
+
+        function enableTvAudio() {
+            unlockDisplayAutoplay();
+            const banner = document.getElementById("tvAutoplayBanner");
+            if (banner) banner.style.display = "none";
+            audioEnabled = true;
+            const btnAudio = document.getElementById("btnAudio");
+            if (btnAudio) {
+                btnAudio.classList.add("active");
+                const icon = document.getElementById("audioIcon");
+                if (icon) icon.textContent = "🔊";
+            }
+            playChime();
+        }
+
+        ["click", "touchstart", "pointerdown", "keydown"].forEach(evt => {
+            document.addEventListener(evt, () => {
+                const banner = document.getElementById("tvAutoplayBanner");
+                if (banner && banner.style.display !== "none") {
+                    enableTvAudio();
+                } else {
+                    unlockDisplayAutoplay();
+                }
+            }, { passive: true });
+        });
+
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+            window.speechSynthesis.getVoices();
+        }
+
+        initDisplayLanguage();
+
+        document.getElementById("btnAudio").addEventListener("click", function() {
+            audioEnabled = !audioEnabled;
+            this.classList.toggle("active", audioEnabled);
+            document.getElementById("audioIcon").textContent = audioEnabled ? "🔊" : "🔇";
+            if (audioEnabled) {
+                enableTvAudio();
+            } else {
+                if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+            }
+        });
+
+
+        async function fetchQueue() {
+            try {
+                const res = await fetch(`${API}/hospitals/${encodeURIComponent(hospitalId)}/live-queue`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                if (data.hospital_name) {
+                    document.getElementById("hospitalNameDisplay").textContent = data.hospital_name;
+                    document.getElementById("hospitalSubDisplay").textContent = `${data.hospital_city || "OPD Clinic"} • Waiting Room Live Queue`;
+                }
+
+                // Stats
+                const stats = data.stats || {};
+                document.getElementById("statCompleted").textContent = stats.completed || 0;
+                document.getElementById("statServing").textContent = stats.serving || 0;
+                document.getElementById("statWaiting").textContent = stats.waiting || 0;
+                document.getElementById("waitingCountBadge").textContent = `${stats.waiting || 0} waiting`;
+
+                // Currently Serving (sort so most recently called token is primary)
+                const rawServing = data.currently_serving || [];
+                const serving = rawServing.sort((a, b) => {
+                    const timeA = new Date(a.called_at || a.created_at || 0).getTime();
+                    const timeB = new Date(b.called_at || b.created_at || 0).getTime();
+                    return timeB - timeA;
+                });
+                const heroSection = document.getElementById("heroServingSection");
+                const multiSection = document.getElementById("multiDoctorSection");
+                const servingGrid = document.getElementById("servingGrid");
+
+                if (serving.length === 0) {
+                    heroSection.innerHTML = `
+                        <div class="hero-serving-card">
+                            <div class="empty-serving">
+                                <p style="font-size: 32px; margin-bottom: 8px;">⏳</p>
+                                No patients currently inside consultation.
+                                <p style="font-size: 15px; color: #64748b; margin-top: 6px;">Next token will be announced here shortly.</p>
+                            </div>
+                        </div>
+                    `;
+                    multiSection.style.display = "none";
+                } else {
+                    const primary = serving[0];
+                    heroSection.innerHTML = `
+                        <div class="hero-serving-card">
+                            <div class="serving-label">Now Calling Token</div>
+                            <div class="giant-token-number">#${primary.token_number}</div>
+                            <div class="serving-patient-name">${primary.patient_name || "Patient"}</div>
+                            <div class="serving-meta-wrap">
+                                <div class="meta-pill">
+                                    <span>Doctor</span>
+                                    <strong>${primary.doctor || "Consultant"}</strong>
+                                </div>
+                                <div class="meta-pill">
+                                    <span>Department</span>
+                                    <strong>${primary.department || "General"}</strong>
+                                </div>
+                                <div class="meta-pill">
+                                    <span>Status</span>
+                                    <strong style="color: #10b981;">🟢 In Consultation</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Check if new token should be announced or repeat called
+                    const callKey = `${primary.id}_${primary.called_at || ''}`;
+                    if (lastAnnouncedCallKey !== callKey) {
+                        lastAnnouncedCallKey = callKey;
+                        lastAnnouncedToken = primary.id;
+                        announceToken(primary.token_number, primary.patient_name, primary.doctor);
+                    }
+
+                    // Multi-doctor sub-cards
+                    if (serving.length > 1) {
+                        multiSection.style.display = "block";
+                        servingGrid.innerHTML = serving.slice(1).map(s => `
+                            <div class="serving-sub-card">
+                                <div class="sub-card-token">#${s.token_number}</div>
+                                <div class="sub-card-patient">${s.patient_name || "Patient"}</div>
+                                <div class="sub-card-doc">${s.doctor} • ${s.department}</div>
+                            </div>
+                        `).join("");
+                    } else {
+                        multiSection.style.display = "none";
+                    }
+                }
+
+                // Previous / Recently Consulted Patients
+                const previousList = data.previous_patients || data.recently_completed || [];
+                const prevBadge = document.getElementById("prevCountBadge");
+                const prevGrid = document.getElementById("prevPatientsGrid");
+
+                if (prevBadge) {
+                    prevBadge.textContent = `${previousList.length} completed`;
+                }
+
+                if (prevGrid) {
+                    if (previousList.length === 0) {
+                        prevGrid.innerHTML = `
+                            <div class="prev-empty-notice">No completed consultations yet today.</div>
+                        `;
+                    } else {
+                        prevGrid.innerHTML = previousList.slice(0, 6).map(p => `
+                            <div class="prev-patient-card">
+                                <div class="prev-card-left">
+                                    <div class="prev-token-pill">#${p.token_number}</div>
+                                    <div class="prev-card-details">
+                                        <div class="prev-patient-name">${p.patient_name || "Patient"}</div>
+                                        <div class="prev-patient-doc">${p.doctor || "Consultant"} • ${p.department || "OPD"}</div>
+                                    </div>
+                                </div>
+                                <div class="prev-status-tag">✓ Done</div>
+                            </div>
+                        `).join("");
+                    }
+                }
+
+                // Upcoming Waiting List
+                const waiting = data.upcoming_waiting || [];
+                const queueList = document.getElementById("queueList");
+
+                if (waiting.length === 0) {
+                    queueList.innerHTML = `
+                        <div style="text-align: center; color: var(--text-secondary); padding: 40px 0;">
+                            ✨ All booked patients have been attended to!
+                        </div>
+                    `;
+                } else {
+                    queueList.innerHTML = waiting.map((t, idx) => `
+                        <div class="queue-item">
+                            <div class="queue-item-left">
+                                <div class="token-circle-badge">#${t.token_number}</div>
+                                <div>
+                                    <div class="queue-patient-name">${t.patient_name || "Patient"}</div>
+                                    <div class="queue-patient-doc">${t.doctor || "Doctor"} • ${t.department}</div>
+                                </div>
+                            </div>
+                            <div class="queue-item-right">
+                                <span class="queue-eta-badge">~${(idx + 1) * 10} min wait</span>
+                            </div>
+                        </div>
+                    `).join("");
+                }
+
+            } catch (err) {
+                console.warn("Queue fetch error:", err);
+            }
+        }
+
+        // Poll every 3 seconds for real-time responsiveness
+        setInterval(fetchQueue, 3000);
+        fetchQueue();
+    </script>
+</body>
+</html>

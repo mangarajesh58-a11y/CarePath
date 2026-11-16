@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promote Hospital & Manage Ads - CarePath</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="carepath-ai-small.png">
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f7fb;
+            color: #172554;
+        }
+
+        .page-container {
+            width: 100%;
+            max-width: 1050px;
+            margin: auto;
+            padding: 25px;
+        }
+
+        /* HEADER */
+        header {
+            background: white;
+            border-radius: 16px;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        header h1 {
+            margin: 0 0 5px;
+            color: #1976d2;
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        header p {
+            margin: 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-nav-dashboard {
+            background: #e2e8f0;
+            color: #1e293b;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-nav-dashboard:hover {
+            background: #cbd5e1;
+        }
+
+        .logout {
+            border: none;
+            background: #dc2626;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .logout:hover {
+            background: #b91c1c;
+        }
+
+        /* HERO BANNER */
+        .welcome-ad {
+            background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 50%, #1976d2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 25px rgba(109, 40, 217, 0.25);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .welcome-ad-text h2 {
+            margin: 0 0 8px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .welcome-ad-text p {
+            margin: 0;
+            opacity: 0.95;
+            font-size: 15px;
+            line-height: 1.5;
+            max-width: 620px;
+        }
+
+        .welcome-ad-badge {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            border: 1.5px solid rgba(255, 255, 255, 0.4);
+            padding: 14px 22px;
+            border-radius: 14px;
+            text-align: right;
+        }
+
+        .welcome-ad-badge .rate {
+            font-size: 26px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .welcome-ad-badge .term {
+            font-size: 12px;
+            color: #ede9fe;
+            font-weight: 600;
+        }
+
+        /* GRID CONTENT */
+        .ads-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 25px;
+            align-items: start;
+        }
+
+        .form-card, .list-card {
+            background: white;
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+        }
+
+        .card-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1.5px solid #f1f5f9;
+        }
+
+        .card-header-row h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .features-pill-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .feat-pill {
+            background: #f5f3ff;
+            color: #6d28d9;
+            border: 1px solid #ddd6fe;
+            padding: 5px 11px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* FORM ELEMENTS */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 700;
+            font-size: 13px;
+            color: #334155;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #1e293b;
+            background: #f8fafc;
+            outline: none;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #8b5cf6;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+
+        /* DROPZONE */
+        .ad-dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 24px 16px;
+            text-align: center;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ad-dropzone:hover, .ad-dropzone.dragover {
+            border-color: #8b5cf6;
+            background: #f5f3ff;
+        }
+
+        .ad-dropzone-icon {
+            font-size: 32px;
+            margin-bottom: 4px;
+        }
+
+        .ad-preview-wrapper {
+            margin-top: 12px;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+            border: 1.5px solid #e2e8f0;
+            position: relative;
+            max-height: 200px;
+            background: #000;
+        }
+
+        .ad-preview-wrapper img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .ad-preview-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        
+        /* AD FORMAT SWITCHER */
+        .format-card {
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            background: #ffffff;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .format-card:hover {
+            border-color: #a855f7;
+            background: #faf5ff;
+        }
+
+        .format-card.active {
+            border-color: #7c3aed;
+            background: #faf5ff;
+            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.15);
+        }
+
+        .video-source-pill {
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .video-source-pill.active {
+            background: #7c3aed;
+            color: #ffffff;
+            border-color: #7c3aed;
+        }
+
+        .badge-video {
+            background: #f3e8ff;
+            color: #7e22ce;
+            border: 1px solid #d8b4fe;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-banner {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* PRICING BREAKDOWN BOX */
+        .pricing-box {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+        }
+
+        .pricing-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        .pricing-row.total {
+            font-size: 15px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #cbd5e1;
+        }
+
+        .pricing-row.total .price {
+            color: #7c3aed;
+            font-size: 18px;
+        }
+
+        /* SUBMIT BUTTON */
+        .ad-submit-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 6px 18px rgba(124, 58, 237, 0.35);
+            transition: all 0.2s;
+        }
+
+        .ad-submit-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        .ad-submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ALERT BOX */
+        #adAlert {
+            display: none;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            line-height: 1.4;
+        }
+
+        /* CAMPAIGN LIST ITEMS */
+        .ad-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            background: #ffffff;
+            transition: all 0.2s;
+        }
+
+        .ad-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            border-color: #cbd5e1;
+        }
+
+        .ad-thumb {
+            width: 85px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #f1f5f9;
+            flex-shrink: 0;
+        }
+
+        .ad-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ad-item-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ad-item-meta {
+            font-size: 12px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge-active {
+            background: #dcfce7;
+            color: #15803d;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-expired {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-pending {
+            background: #fef3c7;
+            color: #b45309;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* EMPTY STATE */
+        .empty-ads {
+            text-align: center;
+            padding: 40px 15px;
+            color: #94a3b8;
+        }
+
+        .empty-ads-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+
+        /* FOOTER / BACK */
+        .bottom-nav {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        @media (max-width: 900px) {
+            .ads-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page-container">
+
+    <!-- HEADER -->
+    <header>
+        <div>
+            <h1>📢 Promote Hospital</h1>
+            <p>Upload promotional banners and reach thousands of patients searching for care.</p>
+        </div>
+        <div class="header-actions">
+            <a href="dashboard.html" class="btn-nav-dashboard">← Back to Dashboard</a>
+            <button class="logout" id="logoutButton">Logout</button>
+        </div>
+    </header>
+
+    <!-- WELCOME / VALUE PROP BANNER -->
+    <div class="welcome-ad">
+        <div class="welcome-ad-text">
+            <h2>⭐ Boost Patient Bookings with Sponsored Ads</h2>
+            <p>Your hospital banner is featured in the patient scrolling list <strong>after every 5 hospitals</strong>, rotating dynamically with direct "Book Appointment" and "Call" action buttons for 30 full days.</p>
+        </div>
+        <div class="welcome-ad-badge">
+            <div class="rate" id="welcomeRateDisplay">₹999 / ₹1,999</div>
+            <div class="term">Banner & Video 30-Day Campaigns</div>
+        </div>
+    </div>
+
+    <!-- MAIN TWO COLUMN GRID -->
+    <div class="ads-grid">
+
+        <!-- COLUMN 1: UPLOAD & LAUNCH FORM -->
+        <div class="form-card">
+            <div class="card-header-row">
+                <h2>🚀 Upload & Launch New Ad</h2>
+            </div>
+
+            <div class="features-pill-row">
+                <span class="feat-pill">✓ 30-Day Active Placement</span>
+                <span class="feat-pill">✓ Feed Injection (Every 5th Hospital)</span>
+                <span class="feat-pill">✓ Rotating Patient View</span>
+            </div>
+
+            <div id="adAlert"></div>
+
+            <form id="uploadAdForm">
+                <!-- CAMPAIGN FORMAT SELECTOR (BANNER VS VIDEO SPOTLIGHT) -->
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="font-weight: 800; font-size: 13.5px; color: #0f172a; margin-bottom: 8px; display: block;">
+                        1. Choose Campaign Format *
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div id="formatCardBanner" class="format-card active" onclick="selectAdFormat('banner')">
+                            <div style="font-size: 28px;">🖼️</div>
+                            <div>
+                                <strong style="display: block; font-size: 14px; color: #0f172a;">Standard Banner</strong>
+                                <span style="font-size: 12px; color: #2563eb; font-weight: 700;">₹<span class="lbl-banner-fee">999</span> • 30 Days</span>
+                            </div>
+                        </div>
+                        <div id="formatCardVideo" class="format-card" onclick="selectAdFormat('video')">
+                            <div style="font-size: 28px;">🎬</div>
+                            <div>
+                                <strong style="display: block; font-size: 14px; color: #0f172a;">Video Spotlight</strong>
+                                <span style="font-size: 12px; color: #7c3aed; font-weight: 700;">₹<span class="lbl-video-fee">1,999</span> • 30 Days</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION A: BANNER PHOTO UPLOAD (Visible for Banner format) -->
+                <div id="bannerSection" class="form-group">
+                    <label for="bannerFileInput">Promotional Banner Photo * (JPG, PNG, or WebP - max 5MB)</label>
+                    <div class="ad-dropzone" id="adDropzone">
+                        <div class="ad-dropzone-icon">🖼️</div>
+                        <div style="font-size: 14px; font-weight: 700; color: #334155;">Click to browse or drag & drop photo here</div>
+                        <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Recommended: 16:9 ratio or 1200×500 px for optimal mobile & desktop clarity</div>
+                        <input type="file" id="bannerFileInput" accept="image/jpeg,image/png,image/webp" style="display: none;" required>
+                    </div>
+
+                    <div id="previewContainer" class="ad-preview-wrapper">
+                        <img id="bannerPreviewImg" src="" alt="Banner Preview">
+                        <span class="ad-preview-badge">Live Banner Preview</span>
+                    </div>
+                </div>
+
+                <!-- SECTION B: VIDEO SPOTLIGHT UPLOAD (Visible for Video format) -->
+                <div id="videoSection" class="form-group" style="display: none; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <label style="font-weight: 800; font-size: 13.5px; color: #7c3aed; display: flex; align-items: center; gap: 6px; margin: 0;">
+                            <span>🎬</span> Video Creative Source *
+                        </label>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" id="tabVideoFile" class="video-source-pill active" onclick="switchVideoSourceTab('file')">📁 Upload MP4 File</button>
+                            <button type="button" id="tabVideoUrl" class="video-source-pill" onclick="switchVideoSourceTab('url')">🔗 Video Link URL</button>
+                        </div>
+                    </div>
+
+                    <!-- Video File Option -->
+                    <div id="videoFileBlock">
+                        <div class="ad-dropzone" id="videoDropzone" style="background: #ffffff;">
+                            <div class="ad-dropzone-icon">🎬</div>
+                            <div style="font-size: 14px; font-weight: 700; color: #1e293b;" id="videoDropText">Click to browse or drag & drop video file</div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Supported: MP4, WebM, MOV (Max 30 MB • Recommended 15 - 45 seconds)</div>
+                            <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/quicktime,video/ogg" style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- Video URL Option -->
+                    <div id="videoUrlBlock" style="display: none;">
+                        <input type="url" id="videoUrlInput" placeholder="e.g. https://example.com/promo.mp4 or YouTube video link" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;" oninput="onVideoUrlInputChange(this.value)">
+                        <div style="font-size: 11.5px; color: #64748b; margin-top: 4px;">Direct MP4/WebM video streams or YouTube URLs are supported.</div>
+                    </div>
+
+                    <!-- Live Video Preview Player -->
+                    <div id="videoPreviewContainer" style="display: none; margin-top: 14px; border-radius: 10px; overflow: hidden; background: #000; border: 1.5px solid #cbd5e1; position: relative;">
+                        <video id="videoPreviewPlayer" controls playsinline style="width: 100%; max-height: 240px; display: block; margin: auto;"></video>
+                        <span class="ad-preview-badge" style="background: rgba(124, 58, 237, 0.85);">🎬 Live Video Preview</span>
+                    </div>
+
+                    <!-- Optional Poster / Thumbnail for Video -->
+                    <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #cbd5e1;">
+                        <label for="videoPosterInput" style="font-size: 12.5px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">
+                            Optional Cover Poster / Thumbnail (JPG, PNG - max 5MB)
+                        </label>
+                        <input type="file" id="videoPosterInput" accept="image/jpeg,image/png,image/webp" style="font-size: 12px; color: #475569;">
+                    </div>
+                </div>
+
+                <!-- CAMPAIGN TITLE -->
+                <div class="form-group">
+                    <label for="adTitle">Campaign Title / Headline *</label>
+                    <input type="text" id="adTitle" placeholder="e.g. Comprehensive Cardiac Camp - 20% Off" minlength="3" maxlength="255" required>
+                </div>
+
+                <!-- DESCRIPTION -->
+                <div class="form-group">
+                    <label for="adDesc">Campaign Details / Offer Description (Optional)</label>
+                    <textarea id="adDesc" rows="3" placeholder="e.g. Free ECG and blood pressure checkup included with doctor consultation. Walk-ins welcome daily 9 AM - 6 PM." maxlength="1000"></textarea>
+                </div>
+
+                                <!-- YOUR HOSPITAL'S DIRECT PATIENT LINK -->
+                <div class="form-group" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1.5px solid #86efac; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                        <label style="margin: 0; font-weight: 700; font-size: 13.5px; color: #166534; display: flex; align-items: center; gap: 6px;">
+                            🏥 Your Direct Hospital Patient Link
+                        </label>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" onclick="copyHospitalDirectLink()" style="background: #16a34a; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                📋 Copy Link
+                            </button>
+                            <button type="button" onclick="useAsAdTargetLink()" style="background: #2563eb; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                🔗 Use in Target Link
+                            </button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="hospitalDirectLinkInput" readonly style="background: #ffffff; border: 1.5px solid #86efac; font-weight: 600; color: #15803d; font-size: 13px; font-family: monospace; padding: 10px 12px; border-radius: 8px; width: 100%; box-sizing: border-box;" value="Generating your direct link...">
+                    </div>
+                    <div style="font-size: 12px; color: #15803d; margin-top: 6px; line-height: 1.4;">
+                        ✨ When patients click this link (from your ad, WhatsApp, or website), CarePath directly opens your hospital details & appointment booking!
+                    </div>
+                </div>
+
+                <!-- CONTACT PHONE & TARGET URL -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group">
+                        <label for="adPhone">Contact Phone Number</label>
+                        <input type="tel" id="adPhone" placeholder="Contact number for patients">
+                    </div>
+                    <div class="form-group">
+                        <label for="adLink">Target Website / Offer Link (Optional)</label>
+                        <input type="url" id="adLink" placeholder="https://yourhospital.com/offer">
+                    </div>
+                </div>
+
+                <!-- PRICING SUMMARY BOX -->
+                <div class="pricing-box">
+                    <div class="pricing-row">
+                        <span>Campaign Format:</span>
+                        <strong id="pricingFormatName" style="color: #2563eb;">🖼️ Standard Banner Ad</strong>
+                    </div>
+                    <div class="pricing-row">
+                        <span>Campaign Duration:</span>
+                        <strong><span id="pricingDurationDays">30</span> Days</strong>
+                    </div>
+                    <div class="pricing-row">
+                        <span>Feed Placement:</span>
+                        <strong id="pricingPlacement">Patient App Feed (Every 5 Hospitals)</strong>
+                    </div>
+                    <div class="pricing-row">
+                        <span>Rotation Mode:</span>
+                        <strong>Dynamic Non-Fixed Rotation</strong>
+                    </div>
+                    <div class="pricing-row total">
+                        <span>Total Payable:</span>
+                        <span class="price" id="pricingTotalDisplay">₹999.00</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="ad-submit-btn" id="launchBtn">
+                    💳 Pay <span id="launchBtnAmount">₹999</span> & Launch 30-Day Campaign
+                </button>
+            </form>
+        </div>
+
+        <!-- COLUMN 2: ACTIVE & PAST CAMPAIGNS -->
+        <div class="list-card">
+            <div class="card-header-row">
+                <h2>📋 My Campaigns (<span id="activeCount">0</span> Active)</h2>
+                <button type="button" onclick="loadCampaigns()" style="background: none; border: none; color: #1976d2; font-size: 13px; font-weight: 700; cursor: pointer;">↻ Refresh</button>
+            </div>
+
+            <div id="campaignsLoading" style="text-align: center; padding: 30px; color: #64748b;">
+                <span>Loading your campaigns...</span>
+            </div>
+
+            <div id="campaignsContainer" style="display: none;"></div>
+
+            <div id="campaignsEmpty" class="empty-ads" style="display: none;">
+                <div class="empty-ads-icon">📢</div>
+                <div style="font-size: 15px; font-weight: 700; color: #475569;">No campaigns running yet</div>
+                <p style="font-size: 13px; margin: 6px 0 0; color: #64748b;">Fill out the form on the left to launch your first 30-day sponsored advertisement!</p>
+            </div>
+        </div>
+
+    </div>
+
+
+<!-- VIDEO WATCH MODAL -->
+<div id="videoWatchModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999; align-items: center; justify-content: center; padding: 20px;" onclick="if(event.target===this)closeVideoWatchModal()">
+    <div style="background: #0f172a; border-radius: 14px; max-width: 600px; width: 100%; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid #334155; color: white;">
+            <strong id="videoWatchTitle" style="font-size: 14px;">🎬 Video Ad Preview</strong>
+            <button type="button" onclick="closeVideoWatchModal()" style="background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        <div style="padding: 12px; background: #000;">
+            <video id="modalVideoPlayer" controls playsinline style="width: 100%; max-height: 380px; display: block; border-radius: 8px; margin: auto;"></video>
+        </div>
+    </div>
+</div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <div class="bottom-nav">
+        <a href="dashboard.html" class="btn-nav-dashboard">← Back to Hospital Dashboard</a>
+    </div>
+
+</div>
+
+<script>
+/* =====================================================
+   CONFIG & SESSION
+===================================================== */
+const API_URL = "https://carepath-3q9q.onrender.com";
+
+try { fetch(`${API_URL}/health`).catch(() => {}); } catch (_) {}
+
+const hospitalId = localStorage.getItem("hospital_id");
+const hospitalToken = localStorage.getItem("hospitalToken");
+let storedHospital = null;
+
+if (!hospitalToken || !hospitalId) {
+    alert("Please log in to your hospital account first.");
+    window.location.href = "index.html";
+}
+
+function getAuthHeaders(includeJson = false) {
+    const headers = { "Authorization": `Bearer ${hospitalToken || ""}` };
+    if (includeJson) headers["Content-Type"] = "application/json";
+    return headers;
+}
+
+// LOGOUT
+document.getElementById("logoutButton").addEventListener("click", () => {
+    localStorage.clear();
+    window.location.href = "index.html";
+});
+
+/* =====================================================
+   DYNAMIC AD PRICING ENGINE
+===================================================== */
+let adPricing = {
+    banner_ad_fee: 999.0,
+    video_ad_fee: 1999.0,
+    ad_duration_days: 30
+};
+let currentAdFormat = "banner"; // 'banner' or 'video'
+let currentVideoSourceTab = "file"; // 'file' or 'url'
+
+async function loadAdPricing() {
+    try {
+        const res = await fetch(`${API_URL}/admin/ad-pricing`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.banner_ad_fee) adPricing.banner_ad_fee = parseFloat(data.banner_ad_fee);
+            if (data.video_ad_fee) adPricing.video_ad_fee = parseFloat(data.video_ad_fee);
+            if (data.ad_duration_days) adPricing.ad_duration_days = parseInt(data.ad_duration_days);
+        }
+    } catch (e) {
+        console.warn("Using default ad pricing:", e);
+    }
+
+    // Update UI Labels
+    const bannerFeeEls = document.querySelectorAll(".lbl-banner-fee");
+    bannerFeeEls.forEach(el => el.textContent = Math.round(adPricing.banner_ad_fee).toLocaleString("en-IN"));
+
+    const videoFeeEls = document.querySelectorAll(".lbl-video-fee");
+    videoFeeEls.forEach(el => el.textContent = Math.round(adPricing.video_ad_fee).toLocaleString("en-IN"));
+
+    const welcomeRate = document.getElementById("welcomeRateDisplay");
+    if (welcomeRate) {
+        welcomeRate.textContent = `₹${Math.round(adPricing.banner_ad_fee).toLocaleString("en-IN")} / ₹${Math.round(adPricing.video_ad_fee).toLocaleString("en-IN")}`;
+    }
+
+    const durationDaysEl = document.getElementById("pricingDurationDays");
+    if (durationDaysEl) durationDaysEl.textContent = adPricing.ad_duration_days;
+
+    updatePricingDisplay();
+}
+
+function selectAdFormat(format) {
+    currentAdFormat = format;
+    const cardBanner = document.getElementById("formatCardBanner");
+    const cardVideo = document.getElementById("formatCardVideo");
+    const bannerSec = document.getElementById("bannerSection");
+    const videoSec = document.getElementById("videoSection");
+    const bannerInput = document.getElementById("bannerFileInput");
+
+    if (format === "video") {
+        cardBanner.classList.remove("active");
+        cardVideo.classList.add("active");
+        bannerSec.style.display = "none";
+        videoSec.style.display = "block";
+        bannerInput.removeAttribute("required");
+    } else {
+        cardVideo.classList.remove("active");
+        cardBanner.classList.add("active");
+        videoSec.style.display = "none";
+        bannerSec.style.display = "block";
+        bannerInput.setAttribute("required", "required");
+    }
+
+    updatePricingDisplay();
+}
+
+function switchVideoSourceTab(tab) {
+    currentVideoSourceTab = tab;
+    const tabFile = document.getElementById("tabVideoFile");
+    const tabUrl = document.getElementById("tabVideoUrl");
+    const blockFile = document.getElementById("videoFileBlock");
+    const blockUrl = document.getElementById("videoUrlBlock");
+
+    if (tab === "url") {
+        tabFile.classList.remove("active");
+        tabUrl.classList.add("active");
+        blockFile.style.display = "none";
+        blockUrl.style.display = "block";
+    } else {
+        tabUrl.classList.remove("active");
+        tabFile.classList.add("active");
+        blockUrl.style.display = "none";
+        blockFile.style.display = "block";
+    }
+}
+
+function updatePricingDisplay() {
+    const isVideo = currentAdFormat === "video";
+    const fee = isVideo ? adPricing.video_ad_fee : adPricing.banner_ad_fee;
+    const formattedFee = Math.round(fee).toLocaleString("en-IN");
+
+    const formatName = document.getElementById("pricingFormatName");
+    if (formatName) {
+        formatName.innerHTML = isVideo 
+            ? '<span style="color: #7c3aed;">🎬 Video Spotlight Ad</span>' 
+            : '<span style="color: #2563eb;">🖼️ Standard Banner Ad</span>';
+    }
+
+    const totalDisplay = document.getElementById("pricingTotalDisplay");
+    if (totalDisplay) totalDisplay.textContent = `₹${fee.toFixed(2)}`;
+
+    const btnAmount = document.getElementById("launchBtnAmount");
+    if (btnAmount) btnAmount.textContent = `₹${formattedFee}`;
+}
+
+/* =====================================================
+   PREFILL HOSPITAL INFO
+===================================================== */
+async function loadHospitalInfo() {
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}`, {
+            headers: getAuthHeaders(false)
+        });
+        if (res.ok) {
+            storedHospital = await res.json();
+            const phoneField = document.getElementById("adPhone");
+            if (phoneField && !phoneField.value && storedHospital.phone) {
+                phoneField.value = storedHospital.phone;
+            }
+        }
+    } catch (e) {
+        console.warn("Could not load hospital info:", e);
+    }
+}
+
+/* =====================================================
+   FILE DROPZONE & LIVE PREVIEWS
+===================================================== */
+// Banner Image Dropzone
+const dropzone = document.getElementById("adDropzone");
+const fileInput = document.getElementById("bannerFileInput");
+const previewContainer = document.getElementById("previewContainer");
+const previewImg = document.getElementById("bannerPreviewImg");
+
+if (dropzone && fileInput) {
+    dropzone.addEventListener("click", () => fileInput.click());
+
+    dropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropzone.classList.add("dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+        dropzone.classList.remove("dragover");
+    });
+
+    dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            fileInput.files = e.dataTransfer.files;
+            handleBannerPreview(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files[0]) {
+            handleBannerPreview(fileInput.files[0]);
+        }
+    });
+}
+
+function handleBannerPreview(file) {
+    if (!file || !file.type.startsWith("image/")) {
+        showAlert("Please select a valid image file (JPG, PNG, or WebP).", "error");
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        showAlert("File size exceeds 5MB limit. Please upload a smaller image.", "error");
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        previewImg.src = e.target.result;
+        previewContainer.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+}
+
+// Video Dropzone & Live Player Preview
+const videoDropzone = document.getElementById("videoDropzone");
+const videoFileInput = document.getElementById("videoFileInput");
+const videoUrlInput = document.getElementById("videoUrlInput");
+const videoPreviewContainer = document.getElementById("videoPreviewContainer");
+const videoPreviewPlayer = document.getElementById("videoPreviewPlayer");
+
+if (videoDropzone && videoFileInput) {
+    videoDropzone.addEventListener("click", () => videoFileInput.click());
+
+    videoDropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        videoDropzone.classList.add("dragover");
+    });
+
+    videoDropzone.addEventListener("dragleave", () => {
+        videoDropzone.classList.remove("dragover");
+    });
+
+    videoDropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        videoDropzone.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            videoFileInput.files = e.dataTransfer.files;
+            handleVideoFilePreview(e.dataTransfer.files[0]);
+        }
+    });
+
+    videoFileInput.addEventListener("change", () => {
+        if (videoFileInput.files && videoFileInput.files[0]) {
+            handleVideoFilePreview(videoFileInput.files[0]);
+        }
+    });
+}
+
+function handleVideoFilePreview(file) {
+    if (!file) return;
+    if (file.size > 30 * 1024 * 1024) {
+        showAlert("Video file exceeds 30MB limit. Please compress or choose a shorter video.", "error");
+        return;
+    }
+    const blobUrl = URL.createObjectURL(file);
+    videoPreviewPlayer.src = blobUrl;
+    videoPreviewContainer.style.display = "block";
+    const dropText = document.getElementById("videoDropText");
+    if (dropText) dropText.textContent = `🎬 Selected: ${file.name} (${(file.size / (1024*1024)).toFixed(1)} MB)`;
+}
+
+function onVideoUrlInputChange(url) {
+    url = (url || "").trim();
+    if (!url) {
+        videoPreviewContainer.style.display = "none";
+        videoPreviewPlayer.pause();
+        return;
+    }
+    videoPreviewPlayer.src = url;
+    videoPreviewContainer.style.display = "block";
+}
+
+function showAlert(msg, type = "error") {
+    const alertBox = document.getElementById("adAlert");
+    if (!alertBox) return;
+    alertBox.style.display = "block";
+    alertBox.textContent = msg;
+    if (type === "error") {
+        alertBox.style.background = "#fee2e2";
+        alertBox.style.color = "#b91c1c";
+        alertBox.style.border = "1px solid #f87171";
+    } else {
+        alertBox.style.background = "#dcfce7";
+        alertBox.style.color = "#15803d";
+        alertBox.style.border = "1px solid #86efac";
+    }
+}
+
+/* =====================================================
+   FORM SUBMISSION & CASHFREE PAYMENT
+===================================================== */
+const form = document.getElementById("uploadAdForm");
+const launchBtn = document.getElementById("launchBtn");
+
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const isVideo = currentAdFormat === "video";
+    const bannerFile = fileInput.files ? fileInput.files[0] : null;
+    const videoFile = videoFileInput && videoFileInput.files ? videoFileInput.files[0] : null;
+    const videoPoster = document.getElementById("videoPosterInput")?.files?.[0] || null;
+    const videoUrl = videoUrlInput ? videoUrlInput.value.trim() : "";
+    
+    const title = document.getElementById("adTitle").value.trim();
+    const desc = document.getElementById("adDesc").value.trim();
+    const phone = document.getElementById("adPhone").value.trim();
+    const link = document.getElementById("adLink").value.trim();
+
+    if (isVideo) {
+        if (!videoFile && !videoUrl) {
+            showAlert("Please upload a video file or provide a video link.", "error");
+            return;
+        }
+    } else {
+        if (!bannerFile) {
+            showAlert("Please choose a promotional banner photo.", "error");
+            return;
+        }
+    }
+
+    if (title.length < 3) {
+        showAlert("Please enter a headline with at least 3 characters.", "error");
+        return;
+    }
+
+    const expectedFee = isVideo ? adPricing.video_ad_fee : adPricing.banner_ad_fee;
+    const formatLabel = isVideo ? "Video Spotlight" : "Banner";
+
+    launchBtn.disabled = true;
+    launchBtn.innerHTML = `⏳ Preparing ${formatLabel} Campaign Order...`;
+
+    try {
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("description", desc);
+        formData.append("target_phone", phone);
+        formData.append("target_link", link);
+        formData.append("ad_type", currentAdFormat);
+        formData.append("custom_fee", expectedFee.toString());
+
+        if (isVideo) {
+            if (videoFile) formData.append("video_file", videoFile);
+            if (videoUrl) formData.append("video_url", videoUrl);
+            if (videoPoster) formData.append("photo", videoPoster);
+        } else {
+            if (bannerFile) formData.append("photo", bannerFile);
+        }
+
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/create-order`, {
+            method: "POST",
+            headers: getAuthHeaders(false),
+            body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || `Order creation failed (${res.status})`);
+        }
+
+        const cfSessionId = data.payment_session_id;
+        const cfOrderId = data.cashfree_order_id;
+        const adId = data.ad_id;
+
+        if (!cfSessionId) {
+            throw new Error("Cashfree session token was not returned by server.");
+        }
+
+        localStorage.setItem("pending_ad_id", adId.toString());
+        localStorage.setItem("pending_ad_order_id", cfOrderId);
+
+        launchBtn.innerHTML = `🔐 Launching Secure Payment Gateway...`;
+
+        if (!window.Cashfree) {
+            throw new Error("Cashfree checkout SDK failed to load. Please check your network.");
+        }
+
+        const cashfree = Cashfree({
+            mode: "sandbox"
+        });
+
+        const checkoutOptions = {
+            paymentSessionId: cfSessionId,
+            redirectTarget: "_modal"
+        };
+
+        cashfree.checkout(checkoutOptions).then((result) => {
+            if (result.error) {
+                showAlert(`Payment canceled or failed: ${result.error.message}`, "error");
+                launchBtn.disabled = false;
+                updatePricingDisplay();
+            } else if (result.paymentDetails) {
+                launchBtn.innerHTML = `🔄 Verifying payment confirmation...`;
+                verifyAdPayment(cfOrderId, adId);
+            }
+        });
+
+    } catch (err) {
+        console.error("Ad order error:", err);
+        showAlert(err.message || "Failed to initiate payment. Please try again.", "error");
+        launchBtn.disabled = false;
+        updatePricingDisplay();
+    }
+});
+
+/* =====================================================
+   PAYMENT VERIFICATION
+===================================================== */
+async function verifyAdPayment(orderId, adId) {
+    launchBtn.disabled = true;
+    launchBtn.innerHTML = `🔄 Confirming payment & activating campaign...`;
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/verify-payment`, {
+            method: "POST",
+            headers: getAuthHeaders(true),
+            body: JSON.stringify({
+                cashfree_order_id: orderId,
+                ad_id: parseInt(adId)
+            })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || "Payment verification failed.");
+        }
+
+        localStorage.removeItem("pending_ad_id");
+        localStorage.removeItem("pending_ad_order_id");
+
+        showAlert("🎉 Campaign activated successfully! Your ad is now live in the Patient App feed.", "success");
+        form.reset();
+        previewContainer.style.display = "none";
+        videoPreviewContainer.style.display = "none";
+        loadCampaigns();
+
+    } catch (err) {
+        console.error("Payment verify error:", err);
+        showAlert(`Verification note: ${err.message}. If payment was deducted, your ad will activate automatically within 5 minutes.`, "error");
+    } finally {
+        launchBtn.disabled = false;
+        updatePricingDisplay();
+    }
+}
+
+/* =====================================================
+   LOAD MY CAMPAIGNS
+===================================================== */
+async function loadCampaigns() {
+    const loading = document.getElementById("campaignsLoading");
+    const container = document.getElementById("campaignsContainer");
+
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads`, {
+            headers: getAuthHeaders(false)
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const ads = await res.json();
+
+        loading.style.display = "none";
+        container.style.display = "block";
+
+        if (!ads || ads.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📢</div>
+                    <div style="font-weight: 700; color: #475569; font-size: 15px;">No campaigns running yet</div>
+                    <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Upload your first banner or video spotlight above to appear directly in the patient discovery feed!</div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = ads.map(a => {
+            const isVideo = a.ad_type === "video" || (a.video_url && a.video_url.length > 0);
+            const statusLabel = a.status === "active" ? "🟢 Live" : (a.status === "pending" ? "🟡 Pending Payment" : "⚪ Expired");
+            const badgeClass = a.status === "active" ? "badge-active" : (a.status === "pending" ? "badge-pending" : "badge-expired");
+            const formatBadge = isVideo 
+                ? '<span class="badge-video">🎬 Video Spotlight</span>' 
+                : '<span class="badge-banner">🖼️ Banner</span>';
+
+            const bannerSrc = a.image_url ? (a.image_url.startsWith("http") ? a.image_url : `${API_URL}${a.image_url}`) : "";
+            const videoSrc = a.video_url ? (a.video_url.startsWith("http") ? a.video_url : `${API_URL}${a.video_url}`) : "";
+
+            return `
+            <div class="ad-item">
+                <div style="display: flex; gap: 14px; align-items: center; flex: 1;">
+                    ${bannerSrc 
+                        ? `<img src="${bannerSrc}" alt="Ad" class="ad-thumb" onerror="this.style.display='none'">` 
+                        : (isVideo ? `<div class="ad-thumb" style="display: flex; align-items: center; justify-content: center; background: #f3e8ff; font-size: 24px; border-radius: 8px;">🎬</div>` : "")}
+                    <div class="ad-item-content">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span class="ad-item-title">${a.title}</span>
+                            ${formatBadge}
+                        </div>
+                        <div class="ad-item-meta" style="margin-top: 4px;">
+                            <span class="${badgeClass}">${statusLabel}</span>
+                            <span>Fee: ₹${a.amount_paid || (isVideo ? 1999 : 999)}</span>
+                            ${a.expires_at ? `<span>Expires: ${new Date(a.expires_at).toLocaleDateString()}</span>` : ""}
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    ${isVideo && videoSrc ? `
+                        <button type="button" onclick="watchVideoModal('${videoSrc}', '${encodeURIComponent(a.title)}')" style="background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; padding: 7px 12px; border-radius: 8px; font-weight: 700; font-size: 12.5px; cursor: pointer; white-space: nowrap;">
+                            ▶ Watch Video
+                        </button>
+                    ` : ""}
+                    <button type="button" onclick="deleteHospitalAd(${a.id})" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 0.2s;">
+                        🗑️ Delete
+                    </button>
+                </div>
+            </div>
+            `;
+        }).join("");
+
+    } catch (e) {
+        console.error("Load campaigns error:", e);
+        loading.style.display = "none";
+        container.style.display = "block";
+        container.innerHTML = `<div style="color: #ef4444; font-size: 13px; text-align: center; padding: 20px;">Could not load campaigns: ${e.message}</div>`;
+    }
+}
+
+/* =====================================================
+   VIDEO WATCH MODAL
+===================================================== */
+function watchVideoModal(src, title) {
+    const modal = document.getElementById("videoWatchModal");
+    const player = document.getElementById("modalVideoPlayer");
+    const titleEl = document.getElementById("videoWatchTitle");
+    if (!modal || !player) return;
+
+    if (titleEl) titleEl.textContent = `🎬 ${decodeURIComponent(title || "Video Ad Preview")}`;
+    player.src = src;
+    modal.style.display = "flex";
+    player.play().catch(() => {});
+}
+
+function closeVideoWatchModal() {
+    const modal = document.getElementById("videoWatchModal");
+    const player = document.getElementById("modalVideoPlayer");
+    if (player) {
+        player.pause();
+        player.src = "";
+    }
+    if (modal) modal.style.display = "none";
+}
+
+/* =====================================================
+   DELETE CAMPAIGN
+===================================================== */
+async function deleteHospitalAd(adId) {
+    if (!confirm("Are you sure you want to permanently delete this advertisement campaign?")) return;
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/${adId}`, {
+            method: "DELETE",
+            headers: getAuthHeaders(true)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to delete ad.");
+        alert("Advertisement campaign has been deleted.");
+        await loadCampaigns();
+    } catch (err) {
+        alert(err.message || "Failed to delete ad.");
+    }
+}
+
+/* =====================================================
+   HOSPITAL DIRECT PATIENT LINK HELPERS
+===================================================== */
+function generateHospitalDirectLink() {
+    const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId");
+    if (!activeHospId) return "";
+
+    const loc = window.location;
+    const isLocal = loc.hostname === "localhost" || loc.hostname === "127.0.0.1";
+
+    let directLink = "";
+    if (isLocal) {
+        const pathname = loc.pathname;
+        let patientPath = "/patient/hospital-details.html";
+        if (pathname.includes("/hospital/")) {
+            patientPath = pathname.substring(0, pathname.lastIndexOf("/hospital/")) + "/patient/hospital-details.html";
+        }
+        directLink = `${loc.origin}${patientPath}?id=${activeHospId}`;
+    } else {
+        directLink = `https://carepath-patient-mx5v.vercel.app/hospital-details.html?id=${activeHospId}`;
+    }
+
+    const input = document.getElementById("hospitalDirectLinkInput");
+    if (input) {
+        input.value = directLink;
+    }
+    return directLink;
+}
+
+function copyHospitalDirectLink() {
+    const input = document.getElementById("hospitalDirectLinkInput");
+    if (!input || !input.value) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+        alert("Hospital direct patient link copied to clipboard!\n\n" + input.value);
+    }).catch(() => {
+        input.select();
+        document.execCommand("copy");
+        alert("Hospital direct patient link copied to clipboard!");
+    });
+}
+
+function useAsAdTargetLink() {
+    const directLink = generateHospitalDirectLink();
+    const adLinkInput = document.getElementById("adLink");
+    if (adLinkInput && directLink) {
+        adLinkInput.value = directLink;
+        adLinkInput.focus();
+        adLinkInput.style.borderColor = "#16a34a";
+        adLinkInput.style.background = "#f0fdf4";
+        setTimeout(() => {
+            adLinkInput.style.borderColor = "";
+            adLinkInput.style.background = "";
+        }, 1500);
+    }
+}
+
+/* =====================================================
+   AUTO-CHECK REDIRECT RETURN
+===================================================== */
+(function checkReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const adOrderId = params.get("ad_order_id") || params.get("cashfree_order_id");
+    const storedAdId = localStorage.getItem("pending_ad_id");
+    if (adOrderId && storedAdId) {
+        verifyAdPayment(adOrderId, storedAdId);
+    }
+})();
+
+// INITIAL LOAD
+generateHospitalDirectLink();
+loadHospitalInfo();
+loadAdPricing();
+loadCampaigns();
+
+</script>
+</body>
+</html>

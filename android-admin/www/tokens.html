@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Tokens - CarePath</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+<div class="page-container">
+
+
+    <!-- MOBILE APP HEADER -->
+    <header class="app-header">
+        <div class="header-brand">
+            <a href="dashboard.html" style="text-decoration: none; font-size: 20px; color: #1e293b; margin-right: 4px; display: flex; align-items: center;">←</a>
+            <img src="carepath-ai-small.png" alt="CarePath AI Logo" class="app-logo">
+            <div>
+                <h1>Patient Tokens</h1>
+                <p>Live OPD Consultations</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <!-- Three Dots (Kebab Menu) Button -->
+            <div class="kebab-menu-container">
+                <button type="button" class="btn-kebab" onclick="toggleKebabMenu(event)" aria-label="More options" title="Menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2.2"></circle>
+                        <circle cx="12" cy="12" r="2.2"></circle>
+                        <circle cx="12" cy="19" r="2.2"></circle>
+                    </svg>
+                </button>
+                <div id="kebabDropdown" class="kebab-dropdown">
+                    <div class="kebab-header">Token Quick Actions</div>
+                    <a href="javascript:void(0)" onclick="loadTokens()"><span class="kebab-icon">🔄</span> Refresh Tokens</a>
+                    <a href="javascript:void(0)" onclick="exportTokensCSV()"><span class="kebab-icon">📥</span> Export CSV Tokens</a>
+                    <div class="kebab-divider"></div>
+                    <a href="dashboard.html"><span class="kebab-icon">🏠</span> Admin Dashboard</a>
+                    <a href="patients.html"><span class="kebab-icon">👥</span> Patient Directory</a>
+                    <a href="hospitals.html"><span class="kebab-icon">🏥</span> Hospitals</a>
+                    <a href="contact-settings.html"><span class="kebab-icon">⚙️</span> Settings & Fees</a>
+                    <a href="payments.html"><span class="kebab-icon">💳</span> Payout Ledger</a>
+                    <div class="kebab-divider"></div>
+                    <a href="javascript:void(0)" onclick="adminLogout()" class="kebab-logout"><span class="kebab-icon">🚪</span> Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+
+
+    <!-- TOKEN TABLE -->
+
+    <div class="table-card">
+
+
+        <!-- PAGE HEADING -->
+
+        <div class="page-heading">
+
+            <div>
+
+                <h2>
+                    Token List
+                </h2>
+
+                <p>
+                    View all patient tokens and payment status.
+                </p>
+
+            </div>
+
+
+            <button
+                type="button"
+                onclick="loadTokens()"
+            >
+                🔄 Refresh
+            </button>
+
+        </div>
+
+        <!-- SEARCH AND FILTER BAR -->
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 18px;">
+            <input type="text" id="tokenSearchInput" placeholder="🔍 Search Token #, Patient, Phone, Hospital, Doctor..." oninput="filterTokens()" style="padding: 9px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; flex: 1; min-width: 260px; outline: none;">
+            <select id="tokenStatusFilter" onchange="filterTokens()" style="padding: 9px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; outline: none;">
+                <option value="">All Statuses</option>
+                <option value="waiting">Waiting</option>
+                <option value="serving">Serving / In Consultation</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+            <select id="tokenPaymentFilter" onchange="filterTokens()" style="padding: 9px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; outline: none;">
+                <option value="">All Payments</option>
+                <option value="PAID">PAID</option>
+                <option value="PENDING">PENDING</option>
+                <option value="FAILED">FAILED</option>
+            </select>
+            <button type="button" onclick="exportTokensCSV()" style="padding: 9px 16px; background: #059669; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                📥 Export CSV
+            </button>
+        </div>
+
+        <!-- MESSAGE -->
+
+        <div
+            id="message"
+            class="message"
+        ></div>
+
+
+
+        <!-- TABLE -->
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            ID
+                        </th>
+
+                        <th>
+                            Patient
+                        </th>
+
+                        <th>
+                            Hospital
+                        </th>
+
+                        <th>
+                            Department
+                        </th>
+
+                        <th>
+                            Doctor
+                        </th>
+
+                        <th>
+                            Token
+                        </th>
+
+                        <th>
+                            Token Fee
+                        </th>
+
+                        <th>
+                            Platform Fee
+                        </th>
+
+                        <th>
+                            Total
+                        </th>
+
+                        <th>
+                            Payment
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            360° Dossier
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="tokenTableBody">
+
+                    <tr>
+
+                        <td
+                            colspan="12"
+                            class="loading"
+                        >
+                            Loading tokens...
+                        </td>
+
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- BACK BUTTON -->
+
+    <button
+        type="button"
+        class="back-button"
+        onclick="goDashboard()"
+    >
+        ← Back to Dashboard
+    </button>
+
+
+</div>
+
+
+
+<!-- 360° TOKEN CONSULTATION DOSSIER MODAL -->
+<div id="tokenDossierModal" class="dossier-modal" style="display: none;" onclick="if(event.target===this)closeTokenDossier()">
+    <div class="dossier-modal-content">
+        <div class="bottom-sheet-handle"></div>
+        <div class="dossier-modal-header">
+            <div>
+                <h3 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                    🎫 360° Consultation & Patient Dossier
+                </h3>
+                <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Complete patient identity, hospital profile, doctor details, and payment breakdown</p>
+            </div>
+            <button type="button" onclick="closeTokenDossier()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+
+        <div class="dossier-modal-body" id="tokenDossierBody">
+            <p style="text-align: center; color: #94a3b8; padding: 20px;">Loading consultation details...</p>
+        </div>
+
+        <div class="dossier-modal-footer">
+            <button type="button" onclick="closeTokenDossier()" style="padding: 8px 18px; background: #e2e8f0; color: #334155; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- FIXED MOBILE BOTTOM NAVIGATION -->
+<nav class="mobile-bottom-nav">
+    <a href="dashboard.html" class="nav-item" id="navHome">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+    </a>
+    <a href="patients.html" class="nav-item" id="navPatients">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Patients</span>
+    </a>
+    <a href="tokens.html" class="nav-item active" id="navTokens">
+        <span class="nav-icon">🎫</span>
+        <span class="nav-label">Tokens</span>
+    </a>
+    <a href="hospitals.html" class="nav-item" id="navHospitals">
+        <span class="nav-icon">🏥</span>
+        <span class="nav-label">Hospitals</span>
+    </a>
+    <a href="contact-settings.html" class="nav-item" id="navSettings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+    </a>
+</nav>
+
+<!-- ADMIN JAVASCRIPT -->
+<script src="script.js"></script>
+
+</body>
+
+</html>

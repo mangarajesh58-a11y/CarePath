@@ -865,35 +865,106 @@
   }
 
 
+  // Shared IntersectionObserver for Sponsored Video AutoPlay/AutoPause
+  let sponsoredVideoObserver = null;
+  if (typeof IntersectionObserver !== "undefined") {
+    sponsoredVideoObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const vid = entry.target;
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.4) {
+          vid.play().catch(() => {});
+        } else {
+          vid.pause();
+        }
+      });
+    }, { threshold: [0.1, 0.4, 0.8] });
+  }
+
   function makeSponsoredAdCard(ad) {
     if (!ad) return null;
-    const card = makeElement("article", "hospital-card sponsored-ad-card");
+    const isVideo = (ad.ad_type === "video" || !!ad.video_url);
+    const card = makeElement("article", "hospital-card sponsored-ad-card" + (isVideo ? " sponsored-video-ad-card" : ""));
 
-    const cover = makeElement("div", "hospital-cover sponsored-cover");
-    const photo = makeElement("img", "hospital-photo sponsored-photo");
+    let cover;
+    if (isVideo) {
+      cover = makeElement("div", "hospital-cover sponsored-cover sponsored-video-cover");
+      const video = document.createElement("video");
+      video.className = "sponsored-video-player";
+      video.setAttribute("playsinline", "");
+      video.setAttribute("loop", "");
+      video.setAttribute("preload", "metadata");
+      video.muted = true;
 
-    const rawUrl = ad.image_url || ad.hospital_image || "";
-    let finalSrc = rawUrl;
-    if (rawUrl && !rawUrl.startsWith("http") && !rawUrl.startsWith("data:")) {
-      finalSrc = API_BASE + (rawUrl.startsWith("/") ? "" : "/") + rawUrl;
+      let rawVideoUrl = ad.video_url || "";
+      if (rawVideoUrl && !rawVideoUrl.startsWith("http") && !rawVideoUrl.startsWith("data:")) {
+        rawVideoUrl = API_BASE + (rawVideoUrl.startsWith("/") ? "" : "/") + rawVideoUrl;
+      }
+      video.src = rawVideoUrl;
+
+      const rawPoster = ad.image_url || ad.hospital_image || "";
+      if (rawPoster) {
+        let finalPoster = rawPoster;
+        if (!finalPoster.startsWith("http") && !finalPoster.startsWith("data:")) {
+          finalPoster = API_BASE + (finalPoster.startsWith("/") ? "" : "/") + rawPoster;
+        }
+        video.poster = finalPoster;
+      }
+
+      const audioPill = makeElement("button", "sponsored-audio-pill", "🔇 Tap to Unmute");
+      audioPill.type = "button";
+      audioPill.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        video.muted = !video.muted;
+        audioPill.textContent = video.muted ? "🔇 Tap to Unmute" : "🔊 Sound On";
+      });
+
+      const progressContainer = makeElement("div", "sponsored-video-progress");
+      const progressBar = makeElement("div", "sponsored-video-progress-bar");
+      progressContainer.appendChild(progressBar);
+
+      video.addEventListener("timeupdate", function () {
+        if (video.duration) {
+          const pct = (video.currentTime / video.duration) * 100;
+          progressBar.style.width = pct + "%";
+        }
+      });
+
+      cover.appendChild(video);
+      cover.appendChild(audioPill);
+      cover.appendChild(progressContainer);
+
+      if (sponsoredVideoObserver) {
+        sponsoredVideoObserver.observe(video);
+      }
+
+      cover.appendChild(makeElement("span", "sponsored-badge video-badge", "🎬 SPONSORED VIDEO"));
+    } else {
+      cover = makeElement("div", "hospital-cover sponsored-cover");
+      const photo = makeElement("img", "hospital-photo sponsored-photo");
+
+      const rawUrl = ad.image_url || ad.hospital_image || "";
+      let finalSrc = rawUrl;
+      if (rawUrl && !rawUrl.startsWith("http") && !rawUrl.startsWith("data:")) {
+        finalSrc = API_BASE + (rawUrl.startsWith("/") ? "" : "/") + rawUrl;
+      }
+      if (!finalSrc) {
+        finalSrc = FALLBACK_HOSPITAL_PHOTOS[0];
+      }
+
+      photo.src = finalSrc;
+      photo.alt = (ad.title || ad.hospital_name || "CarePath") + " sponsored banner";
+      photo.loading = "lazy";
+      photo.onerror = function () {
+        photo.onerror = null;
+        photo.src = FALLBACK_HOSPITAL_PHOTOS[0];
+      };
+
+      cover.appendChild(photo);
+      cover.appendChild(makeElement("span", "hospital-photo-shade"));
+
+      // Sponsored badge
+      cover.appendChild(makeElement("span", "sponsored-badge", "📢 SPONSORED"));
     }
-    if (!finalSrc) {
-      finalSrc = FALLBACK_HOSPITAL_PHOTOS[0];
-    }
-
-    photo.src = finalSrc;
-    photo.alt = (ad.title || ad.hospital_name || "CarePath") + " sponsored banner";
-    photo.loading = "lazy";
-    photo.onerror = function () {
-      photo.onerror = null;
-      photo.src = FALLBACK_HOSPITAL_PHOTOS[0];
-    };
-
-    cover.appendChild(photo);
-    cover.appendChild(makeElement("span", "hospital-photo-shade"));
-
-    // Sponsored badge
-    cover.appendChild(makeElement("span", "sponsored-badge", "📢 SPONSORED"));
 
     // Hospital attribution chip
     if (ad.hospital_name) {

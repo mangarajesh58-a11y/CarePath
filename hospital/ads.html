@@ -285,6 +285,69 @@
             font-weight: 600;
         }
 
+        
+        /* AD FORMAT SWITCHER */
+        .format-card {
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            background: #ffffff;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .format-card:hover {
+            border-color: #a855f7;
+            background: #faf5ff;
+        }
+
+        .format-card.active {
+            border-color: #7c3aed;
+            background: #faf5ff;
+            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.15);
+        }
+
+        .video-source-pill {
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .video-source-pill.active {
+            background: #7c3aed;
+            color: #ffffff;
+            border-color: #7c3aed;
+        }
+
+        .badge-video {
+            background: #f3e8ff;
+            color: #7e22ce;
+            border: 1px solid #d8b4fe;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-banner {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
         /* PRICING BREAKDOWN BOX */
         .pricing-box {
             background: #f8fafc;
@@ -495,8 +558,8 @@
             <p>Your hospital banner is featured in the patient scrolling list <strong>after every 5 hospitals</strong>, rotating dynamically with direct "Book Appointment" and "Call" action buttons for 30 full days.</p>
         </div>
         <div class="welcome-ad-badge">
-            <div class="rate">₹999</div>
-            <div class="term">for 30 Days Validity</div>
+            <div class="rate" id="welcomeRateDisplay">₹999 / ₹1,999</div>
+            <div class="term">Banner & Video 30-Day Campaigns</div>
         </div>
     </div>
 
@@ -518,8 +581,31 @@
             <div id="adAlert"></div>
 
             <form id="uploadAdForm">
-                <!-- BANNER PHOTO -->
-                <div class="form-group">
+                <!-- CAMPAIGN FORMAT SELECTOR (BANNER VS VIDEO SPOTLIGHT) -->
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="font-weight: 800; font-size: 13.5px; color: #0f172a; margin-bottom: 8px; display: block;">
+                        1. Choose Campaign Format *
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div id="formatCardBanner" class="format-card active" onclick="selectAdFormat('banner')">
+                            <div style="font-size: 28px;">🖼️</div>
+                            <div>
+                                <strong style="display: block; font-size: 14px; color: #0f172a;">Standard Banner</strong>
+                                <span style="font-size: 12px; color: #2563eb; font-weight: 700;">₹<span class="lbl-banner-fee">999</span> • 30 Days</span>
+                            </div>
+                        </div>
+                        <div id="formatCardVideo" class="format-card" onclick="selectAdFormat('video')">
+                            <div style="font-size: 28px;">🎬</div>
+                            <div>
+                                <strong style="display: block; font-size: 14px; color: #0f172a;">Video Spotlight</strong>
+                                <span style="font-size: 12px; color: #7c3aed; font-weight: 700;">₹<span class="lbl-video-fee">1,999</span> • 30 Days</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION A: BANNER PHOTO UPLOAD (Visible for Banner format) -->
+                <div id="bannerSection" class="form-group">
                     <label for="bannerFileInput">Promotional Banner Photo * (JPG, PNG, or WebP - max 5MB)</label>
                     <div class="ad-dropzone" id="adDropzone">
                         <div class="ad-dropzone-icon">🖼️</div>
@@ -530,7 +616,50 @@
 
                     <div id="previewContainer" class="ad-preview-wrapper">
                         <img id="bannerPreviewImg" src="" alt="Banner Preview">
-                        <span class="ad-preview-badge">Live Preview</span>
+                        <span class="ad-preview-badge">Live Banner Preview</span>
+                    </div>
+                </div>
+
+                <!-- SECTION B: VIDEO SPOTLIGHT UPLOAD (Visible for Video format) -->
+                <div id="videoSection" class="form-group" style="display: none; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <label style="font-weight: 800; font-size: 13.5px; color: #7c3aed; display: flex; align-items: center; gap: 6px; margin: 0;">
+                            <span>🎬</span> Video Creative Source *
+                        </label>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" id="tabVideoFile" class="video-source-pill active" onclick="switchVideoSourceTab('file')">📁 Upload MP4 File</button>
+                            <button type="button" id="tabVideoUrl" class="video-source-pill" onclick="switchVideoSourceTab('url')">🔗 Video Link URL</button>
+                        </div>
+                    </div>
+
+                    <!-- Video File Option -->
+                    <div id="videoFileBlock">
+                        <div class="ad-dropzone" id="videoDropzone" style="background: #ffffff;">
+                            <div class="ad-dropzone-icon">🎬</div>
+                            <div style="font-size: 14px; font-weight: 700; color: #1e293b;" id="videoDropText">Click to browse or drag & drop video file</div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Supported: MP4, WebM, MOV (Max 30 MB • Recommended 15 - 45 seconds)</div>
+                            <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/quicktime,video/ogg" style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- Video URL Option -->
+                    <div id="videoUrlBlock" style="display: none;">
+                        <input type="url" id="videoUrlInput" placeholder="e.g. https://example.com/promo.mp4 or YouTube video link" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px;" oninput="onVideoUrlInputChange(this.value)">
+                        <div style="font-size: 11.5px; color: #64748b; margin-top: 4px;">Direct MP4/WebM video streams or YouTube URLs are supported.</div>
+                    </div>
+
+                    <!-- Live Video Preview Player -->
+                    <div id="videoPreviewContainer" style="display: none; margin-top: 14px; border-radius: 10px; overflow: hidden; background: #000; border: 1.5px solid #cbd5e1; position: relative;">
+                        <video id="videoPreviewPlayer" controls playsinline style="width: 100%; max-height: 240px; display: block; margin: auto;"></video>
+                        <span class="ad-preview-badge" style="background: rgba(124, 58, 237, 0.85);">🎬 Live Video Preview</span>
+                    </div>
+
+                    <!-- Optional Poster / Thumbnail for Video -->
+                    <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #cbd5e1;">
+                        <label for="videoPosterInput" style="font-size: 12.5px; font-weight: 700; color: #475569; display: block; margin-bottom: 6px;">
+                            Optional Cover Poster / Thumbnail (JPG, PNG - max 5MB)
+                        </label>
+                        <input type="file" id="videoPosterInput" accept="image/jpeg,image/png,image/webp" style="font-size: 12px; color: #475569;">
                     </div>
                 </div>
 
@@ -584,12 +713,16 @@
                 <!-- PRICING SUMMARY BOX -->
                 <div class="pricing-box">
                     <div class="pricing-row">
+                        <span>Campaign Format:</span>
+                        <strong id="pricingFormatName" style="color: #2563eb;">🖼️ Standard Banner Ad</strong>
+                    </div>
+                    <div class="pricing-row">
                         <span>Campaign Duration:</span>
-                        <strong>30 Days</strong>
+                        <strong><span id="pricingDurationDays">30</span> Days</strong>
                     </div>
                     <div class="pricing-row">
                         <span>Feed Placement:</span>
-                        <strong>Patient App Feed (Every 5 Hospitals)</strong>
+                        <strong id="pricingPlacement">Patient App Feed (Every 5 Hospitals)</strong>
                     </div>
                     <div class="pricing-row">
                         <span>Rotation Mode:</span>
@@ -597,12 +730,12 @@
                     </div>
                     <div class="pricing-row total">
                         <span>Total Payable:</span>
-                        <span class="price">₹999.00</span>
+                        <span class="price" id="pricingTotalDisplay">₹999.00</span>
                     </div>
                 </div>
 
                 <button type="submit" class="ad-submit-btn" id="launchBtn">
-                    💳 Pay ₹999 & Launch 30-Day Campaign
+                    💳 Pay <span id="launchBtnAmount">₹999</span> & Launch 30-Day Campaign
                 </button>
             </form>
         </div>
@@ -628,6 +761,20 @@
         </div>
 
     </div>
+
+
+<!-- VIDEO WATCH MODAL -->
+<div id="videoWatchModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999; align-items: center; justify-content: center; padding: 20px;" onclick="if(event.target===this)closeVideoWatchModal()">
+    <div style="background: #0f172a; border-radius: 14px; max-width: 600px; width: 100%; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5); border: 1px solid #334155;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid #334155; color: white;">
+            <strong id="videoWatchTitle" style="font-size: 14px;">🎬 Video Ad Preview</strong>
+            <button type="button" onclick="closeVideoWatchModal()" style="background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        <div style="padding: 12px; background: #000;">
+            <video id="modalVideoPlayer" controls playsinline style="width: 100%; max-height: 380px; display: block; border-radius: 8px; margin: auto;"></video>
+        </div>
+    </div>
+</div>
 
     <!-- BOTTOM NAVIGATION -->
     <div class="bottom-nav">
@@ -666,6 +813,112 @@ document.getElementById("logoutButton").addEventListener("click", () => {
 });
 
 /* =====================================================
+   DYNAMIC AD PRICING ENGINE
+===================================================== */
+let adPricing = {
+    banner_ad_fee: 999.0,
+    video_ad_fee: 1999.0,
+    ad_duration_days: 30
+};
+let currentAdFormat = "banner"; // 'banner' or 'video'
+let currentVideoSourceTab = "file"; // 'file' or 'url'
+
+async function loadAdPricing() {
+    try {
+        const res = await fetch(`${API_URL}/admin/ad-pricing`);
+        if (res.ok) {
+            const data = await res.json();
+            if (data.banner_ad_fee) adPricing.banner_ad_fee = parseFloat(data.banner_ad_fee);
+            if (data.video_ad_fee) adPricing.video_ad_fee = parseFloat(data.video_ad_fee);
+            if (data.ad_duration_days) adPricing.ad_duration_days = parseInt(data.ad_duration_days);
+        }
+    } catch (e) {
+        console.warn("Using default ad pricing:", e);
+    }
+
+    // Update UI Labels
+    const bannerFeeEls = document.querySelectorAll(".lbl-banner-fee");
+    bannerFeeEls.forEach(el => el.textContent = Math.round(adPricing.banner_ad_fee).toLocaleString("en-IN"));
+
+    const videoFeeEls = document.querySelectorAll(".lbl-video-fee");
+    videoFeeEls.forEach(el => el.textContent = Math.round(adPricing.video_ad_fee).toLocaleString("en-IN"));
+
+    const welcomeRate = document.getElementById("welcomeRateDisplay");
+    if (welcomeRate) {
+        welcomeRate.textContent = `₹${Math.round(adPricing.banner_ad_fee).toLocaleString("en-IN")} / ₹${Math.round(adPricing.video_ad_fee).toLocaleString("en-IN")}`;
+    }
+
+    const durationDaysEl = document.getElementById("pricingDurationDays");
+    if (durationDaysEl) durationDaysEl.textContent = adPricing.ad_duration_days;
+
+    updatePricingDisplay();
+}
+
+function selectAdFormat(format) {
+    currentAdFormat = format;
+    const cardBanner = document.getElementById("formatCardBanner");
+    const cardVideo = document.getElementById("formatCardVideo");
+    const bannerSec = document.getElementById("bannerSection");
+    const videoSec = document.getElementById("videoSection");
+    const bannerInput = document.getElementById("bannerFileInput");
+
+    if (format === "video") {
+        cardBanner.classList.remove("active");
+        cardVideo.classList.add("active");
+        bannerSec.style.display = "none";
+        videoSec.style.display = "block";
+        bannerInput.removeAttribute("required");
+    } else {
+        cardVideo.classList.remove("active");
+        cardBanner.classList.add("active");
+        videoSec.style.display = "none";
+        bannerSec.style.display = "block";
+        bannerInput.setAttribute("required", "required");
+    }
+
+    updatePricingDisplay();
+}
+
+function switchVideoSourceTab(tab) {
+    currentVideoSourceTab = tab;
+    const tabFile = document.getElementById("tabVideoFile");
+    const tabUrl = document.getElementById("tabVideoUrl");
+    const blockFile = document.getElementById("videoFileBlock");
+    const blockUrl = document.getElementById("videoUrlBlock");
+
+    if (tab === "url") {
+        tabFile.classList.remove("active");
+        tabUrl.classList.add("active");
+        blockFile.style.display = "none";
+        blockUrl.style.display = "block";
+    } else {
+        tabUrl.classList.remove("active");
+        tabFile.classList.add("active");
+        blockUrl.style.display = "none";
+        blockFile.style.display = "block";
+    }
+}
+
+function updatePricingDisplay() {
+    const isVideo = currentAdFormat === "video";
+    const fee = isVideo ? adPricing.video_ad_fee : adPricing.banner_ad_fee;
+    const formattedFee = Math.round(fee).toLocaleString("en-IN");
+
+    const formatName = document.getElementById("pricingFormatName");
+    if (formatName) {
+        formatName.innerHTML = isVideo 
+            ? '<span style="color: #7c3aed;">🎬 Video Spotlight Ad</span>' 
+            : '<span style="color: #2563eb;">🖼️ Standard Banner Ad</span>';
+    }
+
+    const totalDisplay = document.getElementById("pricingTotalDisplay");
+    if (totalDisplay) totalDisplay.textContent = `₹${fee.toFixed(2)}`;
+
+    const btnAmount = document.getElementById("launchBtnAmount");
+    if (btnAmount) btnAmount.textContent = `₹${formattedFee}`;
+}
+
+/* =====================================================
    PREFILL HOSPITAL INFO
 ===================================================== */
 async function loadHospitalInfo() {
@@ -686,40 +939,43 @@ async function loadHospitalInfo() {
 }
 
 /* =====================================================
-   FILE DROPZONE & LIVE PREVIEW
+   FILE DROPZONE & LIVE PREVIEWS
 ===================================================== */
+// Banner Image Dropzone
 const dropzone = document.getElementById("adDropzone");
 const fileInput = document.getElementById("bannerFileInput");
 const previewContainer = document.getElementById("previewContainer");
 const previewImg = document.getElementById("bannerPreviewImg");
 
-dropzone.addEventListener("click", () => fileInput.click());
+if (dropzone && fileInput) {
+    dropzone.addEventListener("click", () => fileInput.click());
 
-dropzone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    dropzone.classList.add("dragover");
-});
+    dropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropzone.classList.add("dragover");
+    });
 
-dropzone.addEventListener("dragleave", () => {
-    dropzone.classList.remove("dragover");
-});
+    dropzone.addEventListener("dragleave", () => {
+        dropzone.classList.remove("dragover");
+    });
 
-dropzone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    dropzone.classList.remove("dragover");
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        fileInput.files = e.dataTransfer.files;
-        handlePreview(e.dataTransfer.files[0]);
-    }
-});
+    dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            fileInput.files = e.dataTransfer.files;
+            handleBannerPreview(e.dataTransfer.files[0]);
+        }
+    });
 
-fileInput.addEventListener("change", () => {
-    if (fileInput.files && fileInput.files[0]) {
-        handlePreview(fileInput.files[0]);
-    }
-});
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files[0]) {
+            handleBannerPreview(fileInput.files[0]);
+        }
+    });
+}
 
-function handlePreview(file) {
+function handleBannerPreview(file) {
     if (!file || !file.type.startsWith("image/")) {
         showAlert("Please select a valid image file (JPG, PNG, or WebP).", "error");
         return;
@@ -734,6 +990,65 @@ function handlePreview(file) {
         previewContainer.style.display = "block";
     };
     reader.readAsDataURL(file);
+}
+
+// Video Dropzone & Live Player Preview
+const videoDropzone = document.getElementById("videoDropzone");
+const videoFileInput = document.getElementById("videoFileInput");
+const videoUrlInput = document.getElementById("videoUrlInput");
+const videoPreviewContainer = document.getElementById("videoPreviewContainer");
+const videoPreviewPlayer = document.getElementById("videoPreviewPlayer");
+
+if (videoDropzone && videoFileInput) {
+    videoDropzone.addEventListener("click", () => videoFileInput.click());
+
+    videoDropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        videoDropzone.classList.add("dragover");
+    });
+
+    videoDropzone.addEventListener("dragleave", () => {
+        videoDropzone.classList.remove("dragover");
+    });
+
+    videoDropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        videoDropzone.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            videoFileInput.files = e.dataTransfer.files;
+            handleVideoFilePreview(e.dataTransfer.files[0]);
+        }
+    });
+
+    videoFileInput.addEventListener("change", () => {
+        if (videoFileInput.files && videoFileInput.files[0]) {
+            handleVideoFilePreview(videoFileInput.files[0]);
+        }
+    });
+}
+
+function handleVideoFilePreview(file) {
+    if (!file) return;
+    if (file.size > 30 * 1024 * 1024) {
+        showAlert("Video file exceeds 30MB limit. Please compress or choose a shorter video.", "error");
+        return;
+    }
+    const blobUrl = URL.createObjectURL(file);
+    videoPreviewPlayer.src = blobUrl;
+    videoPreviewContainer.style.display = "block";
+    const dropText = document.getElementById("videoDropText");
+    if (dropText) dropText.textContent = `🎬 Selected: ${file.name} (${(file.size / (1024*1024)).toFixed(1)} MB)`;
+}
+
+function onVideoUrlInputChange(url) {
+    url = (url || "").trim();
+    if (!url) {
+        videoPreviewContainer.style.display = "none";
+        videoPreviewPlayer.pause();
+        return;
+    }
+    videoPreviewPlayer.src = url;
+    videoPreviewContainer.style.display = "block";
 }
 
 function showAlert(msg, type = "error") {
@@ -760,173 +1075,221 @@ const launchBtn = document.getElementById("launchBtn");
 
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const file = fileInput.files ? fileInput.files[0] : null;
+    const isVideo = currentAdFormat === "video";
+    const bannerFile = fileInput.files ? fileInput.files[0] : null;
+    const videoFile = videoFileInput && videoFileInput.files ? videoFileInput.files[0] : null;
+    const videoPoster = document.getElementById("videoPosterInput")?.files?.[0] || null;
+    const videoUrl = videoUrlInput ? videoUrlInput.value.trim() : "";
+    
     const title = document.getElementById("adTitle").value.trim();
     const desc = document.getElementById("adDesc").value.trim();
     const phone = document.getElementById("adPhone").value.trim();
     const link = document.getElementById("adLink").value.trim();
 
-    if (!file) {
-        showAlert("Please choose a promotional banner photo.", "error");
-        return;
+    if (isVideo) {
+        if (!videoFile && !videoUrl) {
+            showAlert("Please upload a video file or provide a video link.", "error");
+            return;
+        }
+    } else {
+        if (!bannerFile) {
+            showAlert("Please choose a promotional banner photo.", "error");
+            return;
+        }
     }
+
     if (title.length < 3) {
         showAlert("Please enter a headline with at least 3 characters.", "error");
         return;
     }
 
-    const activeHospId = hospitalId || localStorage.getItem("hospital_id") || localStorage.getItem("hospitalId") || (storedHospital && storedHospital.id);
-    const activeToken = hospitalToken || localStorage.getItem("hospitalToken");
-
-    if (!activeHospId || activeHospId === "null" || activeHospId === "undefined") {
-        showAlert("Hospital session not found. Please log in again.", "error");
-        return;
-    }
+    const expectedFee = isVideo ? adPricing.video_ad_fee : adPricing.banner_ad_fee;
+    const formatLabel = isVideo ? "Video Spotlight" : "Banner";
 
     launchBtn.disabled = true;
-    launchBtn.innerHTML = "⏳ Initializing Cashfree Payment (₹999)...";
-
-    const formData = new FormData();
-    formData.append("photo", file);
-    formData.append("title", title);
-    formData.append("description", desc);
-    formData.append("target_phone", phone);
-    formData.append("target_link", link);
+    launchBtn.innerHTML = `⏳ Preparing ${formatLabel} Campaign Order...`;
 
     try {
-        const res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads/create-order`, {
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("description", desc);
+        formData.append("target_phone", phone);
+        formData.append("target_link", link);
+        formData.append("ad_type", currentAdFormat);
+        formData.append("custom_fee", expectedFee.toString());
+
+        if (isVideo) {
+            if (videoFile) formData.append("video_file", videoFile);
+            if (videoUrl) formData.append("video_url", videoUrl);
+            if (videoPoster) formData.append("photo", videoPoster);
+        } else {
+            if (bannerFile) formData.append("photo", bannerFile);
+        }
+
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/create-order`, {
             method: "POST",
-            headers: { "Authorization": `Bearer ${activeToken || ""}` },
-            body: formData,
+            headers: getAuthHeaders(false),
+            body: formData
         });
 
         const data = await res.json();
-        if (!res.ok || !data.success) {
-            throw new Error(data.detail || data.message || "Failed to initiate payment session.");
+        if (!res.ok) {
+            throw new Error(data.detail || `Order creation failed (${res.status})`);
         }
 
-        console.log("CarePath: Ad order created:", data);
+        const cfSessionId = data.payment_session_id;
+        const cfOrderId = data.cashfree_order_id;
+        const adId = data.ad_id;
 
-        if (typeof Cashfree !== "function") {
-            throw new Error("Cashfree checkout SDK failed to load. Please refresh the page.");
+        if (!cfSessionId) {
+            throw new Error("Cashfree session token was not returned by server.");
         }
 
-        const cashfree = Cashfree({ mode: data.cashfree_mode || "sandbox" });
-        localStorage.setItem("pending_ad_order_id", data.order_id);
-        localStorage.setItem("pending_ad_id", String(data.ad_id));
+        localStorage.setItem("pending_ad_id", adId.toString());
+        localStorage.setItem("pending_ad_order_id", cfOrderId);
 
-        await cashfree.checkout({
-            paymentSessionId: data.payment_session_id,
-            redirectTarget: "_modal",
+        launchBtn.innerHTML = `🔐 Launching Secure Payment Gateway...`;
+
+        if (!window.Cashfree) {
+            throw new Error("Cashfree checkout SDK failed to load. Please check your network.");
+        }
+
+        const cashfree = Cashfree({
+            mode: "sandbox"
         });
 
-        launchBtn.innerHTML = "⏳ Verifying Payment with Cashfree...";
-        await verifyAdPayment(data.order_id, data.ad_id);
+        const checkoutOptions = {
+            paymentSessionId: cfSessionId,
+            redirectTarget: "_modal"
+        };
+
+        cashfree.checkout(checkoutOptions).then((result) => {
+            if (result.error) {
+                showAlert(`Payment canceled or failed: ${result.error.message}`, "error");
+                launchBtn.disabled = false;
+                updatePricingDisplay();
+            } else if (result.paymentDetails) {
+                launchBtn.innerHTML = `🔄 Verifying payment confirmation...`;
+                verifyAdPayment(cfOrderId, adId);
+            }
+        });
 
     } catch (err) {
-        console.error("Ad launch error:", err);
-        const msg = (err instanceof TypeError || (err.message && err.message.toLowerCase().includes("fetch")))
-            ? "Cannot connect to CarePath server or payment gateway. The server may be waking up from sleep—please try again in a few seconds."
-            : (err.message || "Unable to initiate payment.");
-        showAlert(msg, "error");
+        console.error("Ad order error:", err);
+        showAlert(err.message || "Failed to initiate payment. Please try again.", "error");
         launchBtn.disabled = false;
-        launchBtn.innerHTML = "💳 Pay ₹999 & Launch 30-Day Campaign";
+        updatePricingDisplay();
     }
 });
 
+/* =====================================================
+   PAYMENT VERIFICATION
+===================================================== */
 async function verifyAdPayment(orderId, adId) {
+    launchBtn.disabled = true;
+    launchBtn.innerHTML = `🔄 Confirming payment & activating campaign...`;
+
     try {
-        const verifyRes = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/verify-payment`, {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/verify-payment`, {
             method: "POST",
             headers: getAuthHeaders(true),
             body: JSON.stringify({
                 cashfree_order_id: orderId,
-                ad_id: parseInt(adId, 10),
-            }),
+                ad_id: parseInt(adId)
+            })
         });
 
-        const vData = await verifyRes.json();
-        if (!verifyRes.ok || !vData.success) {
-            throw new Error(vData.detail || "Payment verification failed.");
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || "Payment verification failed.");
         }
 
-        localStorage.removeItem("pending_ad_order_id");
         localStorage.removeItem("pending_ad_id");
+        localStorage.removeItem("pending_ad_order_id");
 
-        showAlert("🎉 Payment Successful! Your hospital advertisement is now ACTIVE in the patient app for 30 days!", "success");
+        showAlert("🎉 Campaign activated successfully! Your ad is now live in the Patient App feed.", "success");
         form.reset();
         previewContainer.style.display = "none";
+        videoPreviewContainer.style.display = "none";
         loadCampaigns();
 
     } catch (err) {
-        console.error("Verification error:", err);
-        showAlert("Payment verification status: " + err.message, "error");
+        console.error("Payment verify error:", err);
+        showAlert(`Verification note: ${err.message}. If payment was deducted, your ad will activate automatically within 5 minutes.`, "error");
     } finally {
         launchBtn.disabled = false;
-        launchBtn.innerHTML = "💳 Pay ₹999 & Launch 30-Day Campaign";
+        updatePricingDisplay();
     }
 }
 
 /* =====================================================
-   LOAD CAMPAIGNS
+   LOAD MY CAMPAIGNS
 ===================================================== */
 async function loadCampaigns() {
     const loading = document.getElementById("campaignsLoading");
     const container = document.getElementById("campaignsContainer");
-    const empty = document.getElementById("campaignsEmpty");
-    const countBadge = document.getElementById("activeCount");
-
-    loading.style.display = "block";
-    container.style.display = "none";
-    empty.style.display = "none";
 
     try {
         const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads`, {
             headers: getAuthHeaders(false)
         });
 
-        if (!res.ok) throw new Error("Failed to load campaigns.");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const ads = await res.json();
+
         loading.style.display = "none";
+        container.style.display = "block";
 
-        const activeList = (Array.isArray(ads) ? ads : []).filter(a => a.status === "ACTIVE");
-        if (countBadge) countBadge.textContent = activeList.length;
-
-        if (!Array.isArray(ads) || ads.length === 0) {
-            empty.style.display = "block";
+        if (!ads || ads.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📢</div>
+                    <div style="font-weight: 700; color: #475569; font-size: 15px;">No campaigns running yet</div>
+                    <div style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Upload your first banner or video spotlight above to appear directly in the patient discovery feed!</div>
+                </div>
+            `;
             return;
         }
 
-        container.style.display = "block";
         container.innerHTML = ads.map(a => {
-            let badgeClass = "badge-pending";
-            let statusLabel = "Pending Payment";
-            if (a.status === "ACTIVE") {
-                badgeClass = "badge-active";
-                statusLabel = `🟢 Active (${a.days_remaining}d left)`;
-            } else if (a.status === "EXPIRED") {
-                badgeClass = "badge-expired";
-                statusLabel = "🔴 Expired";
-            }
+            const isVideo = a.ad_type === "video" || (a.video_url && a.video_url.length > 0);
+            const statusLabel = a.status === "active" ? "🟢 Live" : (a.status === "pending" ? "🟡 Pending Payment" : "⚪ Expired");
+            const badgeClass = a.status === "active" ? "badge-active" : (a.status === "pending" ? "badge-pending" : "badge-expired");
+            const formatBadge = isVideo 
+                ? '<span class="badge-video">🎬 Video Spotlight</span>' 
+                : '<span class="badge-banner">🖼️ Banner</span>';
 
             const bannerSrc = a.image_url ? (a.image_url.startsWith("http") ? a.image_url : `${API_URL}${a.image_url}`) : "";
+            const videoSrc = a.video_url ? (a.video_url.startsWith("http") ? a.video_url : `${API_URL}${a.video_url}`) : "";
 
             return `
-            <div class="ad-item" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-                    ${bannerSrc ? `<img src="${bannerSrc}" alt="Ad" class="ad-thumb" onerror="this.style.display='none'">` : ""}
+            <div class="ad-item">
+                <div style="display: flex; gap: 14px; align-items: center; flex: 1;">
+                    ${bannerSrc 
+                        ? `<img src="${bannerSrc}" alt="Ad" class="ad-thumb" onerror="this.style.display='none'">` 
+                        : (isVideo ? `<div class="ad-thumb" style="display: flex; align-items: center; justify-content: center; background: #f3e8ff; font-size: 24px; border-radius: 8px;">🎬</div>` : "")}
                     <div class="ad-item-content">
-                        <div class="ad-item-title">${a.title}</div>
-                        <div class="ad-item-meta">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span class="ad-item-title">${a.title}</span>
+                            ${formatBadge}
+                        </div>
+                        <div class="ad-item-meta" style="margin-top: 4px;">
                             <span class="${badgeClass}">${statusLabel}</span>
-                            <span>Fee: ₹${a.amount_paid || 999}</span>
+                            <span>Fee: ₹${a.amount_paid || (isVideo ? 1999 : 999)}</span>
                             ${a.expires_at ? `<span>Expires: ${new Date(a.expires_at).toLocaleDateString()}</span>` : ""}
                         </div>
                     </div>
                 </div>
-                <button type="button" onclick="deleteHospitalAd(${a.id})" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 0.2s;">
-                    🗑️ Delete
-                </button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    ${isVideo && videoSrc ? `
+                        <button type="button" onclick="watchVideoModal('${videoSrc}', '${encodeURIComponent(a.title)}')" style="background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; padding: 7px 12px; border-radius: 8px; font-weight: 700; font-size: 12.5px; cursor: pointer; white-space: nowrap;">
+                            ▶ Watch Video
+                        </button>
+                    ` : ""}
+                    <button type="button" onclick="deleteHospitalAd(${a.id})" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; transition: all 0.2s;">
+                        🗑️ Delete
+                    </button>
+                </div>
             </div>
             `;
         }).join("");
@@ -940,18 +1303,48 @@ async function loadCampaigns() {
 }
 
 /* =====================================================
-   AUTO-CHECK REDIRECT RETURN
+   VIDEO WATCH MODAL
 ===================================================== */
-(function checkReturn() {
-    const params = new URLSearchParams(window.location.search);
-    const adOrderId = params.get("ad_order_id") || params.get("cashfree_order_id");
-    const storedAdId = localStorage.getItem("pending_ad_id");
-    if (adOrderId && storedAdId) {
-        verifyAdPayment(adOrderId, storedAdId);
-    }
-})();
+function watchVideoModal(src, title) {
+    const modal = document.getElementById("videoWatchModal");
+    const player = document.getElementById("modalVideoPlayer");
+    const titleEl = document.getElementById("videoWatchTitle");
+    if (!modal || !player) return;
 
-// INITIAL LOAD
+    if (titleEl) titleEl.textContent = `🎬 ${decodeURIComponent(title || "Video Ad Preview")}`;
+    player.src = src;
+    modal.style.display = "flex";
+    player.play().catch(() => {});
+}
+
+function closeVideoWatchModal() {
+    const modal = document.getElementById("videoWatchModal");
+    const player = document.getElementById("modalVideoPlayer");
+    if (player) {
+        player.pause();
+        player.src = "";
+    }
+    if (modal) modal.style.display = "none";
+}
+
+/* =====================================================
+   DELETE CAMPAIGN
+===================================================== */
+async function deleteHospitalAd(adId) {
+    if (!confirm("Are you sure you want to permanently delete this advertisement campaign?")) return;
+    try {
+        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/${adId}`, {
+            method: "DELETE",
+            headers: getAuthHeaders(true)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to delete ad.");
+        alert("Advertisement campaign has been deleted.");
+        await loadCampaigns();
+    } catch (err) {
+        alert(err.message || "Failed to delete ad.");
+    }
+}
 
 /* =====================================================
    HOSPITAL DIRECT PATIENT LINK HELPERS
@@ -965,7 +1358,6 @@ function generateHospitalDirectLink() {
 
     let directLink = "";
     if (isLocal) {
-        // Local developer environment
         const pathname = loc.pathname;
         let patientPath = "/patient/hospital-details.html";
         if (pathname.includes("/hospital/")) {
@@ -973,7 +1365,6 @@ function generateHospitalDirectLink() {
         }
         directLink = `${loc.origin}${patientPath}?id=${activeHospId}`;
     } else {
-        // Production Patient App on Vercel
         directLink = `https://carepath-patient-mx5v.vercel.app/hospital-details.html?id=${activeHospId}`;
     }
 
@@ -1011,30 +1402,24 @@ function useAsAdTargetLink() {
     }
 }
 
+/* =====================================================
+   AUTO-CHECK REDIRECT RETURN
+===================================================== */
+(function checkReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const adOrderId = params.get("ad_order_id") || params.get("cashfree_order_id");
+    const storedAdId = localStorage.getItem("pending_ad_id");
+    if (adOrderId && storedAdId) {
+        verifyAdPayment(adOrderId, storedAdId);
+    }
+})();
+
+// INITIAL LOAD
 generateHospitalDirectLink();
 loadHospitalInfo();
+loadAdPricing();
 loadCampaigns();
 
-async function deleteHospitalAd(adId) {
-    if (!confirm("Are you sure you want to permanently delete this advertisement campaign?")) return;
-    try {
-        const hospitalId = requireHospitalLogin();
-        if (!hospitalId) return;
-
-        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/${adId}`, {
-            method: "DELETE",
-            headers: getAuthHeaders(true)
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "Failed to delete ad.");
-        alert("Advertisement campaign has been deleted.");
-        await loadMyCampaigns();
-    } catch (err) {
-        alert(err.message || "Failed to delete ad.");
-    }
-}
-
 </script>
-
 </body>
 </html>

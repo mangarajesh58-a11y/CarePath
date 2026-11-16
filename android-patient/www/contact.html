@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us - CarePath</title>
+  <link rel="stylesheet" href="./style.css">
+  <style>
+    body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; margin: 0; padding: 20px; line-height: 1.6; }
+    .legal-card { max-width: 820px; margin: 20px auto; background: white; padding: 36px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+    h1 { color: #0284c7; font-size: 26px; margin-top: 0; }
+    h2 { color: #0f172a; font-size: 18px; margin-top: 28px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+    p, li { font-size: 14px; color: #475569; }
+    .btn-back { display: inline-block; margin-bottom: 20px; color: #0284c7; text-decoration: none; font-weight: 600; font-size: 14px; }
+    .contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; }
+    .contact-card { background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+    .contact-card h3 { margin: 0 0 6px 0; color: #0284c7; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+    .contact-card p { margin: 0; font-size: 13.5px; color: #334155; word-break: break-word; }
+    .grievance-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 18px 22px; margin-top: 16px; font-size: 13.5px; color: #166534; }
+    .grievance-box strong { color: #14532d; }
+    .badge-status { font-size: 11px; padding: 2px 8px; background: #e0f2fe; color: #0369a1; border-radius: 12px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="legal-card">
+    <a href="dashboard.html" class="btn-back">← Back to App</a>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <h1 style="margin-bottom: 4px;">Contact Us</h1>
+        <p style="margin-top: 0;">We are here to support patients, doctors, and partner hospitals across India.</p>
+      </div>
+      <span class="badge-status">✓ RBI & PG Compliant</span>
+    </div>
+
+    <div class="contact-grid">
+      <!-- Legal Business Entity -->
+      <div class="contact-card">
+        <h3>🏢 Registered Entity</h3>
+        <p id="dispBusinessName">CarePath Healthcare Technologies</p>
+      </div>
+
+      <!-- Support Email -->
+      <div class="contact-card">
+        <h3>✉️ Customer Support Email</h3>
+        <p><a id="dispSupportEmail" href="mailto:mangarajesh58@gmail.com" style="color: #0284c7; text-decoration: none;">mangarajesh58@gmail.com</a></p>
+      </div>
+
+      <!-- Helpline / Phone -->
+      <div class="contact-card">
+        <h3>📞 Helpline & WhatsApp</h3>
+        <p id="dispSupportPhone">+91 98765 43210</p>
+      </div>
+
+      <!-- Working Hours -->
+      <div class="contact-card">
+        <h3>🕒 Support Operating Hours</h3>
+        <p id="dispWorkingHours">Mon - Sat: 9:00 AM - 7:00 PM IST</p>
+      </div>
+
+      <!-- Physical Address -->
+      <div class="contact-card" style="grid-column: 1 / -1;">
+        <h3>📍 Operating & Registered Address</h3>
+        <p id="dispOperatingAddress">Bhubaneswar / Cuttack, Odisha, India - 751024</p>
+      </div>
+    </div>
+
+    <h2>Customer Grievance Redressal</h2>
+    <p>In accordance with the Information Technology Act 2000, Consumer Protection (E-Commerce) Rules 2020, and RBI Payment Aggregator Guidelines, our designated Grievance Officer addresses all consumer, token payment, and service disputes.</p>
+
+    <div class="grievance-box">
+      <strong>Grievance Officer:</strong> <span id="dispGrievanceOfficer">Rajesh Mangaraj</span><br>
+      <strong>Grievance Redressal Email:</strong> <a id="dispGrievanceEmail" href="mailto:mangarajesh58@gmail.com" style="color: #15803d; font-weight: 600;">mangarajesh58@gmail.com</a><br>
+      <strong>Resolution Timeline:</strong> Acknowledgment within 24 hours, resolution within 48 business hours.
+    </div>
+
+    <h2>Hospital Partnership & API Inquiries</h2>
+    <p>For hospital OPD queue integration, custom token kiosks, or Easy Split merchant tie-ups, write to our technical partnerships desk at <a href="mailto:mangarajesh58@gmail.com" style="color: #0284c7;">mangarajesh58@gmail.com</a>.</p>
+  </div>
+
+  <script>
+    const API = "https://carepath-3q9q.onrender.com";
+
+    async function loadPlatformContact() {
+      try {
+        const res = await fetch(`${API}/platform/contact`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.business_name) document.getElementById("dispBusinessName").textContent = data.business_name;
+          if (data.support_email) {
+            const emailEl = document.getElementById("dispSupportEmail");
+            emailEl.textContent = data.support_email;
+            emailEl.href = "mailto:" + data.support_email;
+          }
+          if (data.support_phone) document.getElementById("dispSupportPhone").textContent = data.support_phone;
+          if (data.working_hours) document.getElementById("dispWorkingHours").textContent = data.working_hours;
+          if (data.operating_address) document.getElementById("dispOperatingAddress").textContent = data.operating_address;
+          if (data.grievance_officer) document.getElementById("dispGrievanceOfficer").textContent = data.grievance_officer;
+          if (data.grievance_email) {
+            const gEmail = document.getElementById("dispGrievanceEmail");
+            gEmail.textContent = data.grievance_email;
+            gEmail.href = "mailto:" + data.grievance_email;
+          }
+        }
+      } catch (err) {
+        console.warn("Using default contact details (offline fallback)");
+      }
+    }
+
+    loadPlatformContact();
+  </script>
+</body>
+</html>

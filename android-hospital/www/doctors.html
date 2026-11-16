@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Manage Doctors - CarePath</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background:
+                #f4f7fb;
+
+            color:
+                #172554;
+        }
+
+
+        .page-container {
+
+            width: 100%;
+
+            max-width: 1000px;
+
+            margin: auto;
+
+            padding: 25px;
+        }
+
+
+        /* ==============================
+           HEADER
+        =============================== */
+
+        header {
+
+            background:
+                white;
+
+            border-radius:
+                16px;
+
+            padding:
+                20px 25px;
+
+            display:
+                flex;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                center;
+
+            margin-bottom:
+                25px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.08
+                );
+        }
+
+
+        header h1 {
+
+            margin:
+                0 0 5px;
+
+            color:
+                #1976d2;
+
+            font-size:
+                28px;
+        }
+
+
+        header p {
+
+            margin:
+                0;
+
+            color:
+                #64748b;
+        }
+
+
+        .logout {
+
+            border:
+                none;
+
+            background:
+                #dc2626;
+
+            color:
+                white;
+
+            padding:
+                11px 20px;
+
+            border-radius:
+                8px;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .logout:hover {
+
+            background:
+                #b91c1c;
+        }
+
+
+        /* ==============================
+           WELCOME
+        =============================== */
+
+        .welcome {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1976d2,
+                    #7c3aed
+                );
+
+            color:
+                white;
+
+            padding:
+                30px;
+
+            border-radius:
+                16px;
+
+            margin-bottom:
+                25px;
+        }
+
+
+        .welcome h2 {
+
+            margin:
+                0 0 8px;
+        }
+
+
+        .welcome p {
+
+            margin:
+                0;
+
+            opacity:
+                0.9;
+        }
+
+
+        /* ==============================
+           FORM CARD
+        =============================== */
+
+        .form-card {
+
+            background:
+                white;
+
+            padding:
+                30px;
+
+            border-radius:
+                16px;
+
+            margin-bottom:
+                25px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.07
+                );
+        }
+
+
+        .form-card h2 {
+
+            margin-top:
+                0;
+
+            margin-bottom:
+                25px;
+        }
+
+
+        .form-group {
+
+            margin-bottom:
+                18px;
+        }
+
+
+        .form-group label {
+
+            display:
+                block;
+
+            margin-bottom:
+                7px;
+
+            font-weight:
+                bold;
+
+            color:
+                #334155;
+        }
+
+
+        .form-group input {
+
+            width:
+                100%;
+
+            padding:
+                13px;
+
+            border:
+                1px solid
+                #cbd5e1;
+
+            border-radius:
+                8px;
+
+            font-size:
+                15px;
+
+            outline:
+                none;
+        }
+
+
+        .form-group input:focus {
+
+            border-color:
+                #1976d2;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(
+                    25,
+                    118,
+                    210,
+                    0.1
+                );
+        }
+
+
+        .add-button {
+
+            width:
+                100%;
+
+            padding:
+                13px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1976d2,
+                    #7c3aed
+                );
+
+            color:
+                white;
+
+            font-size:
+                16px;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .add-button:hover {
+
+            opacity:
+                0.9;
+        }
+
+
+        .add-button:disabled {
+
+            opacity:
+                0.6;
+
+            cursor:
+                not-allowed;
+        }
+
+
+        /* ==============================
+           MESSAGE
+        =============================== */
+
+        #message {
+
+            margin-top:
+                15px;
+
+            text-align:
+                center;
+
+            font-weight:
+                bold;
+
+            min-height:
+                20px;
+        }
+
+
+        /* ==============================
+           DOCTOR LIST
+        =============================== */
+
+        .list-card {
+
+            background:
+                white;
+
+            padding:
+                30px;
+
+            border-radius:
+                16px;
+
+            box-shadow:
+                0 8px 25px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.07
+                );
+        }
+
+
+        .list-card h2 {
+
+            margin-top:
+                0;
+
+            margin-bottom:
+                20px;
+        }
+
+
+        #doctorsList {
+
+            display:
+                grid;
+
+            grid-template-columns:
+                repeat(
+                    2,
+                    1fr
+                );
+
+            gap:
+                15px;
+        }
+
+
+        .doctor-card {
+
+            border:
+                1px solid
+                #e2e8f0;
+
+            border-radius:
+                12px;
+
+            padding:
+                20px;
+
+            background:
+                #f8fafc;
+        }
+
+
+        .doctor-card h3 {
+
+            margin:
+                0 0 12px;
+
+            color:
+                #1976d2;
+        }
+
+
+        .doctor-card p {
+
+            margin:
+                7px 0;
+
+            color:
+                #475569;
+        }
+
+
+        .doctor-card strong {
+
+            color:
+                #172554;
+        }
+
+
+        .delete-button {
+
+            width:
+                100%;
+
+            margin-top:
+                15px;
+
+            padding:
+                10px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                #dc2626;
+
+            color:
+                white;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .delete-button:hover {
+
+            background:
+                #b91c1c;
+        }
+
+
+        .empty-message {
+
+            grid-column:
+                1 / -1;
+
+            text-align:
+                center;
+
+            padding:
+                30px;
+
+            color:
+                #64748b;
+
+            background:
+                #f8fafc;
+
+            border:
+                1px dashed
+                #cbd5e1;
+
+            border-radius:
+                10px;
+        }
+
+
+        /* ==============================
+           BACK BUTTON
+        =============================== */
+
+        .back-button {
+
+            width:
+                100%;
+
+            margin-top:
+                25px;
+
+            padding:
+                13px;
+
+            border:
+                none;
+
+            border-radius:
+                8px;
+
+            background:
+                #334155;
+
+            color:
+                white;
+
+            font-weight:
+                bold;
+
+            cursor:
+                pointer;
+        }
+
+
+        .back-button:hover {
+
+            background:
+                #1e293b;
+        }
+
+
+        /* ==============================
+           MOBILE
+        =============================== */
+
+        @media (max-width: 700px) {
+
+            .page-container {
+
+                padding:
+                    15px;
+            }
+
+
+            header {
+
+                flex-direction:
+                    column;
+
+                align-items:
+                    flex-start;
+
+                gap:
+                    15px;
+            }
+
+
+            .logout {
+
+                width:
+                    100%;
+            }
+
+
+            #doctorsList {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .form-card,
+            .list-card {
+
+                padding:
+                    20px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="page-container">
+
+
+    <!-- ==============================
+         HEADER
+    =============================== -->
+
+    <header>
+
+        <div>
+
+            <h1>
+                🏥 CarePath
+            </h1>
+
+            <p>
+                Doctor Management
+            </p>
+
+        </div>
+
+
+        <button
+            type="button"
+            class="logout"
+            onclick="hospitalLogout()"
+        >
+
+            Logout
+
+        </button>
+
+    </header>
+
+
+
+    <!-- ==============================
+         PAGE TITLE
+    =============================== -->
+
+    <div class="welcome">
+
+        <h2>
+            Manage Doctors
+        </h2>
+
+        <p>
+            Add and manage doctors belonging to your hospital.
+        </p>
+
+    </div>
+
+
+
+    <!-- ==============================
+         ADD DOCTOR
+    ============================== -->
+
+<div class="form-card">
+
+    <h2>➕ Add Doctor</h2>
+
+    <div class="form-group">
+        <label for="doctorName">Doctor Name</label>
+        <input
+            type="text"
+            id="doctorName"
+            placeholder="Example: Dr. Kumar"
+            autocomplete="off"
+        >
+    </div>
+
+    <div class="form-group">
+        <label for="doctorDepartment">Department</label>
+        <input
+            type="text"
+            id="doctorDepartment"
+            placeholder="Example: Cardiology"
+            autocomplete="off"
+        >
+    </div>
+
+    <div class="form-group">
+        <label for="doctorSpecialization">Specialization</label>
+        <input
+            type="text"
+            id="doctorSpecialization"
+            placeholder="Example: Cardiologist"
+            autocomplete="off"
+        >
+    </div>
+
+        <div class="form-group">
+        <label for="doctorExperience">Experience</label>
+        <input
+            type="text"
+            id="doctorExperience"
+            placeholder="Example: 8 years"
+            autocomplete="off"
+        >
+    </div>
+
+    <div class="form-group">
+        <label for="doctorRoomNumber">OPD Room / Cabin Number</label>
+        <input
+            type="text"
+            id="doctorRoomNumber"
+            placeholder="Example: Room 102, Cabin 4, OPD Block B"
+            autocomplete="off"
+        >
+    </div>
+
+    <div class="form-group">
+        <label for="doctorTokenFee">Doctor Consultation / Token Fee (₹)</label>
+        <input
+            type="number"
+            id="doctorTokenFee"
+            placeholder="Example: 100 (Default: Hospital Token Fee)"
+            min="0"
+            step="1"
+            autocomplete="off"
+        >
+        <small style="color: #64748b; display: block; margin-top: 4px;">Set token fee specific to this doctor. If left blank, default hospital token fee applies.</small>
+    </div>
+
+
+    <div class="form-group">
+        <label for="doctorPhotoFile">Doctor Photo (Displayed on Patient App)</label>
+        <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px;">
+            <div id="doctorPhotoPreviewContainer" style="width: 72px; height: 72px; border-radius: 50%; overflow: hidden; background: #e0f2fe; border: 2.5px solid #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);">
+                <img id="doctorPhotoPreviewImg" src="" alt="Doctor Preview" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                <span id="doctorPhotoPreviewEmoji" style="font-size: 32px;">👨‍⚕️</span>
+            </div>
+            <div style="flex: 1;">
+                <input type="file" id="doctorPhotoFile" accept="image/jpeg,image/png,image/webp" onchange="previewDoctorPhoto(event)">
+                <small style="color: #64748b; display: block; margin-top: 4px;">Upload doctor profile picture (JPG, PNG, or WEBP, max 5 MB).</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Available Days</label>
+
+        <div>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Monday"> Monday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Tuesday"> Tuesday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Wednesday"> Wednesday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Thursday"> Thursday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Friday"> Friday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Saturday"> Saturday</label><br>
+            <label><input type="checkbox" name="doctorAvailableDays" value="Sunday"> Sunday</label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="doctorStartTime">Consultation Start Time</label>
+        <input type="time" id="doctorStartTime">
+    </div>
+
+    <div class="form-group">
+        <label for="doctorEndTime">Consultation End Time</label>
+        <input type="time" id="doctorEndTime">
+    </div>
+
+    <div class="form-group">
+        <label for="doctorIsAvailable">Doctor Status</label>
+        <select id="doctorIsAvailable">
+            <option value="true">Available</option>
+            <option value="false">Unavailable</option>
+        </select>
+    </div>
+
+    <button
+        type="button"
+        class="add-button"
+        id="addDoctorButton"
+        onclick="addDoctor()"
+    >
+        Add Doctor
+    </button>
+
+   
+
+        <div id="message"></div>
+
+    </div>
+
+
+
+    <!-- ==============================
+         DOCTOR LIST
+    ============================== -->
+
+    <div class="list-card">
+
+        <h2>
+            👨‍⚕️ Your Hospital Doctors
+        </h2>
+
+
+        <div id="doctorsList">
+
+            <div class="empty-message">
+                Loading doctors...
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ==============================
+         BACK BUTTON
+    ============================== -->
+
+    <button
+        type="button"
+        class="back-button"
+        onclick="goDashboard()"
+    >
+
+        ← Back to Dashboard
+
+    </button>
+
+
+</div>
+
+<!-- ==============================
+     EDIT DOCTOR FULL PROFILE MODAL
+============================== -->
+<div id="editDoctorModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.65); z-index:99999; align-items:center; justify-content:center; padding:16px; overflow-y:auto; backdrop-filter:blur(4px);">
+    <div style="background:#ffffff; border-radius:16px; max-width:620px; width:100%; max-height:92vh; overflow-y:auto; box-shadow:0 20px 45px rgba(0,0,0,0.3); padding:24px; position:relative; box-sizing:border-box;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; border-bottom:1.5px solid #e2e8f0; padding-bottom:12px;">
+            <h3 style="margin:0; font-size:20px; color:#0f172a; display:flex; align-items:center; gap:8px;">
+                <span>✏️</span>
+                <span>Edit Doctor Full Profile</span>
+            </h3>
+            <button type="button" onclick="closeEditDoctorModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#64748b; line-height:1; padding:4px 8px;">&times;</button>
+        </div>
+
+        <form id="editDoctorForm" onsubmit="saveDoctorFullProfile(event)">
+            <input type="hidden" id="editDoctorId">
+
+            <!-- Doctor Photo Row -->
+            <div class="form-group" style="text-align:center; margin-bottom:18px;">
+                <div style="display:inline-flex; flex-direction:column; align-items:center; gap:8px;">
+                    <div id="editDoctorPhotoContainer" style="width:84px; height:84px; border-radius:50%; overflow:hidden; background:#e0f2fe; border:3px solid #0284c7; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(2,132,199,0.25);">
+                        <img id="editDoctorPhotoPreview" src="" alt="Doctor Preview" style="width:100%; height:100%; object-fit:cover; display:none;">
+                        <span id="editDoctorPhotoEmoji" style="font-size:38px;">👨‍⚕️</span>
+                    </div>
+                    <label style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; padding:6px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                        📷 Change Photo
+                        <input type="file" id="editDoctorPhotoFile" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewEditDoctorPhoto(event)">
+                    </label>
+                    <small style="color:#64748b; font-size:11px;">Upload doctor profile/cover picture (JPG, PNG, max 5 MB)</small>
+                </div>
+            </div>
+
+            <!-- Doctor Name & Department -->
+            <div class="form-group">
+                <label for="editDoctorName">Doctor Name *</label>
+                <input type="text" id="editDoctorName" required placeholder="e.g. Dr. Rajesh Kumar" style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label for="editDoctorDepartment">Department *</label>
+                    <input type="text" id="editDoctorDepartment" required placeholder="e.g. Cardiology" style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+                </div>
+                <div class="form-group">
+                    <label for="editDoctorSpecialization">Specialization</label>
+                    <input type="text" id="editDoctorSpecialization" placeholder="e.g. Senior Cardiologist" style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label for="editDoctorExperience">Experience</label>
+                    <input type="text" id="editDoctorExperience" placeholder="e.g. 10 years" style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+                </div>
+                <div class="form-group">
+                    <label for="editDoctorRoomNumber">Room / Cabin Number</label>
+                    <input type="text" id="editDoctorRoomNumber" placeholder="e.g. Room 102, Cabin B" style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+                </div>
+            </div>
+
+            <!-- Token Fee (Configured Per Doctor!) -->
+            <div class="form-group" style="background:#f0fdf4; padding:14px; border-radius:10px; border:1.5px solid #86efac; margin:14px 0;">
+                <label for="editDoctorTokenFee" style="color:#15803d; font-weight:700; font-size:14px;">🎫 Consultation / Token Fee (₹) *</label>
+                <input type="number" id="editDoctorTokenFee" min="0" max="5000" step="1" required style="width:100%; padding:10px 12px; border:1.5px solid #86efac; border-radius:8px; font-weight:700; font-size:16px; color:#0f172a; margin-top:4px; box-sizing:border-box;">
+                <small style="color:#166534; display:block; margin-top:4px;">Set token fee specific to this doctor. Patients will pay this exact fee when booking an appointment with this doctor.</small>
+            </div>
+
+            <!-- Available Days -->
+            <div class="form-group">
+                <label style="font-weight:600; font-size:13px; color:#334155;">Available Days</label>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:8px; margin-top:6px; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+                    <label style="font-weight:normal; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" name="editDoctorDays" value="Monday"> Monday</label>
+                    <label style="font-weight:normal; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" name="editDoctorDays" value="Tuesday"> Tuesday</label>
+                    <label style="font-weight:normal; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" name="editDoctorDays" value="Wednesday"> Wednesday</label>
+                    <label style="font-weight:normal; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" name="editDoctorDays" value="Thursday"> Thursday</label>
+                    <label style="font-weight:normal; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" name="editDoctorDays" value="Friday"> Friday</label>
+                    <label style="font-weight:normal; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" name="editDoctorDays" value="Saturday"> Saturday</label>
+                    <label style="font-weight:normal; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" name="editDoctorDays" value="Sunday"> Sunday</label>
+                </div>
+            </div>
+
+            <!-- Consultation Hours -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label for="editDoctorStartTime">Start Time</label>
+                    <input type="time" id="editDoctorStartTime" style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+                </div>
+                <div class="form-group">
+                    <label for="editDoctorEndTime">End Time</label>
+                    <input type="time" id="editDoctorEndTime" style="width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; box-sizing:border-box;">
+                </div>
+            </div>
+
+            <!-- Duty Status -->
+            <div class="form-group">
+                <label for="editDoctorIsAvailable">Duty Status</label>
+                <select id="editDoctorIsAvailable" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid #cbd5e1; font-weight:600; font-size:14px; box-sizing:border-box;">
+                    <option value="true">🟢 On Duty (Available for Tokens)</option>
+                    <option value="false">🔴 Off Duty (Unavailable)</option>
+                </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex; gap:12px; margin-top:22px;">
+                <button type="submit" id="saveDoctorEditBtn" style="flex:1; background:#0284c7; color:white; border:none; padding:12px; border-radius:8px; font-weight:700; font-size:15px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                    <span>💾</span>
+                    <span>Save Changes</span>
+                </button>
+                <button type="button" onclick="closeEditDoctorModal()" style="background:#e2e8f0; color:#334155; border:none; padding:12px 20px; border-radius:8px; font-weight:600; font-size:14px; cursor:pointer;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==============================
+     JAVASCRIPT
+=============================== -->
+
+<script src="script.js"></script>
+
+
+
+<script>
+function previewDoctorPhoto(event) {
+    const file = event.target.files[0];
+    const img = document.getElementById("doctorPhotoPreviewImg");
+    const emoji = document.getElementById("doctorPhotoPreviewEmoji");
+    if (file && img && emoji) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            img.style.display = "block";
+            emoji.style.display = "none";
+        };
+        reader.readAsDataURL(file);
+    }
+}
+</script>
+
+<!-- NATIVE MOBILE BOTTOM NAVIGATION DOCK -->
+<nav class="mobile-bottom-dock" aria-label="Mobile Navigation">
+    <a href="dashboard.html" class="dock-item">
+        <span class="dock-icon">🏠</span>
+        <span>Call</span>
+    </a>
+    <a href="token-queue.html" class="dock-item">
+        <span class="dock-icon">🎟️</span>
+        <span>Queue</span>
+    </a>
+    <a href="doctors.html" class="dock-item active">
+        <span class="dock-icon">👨‍⚕️</span>
+        <span>Doctors</span>
+    </a>
+    <a href="patients.html" class="dock-item">
+        <span class="dock-icon">👥</span>
+        <span>Patients</span>
+    </a>
+    <a href="display.html" target="_blank" class="dock-item">
+        <span class="dock-icon">📺</span>
+        <span>TV</span>
+    </a>
+    <a href="profile.html" class="dock-item">
+        <span class="dock-icon">🏥</span>
+        <span>Profile</span>
+    </a>
+</nav>
+
+</body>
+
+</html>
