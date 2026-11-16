@@ -5,10 +5,11 @@
 
     <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
 
     <title>Hospital Profile - CarePath</title>
 
@@ -17,10 +18,308 @@
         href="style.css"
     >
 
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            padding-bottom: calc(var(--safe-bottom) + 84px) !important;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Mobile App Header */
+        .mobile-app-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+            padding: 10px 14px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+            width: 100%;
+        }
+
+        .mobile-app-bar-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .app-brand-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .app-back-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #f1f5f9;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .app-back-btn:hover {
+            background: #e2e8f0;
+            color: #2563eb;
+        }
+
+        .app-brand-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+            color: #ffffff;
+            font-size: 19px;
+            flex-shrink: 0;
+        }
+
+        .app-title-group {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .app-page-title {
+            font-size: 15.5px;
+            font-weight: 800;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            letter-spacing: -0.3px;
+        }
+
+        .app-hospital-subtitle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn-header-save {
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+            transition: background 0.2s;
+        }
+
+        .btn-header-save:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-header-logout {
+            background: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fecaca;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-header-logout:hover {
+            background: #fee2e2;
+        }
+
+        /* Responsive Form Grids */
+        .hours-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .break-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .closures-form-grid {
+            display: grid;
+            grid-template-columns: 140px 140px 1fr auto;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        @media (max-width: 768px) {
+            .page-container > header {
+                display: none !important;
+            }
+            .page-container {
+                padding: 12px 14px !important;
+                margin: 0 auto !important;
+            }
+            .form-card {
+                padding: 16px !important;
+                border-radius: 14px !important;
+            }
+            .closures-form-grid {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            .closures-form-grid button {
+                width: 100% !important;
+            }
+            .hours-grid, .break-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-app-header {
+                display: none !important;
+            }
+        }
+
+        /* Bottom Dock */
+        .mobile-bottom-dock {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(226, 232, 240, 0.9);
+            padding: 6px 10px calc(var(--safe-bottom) + 6px) 10px;
+            box-shadow: 0 -4px 18px rgba(15, 23, 42, 0.06);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .dock-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            text-decoration: none;
+            color: #64748b;
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 5px 8px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .dock-item.active {
+            color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .dock-icon {
+            font-size: 19px;
+            line-height: 1;
+        }
+
+        @media (max-width: 480px) {
+            .mobile-bottom-dock {
+                padding: 4px 4px calc(var(--safe-bottom) + 5px) 4px;
+            }
+            .dock-item {
+                min-width: 0;
+                flex: 1;
+                padding: 4px 1px;
+                font-size: 9.5px;
+            }
+            .dock-icon {
+                font-size: 18px;
+            }
+        }
+    </style>
+
 </head>
 
 
 <body>
+
+    <!-- MOBILE NATIVE APP HEADER -->
+    <header class="mobile-app-header">
+        <div class="mobile-app-bar-inner">
+            <div class="app-brand-left">
+                <a href="dashboard.html" class="app-back-btn" aria-label="Back to Dashboard">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </a>
+                <div class="app-brand-avatar">🏥</div>
+                <div class="app-title-group">
+                    <div class="app-page-title">Hospital Profile</div>
+                    <div class="app-hospital-subtitle" id="topHospitalName">CarePath Partner</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button type="button" class="btn-header-save" onclick="saveProfile()" title="Save Profile">
+                    <span>Save</span>
+                </button>
+                <button type="button" class="btn-header-logout" onclick="hospitalLogout()" title="Logout">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
 
 <div class="page-container">
 
@@ -342,39 +641,9 @@
 
 
         <!-- ==============================
-             TOKEN FEE
-        =============================== -->
-
-        <label for="profileTokenFee">
-            Token Fee
-        </label>
-
-        <input
-            type="number"
-            id="profileTokenFee"
-            min="0"
-            step="1"
-            placeholder="Example: 100"
-        >
-
-
-        <p
-            style="
-                margin-top:8px;
-                color:#666;
-                font-size:14px;
-                line-height:1.5;
-            "
-        >
-            This is the amount charged by the hospital
-            for one token. CarePath adds a fixed
-            ₹10 platform fee separately.
-        </p>
-
-        <!-- ==============================
              OPERATING HOURS
         =============================== -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
+        <div class="hours-grid">
             <div>
                 <label for="profileOpeningTime" style="font-weight: 600; color: #334155; margin-bottom: 6px; display: block;">
                     🏥 Hospital Opening Time
@@ -451,27 +720,7 @@
         </div>
 
 
-        <div
-            style="
-                margin-top:10px;
-                padding:12px;
-                background:#eef6ff;
-                border-radius:8px;
-                color:#164e8a;
-            "
-        >
-
-            Example:
-
-            Hospital token fee ₹100 +
-
-            CarePath platform fee ₹10 =
-
-            <strong>
-                Patient pays ₹110
-            </strong>
-
-        </div>
+        
 
 
 
@@ -931,10 +1180,10 @@ async function loadProfile() {
 
 
 
-        document.getElementById(
-            "profileTokenFee"
-        ).value =
-            hospital.token_fee ?? 0;
+        const topHospName = document.getElementById("topHospitalName");
+        if (topHospName && hospital.name) {
+            topHospName.textContent = hospital.name;
+        }
 
         if (document.getElementById("profileOpeningTime")) {
             document.getElementById("profileOpeningTime").value = hospital.opening_time || "09:00";
@@ -1047,29 +1296,7 @@ async function loadProfile() {
 
 async function saveProfile() {
 
-    const tokenFee =
-        Number(
-            document.getElementById(
-                "profileTokenFee"
-            ).value || 0
-        );
 
-
-    if (
-        !Number.isFinite(
-            tokenFee
-        ) ||
-        tokenFee < 0
-    ) {
-
-        showMessage(
-            "Token fee cannot be negative.",
-            false
-        );
-
-        return;
-
-    }
 
 
     const data = {
@@ -1097,9 +1324,6 @@ async function saveProfile() {
                 "profileDescription"
             ).value.trim(),
 
-
-        token_fee:
-            tokenFee,
 
         opening_time:
             document.getElementById("profileOpeningTime") ? document.getElementById("profileOpeningTime").value : "09:00",
@@ -1147,14 +1371,6 @@ async function saveProfile() {
             await parseResponse(
                 response
             );
-
-
-        localStorage.setItem(
-            "hospital_token_fee",
-            String(
-                tokenFee
-            )
-        );
 
 
         showMessage(
@@ -1833,9 +2049,8 @@ async function uploadHospitalCertificate() {
         return;
     }
 
-    const hospital = getHospitalSession();
-    const hospitalId = hospital ? (hospital.id || hospital.hospital_id) : null;
-    if (!hospitalId) {
+    const activeHospId = (typeof hospitalId !== "undefined" && hospitalId) ? hospitalId : localStorage.getItem("hospital_id");
+    if (!activeHospId) {
         if (message) {
             message.textContent = "Hospital session expired. Please log in again.";
             message.style.color = "#dc2626";
@@ -1860,7 +2075,7 @@ async function uploadHospitalCertificate() {
 
     try {
         const token = localStorage.getItem("hospitalToken");
-        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/certificate`, {
+        const res = await fetch(`${API_URL}/hospitals/${activeHospId}/certificate`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${token}`
@@ -2323,9 +2538,9 @@ function closeCertCamera() {
         <span class="dock-icon">👥</span>
         <span>Patients</span>
     </a>
-    <a href="display.html" target="_blank" class="dock-item">
-        <span class="dock-icon">📺</span>
-        <span>TV</span>
+    <a href="ads.html" class="dock-item">
+        <span class="dock-icon">📢</span>
+        <span>Ads</span>
     </a>
     <a href="profile.html" class="dock-item active">
         <span class="dock-icon">🏥</span>
