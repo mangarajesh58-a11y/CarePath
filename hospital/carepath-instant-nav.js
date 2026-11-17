@@ -1,7 +1,6 @@
 /**
- * CarePath Instant 0ms Navigation Engine
- * Zero-delay page navigation with speculative prerendering,
- * touchstart prefetching, and instant in-memory cache.
+ * CarePath Instant Navigation Engine
+ * Intent-driven, lightweight preloading with Speculation Rules and touch/hover prefetching.
  */
 (function () {
   "use strict";
@@ -10,20 +9,8 @@
   window.__carepathInstantNavLoaded = true;
 
   const prefetchedUrls = new Set();
-  const pageCache = new Map();
 
-  const APP_PAGES = [
-    // Hospital App
-    "dashboard.html",
-    "token-queue.html",
-    "doctors.html",
-    "patients.html",
-    "ads.html",
-    "display.html",
-    "profile.html"
-  ];
-
-  // 1. Speculation Rules API (Native 0ms Prerendering in Chrome/WebView)
+  // 1. Speculation Rules API (Prerender on hover/pointerdown with moderate eagerness)
   function injectSpeculationRules() {
     try {
       if (HTMLScriptElement.supports && HTMLScriptElement.supports("speculationrules")) {
@@ -32,9 +19,14 @@
         specScript.textContent = JSON.stringify({
           prerender: [
             {
-              source: "list",
-              urls: APP_PAGES,
-              eagerness: "immediate"
+              source: "document",
+              where: {
+                and: [
+                  { href_matches: "/*" },
+                  { not: { href_matches: ["*logout*", "*#*", "javascript:*", "mailto:*", "tel:*"] } }
+                ]
+              },
+              eagerness: "moderate"
             }
           ]
         });
@@ -43,7 +35,7 @@
     } catch (e) {}
   }
 
-  // 2. High-priority prefetch of target page
+  // 2. Intent-based link prefetch (only for user-targeted links)
   function prefetchUrl(url) {
     if (!url) return;
     const clean = url.split("?")[0].split("#")[0];
@@ -52,13 +44,12 @@
     if (clean.startsWith("http://") || clean.startsWith("https://") || clean.startsWith("//")) {
       if (!clean.startsWith(window.location.origin)) return;
     }
-    if (clean.startsWith("#") || clean.startsWith("javascript:") || clean.startsWith("mailto:") || clean.startsWith("tel:")) {
+    if (clean.startsWith("#") || clean.startsWith("javascript:") || clean.startsWith("mailto:") || clean.startsWith("tel:") || clean.includes("logout")) {
       return;
     }
 
     prefetchedUrls.add(clean);
 
-    // Dynamic link rel="prefetch"
     try {
       const link = document.createElement("link");
       link.rel = "prefetch";
@@ -66,42 +57,11 @@
       link.as = "document";
       document.head.appendChild(link);
     } catch (e) {}
-
-    // In-memory fetch prefetch
-    if (window.fetch) {
-      try {
-        fetch(clean, { priority: "high", cache: "force-cache" })
-          .then(function (res) {
-            if (res.ok) return res.text();
-            throw new Error("HTTP " + res.status);
-          })
-          .then(function (html) {
-            if (html && html.length > 50) {
-              pageCache.set(clean, html);
-            }
-          })
-          .catch(function () {});
-      } catch (e) {}
-    }
   }
 
-  // 3. Scan page links and prefetch
-  function prefetchVisibleLinks() {
-    APP_PAGES.forEach(function (page) {
-      prefetchUrl(page);
-    });
-
-    document.querySelectorAll("a[href]").forEach(function (a) {
-      const href = a.getAttribute("href");
-      if (href && !href.startsWith("#") && !href.startsWith("javascript:") && !href.startsWith("http")) {
-        prefetchUrl(href);
-      }
-    });
-  }
-
-  // 4. Instant Touchstart & Pointerdown Preloading (100-300ms faster than click)
-  function attachTouchPreloaders() {
-    const events = ["touchstart", "pointerdown", "mousedown", "mouseover"];
+  // 3. User interaction listener: prefetch on hover or touch/pointer intent
+  function attachIntentPreloaders() {
+    const events = ["touchstart", "pointerdown", "mouseover", "focusin"];
     events.forEach(function (evt) {
       document.addEventListener(
         evt,
@@ -118,16 +78,14 @@
     });
   }
 
-  // Auto-run
+  // Initialize once DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
       injectSpeculationRules();
-      attachTouchPreloaders();
-      setTimeout(prefetchVisibleLinks, 60);
+      attachIntentPreloaders();
     });
   } else {
     injectSpeculationRules();
-    attachTouchPreloaders();
-    setTimeout(prefetchVisibleLinks, 60);
+    attachIntentPreloaders();
   }
 })();
