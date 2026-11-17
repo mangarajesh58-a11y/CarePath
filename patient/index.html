@@ -1013,6 +1013,12 @@
                     data-callback="handleGoogleLogin"
 
                     data-auto_prompt="false"
+
+                    data-itp_support="true"
+
+                    data-context="signin"
+
+                    data-cancel_on_tap_outside="false"
                 >
                 </div>
 
@@ -1734,11 +1740,12 @@
                     setTimeout(
                         function() {
 
-                            window.location.href =
-                                "profile.html";
+                            window.location.replace(
+                                "profile.html"
+                            );
 
                         },
-                        700
+                        600
                     );
 
 
@@ -1766,12 +1773,12 @@
                     if (redirectUrlGoogle) {
                         sessionStorage.removeItem("loginRedirect");
                         setTimeout(function() {
-                            window.location.href = redirectUrlGoogle;
+                            window.location.replace(redirectUrlGoogle);
                         }, 500);
                     } else {
                         setTimeout(function() {
-                            window.location.href = "dashboard.html";
-                        }, 700);
+                            window.location.replace("dashboard.html");
+                        }, 600);
                     }
 
                 }

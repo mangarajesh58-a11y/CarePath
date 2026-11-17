@@ -4023,6 +4023,7 @@ def verify_google_credential(
                 credential,
                 google_requests.Request(),
                 GOOGLE_CLIENT_ID,
+                clock_skew_in_seconds=10,
             )
         )
 
