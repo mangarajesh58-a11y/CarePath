@@ -729,18 +729,21 @@
     }
 
         // Instagram-style randomized ad injection:
-    // Ads appear naturally with random spacing (every 3-5 items) and shuffled non-fixed rotation
+    // Ads appear naturally with guaranteed placement and shuffled non-fixed rotation
     const adInsertIndices = new Set();
     if (activeSponsoredAds && activeSponsoredAds.length > 0 && items.length > 0) {
-      if (items.length === 1) {
-        adInsertIndices.add(0);
+      if (items.length <= 2) {
+        adInsertIndices.add(Math.min(1, items.length - 1));
       } else {
-        let nextAdPos = Math.floor(Math.random() * 3) + 2; // First ad randomly after 2nd, 3rd, or 4th item
+        let nextAdPos = Math.min(items.length, Math.floor(Math.random() * 2) + 2); // First ad after 1st or 2nd item
         while (nextAdPos <= items.length) {
           adInsertIndices.add(nextAdPos - 1);
           const randomGap = Math.floor(Math.random() * 3) + 3; // Random gap of 3 to 5 organic hospitals
           nextAdPos += randomGap;
         }
+      }
+      if (adInsertIndices.size === 0) {
+        adInsertIndices.add(0);
       }
     }
 
@@ -891,9 +894,13 @@
       const video = document.createElement("video");
       video.className = "sponsored-video-player";
       video.setAttribute("playsinline", "");
+      video.setAttribute("webkit-playsinline", "");
       video.setAttribute("loop", "");
-      video.setAttribute("preload", "metadata");
+      video.setAttribute("preload", "auto");
+      video.setAttribute("muted", "muted");
       video.muted = true;
+      video.defaultMuted = true;
+      video.autoplay = true;
 
       let rawVideoUrl = ad.video_url || "";
       if (rawVideoUrl && !rawVideoUrl.startsWith("http") && !rawVideoUrl.startsWith("data:")) {
@@ -902,13 +909,36 @@
       video.src = rawVideoUrl;
 
       const rawPoster = ad.image_url || ad.hospital_image || "";
-      if (rawPoster) {
-        let finalPoster = rawPoster;
-        if (!finalPoster.startsWith("http") && !finalPoster.startsWith("data:")) {
-          finalPoster = API_BASE + (finalPoster.startsWith("/") ? "" : "/") + rawPoster;
-        }
-        video.poster = finalPoster;
+      let finalPoster = rawPoster;
+      if (rawPoster && !rawPoster.startsWith("http") && !rawPoster.startsWith("data:")) {
+        finalPoster = API_BASE + (finalPoster.startsWith("/") ? "" : "/") + rawPoster;
       }
+      if (!finalPoster) {
+        finalPoster = FALLBACK_HOSPITAL_PHOTOS[0];
+      }
+      video.poster = finalPoster;
+
+      video.onerror = function () {
+        console.warn("CarePath video ad playback error on:", rawVideoUrl);
+        cover.classList.remove("sponsored-video-cover");
+        cover.innerHTML = "";
+        const fallbackImg = makeElement("img", "hospital-photo sponsored-photo");
+        fallbackImg.src = finalPoster;
+        fallbackImg.alt = (ad.title || ad.hospital_name || "CarePath") + " sponsored";
+        fallbackImg.loading = "lazy";
+        cover.appendChild(fallbackImg);
+        cover.appendChild(makeElement("span", "hospital-photo-shade"));
+        cover.appendChild(makeElement("span", "sponsored-badge", "📢 SPONSORED"));
+      };
+
+      video.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        if (video.paused) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      });
 
       const audioPill = makeElement("button", "sponsored-audio-pill", "🔇 Tap to Unmute");
       audioPill.type = "button";

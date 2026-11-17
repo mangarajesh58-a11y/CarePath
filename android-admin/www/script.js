@@ -883,316 +883,179 @@ async function loadRevenue() {
 // LOAD HOSPITALS
 // =====================================================
 
-async function loadHospitals() {
-    const tableBody =
-        document.getElementById(
-            "hospitalTableBody"
-        );
+function renderHospitalsTable(hospitals) {
+    const tableBody = document.getElementById("hospitalTableBody");
+    if (!tableBody) return;
 
-    if (!tableBody) {
+    if (!hospitals || hospitals.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="9" class="loading">
+                    No hospitals registered yet.
+                </td>
+            </tr>
+        `;
         return;
     }
 
-    tableBody.innerHTML = `
-        <tr>
-            <td
-                colspan="9"
-                class="loading"
-            >
-                Loading hospitals (connecting to backend)...
+    // Check clinical license expiry across hospitals
+    const alertBanner = document.getElementById("licenseExpiryAlertBanner");
+    if (alertBanner) {
+        const expCount = hospitals.filter(h => h.license_status === "EXPIRED" || h.license_status === "EXPIRING_SOON").length;
+        if (expCount > 0) {
+            const expiredCount = hospitals.filter(h => h.license_status === "EXPIRED").length;
+            const soonCount = hospitals.filter(h => h.license_status === "EXPIRING_SOON").length;
+            const alertText = document.getElementById("licenseAlertText");
+            if (alertText) {
+                alertText.textContent = `${expiredCount > 0 ? `${expiredCount} license(s) EXPIRED! ` : ''}${soonCount > 0 ? `${soonCount} license(s) expiring within 30 days.` : ''} Clinical Establishment compliance required.`;
+            }
+            alertBanner.style.display = "block";
+        } else {
+            alertBanner.style.display = "none";
+        }
+    }
+
+    tableBody.innerHTML = "";
+
+    hospitals.forEach(function (hospital) {
+        const row = document.createElement("tr");
+        const status = String(hospital.approval_status || "PENDING").toUpperCase();
+        const published = hospital.is_published === true;
+
+        let statusClass = "pending";
+        if (status === "APPROVED") statusClass = "approved";
+        if (status === "REJECTED") statusClass = "rejected";
+
+        const hospitalId = Number(hospital.id);
+        const approveButton = status !== "APPROVED" ? `
+            <button class="approve-btn" onclick="approveHospital(${hospitalId})">✅ Approve</button>
+        ` : "";
+        const rejectButton = status !== "REJECTED" ? `
+            <button class="reject-btn" onclick="rejectHospital(${hospitalId})">❌ Reject</button>
+        ` : "";
+        const publishButton = status === "APPROVED" && !published ? `
+            <button class="publish-btn" onclick="publishHospital(${hospitalId})">📢 Publish</button>
+        ` : "";
+        const unpublishButton = published ? `
+            <button class="unpublish-btn" onclick="unpublishHospital(${hospitalId})">🚫 Unpublish</button>
+        ` : "";
+
+        const rawImg = hospital.image_url || hospital.photo_url || "";
+        const thumbUrl = rawImg
+            ? (/^https?:\/\//i.test(rawImg) || rawImg.startsWith("data:")
+                ? rawImg
+                : `${API}${rawImg.startsWith("/") ? "" : "/"}${rawImg}`)
+            : `${API}/hospital-photos/hospital_${hospitalId}.jpg`;
+
+        row.innerHTML = `
+            <td>${escapeHtml(hospital.id ?? "-")}</td>
+            <td>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img
+                        src="${thumbUrl}"
+                        alt="${escapeHtml(hospital.name || 'Hospital')}"
+                        style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid #e2e8f0; background: #f8fafc; flex-shrink: 0;"
+                        onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=120&q=80';"
+                    >
+                    <div><strong>${escapeHtml(hospital.name || "-")}</strong></div>
+                </div>
             </td>
-        </tr>
-    `;
+            <td>${escapeHtml(hospital.city || "-")}</td>
+            <td>
+                <div><strong>${escapeHtml(hospital.license_id || "Not provided")}</strong></div>
+                ${hospital.license_status === "EXPIRED" ? `
+                    <span style="display: inline-block; background: #fee2e2; color: #b91c1c; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-top: 4px;">⚠️ EXPIRED (${Math.abs(hospital.days_to_license_expiry)}d ago)</span>
+                ` : (hospital.license_status === "EXPIRING_SOON" ? `
+                    <span style="display: inline-block; background: #fef3c7; color: #b45309; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-top: 4px;">⏳ Expiring in ${hospital.days_to_license_expiry}d</span>
+                ` : (hospital.license_expiry_date ? `
+                    <span style="display: inline-block; background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-top: 4px;">✓ Valid (${hospital.license_expiry_date})</span>
+                ` : ""))}
+            </td>
+            <td>₹${Number(hospital.token_fee || 0)}</td>
+            <td>
+                <span class="status ${statusClass}">${escapeHtml(status)}</span>
+                ${hospital.rejection_reason ? `
+                    <div style="font-size: 11px; color: #b91c1c; margin-top: 4px; max-width: 140px; line-height: 1.2; word-break: break-word;">
+                        <strong>Reason:</strong> ${escapeHtml(hospital.rejection_reason)}
+                    </div>
+                ` : ""}
+            </td>
+            <td>
+                <span class="${published ? "published" : "not-published"}">${published ? "YES" : "NO"}</span>
+            </td>
+            <td>${Number(hospital.doctor_count || 0)}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="view-btn" onclick="viewHospital(${hospitalId})">👁 View</button>
+                    <button class="view-btn" style="background: #2563eb; color: #ffffff; font-weight: 700; border: none;" onclick="openDirectCommModal(${hospitalId}, '${escapeHtml(hospital.name || 'Hospital')}', '${escapeHtml(hospital.phone || '')}', '${escapeHtml(hospital.city || '')}')" title="Send direct notice, WhatsApp or call">💬 Message</button>
+                    ${approveButton}
+                    ${rejectButton}
+                    ${publishButton}
+                    ${unpublishButton}
+                    <button class="delete-btn" onclick="deleteHospital(${hospitalId})">🗑 Delete</button>
+                </div>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+window.renderHospitalsTable = renderHospitalsTable;
+
+async function loadHospitals() {
+    const tableBody = document.getElementById("hospitalTableBody");
+    if (!tableBody) return;
+
+    // 0ms SWR Cache Hydration
+    try {
+        const cachedRaw = localStorage.getItem("carepath_cache_admin_hospitals");
+        if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (Array.isArray(cached) && cached.length > 0) {
+                window.allLoadedHospitals = cached;
+                renderHospitalsTable(cached);
+            }
+        }
+    } catch (e) {
+        console.warn("Could not read hospitals cache:", e);
+    }
+
+    // Only show loading placeholder if table has no rows
+    if (!tableBody.hasChildNodes() || tableBody.innerHTML.trim() === "") {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="9" class="loading">Loading hospitals (connecting to backend)...</td>
+            </tr>
+        `;
+    }
 
     try {
-        const response = await fetchWithRetry(
-            `${API}/admin/hospitals`,
-            {
-                headers:
-                    getAdminAuthHeaders()
-            }
-        );
-
-        const data =
-            await readResponse(response);
-
+        const response = await fetchWithRetry(`${API}/admin/hospitals`, {
+            headers: getAdminAuthHeaders()
+        });
+        const data = await readResponse(response);
         if (!response.ok) {
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    `HTTP ${response.status}`
-                )
-            );
+            throw new Error(getErrorMessage(data, `HTTP ${response.status}`));
         }
 
-        const hospitals =
-            Array.isArray(data)
-                ? data
-                : data.hospitals || [];
-
-        if (hospitals.length === 0) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td
-                        colspan="9"
-                        class="loading"
-                    >
-                        No hospitals registered yet.
-                    </td>
-                </tr>
-            `;
-
+        const hospitals = Array.isArray(data) ? data : data.hospitals || [];
+        window.allLoadedHospitals = hospitals;
+        try {
+            localStorage.setItem("carepath_cache_admin_hospitals", JSON.stringify(hospitals));
+        } catch (e) {}
+        renderHospitalsTable(hospitals);
+    } catch (error) {
+        console.error("Hospital loading error:", error);
+        if (window.allLoadedHospitals && window.allLoadedHospitals.length > 0) {
+            console.warn("Using cached hospitals; background sync failed:", error.message);
             return;
         }
-
-        // Check clinical license expiry across hospitals
-        const alertBanner = document.getElementById("licenseExpiryAlertBanner");
-        if (alertBanner) {
-            const expCount = hospitals.filter(h => h.license_status === "EXPIRED" || h.license_status === "EXPIRING_SOON").length;
-            if (expCount > 0) {
-                const expiredCount = hospitals.filter(h => h.license_status === "EXPIRED").length;
-                const soonCount = hospitals.filter(h => h.license_status === "EXPIRING_SOON").length;
-                document.getElementById("licenseAlertText").textContent =
-                    `${expiredCount > 0 ? `${expiredCount} license(s) EXPIRED! ` : ''}${soonCount > 0 ? `${soonCount} license(s) expiring within 30 days.` : ''} Clinical Establishment compliance required.`;
-                alertBanner.style.display = "block";
-            } else {
-                alertBanner.style.display = "none";
-            }
-        }
-
-        window.allLoadedHospitals = hospitals;
-
-        tableBody.innerHTML = "";
-
-        hospitals.forEach(
-            function (hospital) {
-                const row =
-                    document.createElement(
-                        "tr"
-                    );
-
-                const status =
-                    String(
-                        hospital.approval_status ||
-                        "PENDING"
-                    ).toUpperCase();
-
-                const published =
-                    hospital.is_published === true;
-
-                let statusClass =
-                    "pending";
-
-                if (status === "APPROVED") {
-                    statusClass =
-                        "approved";
-                }
-
-                if (status === "REJECTED") {
-                    statusClass =
-                        "rejected";
-                }
-
-                const hospitalId =
-                    Number(hospital.id);
-
-                const approveButton =
-                    status !== "APPROVED"
-                        ? `
-                            <button
-                                class="approve-btn"
-                                onclick="approveHospital(${hospitalId})"
-                            >
-                                ✅ Approve
-                            </button>
-                        `
-                        : "";
-
-                const rejectButton =
-                    status !== "REJECTED"
-                        ? `
-                            <button
-                                class="reject-btn"
-                                onclick="rejectHospital(${hospitalId})"
-                            >
-                                ❌ Reject
-                            </button>
-                        `
-                        : "";
-
-                const publishButton =
-                    status === "APPROVED" &&
-                    !published
-                        ? `
-                            <button
-                                class="publish-btn"
-                                onclick="publishHospital(${hospitalId})"
-                            >
-                                📢 Publish
-                            </button>
-                        `
-                        : "";
-
-                const unpublishButton =
-                    published
-                        ? `
-                            <button
-                                class="unpublish-btn"
-                                onclick="unpublishHospital(${hospitalId})"
-                            >
-                                🚫 Unpublish
-                            </button>
-                        `
-                        : "";
-
-                const rawImg = hospital.image_url || hospital.photo_url || "";
-                const thumbUrl = rawImg
-                    ? (/^https?:\/\//i.test(rawImg) || rawImg.startsWith("data:")
-                        ? rawImg
-                        : `${API}${rawImg.startsWith("/") ? "" : "/"}${rawImg}`)
-                    : `${API}/hospital-photos/hospital_${hospitalId}.jpg`;
-
-                row.innerHTML = `
-                    <td>
-                        ${escapeHtml(
-                            hospital.id ?? "-"
-                        )}
-                    </td>
-
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img
-                                src="${thumbUrl}"
-                                alt="${escapeHtml(hospital.name || 'Hospital')}"
-                                style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid #e2e8f0; background: #f8fafc; flex-shrink: 0;"
-                                onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=120&q=80';"
-                            >
-                            <div>
-                                <strong>
-                                    ${escapeHtml(
-                                        hospital.name || "-"
-                                    )}
-                                </strong>
-                            </div>
-                        </div>
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            hospital.city || "-"
-                        )}
-                    </td>
-
-                    <td>
-                        <div><strong>${escapeHtml(hospital.license_id || "Not provided")}</strong></div>
-                        ${hospital.license_status === "EXPIRED" ? `
-                            <span style="display: inline-block; background: #fee2e2; color: #b91c1c; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-top: 4px;">⚠️ EXPIRED (${Math.abs(hospital.days_to_license_expiry)}d ago)</span>
-                        ` : (hospital.license_status === "EXPIRING_SOON" ? `
-                            <span style="display: inline-block; background: #fef3c7; color: #b45309; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-top: 4px;">⏳ Expiring in ${hospital.days_to_license_expiry}d</span>
-                        ` : (hospital.license_expiry_date ? `
-                            <span style="display: inline-block; background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-top: 4px;">✓ Valid (${hospital.license_expiry_date})</span>
-                        ` : ""))}
-                    </td>
-
-                    <td>
-                        ₹${Number(
-                            hospital.token_fee || 0
-                        )}
-                    </td>
-
-                    <td>
-                        <span
-                            class="status ${statusClass}"
-                        >
-                            ${escapeHtml(status)}
-                        </span>
-                        ${hospital.rejection_reason ? `
-                            <div style="font-size: 11px; color: #b91c1c; margin-top: 4px; max-width: 140px; line-height: 1.2; word-break: break-word;">
-                                <strong>Reason:</strong> ${escapeHtml(hospital.rejection_reason)}
-                            </div>
-                        ` : ""}
-                    </td>
-
-                    <td>
-                        <span
-                            class="${
-                                published
-                                    ? "published"
-                                    : "not-published"
-                            }"
-                        >
-                            ${
-                                published
-                                    ? "YES"
-                                    : "NO"
-                            }
-                        </span>
-                    </td>
-
-                    <td>
-                        ${Number(
-                            hospital.doctor_count || 0
-                        )}
-                    </td>
-
-                    <td>
-                        <div class="action-buttons">
-
-                            <button
-                                class="view-btn"
-                                onclick="viewHospital(${hospitalId})"
-                            >
-                                👁 View
-                            </button>
-
-                            <button
-                                class="view-btn"
-                                style="background: #2563eb; color: #ffffff; font-weight: 700; border: none;"
-                                onclick="openDirectCommModal(${hospitalId}, '${escapeHtml(hospital.name || 'Hospital')}', '${escapeHtml(hospital.phone || '')}', '${escapeHtml(hospital.city || '')}')"
-                                title="Send direct notice, WhatsApp or call"
-                            >
-                                💬 Message
-                            </button>
-
-                            ${approveButton}
-
-                            ${rejectButton}
-
-                            ${publishButton}
-
-                            ${unpublishButton}
-
-                            <button
-                                class="delete-btn"
-                                onclick="deleteHospital(${hospitalId})"
-                            >
-                                🗑 Delete
-                            </button>
-
-                        </div>
-                    </td>
-                `;
-
-                tableBody.appendChild(row);
-            }
-        );
-
-    } catch (error) {
-        console.error(
-            "Hospital loading error:",
-            error
-        );
 
         const otherApi = API === REMOTE_API ? LOCAL_API : REMOTE_API;
         const otherLabel = API === REMOTE_API ? "Localhost (127.0.0.1:8000)" : "Render Cloud Server";
 
         tableBody.innerHTML = `
             <tr>
-                <td
-                    colspan="9"
-                    class="loading"
-                    style="padding: 24px 16px; text-align: center;"
-                >
+                <td colspan="9" class="loading" style="padding: 24px 16px; text-align: center;">
                     <div style="max-width: 520px; margin: 0 auto; text-align: center;">
                         <div style="font-size: 22px; font-weight: bold; margin-bottom: 8px;">❌ Cannot Connect to Server</div>
                         <div style="color: #64748b; font-size: 14px; margin-bottom: 14px;">
@@ -1203,12 +1066,8 @@ async function loadHospitals() {
                             ${API.includes("onrender.com") ? "💡 <em>Note: Render free tier services sleep after 15 minutes of inactivity and take ~30–45s to wake up on the first request.</em>" : "💡 <em>Make sure your local FastAPI backend is running via <code>uvicorn main:app --reload</code>.</em>"}
                         </div>
                         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                            <button type="button" onclick="loadHospitals()" style="background: #1976d2; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                                🔄 Retry
-                            </button>
-                            <button type="button" onclick="switchApi('${otherApi}')" style="background: #475569; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                                ⚡ Switch to ${otherLabel}
-                            </button>
+                            <button type="button" onclick="loadHospitals()" style="background: #1976d2; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 600;">🔄 Retry</button>
+                            <button type="button" onclick="switchApi('${otherApi}')" style="background: #475569; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 600;">⚡ Switch to ${otherLabel}</button>
                         </div>
                     </div>
                 </td>
@@ -1216,10 +1075,7 @@ async function loadHospitals() {
         `;
     }
 }
-
-// =====================================================
-// CURRENT HOSPITAL DETAILS
-// =====================================================
+window.loadHospitals = loadHospitals;
 
 let currentHospitalDetailsId = null;
 let allLoadedHospitals = [];
@@ -2255,18 +2111,35 @@ async function hospitalAction(
 window.allAdminTokens = [];
 
 async function loadTokens() {
-    console.log("Loading admin tokens with full patient & hospital dossiers...");
+    console.log("Loading admin tokens with full patient & hospital dossiers (0ms SWR)...");
     const tokenTableBody = document.getElementById("tokenTableBody");
     if (!tokenTableBody) return;
 
-    tokenTableBody.innerHTML = `
-        <tr>
-            <td colspan="12" class="loading">Loading tokens and 360° dossiers...</td>
-        </tr>
-    `;
+    // 0ms SWR Cache Hydration
+    try {
+        const cachedRaw = localStorage.getItem("carepath_cache_admin_tokens");
+        if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (Array.isArray(cached) && cached.length > 0) {
+                window.allAdminTokens = cached;
+                renderTokensTable(cached);
+            }
+        }
+    } catch (e) {
+        console.warn("Could not read tokens cache:", e);
+    }
+
+    // Only show loading placeholder if table has no rows
+    if (!tokenTableBody.hasChildNodes() || tokenTableBody.innerHTML.trim() === "") {
+        tokenTableBody.innerHTML = `
+            <tr>
+                <td colspan="12" class="loading">Loading tokens and 360° dossiers...</td>
+            </tr>
+        `;
+    }
 
     try {
-        const response = await fetch(`${API}/admin/tokens`, {
+        const response = await fetch(`${API}/admin/tokens?limit=150`, {
             headers: getAdminAuthHeaders()
         });
 
@@ -2279,9 +2152,17 @@ async function loadTokens() {
         const tokens = Array.isArray(data) ? data : data.tokens || [];
         window.allAdminTokens = tokens;
 
+        try {
+            localStorage.setItem("carepath_cache_admin_tokens", JSON.stringify(tokens));
+        } catch (e) {}
+
         renderTokensTable(tokens);
     } catch (error) {
         console.error("Token loading error:", error);
+        if (window.allAdminTokens && window.allAdminTokens.length > 0) {
+            console.warn("Using cached tokens; background sync failed:", error.message);
+            return;
+        }
         tokenTableBody.innerHTML = `
             <tr>
                 <td colspan="12" class="loading">
@@ -2576,194 +2457,102 @@ window.closeTokenDossier = closeTokenDossier;
 // ADMIN USES /admin/tokens
 // =====================================================
 
-async function loadPayments() {
-    console.log(
-        "Loading payments..."
-    );
+function renderPaymentsTable(tokens) {
+    const paymentTableBody = document.getElementById("paymentTableBody");
+    if (!paymentTableBody) return;
 
-    const paymentTableBody =
-        document.getElementById(
-            "paymentTableBody"
-        );
-
-    if (!paymentTableBody) {
+    if (!tokens || tokens.length === 0) {
+        paymentTableBody.innerHTML = `
+            <tr>
+                <td colspan="10" class="loading">No payment records found.</td>
+            </tr>
+        `;
         return;
     }
 
-    paymentTableBody.innerHTML = `
-        <tr>
-            <td
-                colspan="10"
-                class="loading"
-            >
-                Loading payments...
+    paymentTableBody.innerHTML = "";
+    tokens.forEach(function (token) {
+        const row = document.createElement("tr");
+        const paymentStatus = String(token.payment_status || "PENDING").toUpperCase();
+
+        row.innerHTML = `
+            <td>${escapeHtml(token.id ?? "-")}</td>
+            <td>${escapeHtml(token.patient_name || "-")}</td>
+            <td>${escapeHtml(token.hospital || "-")}</td>
+            <td>${escapeHtml(token.department || "-")}</td>
+            <td>${escapeHtml(token.doctor || "-")}</td>
+            <td>₹${Number(token.token_fee || 0)}</td>
+            <td>₹${Number(token.platform_fee || 0)}</td>
+            <td>₹${Number(token.total_amount || 0)}</td>
+            <td>
+                <span class="status ${paymentStatus === "PAID" ? "status-paid" : "status-waiting"}">
+                    ${escapeHtml(paymentStatus)}
+                </span>
             </td>
-        </tr>
-    `;
+            <td>${escapeHtml(token.razorpay_payment_id || "-")}</td>
+        `;
+        paymentTableBody.appendChild(row);
+    });
+}
+window.renderPaymentsTable = renderPaymentsTable;
 
+async function loadPayments() {
+    console.log("Loading payments (0ms SWR)...");
+    const paymentTableBody = document.getElementById("paymentTableBody");
+    if (!paymentTableBody) return;
+
+    // 0ms SWR Cache Hydration
     try {
-        const response =
-            await fetch(
-                `${API}/admin/tokens`,
-                {
-                    headers:
-                        getAdminAuthHeaders()
-                }
-            );
-
-        const data =
-            await readResponse(
-                response
-            );
-
-        if (!response.ok) {
-            throw new Error(
-                getErrorMessage(
-                    data,
-                    `HTTP ${response.status}`
-                )
-            );
-        }
-
-        const tokens =
-            Array.isArray(data)
-                ? data
-                : data.tokens || [];
-
-        if (tokens.length === 0) {
-            paymentTableBody.innerHTML = `
-                <tr>
-                    <td
-                        colspan="10"
-                        class="loading"
-                    >
-                        No payment records found.
-                    </td>
-                </tr>
-            `;
-
-            return;
-        }
-
-        paymentTableBody.innerHTML = "";
-
-        tokens.forEach(
-            function (token) {
-                const row =
-                    document.createElement(
-                        "tr"
-                    );
-
-                const paymentStatus =
-                    String(
-                        token.payment_status ||
-                        "PENDING"
-                    ).toUpperCase();
-
-                row.innerHTML = `
-                    <td>
-                        ${escapeHtml(
-                            token.id ?? "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            token.patient_name || "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            token.hospital || "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            token.department || "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            token.doctor || "-"
-                        )}
-                    </td>
-
-                    <td>
-                        ₹${Number(
-                            token.token_fee || 0
-                        )}
-                    </td>
-
-                    <td>
-                        ₹${Number(
-                            token.platform_fee || 0
-                        )}
-                    </td>
-
-                    <td>
-                        ₹${Number(
-                            token.total_amount || 0
-                        )}
-                    </td>
-
-                    <td>
-                        <span
-                            class="status ${
-                                paymentStatus === "PAID"
-                                    ? "status-paid"
-                                    : "status-waiting"
-                            }"
-                        >
-                            ${escapeHtml(
-                                paymentStatus
-                            )}
-                        </span>
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            token.razorpay_payment_id ||
-                            "-"
-                        )}
-                    </td>
-                `;
-
-                paymentTableBody.appendChild(
-                    row
-                );
+        const cachedRaw = localStorage.getItem("carepath_cache_admin_payments");
+        if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (Array.isArray(cached) && cached.length > 0) {
+                renderPaymentsTable(cached);
             }
-        );
+        }
+    } catch (e) {
+        console.warn("Could not read payments cache:", e);
+    }
 
-    } catch (error) {
-        console.error(
-            "Payment loading error:",
-            error
-        );
-
+    if (!paymentTableBody.hasChildNodes() || paymentTableBody.innerHTML.trim() === "") {
         paymentTableBody.innerHTML = `
             <tr>
-                <td
-                    colspan="10"
-                    class="loading"
-                >
-                    ❌ Unable to load payments.
-                    <br><br>
-                    ${escapeHtml(
-                        error.message ||
-                        "Make sure FastAPI is running."
-                    )}
+                <td colspan="10" class="loading">Loading payments...</td>
+            </tr>
+        `;
+    }
+
+    try {
+        const response = await fetch(`${API}/admin/tokens?limit=150`, {
+            headers: getAdminAuthHeaders()
+        });
+        const data = await readResponse(response);
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, `HTTP ${response.status}`));
+        }
+
+        const tokens = Array.isArray(data) ? data : data.tokens || [];
+        try {
+            localStorage.setItem("carepath_cache_admin_payments", JSON.stringify(tokens));
+        } catch (e) {}
+        renderPaymentsTable(tokens);
+    } catch (error) {
+        console.error("Payment loading error:", error);
+        try {
+            const cachedRaw = localStorage.getItem("carepath_cache_admin_payments");
+            if (cachedRaw) return; // Keep cached rows on error
+        } catch (e) {}
+        paymentTableBody.innerHTML = `
+            <tr>
+                <td colspan="10" class="loading">
+                    ❌ Unable to load payments.<br><br>
+                    ${escapeHtml(error.message || "Make sure FastAPI is running.")}
                 </td>
             </tr>
         `;
     }
 }
-
-// =====================================================
-// SHOW MESSAGE
-// =====================================================
+window.loadPayments = loadPayments;
 
 function showMessage(
     message,
@@ -3352,12 +3141,82 @@ function closeDirectCommModal() {
     currentDirectCommHospitalId = null;
 }
 
+function renderDirectCommMessages(messages, container) {
+    if (!container) return;
+    if (!messages || messages.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: #94a3b8; font-size: 13px; padding: 30px 10px; background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                <div style="font-size: 28px; margin-bottom: 6px;">💬</div>
+                <strong style="color: #475569; font-size: 14px;">No messages exchanged yet</strong>
+                <div style="font-size: 12px; margin-top: 4px; color: #64748b;">
+                    Send your first direct message, inquiry, or compliance notice below.
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = messages.map(msg => {
+        const isAdmin = (msg.sender_role || "").toLowerCase() === "admin";
+        const align = isAdmin ? "flex-end" : "flex-start";
+        const bubbleBg = isAdmin ? "#2563eb" : "#ffffff";
+        const textColor = isAdmin ? "#ffffff" : "#0f172a";
+        const border = isAdmin ? "none" : "1px solid #e2e8f0";
+        const senderTag = isAdmin ? "Platform Admin (You)" : (msg.sender_name || "Hospital Staff");
+        const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleString() : "";
+        const isUrgent = msg.priority === "urgent";
+        const isCompliance = msg.priority === "compliance";
+
+        let priorityBadge = "";
+        if (isUrgent) {
+            priorityBadge = `<span style="background: ${isAdmin ? '#ef4444' : '#fee2e2'}; color: ${isAdmin ? '#fff' : '#b91c1c'}; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">🚨 URGENT</span>`;
+        } else if (isCompliance) {
+            priorityBadge = `<span style="background: ${isAdmin ? '#f59e0b' : '#fef3c7'}; color: ${isAdmin ? '#fff' : '#b45309'}; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">⚠️ COMPLIANCE</span>`;
+        }
+
+        const emailTag = msg.sent_via_email 
+            ? `<span style="font-size: 11px; opacity: 0.85; margin-left: 6px;">📩 Dispatched to email</span>` 
+            : "";
+
+        return `
+            <div style="display: flex; flex-direction: column; align-self: ${align}; max-width: 85%;">
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 3px; display: flex; gap: 6px; align-items: center; justify-content: ${isAdmin ? 'flex-end' : 'flex-start'};">
+                    <strong>${escapeHtml(senderTag)}</strong>
+                    <span>•</span>
+                    <span>${timeStr}</span>
+                    ${emailTag}
+                </div>
+                <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 11px 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 13px; line-height: 1.45;">
+                    ${priorityBadge ? `<div style="margin-bottom: 6px;">${priorityBadge}</div>` : ''}
+                    ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 4px; font-size: 13.5px;">${escapeHtml(msg.subject)}</div>` : ''}
+                    <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.message || '')}</div>
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    container.scrollTop = container.scrollHeight;
+}
+
 function openGeneralDirectCommunicationModal() {
     const modal = document.getElementById("directCommModal");
     if (!modal) return;
 
     const pickerEl = document.getElementById("commModalHospitalPicker");
     const selectEl = document.getElementById("commModalHospitalSelect");
+
+    // Hydrate allLoadedHospitals from cache if empty
+    if (!Array.isArray(allLoadedHospitals) || allLoadedHospitals.length === 0) {
+        try {
+            const cachedRaw = localStorage.getItem("carepath_cache_admin_hospitals");
+            if (cachedRaw) {
+                const cached = JSON.parse(cachedRaw);
+                if (Array.isArray(cached) && cached.length > 0) {
+                    window.allLoadedHospitals = cached;
+                }
+            }
+        } catch (e) {}
+    }
 
     if (pickerEl && selectEl && Array.isArray(allLoadedHospitals) && allLoadedHospitals.length > 0) {
         pickerEl.style.display = "block";
@@ -3370,26 +3229,15 @@ function openGeneralDirectCommunicationModal() {
         pickerEl.style.display = "block";
         selectEl.value = String(first.id);
     } else {
-        alert("Loading hospitals... please wait 2 seconds and try again.");
-    }
-}
-
-function onCommHospitalSelectChange(hospId) {
-    const hid = Number(hospId);
-    if (!Array.isArray(allLoadedHospitals)) return;
-    const target = allLoadedHospitals.find(h => Number(h.id) === hid);
-    if (target) {
-        openDirectCommModal(target.id, target.name, target.phone, target.city);
-        const pickerEl = document.getElementById("commModalHospitalPicker");
-        if (pickerEl) pickerEl.style.display = "block";
-        const selectEl = document.getElementById("commModalHospitalSelect");
-        if (selectEl) selectEl.value = String(target.id);
-    }
-}
-
-async function refreshCurrentCommMessages() {
-    if (currentDirectCommHospitalId) {
-        await loadDirectCommMessages(currentDirectCommHospitalId);
+        if (typeof loadHospitals === "function") {
+            loadHospitals().then(() => {
+                if (Array.isArray(allLoadedHospitals) && allLoadedHospitals.length > 0) {
+                    openGeneralDirectCommunicationModal();
+                } else {
+                    alert("No registered hospitals available.");
+                }
+            });
+        }
     }
 }
 
@@ -3397,14 +3245,27 @@ async function loadDirectCommMessages(hospitalId) {
     const container = document.getElementById("commModalMessagesContainer");
     if (!container) return;
 
-    container.innerHTML = `
-        <div style="text-align: center; color: #64748b; font-size: 13px; padding: 20px 0;">
-            💬 Loading conversation messages...
-        </div>
-    `;
+    // SWR Cache Hydration (0ms Instant Load)
+    try {
+        const cachedRaw = sessionStorage.getItem(`carepath_cache_direct_msgs_${hospitalId}`);
+        if (cachedRaw) {
+            const cachedMsgs = JSON.parse(cachedRaw);
+            if (Array.isArray(cachedMsgs) && cachedMsgs.length > 0) {
+                renderDirectCommMessages(cachedMsgs, container);
+            }
+        }
+    } catch (e) {}
+
+    if (!container.hasChildNodes() || container.innerHTML.trim() === "") {
+        container.innerHTML = `
+            <div style="text-align: center; color: #64748b; font-size: 13px; padding: 20px 0;">
+                💬 Loading conversation messages...
+            </div>
+        `;
+    }
 
     try {
-        const response = await fetch(`${API}/admin/hospitals/${hospitalId}/messages`, {
+        const response = await fetch(`${API}/admin/hospitals/${hospitalId}/messages?limit=100`, {
             headers: getAdminAuthHeaders()
         });
 
@@ -3415,60 +3276,11 @@ async function loadDirectCommMessages(hospitalId) {
         }
 
         const messages = Array.isArray(data.messages) ? data.messages : [];
+        try {
+            sessionStorage.setItem(`carepath_cache_direct_msgs_${hospitalId}`, JSON.stringify(messages));
+        } catch (e) {}
 
-        if (messages.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; color: #94a3b8; font-size: 13px; padding: 30px 10px; background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">
-                    <div style="font-size: 28px; margin-bottom: 6px;">💬</div>
-                    <strong style="color: #475569; font-size: 14px;">No messages exchanged yet</strong>
-                    <div style="font-size: 12px; margin-top: 4px; color: #64748b;">
-                        Send your first direct message, inquiry, or compliance notice below.
-                    </div>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = messages.map(msg => {
-            const isAdmin = (msg.sender_role || "").toLowerCase() === "admin";
-            const align = isAdmin ? "flex-end" : "flex-start";
-            const bubbleBg = isAdmin ? "#2563eb" : "#ffffff";
-            const textColor = isAdmin ? "#ffffff" : "#0f172a";
-            const border = isAdmin ? "none" : "1px solid #e2e8f0";
-            const senderTag = isAdmin ? "Platform Admin (You)" : (msg.sender_name || "Hospital Staff");
-            const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleString() : "";
-            const isUrgent = msg.priority === "urgent";
-            const isCompliance = msg.priority === "compliance";
-
-            let priorityBadge = "";
-            if (isUrgent) {
-                priorityBadge = `<span style="background: ${isAdmin ? '#ef4444' : '#fee2e2'}; color: ${isAdmin ? '#fff' : '#b91c1c'}; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">🚨 URGENT</span>`;
-            } else if (isCompliance) {
-                priorityBadge = `<span style="background: ${isAdmin ? '#f59e0b' : '#fef3c7'}; color: ${isAdmin ? '#fff' : '#b45309'}; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">⚠️ COMPLIANCE</span>`;
-            }
-
-            const emailTag = msg.sent_via_email 
-                ? `<span style="font-size: 11px; opacity: 0.85; margin-left: 6px;">📧 Dispatched to email</span>` 
-                : "";
-
-            return `
-                <div style="display: flex; flex-direction: column; align-self: ${align}; max-width: 85%;">
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 3px; display: flex; gap: 6px; align-items: center; justify-content: ${isAdmin ? 'flex-end' : 'flex-start'};">
-                        <strong>${escapeHtml(senderTag)}</strong>
-                        <span>•</span>
-                        <span>${timeStr}</span>
-                        ${emailTag}
-                    </div>
-                    <div style="background: ${bubbleBg}; color: ${textColor}; border: ${border}; border-radius: 12px; padding: 11px 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 13px; line-height: 1.45;">
-                        ${priorityBadge ? `<div style="margin-bottom: 6px;">${priorityBadge}</div>` : ''}
-                        ${msg.subject ? `<div style="font-weight: 700; margin-bottom: 4px; font-size: 13.5px;">${escapeHtml(msg.subject)}</div>` : ''}
-                        <div style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(msg.message || '')}</div>
-                    </div>
-                </div>
-            `;
-        }).join("");
-
-        container.scrollTop = container.scrollHeight;
+        renderDirectCommMessages(messages, container);
     } catch (err) {
         console.error("Load direct comm messages error:", err);
         container.innerHTML = `
@@ -4427,18 +4239,49 @@ window.closeOnlineUsersModal = closeOnlineUsersModal;
 
 window.allAdminPatients = [];
 
+function updatePatientMetrics(patients) {
+    const list = Array.isArray(patients) ? patients : [];
+    const totalMetric = document.getElementById("totalPatientsMetric");
+    if (totalMetric) totalMetric.textContent = list.length;
+
+    const withTokensMetric = document.getElementById("patientsWithTokensMetric");
+    const withTokensCount = list.filter(p => Number(p.total_tokens || 0) > 0).length;
+    if (withTokensMetric) withTokensMetric.textContent = withTokensCount;
+
+    const totalTokensMetric = document.getElementById("totalConsultationsMetric");
+    const totalConsultations = list.reduce((acc, p) => acc + Number(p.total_tokens || 0), 0);
+    if (totalTokensMetric) totalTokensMetric.textContent = totalConsultations;
+
+    const dashCount = document.getElementById("patientCount");
+    if (dashCount) dashCount.textContent = list.length;
+    const cardPat = document.getElementById("cardPatientCount");
+    if (cardPat) cardPat.textContent = `${list.length} Patients`;
+}
+
 async function loadDashboardPatientsCount() {
+    if (window.allAdminPatients && window.allAdminPatients.length > 0) {
+        updatePatientMetrics(window.allAdminPatients);
+        return;
+    }
+    try {
+        const cachedRaw = localStorage.getItem("carepath_cache_admin_patients");
+        if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (Array.isArray(cached) && cached.length > 0) {
+                updatePatientMetrics(cached);
+                return;
+            }
+        }
+    } catch (e) {}
+
     try {
         const response = await fetch(`${API}/admin/patients`, {
             headers: getAdminAuthHeaders()
         });
         if (!response.ok) return;
         const data = await readResponse(response);
-        const count = Array.isArray(data) ? data.length : data.patients?.length || 0;
-        const el = document.getElementById("patientCount");
-        if (el) el.textContent = count;
-        const cardPat = document.getElementById("cardPatientCount");
-        if (cardPat) cardPat.textContent = `${count} Patients`;
+        const patients = Array.isArray(data) ? data : data.patients || [];
+        updatePatientMetrics(patients);
     } catch (e) {
         console.warn("Could not load dashboard patients count:", e);
     }
@@ -4446,11 +4289,26 @@ async function loadDashboardPatientsCount() {
 window.loadDashboardPatientsCount = loadDashboardPatientsCount;
 
 async function loadAdminPatients() {
-    console.log("Loading master patient database...");
+    console.log("Loading master patient database (0ms SWR)...");
     const tbody = document.getElementById("patientTableBody");
     const msg = document.getElementById("patientMessage");
 
-    if (tbody) {
+    // 0ms SWR Cache Hydration
+    try {
+        const cachedRaw = localStorage.getItem("carepath_cache_admin_patients");
+        if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (Array.isArray(cached) && cached.length > 0) {
+                window.allAdminPatients = cached;
+                updatePatientMetrics(cached);
+                renderAdminPatients(cached);
+            }
+        }
+    } catch (e) {
+        console.warn("Could not read patients cache:", e);
+    }
+
+    if (tbody && (!tbody.hasChildNodes() || tbody.innerHTML.trim() === "")) {
         tbody.innerHTML = `<tr><td colspan="10" class="loading">Loading patient database...</td></tr>`;
     }
 
@@ -4466,25 +4324,18 @@ async function loadAdminPatients() {
 
         const patients = Array.isArray(data) ? data : data.patients || [];
         window.allAdminPatients = patients;
+        try {
+            localStorage.setItem("carepath_cache_admin_patients", JSON.stringify(patients));
+        } catch (e) {}
 
-        // Update metrics
-        const totalMetric = document.getElementById("totalPatientsMetric");
-        if (totalMetric) totalMetric.textContent = patients.length;
-
-        const withTokensMetric = document.getElementById("patientsWithTokensMetric");
-        const withTokensCount = patients.filter(p => Number(p.total_tokens || 0) > 0).length;
-        if (withTokensMetric) withTokensMetric.textContent = withTokensCount;
-
-        const totalTokensMetric = document.getElementById("totalConsultationsMetric");
-        const totalConsultations = patients.reduce((acc, p) => acc + Number(p.total_tokens || 0), 0);
-        if (totalTokensMetric) totalTokensMetric.textContent = totalConsultations;
-
-        const dashCount = document.getElementById("patientCount");
-        if (dashCount) dashCount.textContent = patients.length;
-
+        updatePatientMetrics(patients);
         renderAdminPatients(patients);
     } catch (error) {
         console.error("Patients load error:", error);
+        if (window.allAdminPatients && window.allAdminPatients.length > 0) {
+            console.warn("Using cached patients; background sync failed:", error.message);
+            return;
+        }
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="10" class="loading">❌ Failed to load patients: ${escapeHtml(error.message)}</td></tr>`;
         }
@@ -5156,4 +5007,33 @@ window.sendDirectDashboardNotice = sendDirectDashboardNotice;
 
 document.addEventListener("DOMContentLoaded", function () {
     highlightActiveBottomNav();
+});
+
+// =====================================================
+// REAL-TIME WEBSOCKET MESSAGING (ADMIN COMMAND CENTER)
+// =====================================================
+function initAdminRealtime() {
+    try {
+        const token = getAdminToken();
+        if (!token || typeof CarePathRealtime === "undefined") return;
+
+        CarePathRealtime.connect({
+            role: "admin",
+            token: token,
+            onMessage: (data) => {
+                console.log("[Admin Realtime] Event received:", data.type);
+                if (data.type === "new_patient_inquiry" || data.type === "hospital_inquiry_reply" || data.type === "admin_direct_message") {
+                    if (currentDirectCommHospitalId && typeof refreshCurrentCommMessages === "function") {
+                        refreshCurrentCommMessages();
+                    }
+                }
+            }
+        });
+    } catch(e) {
+        console.warn("Could not init admin realtime:", e);
+    }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    setTimeout(initAdminRealtime, 1500);
 });

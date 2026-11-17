@@ -220,6 +220,7 @@
             *, *::before, *::after { transition: none !important; }
         }
     </style>
+    <script src="./carepath-instant-nav.js"></script>
 </head>
 
 <body>
@@ -232,8 +233,8 @@
         </div>
 
         <div style="display: flex; gap: 10px; align-items: center;">
-            <button type="button" onclick="window.open('display.html', '_blank')" style="background: #0284c7; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                📺 Open TV Display
+            <button type="button" onclick="window.location.href='ads.html'" style="background: #0284c7; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                📢 Ads & Promotion
             </button>
             <button type="button" class="logout" onclick="hospitalLogout()">
                 Logout
@@ -994,9 +995,9 @@ setInterval(function() {
         <span class="dock-icon">👥</span>
         <span>Patients</span>
     </a>
-    <a href="display.html" target="_blank" class="dock-item">
-        <span class="dock-icon">📺</span>
-        <span>TV</span>
+    <a href="ads.html" class="dock-item">
+        <span class="dock-icon">📢</span>
+        <span>Ads</span>
     </a>
     <a href="profile.html" class="dock-item">
         <span class="dock-icon">🏥</span>

@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js" defer></script>
     <script src="./carepath-instant-nav.js"></script>
+    <script src="./carepath-realtime.js"></script>
     <link rel="prefetch" href="token-queue.html" as="document">
     <link rel="prefetch" href="doctors.html" as="document">
     <link rel="prefetch" href="patients.html" as="document">
@@ -948,6 +949,50 @@
             transition: var(--transition-fast);
         }
 
+        .queue-feed-item.next-up-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0284c7;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.18);
+        }
+
+        .badge-walkin-pill {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 1.5px 6px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .badge-online-pill {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 1.5px 6px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .badge-next-up-gold {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #ffffff;
+            font-size: 9.5px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 999px;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+        }
+
         .queue-feed-item:active {
             background: #ffffff;
             border-color: var(--primary-border);
@@ -1610,9 +1655,6 @@
         <button type="button" class="quick-chip-pill" onclick="copyHospitalPatientLink()" id="btnCopyPatientLink" style="background: #f0fdf4; color: #166534; border-color: #bbf7d0;">
             📋 Copy Patient Link
         </button>
-        <a href="display.html" target="_blank" id="quickChipTvLink" class="quick-chip-pill" style="background: #faf5ff; color: #6b21a8; border-color: #e9d5ff;">
-            📺 Open Waiting TV ↗
-        </a>
         <a href="ads.html" class="quick-chip-pill" style="background: #eff6ff; color: #1e40af; border-color: #bfdbfe;">
             📢 Promote (₹999)
         </a>
@@ -1628,6 +1670,16 @@
                 NOW CALLING CONSULTATION
             </span>
             <span class="hero-live-clock" id="heroLiveClock">--:--:-- --</span>
+        </div>
+
+        <!-- CALLING DESK OPD / DOCTOR SCOPE SELECTOR -->
+        <div class="hero-voice-bar" style="margin-bottom: 6px;">
+            <div class="voice-picker-label" style="width: 100%;">
+                <span>👨‍⚕️ Calling Desk OPD:</span>
+                <select id="callingDoctorFilter" class="hero-lang-select" onchange="onCallingDoctorChange()" title="Filter Caller Desk by Doctor" style="max-width: 100%; font-weight: 700; color: #1e3a8a; background: #ffffff;">
+                    <option value="">👨‍⚕️ All Doctors / All OPD Rooms</option>
+                </select>
+            </div>
         </div>
 
         <!-- VOICE ANNOUNCEMENT LANGUAGE SELECTOR -->
@@ -1694,8 +1746,11 @@
                 <button type="button" class="btn-caller-secondary" onclick="completeCurrentToken()" title="Mark consultation completed">
                     <span>✓</span> Complete
                 </button>
-                <a href="display.html" target="_blank" id="heroTvLink" class="btn-caller-secondary" title="Open TV Screen for waiting room">
-                    <span>📺</span> TV Screen
+                <button type="button" class="btn-caller-secondary" id="btnSkipPatient" onclick="skipCurrentToken()" title="Skip patient and advance queue" style="border-color: #f59e0b; color: #b45309; font-weight: 700;">
+                    <span>⏭️</span> Skip
+                </button>
+                <a href="ads.html" class="btn-caller-secondary" title="Promote hospital with Ads & Video Spotlight">
+                    <span>📢</span> Ads
                 </a>
             </div>
         </div>
@@ -2111,9 +2166,9 @@
         <span class="dock-icon">👥</span>
         <span>Patients</span>
     </a>
-    <a href="display.html" target="_blank" id="dockTvLink" class="dock-item">
-        <span class="dock-icon">📺</span>
-        <span>TV</span>
+    <a href="ads.html" class="dock-item" id="adsButton">
+        <span class="dock-icon">📢</span>
+        <span>Ads</span>
     </a>
     <a href="profile.html" class="dock-item" id="profileButton">
         <span class="dock-icon">🏥</span>
@@ -2871,6 +2926,15 @@ if (shareInput) shareInput.value = getPatientDirectUrl();
    DATA FETCHING & RENDERING
 ===================================================== */
 let allHospitalTokens = [];
+let selectedCallingDoctor = "";
+
+function getTodayDateString() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
 let allHospitalDoctors = [];
 let currentServingTokenObj = null;
 
@@ -2937,6 +3001,7 @@ async function loadDoctors() {
         });
         if (!res.ok) return;
         allHospitalDoctors = await res.json();
+        updateCallingDoctorDropdown();
         renderDoctorRoster();
         try {
             localStorage.setItem("cached_hospital_doctors_" + hospitalId, JSON.stringify(allHospitalDoctors));
@@ -2944,6 +3009,34 @@ async function loadDoctors() {
     } catch (e) {
         console.error("Load doctors error:", e);
     }
+}
+
+function updateCallingDoctorDropdown() {
+    const sel = document.getElementById("callingDoctorFilter");
+    if (!sel) return;
+    const currentVal = selectedCallingDoctor || sel.value;
+    sel.innerHTML = `<option value="">👨‍⚕️ All Doctors / All OPD Rooms</option>`;
+    (allHospitalDoctors || []).forEach(doc => {
+        const opt = document.createElement("option");
+        opt.value = doc.name;
+        opt.textContent = `Dr. ${doc.name} • ${doc.department || 'General'} (${doc.room_number || 'OPD'})`;
+        if (doc.name === currentVal) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
+function onCallingDoctorChange() {
+    const sel = document.getElementById("callingDoctorFilter");
+    selectedCallingDoctor = (sel ? sel.value : "").trim();
+    loadQueue();
+}
+
+function selectCallingDoctor(docName) {
+    selectedCallingDoctor = (docName || "").trim();
+    const sel = document.getElementById("callingDoctorFilter");
+    if (sel) sel.value = selectedCallingDoctor;
+    showToast(`Calling desk switched to Dr. ${selectedCallingDoctor}`, "👨‍⚕️");
+    loadQueue();
 }
 
 function renderDoctorRoster() {
@@ -2966,13 +3059,14 @@ function renderDoctorRoster() {
         const statusText = isOnline ? "🟢 In Session" : "⚪ Offline";
         const roomNum = doc.room_number || `Rm ${idx + 1}`;
         const initials = (doc.name || "Doctor").split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+        const isSelected = selectedCallingDoctor && selectedCallingDoctor.toLowerCase() === (doc.name || '').toLowerCase();
 
         return `
-            <div class="doctor-roster-row">
+            <div class="doctor-roster-row" onclick="selectCallingDoctor('${escapeJs(doc.name)}')" style="cursor: pointer; transition: all 0.2s; ${isSelected ? 'border-color: #0284c7; background: #f0f9ff;' : ''}" title="Tap to select Dr. ${escapeHtml(doc.name)} for Calling Desk">
                 <div class="doc-profile-snippet">
-                    <div class="doc-avatar">${initials}</div>
+                    <div class="doc-avatar" style="${isSelected ? 'background: #0284c7; color: white;' : ''}">${initials}</div>
                     <div>
-                        <div class="doc-name">${escapeHtml(doc.name)}</div>
+                        <div class="doc-name" style="${isSelected ? 'color: #0369a1; font-weight: 800;' : ''}">Dr. ${escapeHtml(doc.name)}</div>
                         <div class="doc-meta">
                             <span>${escapeHtml(doc.department || 'General')}</span>
                             <span>•</span>
@@ -2996,34 +3090,72 @@ async function loadQueue() {
         });
         if (!res.ok) return;
         const data = await res.json();
-        const tokens = Array.isArray(data) ? data : (data.tokens || []);
+        const rawTokens = Array.isArray(data) ? data : (data.tokens || []);
+
+        // Deduplicate tokens by ID
+        const seenIds = new Set();
+        const tokens = [];
+        for (const t of rawTokens) {
+            if (t && t.id && !seenIds.has(t.id)) {
+                seenIds.add(t.id);
+                tokens.push(t);
+            }
+        }
         allHospitalTokens = tokens;
 
-        const waiting = tokens
-            .filter(t => (t.status || "").toLowerCase() === "waiting")
-            .sort((a, b) => {
-                const dateA = a.appointment_date || (a.created_at ? a.created_at.split('T')[0] : '');
-                const dateB = b.appointment_date || (b.created_at ? b.created_at.split('T')[0] : '');
-                if (dateA !== dateB) return dateA.localeCompare(dateB);
-                return Number(a.token_number || 0) - Number(b.token_number || 0);
-            });
-        const serving = tokens.filter(t => (t.status || "").toLowerCase() === "serving");
-        const completed = tokens.filter(t => (t.status || "").toLowerCase() === "completed");
+        const todayStr = getTodayDateString();
+
+        // Filter tokens scheduled for today
+        let todayTokens = tokens.filter(t => {
+            const d = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            return !d || d === todayStr;
+        });
+
+        // Fallback for development/testing if no appointments booked strictly today
+        if (todayTokens.length === 0 && tokens.length > 0) {
+            todayTokens = tokens;
+        }
+
+        // Active tokens: exclude cancelled and refunded
+        const activeWaitingAll = todayTokens
+            .filter(t => (t.status || "").toLowerCase() === "waiting" && (t.payment_status || "").toLowerCase() !== "refunded")
+            .sort((a, b) => Number(a.token_number || 0) - Number(b.token_number || 0));
+
+        const activeServingAll = todayTokens.filter(t => (t.status || "").toLowerCase() === "serving");
+        const activeCompletedAll = todayTokens.filter(t => (t.status || "").toLowerCase() === "completed");
+
+        // Today's Collection computation (strictly today's active tokens)
+        const tokenFee = Number(storedHospital && storedHospital.token_fee ? storedHospital.token_fee : 10);
+        const todayRevenue = todayTokens
+            .filter(t => (t.status || "").toLowerCase() !== "cancelled" && (t.payment_status || "").toLowerCase() !== "refunded")
+            .reduce((sum, t) => sum + Number(t.token_fee || tokenFee || 0), 0);
+        const revEl = document.getElementById("todayRevenueDisplay");
+        if (revEl) revEl.textContent = `₹${todayRevenue.toLocaleString()}`;
+
+        // Scoping by Selected Calling Doctor
+        let waiting = activeWaitingAll;
+        let serving = activeServingAll;
+        let completed = activeCompletedAll;
+
+        if (selectedCallingDoctor) {
+            const cleanDoc = selectedCallingDoctor.toLowerCase();
+            waiting = activeWaitingAll.filter(t => (t.doctor || "").toLowerCase().includes(cleanDoc));
+            serving = activeServingAll.filter(t => (t.doctor || "").toLowerCase().includes(cleanDoc));
+            completed = activeCompletedAll.filter(t => (t.doctor || "").toLowerCase().includes(cleanDoc));
+        }
 
         // Metrics
-        document.getElementById("waitingCount").textContent = waiting.length;
-        document.getElementById("queueBadgeTotal").textContent = waiting.length;
-        document.getElementById("completedCount").textContent = completed.length;
-        document.getElementById("completedTokensCount").textContent = `${completed.length} Consultations Done`;
+        const waitEl = document.getElementById("waitingCount");
+        const badgeTotalEl = document.getElementById("queueBadgeTotal");
+        const compEl = document.getElementById("completedCount");
+        const compDoneEl = document.getElementById("completedTokensCount");
+        const estWaitEl = document.getElementById("estimatedWaitTime");
 
-        // Estimated wait (~3 mins per patient)
-        const estMinutes = waiting.length * 3;
-        document.getElementById("estimatedWaitTime").textContent = `~${estMinutes} min estimated wait`;
-
-        // Revenue computation
-        const tokenFee = Number(storedHospital && storedHospital.token_fee ? storedHospital.token_fee : 10);
-        const totalRev = tokens.reduce((sum, t) => sum + Number(t.token_fee || tokenFee || 0), 0);
-        document.getElementById("todayRevenueDisplay").textContent = `₹${totalRev.toLocaleString()}`;
+        if (waitEl) waitEl.textContent = waiting.length;
+        if (badgeTotalEl) badgeTotalEl.textContent = waiting.length;
+        if (compEl) compEl.textContent = completed.length;
+        if (compDoneEl) compDoneEl.textContent = `${completed.length} Consultations Done`;
+        if (estWaitEl) estWaitEl.textContent = `~${waiting.length * 3} min estimated wait`;
 
         // Current Serving Token (sort so most recently called/recalled token is primary)
         const sortedServing = [...serving].sort((a, b) => {
@@ -3044,7 +3176,6 @@ async function loadQueue() {
             const recallWrap = document.getElementById("heroServingRecallRow");
             if (recallWrap) recallWrap.style.display = "inline-flex";
 
-            // If another doctor or nurse called a new token and this dashboard observes the transition
             if (lastAnnouncedServingTokenId !== null && lastAnnouncedServingTokenId !== current.id) {
                 announceCalledToken(current.token_number, current.patient_name, current.doctor);
             }
@@ -3055,8 +3186,10 @@ async function loadQueue() {
             document.getElementById("currentToken").textContent = "0";
             document.getElementById("heroTokenDisplay").textContent = "#0";
             document.getElementById("heroPatientName").textContent = "No Patient in Consultation";
-            document.getElementById("heroDoctorRoom").textContent = waiting.length > 0 ? "Click 'Call Next Patient' below" : "Queue is empty";
-            document.getElementById("currentServingDoc").textContent = "No active consultation";
+            document.getElementById("heroDoctorRoom").textContent = waiting.length > 0
+                ? (selectedCallingDoctor ? `Next for Dr. ${selectedCallingDoctor}: Token #${waiting[0].token_number}` : `Next up: Token #${waiting[0].token_number} (${waiting[0].doctor})`)
+                : (selectedCallingDoctor ? `Queue empty for Dr. ${selectedCallingDoctor}` : "Queue is empty");
+            document.getElementById("currentServingDoc").textContent = selectedCallingDoctor ? `Dr. ${selectedCallingDoctor} (Idle)` : "No active consultation";
 
             const recallWrap = document.getElementById("heroServingRecallRow");
             if (recallWrap) recallWrap.style.display = "none";
@@ -3080,7 +3213,7 @@ function renderQueueFeed(waitingTokens) {
         container.innerHTML = `
             <div style="text-align: center; color: var(--slate-400); padding: 35px 10px;">
                 <div style="font-size: 28px; margin-bottom: 6px;">🎉</div>
-                <div style="font-weight: 700; color: var(--slate-600);">No patients waiting in queue</div>
+                <div style="font-weight: 700; color: var(--slate-600);">${selectedCallingDoctor ? 'No patients waiting for Dr. ' + escapeHtml(selectedCallingDoctor) : 'No patients waiting in queue'}</div>
                 <div style="font-size: 12px; margin-top: 4px;">Walk-in and online tokens will appear here automatically.</div>
             </div>
         `;
@@ -3089,20 +3222,31 @@ function renderQueueFeed(waitingTokens) {
 
     container.innerHTML = waitingTokens.map((t, idx) => {
         const estWait = (idx + 1) * 3;
+        const isNextUp = (idx === 0);
+        const cardClass = isNextUp ? "queue-feed-item next-up-card" : "queue-feed-item";
+        const typeBadge = (t.booking_type || "").toUpperCase() === "WALK_IN"
+            ? `<span class="badge-walkin-pill">🚶 Walk-in</span>`
+            : `<span class="badge-online-pill">🌐 Online</span>`;
+        const nextUpBadge = isNextUp ? `<span class="badge-next-up-gold">⭐ NEXT UP</span>` : ``;
+
         return `
-            <div class="queue-feed-item">
-                <div class="token-chip">#${t.token_number}</div>
+            <div class="${cardClass}">
+                <div class="token-chip" style="${isNextUp ? 'background: #0284c7; color: white;' : ''}">#${t.token_number}</div>
                 <div class="patient-snippet-info">
-                    <div class="patient-name-text">${escapeHtml(t.patient_name || 'Patient')}</div>
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <span class="patient-name-text">${escapeHtml(t.patient_name || 'Patient')}</span>
+                        ${nextUpBadge}
+                        ${typeBadge}
+                    </div>
                     <div class="patient-sub-meta">
                         <span>👨‍⚕️ ${escapeHtml(t.doctor || 'OPD')}</span>
                         <span>•</span>
                         <span>📅 ${escapeHtml(t.appointment_date || 'Today')}</span>
                         <span>•</span>
-                        <span>⏳ ~${estWait} min</span>
+                        <span>⏳ ~${estWait} min wait</span>
                     </div>
                 </div>
-                <button type="button" class="btn-call-specific" onclick="callSpecificToken(${t.id}, ${t.token_number})">
+                <button type="button" class="btn-call-specific" onclick="callSpecificToken(${t.id}, ${t.token_number}, '${escapeJs(t.patient_name || '')}', '${escapeJs(t.doctor || '')}')">
                     📢 Call Now
                 </button>
             </div>
@@ -3112,7 +3256,20 @@ function renderQueueFeed(waitingTokens) {
 
 function filterQueueFeed() {
     const q = (document.getElementById("queueSearchInput").value || "").toLowerCase().trim();
-    const waiting = allHospitalTokens.filter(t => (t.status || "").toLowerCase() === "waiting");
+    const todayStr = getTodayDateString();
+    let waiting = (allHospitalTokens || [])
+        .filter(t => (t.status || "").toLowerCase() === "waiting" && (t.payment_status || "").toLowerCase() !== "refunded")
+        .filter(t => {
+            const d = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            return !d || d === todayStr;
+        })
+        .sort((a, b) => Number(a.token_number || 0) - Number(b.token_number || 0));
+
+    if (selectedCallingDoctor) {
+        const cleanDoc = selectedCallingDoctor.toLowerCase();
+        waiting = waiting.filter(t => (t.doctor || "").toLowerCase().includes(cleanDoc));
+    }
+
     if (!q) {
         renderQueueFeed(waiting);
         return;
@@ -3245,17 +3402,39 @@ async function callNextPatient() {
     unlockHospitalAutoplay();
     const btn = document.getElementById("nextButton");
     const msg = document.getElementById("nextMessage");
-    const waiting = allHospitalTokens.filter(t => (t.status || "").toLowerCase() === "waiting");
 
-    if (waiting.length === 0) {
+    const todayStr = getTodayDateString();
+    let eligibleWaiting = (allHospitalTokens || [])
+        .filter(t => (t.status || "").toLowerCase() === "waiting" && (t.payment_status || "").toLowerCase() !== "refunded")
+        .filter(t => {
+            const d = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            return !d || d === todayStr;
+        })
+        .sort((a, b) => Number(a.token_number || 0) - Number(b.token_number || 0));
+
+    if (eligibleWaiting.length === 0 && (allHospitalTokens || []).length > 0) {
+        eligibleWaiting = (allHospitalTokens || [])
+            .filter(t => (t.status || "").toLowerCase() === "waiting")
+            .sort((a, b) => Number(a.token_number || 0) - Number(b.token_number || 0));
+    }
+
+    if (selectedCallingDoctor) {
+        const cleanDoc = selectedCallingDoctor.toLowerCase();
+        eligibleWaiting = eligibleWaiting.filter(t => (t.doctor || "").toLowerCase().includes(cleanDoc));
+    }
+
+    if (eligibleWaiting.length === 0) {
         if (msg) {
             msg.style.color = "#d97706";
-            msg.textContent = "No patients waiting in queue.";
+            msg.textContent = selectedCallingDoctor
+                ? `No patients waiting for Dr. ${selectedCallingDoctor}.`
+                : "No patients waiting in queue.";
         }
+        showToast("No patients waiting in queue.", "⚠️");
         return;
     }
 
-    const nextUp = waiting[0];
+    const nextUp = eligibleWaiting[0];
     await callSpecificToken(nextUp.id, nextUp.token_number, nextUp.patient_name, nextUp.doctor, btn);
 }
 
@@ -3547,6 +3726,48 @@ async function completeCurrentToken() {
     await loadQueue();
 }
 
+async function skipCurrentToken() {
+    if (!currentServingTokenObj) {
+        showToast("No patient currently in consultation to skip.", "⚠️");
+        return;
+    }
+    const tokenId = currentServingTokenObj.id;
+    const tokenNum = currentServingTokenObj.token_number;
+    const msg = document.getElementById("nextMessage");
+
+    if (msg) {
+        msg.style.color = "#fef08a";
+        msg.textContent = `Skipping consultation for Token #${tokenNum}...`;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/tokens/${tokenId}/skip`, {
+            method: "PUT",
+            headers: getHospitalAuthHeaders(true)
+        });
+
+        if (res.status === 401) {
+            handleHospitalAuthExpired();
+            return;
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || "Failed to skip token");
+        }
+
+        showToast(`Token #${tokenNum} skipped. Advancing queue...`, "⏭️");
+        if (msg) {
+            msg.style.color = "#fef08a";
+            msg.textContent = `✓ Token #${tokenNum} skipped. Advancing to next patient...`;
+        }
+        await loadQueue();
+    } catch (e) {
+        console.error("Skip consultation error:", e);
+        showToast(e.message || "Failed to skip token", "⚠️");
+    }
+}
+
 /* =====================================================
    ADMIN MESSAGES & PATIENT INQUIRIES
 ===================================================== */
@@ -3734,10 +3955,18 @@ function renderInquiriesWidget(messages) {
             expiryBadge = hrs > 0 ? `${hrs}h ${mins}m left` : `${mins}m left`;
         }
 
+        const isReplied = inq.is_read === true;
+        const statusBadge = isReplied
+            ? `<span style="font-size: 10px; background: #ecfdf5; color: #047857; font-weight: 700; padding: 1.5px 6px; border-radius: 4px; border: 1px solid #a7f3d0;">✓ Replied</span>`
+            : `<span style="font-size: 10px; background: #fee2e2; color: #b91c1c; font-weight: 800; padding: 1.5px 6px; border-radius: 4px; border: 1px solid #fca5a5;">🔴 New Unread</span>`;
+
         return `
-            <div class="inquiry-feed-item">
+            <div class="inquiry-feed-item" style="${isReplied ? 'opacity: 0.85;' : 'border-left: 3px solid #ef4444;'}">
                 <div class="inquiry-header">
-                    <span class="inquiry-sender">${escapeHtml(inq.sender_name || 'Patient')}</span>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="inquiry-sender">${escapeHtml(inq.sender_name || 'Patient')}</span>
+                        ${statusBadge}
+                    </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span class="inquiry-time">${timeStr}</span>
                         ${expiryBadge ? `<span style="font-size: 9.5px; background: #fef3c7; color: #b45309; padding: 1px 5px; border-radius: 4px; font-weight: 700; border: 1px solid #fde68a;" title="Inquiry auto-deletes 24 hours after arrival">⏱️ ${expiryBadge}</span>` : ''}
@@ -3846,11 +4075,12 @@ async function submitHospitalPatientReply(e) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || data.message || "Failed to send reply");
-        alert("✓ Reply delivered directly to the patient's CarePath chat box!");
+        showToast("✓ Reply delivered directly to patient chat box!", "💬");
         closeHospitalPatientReplyModal();
         await loadHospitalAdminMessages();
+        await checkAdminMessagesUnreadCount();
     } catch(err) {
-        alert("Reply failed: " + err.message);
+        showToast("Reply failed: " + err.message, "⚠️");
     } finally {
         if (btn) { btn.disabled = false; btn.textContent = "🚀 Send to Patient"; }
     }
@@ -4384,12 +4614,9 @@ Promise.allSettled([
 
 setInterval(() => {
     loadQueue();
+    loadHospitalAdminMessages(false);
     checkAdminMessagesUnreadCount();
 }, 10000);
-
-setInterval(() => {
-    loadHospitalAdminMessages(false);
-}, 30000);
 
 /* =====================================================
    HOSPITAL BREAK TIME MANAGEMENT (HOSPITAL ONLY)

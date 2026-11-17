@@ -255,6 +255,7 @@
   </style>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="carepath-ai-small.png">
+    <script src="./carepath-instant-nav.js"></script>
 </head>
 
 <body>
@@ -498,10 +499,14 @@
             <h2>Payment Receipt</h2>
             <p class="subtitle">CarePath - Hospital Token Booking</p>
 
-            <div class="row"><span class="label">Token record ID</span><span class="value" id="receiptTokenId">—</span></div>
-            <div class="row"><span class="label">Cashfree order ID</span><span class="value" id="receiptOrderId">—</span></div>
-            <div class="row"><span class="label">Payment ID</span><span class="value" id="receiptPaymentId">—</span></div>
-            <div class="row"><span class="label">Patient</span><span class="value" id="receiptPatient">—</span></div>
+            <div class="row"><span class="label">Booking ID (Token ID)</span><span class="value" id="receiptTokenId" style="font-weight: 700; color: #0284c7;">—</span></div>
+            <div class="row"><span class="label">Payment Reference</span><span class="value" id="receiptPaymentId">—</span></div>
+            <div class="row"><span class="label">Payment Status</span><span class="value" id="receiptPaymentStatus" style="color: #16a34a; font-weight: 800;">Paid • Verified by CarePath</span></div>
+            <div class="row"><span class="label">Patient Name</span><span class="value" id="receiptPatient" style="font-weight: 700;">—</span></div>
+            <div class="row"><span class="label">Hospital Name</span><span class="value" id="receiptHospital">—</span></div>
+            <div class="row"><span class="label">Doctor Name</span><span class="value" id="receiptDoctor">—</span></div>
+            <div class="row"><span class="label">Booking Date & Time</span><span class="value" id="receiptBookingTime">—</span></div>
+            <div class="row"><span class="label">Cashfree Order ID</span><span class="value" id="receiptOrderId">—</span></div>
             <div class="row"><span class="label">Receipt Delivered To</span><span class="value" id="receiptEmailDisplay" style="color: #0284c7; font-weight: 700;">—</span></div>
             <div class="row"><span class="label">Hospital token fee</span><span class="value" id="receiptFee">—</span></div>
             <div class="row"><span class="label">Platform fee</span><span class="value" id="receiptPlatformFee">—</span></div>
@@ -1232,21 +1237,46 @@ async function verifyPaymentAndCreateToken(orderId) {
             throw new Error("Payment was verified, but token details could not be generated.");
         }
 
-        showReceipt({
-            token: createdToken,
-            appointmentDate,
-            hospital: getSelectedHospitalName(),
-            department: getSelectedDepartment(),
-            doctor: getSelectedDoctor(),
-            orderId,
-            paymentId: data.payment_id || orderId,
-            fee: hospitalFee,
-            platformFee: PLATFORM_FEE,
-            total: hospitalFee + PLATFORM_FEE,
-            bData: bData
-        });
+        showMessage("Payment confirmed! Opening your official token receipt in 3 seconds...", "success");
 
-        showMessage("Payment confirmed! Your OPD consultation token has been generated.", "success");
+        // 3-second countdown overlay per workflow requirement
+        const overlay = document.createElement("div");
+        overlay.id = "receiptCountdownOverlay";
+        overlay.style.cssText = "position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(10px); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 24px;";
+        overlay.innerHTML = `
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 38px; margin-bottom: 18px; box-shadow: 0 0 35px rgba(22, 163, 74, 0.65);">✓</div>
+            <h2 style="font-size: 26px; font-weight: 800; margin-bottom: 8px;">Payment Verified!</h2>
+            <p style="font-size: 16px; color: #94a3b8; max-width: 320px; margin-bottom: 16px;">Token #${createdToken.token_number} generated for ${escapeHtml(createdToken.patient_name || (bData && bData.patient_name) || "Patient")}.</p>
+            <div id="receiptCountdownNumber" style="font-size: 16px; font-weight: 800; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 8px 18px; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.3);">Opening receipt in 3 seconds...</div>
+        `;
+        document.body.appendChild(overlay);
+
+        let countdown = 3;
+        const countdownTimer = setInterval(() => {
+            countdown--;
+            const countEl = document.getElementById("receiptCountdownNumber");
+            if (countdown > 0) {
+                if (countEl) countEl.textContent = `Opening receipt in ${countdown} second${countdown === 1 ? '' : 's'}...`;
+            } else {
+                clearInterval(countdownTimer);
+                if (overlay && overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+                showReceipt({
+                    token: createdToken,
+                    appointmentDate,
+                    hospital: getSelectedHospitalName(),
+                    department: getSelectedDepartment(),
+                    doctor: getSelectedDoctor(),
+                    orderId,
+                    paymentId: data.payment_id || orderId,
+                    fee: hospitalFee,
+                    platformFee: PLATFORM_FEE,
+                    total: hospitalFee + PLATFORM_FEE,
+                    bData: bData
+                });
+            }
+        }, 1000);
     } catch (error) {
         console.error(error);
         showMessage(error.message || "Payment could not be verified. If amount was debited, contact support.", "error");
@@ -1306,6 +1336,15 @@ function showReceipt(details) {
     const receiptEmail = (token && token.patient_email) || (bData && bData.patient_email) || stored("patientEmail", "patient_email", "email") || "—";
 
     byId("receiptPatient").textContent = actualPatient;
+    if (byId("receiptHospital")) byId("receiptHospital").textContent = hospital || "CarePath Hospital";
+    if (byId("receiptDoctor")) byId("receiptDoctor").textContent = (doctor.startsWith("Dr.") ? doctor : ("Dr. " + doctor));
+    if (byId("receiptPaymentStatus")) byId("receiptPaymentStatus").textContent = "Paid • Verified by CarePath";
+    
+    const formattedBookingTime = (token && token.created_at)
+        ? new Date(token.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+        : new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+    if (byId("receiptBookingTime")) byId("receiptBookingTime").textContent = formattedBookingTime;
+
     if (byId("receiptEmailDisplay")) {
         byId("receiptEmailDisplay").textContent = receiptEmail;
     }
@@ -1414,11 +1453,72 @@ displayBooking();
 loadHospitalFee();
 loadDoctorSchedule();
 
+async function loadAndShowReceiptForToken(tokenId) {
+    if (!tokenId) return;
+    setBusy(true, "Loading your token receipt...");
+    try {
+        // First check instant local cache
+        const cachedRaw = localStorage.getItem("carepath_cached_tokens") || "[]";
+        const cachedList = JSON.parse(cachedRaw);
+        let tokenObj = cachedList.find(x => String(x.id) === String(tokenId));
+
+        if (!tokenObj) {
+            const tokenJwt = getPatientToken();
+            const res = await fetch(`${API}/tokens/${tokenId}`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                tokenObj = data.token || data;
+            }
+        }
+
+        if (tokenObj) {
+            showReceipt({
+                token: tokenObj,
+                appointmentDate: tokenObj.appointment_date,
+                hospital: tokenObj.hospital,
+                department: tokenObj.department,
+                doctor: tokenObj.doctor,
+                orderId: tokenObj.cashfree_order_id || tokenObj.order_id || "—",
+                paymentId: tokenObj.cashfree_payment_id || tokenObj.payment_id || "Verified",
+                fee: tokenObj.token_fee || 0,
+                platformFee: tokenObj.platform_fee || 10,
+                total: tokenObj.total_amount || 0,
+                bData: {
+                    patient_name: tokenObj.patient_name,
+                    patient_email: tokenObj.patient_email
+                }
+            });
+            return;
+        }
+        showMessage("Token details loaded.", "success");
+    } catch (e) {
+        console.warn("Could not load receipt for token:", e);
+    } finally {
+        setBusy(false);
+    }
+}
+
 const params = new URLSearchParams(window.location.search);
-const returnedOrderId = params.get("cashfree_order_id");
+const returnedOrderId = params.get("cashfree_order_id") || params.get("order_id");
+const returnedTokenId = params.get("token_id");
+const forceReceipt = params.get("receipt") === "true";
 
 if (returnedOrderId) {
     verifyPaymentAndCreateToken(returnedOrderId);
+} else if (returnedTokenId) {
+    loadAndShowReceiptForToken(returnedTokenId);
+} else if (forceReceipt) {
+    const lastDetailsRaw = localStorage.getItem("lastBookedTokenDetails");
+    if (lastDetailsRaw) {
+        try {
+            showReceipt(JSON.parse(lastDetailsRaw));
+        } catch(e) {}
+    }
 }
 </script>
 

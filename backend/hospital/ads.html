@@ -902,6 +902,7 @@
             }
         }
     </style>
+    <script src="./carepath-instant-nav.js"></script>
 </head>
 
 <body>
@@ -1821,8 +1822,8 @@ function useAsAdTargetLink() {
     const params = new URLSearchParams(window.location.search);
     const adOrderId = params.get("ad_order_id") || params.get("cashfree_order_id");
     const storedAdId = localStorage.getItem("pending_ad_id");
-    if (adOrderId && storedAdId) {
-        verifyAdPayment(adOrderId, storedAdId);
+    if (adOrderId) {
+        verifyAdPayment(adOrderId, storedAdId ? parseInt(storedAdId) : 0);
     }
 })();
 

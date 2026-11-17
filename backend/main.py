@@ -10,11 +10,12 @@ import hashlib
 import secrets
 import uuid
 import smtplib
+import asyncio
 import logging
 from email.message import EmailMessage
 
 from datetime import datetime,date, timedelta
-from typing import Optional, List, Union, Any
+from typing import Optional, List, Union, Any, Dict, Set
 
 import razorpay
 import requests
@@ -44,6 +45,9 @@ from fastapi import (
     Form,
     Header,
     BackgroundTasks,
+    WebSocket,
+    WebSocketDisconnect,
+    Query,
 )
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -3709,6 +3713,24 @@ def allocate_token_number(
     clean_dept = (department or "").strip()
     clean_doc = (doctor or "").strip()
 
+    # Canonical doctor lookup to prevent case/prefix mismatches in token_sequences
+    clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', clean_doc, flags=re.I).strip()
+    doc_record = (
+        db.query(Doctor)
+        .filter(
+            Doctor.hospital_id == hospital_id,
+            or_(
+                func.lower(Doctor.name) == clean_doc.lower(),
+                func.lower(Doctor.name) == clean_doc_search.lower(),
+                Doctor.name.ilike(f"%{clean_doc_search}%")
+            )
+        )
+        .first()
+    )
+    if doc_record:
+        clean_doc = doc_record.name
+        clean_dept = doc_record.department
+
     try:
         result = db.execute(
             text("""
@@ -3724,14 +3746,17 @@ def allocate_token_number(
                     :department,
                     :doctor,
                     :appointment_date,
-                    (
-                        SELECT COALESCE(MAX(token_number), 0) + 1
-                        FROM tokens
-                        WHERE hospital_id = :hospital_id
-                          AND department = :department
-                          AND doctor = :doctor
-                          AND appointment_date = :appointment_date
-                    )
+                    GREATEST(
+                        (
+                            SELECT COALESCE(MAX(token_number), 0)
+                            FROM tokens
+                            WHERE hospital_id = :hospital_id
+                              AND LOWER(department) = LOWER(:department)
+                              AND (doctor = :doctor OR LOWER(doctor) = LOWER(:doctor))
+                              AND appointment_date = :appointment_date
+                        ),
+                        0
+                    ) + 1
                 )
                 ON CONFLICT (
                     hospital_id,
@@ -3740,27 +3765,17 @@ def allocate_token_number(
                     appointment_date
                 )
                 DO UPDATE SET
-                    last_token_number = CASE
-                        WHEN (
-                            SELECT COUNT(*)
+                    last_token_number = GREATEST(
+                        COALESCE(token_sequences.last_token_number, 0),
+                        COALESCE((
+                            SELECT MAX(token_number)
                             FROM tokens
                             WHERE hospital_id = :hospital_id
-                              AND department = :department
-                              AND doctor = :doctor
+                              AND LOWER(department) = LOWER(:department)
+                              AND (doctor = :doctor OR LOWER(doctor) = LOWER(:doctor))
                               AND appointment_date = :appointment_date
-                        ) = 0 THEN 1
-                        ELSE GREATEST(
-                            COALESCE(token_sequences.last_token_number, 0),
-                            (
-                                SELECT COALESCE(MAX(token_number), 0)
-                                FROM tokens
-                                WHERE hospital_id = :hospital_id
-                                  AND department = :department
-                                  AND doctor = :doctor
-                                  AND appointment_date = :appointment_date
-                            )
-                        ) + 1
-                    END
+                        ), 0)
+                    ) + 1
                 RETURNING last_token_number
             """),
             {
@@ -6670,18 +6685,42 @@ def create_token(
             detail=f"Doctor appointments can only be booked from today up to 3 days in advance (until {max_advance_date.strftime('%d %b %Y')})."
         )
 
+    clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', data.doctor.strip(), flags=re.I).strip()
+    clean_dept_search = data.department.strip().lower()
+
     doctor = (
         db.query(Doctor)
         .filter(
             Doctor.hospital_id == hospital.id,
-            Doctor.department == data.department.strip(),
-            Doctor.name == data.doctor.strip(),
+            func.lower(Doctor.department) == clean_dept_search,
+            or_(
+                func.lower(Doctor.name) == data.doctor.strip().lower(),
+                func.lower(Doctor.name) == clean_doc_search.lower(),
+                Doctor.name.ilike(f"%{clean_doc_search}%")
+            )
         )
         .first()
     )
 
     if not doctor:
+        doctor = (
+            db.query(Doctor)
+            .filter(
+                Doctor.hospital_id == hospital.id,
+                or_(
+                    func.lower(Doctor.name) == data.doctor.strip().lower(),
+                    func.lower(Doctor.name) == clean_doc_search.lower(),
+                    Doctor.name.ilike(f"%{clean_doc_search}%")
+                )
+            )
+            .first()
+        )
+
+    if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found.")
+
+    canonical_doctor = doctor.name
+    canonical_dept = doctor.department
 
     doc_fee = getattr(doctor, "token_fee", None)
     token_fee = int(doc_fee if doc_fee is not None else (hospital.token_fee or 0))
@@ -6746,8 +6785,8 @@ def create_token(
     next_token_number = allocate_token_number(
         db=db,
         hospital_id=hospital.id,
-        department=data.department.strip(),
-        doctor=data.doctor.strip(),
+        department=canonical_dept,
+        doctor=canonical_doctor,
         appointment_date=appointment_date,
     )
 
@@ -6785,8 +6824,8 @@ def create_token(
         patient_gender=patient_gender,
         hospital=hospital.name,
         hospital_id=hospital.id,
-        department=data.department.strip(),
-        doctor=data.doctor.strip(),
+        department=canonical_dept,
+        doctor=canonical_doctor,
         token_number=next_token_number,
         appointment_date=appointment_date,
         platform=PLATFORM_NAME,
@@ -7207,21 +7246,46 @@ def create_walk_in_token(
             detail="Patient name, department, and doctor are required",
         )
 
+    clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', doctor_name, flags=re.I).strip()
+    clean_dept_search = department.strip().lower()
+
     doctor = (
         db.query(Doctor)
         .filter(
             Doctor.hospital_id == authenticated_hospital_id,
-            Doctor.department == department,
-            Doctor.name == doctor_name,
+            func.lower(Doctor.department) == clean_dept_search,
+            or_(
+                func.lower(Doctor.name) == doctor_name.lower(),
+                func.lower(Doctor.name) == clean_doc_search.lower(),
+                Doctor.name.ilike(f"%{clean_doc_search}%")
+            )
         )
         .first()
     )
 
     if not doctor:
+        doctor = (
+            db.query(Doctor)
+            .filter(
+                Doctor.hospital_id == authenticated_hospital_id,
+                or_(
+                    func.lower(Doctor.name) == doctor_name.lower(),
+                    func.lower(Doctor.name) == clean_doc_search.lower(),
+                    Doctor.name.ilike(f"%{clean_doc_search}%")
+                )
+            )
+            .first()
+        )
+
+    if not doctor:
         raise HTTPException(
             status_code=404,
-            detail="Doctor not found in this hospital and department",
+            detail=f"Doctor '{doctor_name}' not found in this hospital and department",
         )
+
+    # Standardize to canonical doctor and department from database
+    doctor_name = doctor.name
+    department = doctor.department
 
     appointment_date = get_ist_today()
 
@@ -7951,6 +8015,42 @@ def complete_token(
     return {
         "success": True,
         "message": "Token completed successfully",
+        "token": token_to_dict(token),
+    }
+
+
+@app.put("/tokens/{token_id}/skip")
+def skip_token(
+    token_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    """Marks a patient token as skipped when they do not answer consultation call."""
+    token = (
+        db.query(Token)
+        .filter(
+            Token.id == token_id,
+            Token.hospital_id == current_user["user_id"],
+        )
+        .first()
+    )
+
+    if not token:
+        raise HTTPException(
+            status_code=404,
+            detail="Token not found",
+        )
+
+    token.status = "skipped"
+    ist_time = (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%I:%M %p")
+    token.notes = ((token.notes + " | ") if token.notes else "") + f"Skipped consultation at {ist_time}"
+
+    db.commit()
+    db.refresh(token)
+
+    return {
+        "success": True,
+        "message": f"Token #{token.token_number} skipped successfully",
         "token": token_to_dict(token),
     }
 # ============================================================
@@ -9544,6 +9644,8 @@ def admin_payments(
 
 @app.get("/admin/tokens")
 def admin_tokens(
+    limit: Optional[int] = None,
+    offset: int = 0,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("admin")),
 ):
@@ -9551,14 +9653,17 @@ def admin_tokens(
     Returns all hospital tokens enriched with full patient details (demographics, contact)
     and complete hospital details for 360-degree admin visibility.
     """
-    tokens = (
+    token_query = (
         db.query(Token)
         .order_by(
             Token.appointment_date.desc(),
             Token.created_at.desc()
         )
-        .all()
     )
+    if limit is not None and limit > 0:
+        tokens = token_query.offset(offset).limit(limit).all()
+    else:
+        tokens = token_query.all()
 
     # Pre-load hospitals and patients in batch maps for 0ms execution
     hospital_map = {h.id: h for h in db.query(Hospital).all()}
@@ -10069,8 +10174,32 @@ def admin_hospital_revenue(
 # STARTUP ROUTINE & 90-DAY RETENTION MAINTENANCE
 # ============================================================
 
+_MAIN_EVENT_LOOP = None
+
+def broadcast_now(coro):
+    global _MAIN_EVENT_LOOP
+    try:
+        if _MAIN_EVENT_LOOP is not None and _MAIN_EVENT_LOOP.is_running():
+            asyncio.run_coroutine_threadsafe(coro, _MAIN_EVENT_LOOP)
+        else:
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(coro)
+                else:
+                    loop.run_until_complete(coro)
+            except RuntimeError:
+                asyncio.run(coro)
+    except Exception as e:
+        logging.warning("WebSocket broadcast_now warning: %s", e)
+
 @app.on_event("startup")
 def on_app_startup():
+    global _MAIN_EVENT_LOOP
+    try:
+        _MAIN_EVENT_LOOP = asyncio.get_event_loop()
+    except Exception:
+        pass
     """Startup routine: purge tokens older than 90 days and patient inquiries older than 24 hours."""
     db = SessionLocal()
     try:
@@ -10759,18 +10888,22 @@ def get_hospital_ad_image(filename: str, db: Session = Depends(get_db)):
 
 @app.get("/hospital-ads/videos/{filename}")
 def get_hospital_ad_video(filename: str):
-    """Serve uploaded video advertisement."""
+    """Serve uploaded video advertisement with byte-range streaming support."""
     safe_name = os.path.basename(filename)
     local_path = os.path.join(HOSPITAL_AD_VIDEO_DIR, safe_name)
     if os.path.isfile(local_path):
         guessed_type, _ = mimetypes.guess_type(local_path)
-        return FileResponse(local_path, media_type=guessed_type or "video/mp4")
+        return FileResponse(
+            local_path,
+            media_type=guessed_type or "video/mp4",
+            headers={"Accept-Ranges": "bytes"}
+        )
     raise HTTPException(status_code=404, detail="Advertisement video not found")
 
 
 class VerifyAdPaymentRequest(BaseModel):
     cashfree_order_id: str
-    ad_id: int
+    ad_id: Optional[int] = None
 
 
 @app.post("/hospitals/{hospital_id}/ads/create-order")
@@ -10981,10 +11114,17 @@ def verify_hospital_ad_payment(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     order_id = data.cashfree_order_id.strip()
-    ad = db.query(HospitalAdvertisement).filter(
-        HospitalAdvertisement.id == data.ad_id,
-        HospitalAdvertisement.hospital_id == hospital_id,
-    ).first()
+    ad = None
+    if data.ad_id and data.ad_id > 0:
+        ad = db.query(HospitalAdvertisement).filter(
+            HospitalAdvertisement.id == data.ad_id,
+            HospitalAdvertisement.hospital_id == hospital_id,
+        ).first()
+    if not ad and order_id:
+        ad = db.query(HospitalAdvertisement).filter(
+            HospitalAdvertisement.cashfree_order_id == order_id,
+            HospitalAdvertisement.hospital_id == hospital_id,
+        ).first()
 
     if not ad:
         raise HTTPException(status_code=404, detail="Advertisement record not found.")
@@ -11131,7 +11271,7 @@ def get_active_ads(db: Session = Depends(get_db)):
             "title": ad.title,
             "description": ad.description or "",
             "ad_type": getattr(ad, "ad_type", "banner") or "banner",
-            "image_url": ad.image_url,
+            "image_url": ad.image_url or hospital.image_url or "",
             "video_url": ad.video_url or "",
             "target_phone": ad.target_phone or hospital.phone or "",
             "target_link": ad.target_link or "",
@@ -11330,6 +11470,390 @@ def admin_delete_broadcast(
     }
 
 
+
+# ============================================================
+# REAL-TIME WEBSOCKET MESSAGING (PATIENTS <-> HOSPITALS <-> ADMIN)
+# ============================================================
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[WebSocket, dict] = {}
+        self.hospital_connections: Dict[int, Set[WebSocket]] = {}
+        self.patient_connections: Dict[str, Set[WebSocket]] = {}
+        self.admin_connections: Set[WebSocket] = set()
+
+    async def connect(self, websocket: WebSocket, client_info: dict):
+        await websocket.accept()
+        self.active_connections[websocket] = client_info
+
+        role = client_info.get("role")
+        hosp_id = client_info.get("hospital_id")
+        phone = client_info.get("phone")
+
+        if role == "admin":
+            self.admin_connections.add(websocket)
+        elif role == "hospital" and hosp_id:
+            try:
+                h_int = int(hosp_id)
+                if h_int not in self.hospital_connections:
+                    self.hospital_connections[h_int] = set()
+                self.hospital_connections[h_int].add(websocket)
+            except Exception:
+                pass
+
+        if phone:
+            clean_phone = "".join(filter(str.isdigit, str(phone)))[-10:]
+            if clean_phone:
+                if clean_phone not in self.patient_connections:
+                    self.patient_connections[clean_phone] = set()
+                self.patient_connections[clean_phone].add(websocket)
+
+        logging.info("WebSocket connected: role=%s, hosp=%s, phone=%s (Total: %d)",
+                     role, hosp_id, phone, len(self.active_connections))
+
+    def disconnect(self, websocket: WebSocket):
+        info = self.active_connections.pop(websocket, None)
+        if not info:
+            return
+
+        role = info.get("role")
+        hosp_id = info.get("hospital_id")
+        phone = info.get("phone")
+
+        if websocket in self.admin_connections:
+            self.admin_connections.discard(websocket)
+
+        if hosp_id:
+            try:
+                h_int = int(hosp_id)
+                if h_int in self.hospital_connections:
+                    self.hospital_connections[h_int].discard(websocket)
+                    if not self.hospital_connections[h_int]:
+                        del self.hospital_connections[h_int]
+            except Exception:
+                pass
+
+        if phone:
+            clean_phone = "".join(filter(str.isdigit, str(phone)))[-10:]
+            if clean_phone and clean_phone in self.patient_connections:
+                self.patient_connections[clean_phone].discard(websocket)
+                if not self.patient_connections[clean_phone]:
+                    del self.patient_connections[clean_phone]
+
+        logging.info("WebSocket disconnected: %s (Remaining: %d)", info, len(self.active_connections))
+
+    async def send_personal_message(self, message: dict, websocket: WebSocket):
+        try:
+            await websocket.send_json(message)
+        except Exception:
+            self.disconnect(websocket)
+
+    async def broadcast_to_hospital(self, hospital_id: int, message: dict):
+        try:
+            h_int = int(hospital_id)
+            sockets = list(self.hospital_connections.get(h_int, set()))
+            for ws in sockets:
+                try:
+                    await ws.send_json(message)
+                except Exception:
+                    self.disconnect(ws)
+        except Exception as e:
+            logging.warning("broadcast_to_hospital error: %s", e)
+
+    async def broadcast_to_patient(self, phone: str, message: dict):
+        if not phone:
+            return
+        clean_phone = "".join(filter(str.isdigit, str(phone)))[-10:]
+        sockets = list(self.patient_connections.get(clean_phone, set()))
+        for ws in sockets:
+            try:
+                await ws.send_json(message)
+            except Exception:
+                self.disconnect(ws)
+
+    async def broadcast_to_admins(self, message: dict):
+        sockets = list(self.admin_connections)
+        for ws in sockets:
+            try:
+                await ws.send_json(message)
+            except Exception:
+                self.disconnect(ws)
+
+    async def broadcast_inquiry(self, inquiry_dict: dict):
+        payload = {
+            "type": "new_patient_inquiry",
+            "inquiry": inquiry_dict,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        hosp_id = inquiry_dict.get("hospital_id")
+        phone = inquiry_dict.get("patient_phone")
+        if hosp_id:
+            await self.broadcast_to_hospital(hosp_id, payload)
+        if phone:
+            await self.broadcast_to_patient(phone, payload)
+        await self.broadcast_to_admins(payload)
+
+    async def broadcast_reply(self, reply_dict: dict):
+        payload = {
+            "type": "hospital_inquiry_reply",
+            "reply": reply_dict,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        hosp_id = reply_dict.get("hospital_id")
+        phone = reply_dict.get("patient_phone")
+        if phone:
+            await self.broadcast_to_patient(phone, payload)
+        if hosp_id:
+            await self.broadcast_to_hospital(hosp_id, payload)
+        await self.broadcast_to_admins(payload)
+
+    async def broadcast_admin_message(self, message_dict: dict):
+        payload = {
+            "type": "admin_direct_message",
+            "message": message_dict,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        hosp_id = message_dict.get("hospital_id")
+        if hosp_id:
+            await self.broadcast_to_hospital(hosp_id, payload)
+        await self.broadcast_to_admins(payload)
+
+ws_manager = ConnectionManager()
+
+
+@app.websocket("/ws/messages")
+async def websocket_messages_endpoint(
+    websocket: WebSocket,
+    token: Optional[str] = Query(None),
+    role: Optional[str] = Query("patient"),
+    phone: Optional[str] = Query(None),
+    hospital_id: Optional[int] = Query(None),
+):
+    """
+    CarePath Real-Time Multi-Party WebSocket Channel
+    Connects Patients, Hospitals, and Admins for instant, zero-delay messaging.
+    """
+    authenticated_role = role or "patient"
+    user_id = None
+    clean_phone = phone
+
+    if token:
+        try:
+            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            user_id = payload.get("sub")
+            if user_id is not None and str(user_id).isdigit():
+                user_id = int(user_id)
+            authenticated_role = payload.get("role", authenticated_role)
+            if authenticated_role == "hospital" and not hospital_id:
+                hospital_id = user_id
+        except Exception as e:
+            logging.warning("WebSocket JWT verification rejected: %s", e)
+            await websocket.close(code=4001, reason="Invalid authentication token")
+            return
+    elif role in ("admin", "hospital"):
+        await websocket.close(code=4003, reason="Authentication token required for privileged roles")
+        return
+
+    client_info = {
+        "role": authenticated_role,
+        "user_id": user_id,
+        "hospital_id": hospital_id,
+        "phone": clean_phone,
+    }
+
+    await ws_manager.connect(websocket, client_info)
+
+    await ws_manager.send_personal_message({
+        "type": "connection_ack",
+        "status": "connected",
+        "client": client_info,
+        "server_time": datetime.utcnow().isoformat(),
+    }, websocket)
+
+    try:
+        while True:
+            data = await websocket.receive_json()
+            msg_type = data.get("type", "")
+
+            # Heartbeat ping
+            if msg_type == "ping":
+                await websocket.send_json({"type": "pong", "timestamp": datetime.utcnow().isoformat()})
+                continue
+
+            # Patient inquiry sent via WebSocket
+            if msg_type == "patient_inquiry":
+                h_id = data.get("hospital_id") or hospital_id
+                pat_name = (data.get("patient_name") or "Patient").strip()
+                pat_phone = (data.get("patient_phone") or clean_phone or "").strip()
+                msg_body = (data.get("message") or "").strip()
+                subj = (data.get("subject") or "General Inquiry").strip()
+
+                if not h_id or not pat_phone or not msg_body:
+                    await websocket.send_json({"type": "error", "message": "hospital_id, patient_phone, and message required."})
+                    continue
+
+                db_ws = SessionLocal()
+                try:
+                    hosp = db_ws.query(Hospital).filter(Hospital.id == h_id).first()
+                    if not hosp:
+                        await websocket.send_json({"type": "error", "message": "Hospital not found."})
+                        continue
+
+                    inq = HospitalDirectMessage(
+                        hospital_id=h_id,
+                        sender_role="patient",
+                        sender_name=pat_name,
+                        patient_phone=pat_phone,
+                        patient_id=user_id if authenticated_role == "patient" else None,
+                        subject=subj,
+                        message=msg_body,
+                        priority=data.get("priority", "normal"),
+                        is_read=False,
+                    )
+                    db_ws.add(inq)
+                    db_ws.commit()
+                    db_ws.refresh(inq)
+
+                    inquiry_payload = {
+                        "id": inq.id,
+                        "hospital_id": inq.hospital_id,
+                        "hospital_name": hosp.name,
+                        "hospital_city": hosp.city,
+                        "sender_role": inq.sender_role,
+                        "sender_name": inq.sender_name,
+                        "patient_phone": inq.patient_phone,
+                        "patient_id": inq.patient_id,
+                        "subject": inq.subject,
+                        "message": inq.message,
+                        "priority": inq.priority,
+                        "is_read": inq.is_read,
+                        "created_at": inq.created_at.isoformat() if inq.created_at else datetime.utcnow().isoformat(),
+                    }
+                    await ws_manager.broadcast_inquiry(inquiry_payload)
+                finally:
+                    db_ws.close()
+
+            # Hospital reply sent via WebSocket
+            elif msg_type == "hospital_reply":
+                if authenticated_role not in ("hospital", "admin"):
+                    await websocket.send_json({"type": "error", "message": "Only hospital staff or admin can reply."})
+                    continue
+
+                h_id = hospital_id or data.get("hospital_id")
+                inq_id = data.get("inquiry_id")
+                reply_body = (data.get("reply_message") or data.get("message") or "").strip()
+                target_phone = (data.get("patient_phone") or "").strip()
+
+                if not inq_id or not reply_body:
+                    await websocket.send_json({"type": "error", "message": "inquiry_id and reply_message required."})
+                    continue
+
+                db_ws = SessionLocal()
+                try:
+                    orig_inq = db_ws.query(HospitalDirectMessage).filter(HospitalDirectMessage.id == inq_id).first()
+                    if not orig_inq:
+                        await websocket.send_json({"type": "error", "message": "Original inquiry not found."})
+                        continue
+
+                    if not target_phone and orig_inq.patient_phone:
+                        target_phone = orig_inq.patient_phone
+
+                    hosp = db_ws.query(Hospital).filter(Hospital.id == orig_inq.hospital_id).first()
+                    orig_inq.is_read = True
+
+                    reply_msg = HospitalDirectMessage(
+                        hospital_id=orig_inq.hospital_id,
+                        sender_role="hospital",
+                        sender_name=f"{hosp.name if hosp else 'Hospital'} Helpdesk",
+                        patient_phone=target_phone,
+                        patient_id=orig_inq.patient_id,
+                        reply_to_id=orig_inq.id,
+                        subject=f"Re: {orig_inq.subject or 'Inquiry'}",
+                        message=reply_body,
+                        priority="normal",
+                        is_read=False,
+                    )
+                    db_ws.add(reply_msg)
+                    db_ws.commit()
+                    db_ws.refresh(reply_msg)
+
+                    reply_payload = {
+                        "id": reply_msg.id,
+                        "hospital_id": reply_msg.hospital_id,
+                        "hospital_name": hosp.name if hosp else "Hospital Helpdesk",
+                        "hospital_city": hosp.city if hosp else "",
+                        "sender_role": reply_msg.sender_role,
+                        "sender_name": reply_msg.sender_name,
+                        "patient_phone": reply_msg.patient_phone,
+                        "patient_id": reply_msg.patient_id,
+                        "reply_to_id": reply_msg.reply_to_id,
+                        "subject": reply_msg.subject,
+                        "message": reply_msg.message,
+                        "is_read": reply_msg.is_read,
+                        "created_at": reply_msg.created_at.isoformat() if reply_msg.created_at else datetime.utcnow().isoformat(),
+                    }
+                    await ws_manager.broadcast_reply(reply_payload)
+                finally:
+                    db_ws.close()
+
+            # Admin message sent via WebSocket
+            elif msg_type == "admin_message":
+                if authenticated_role != "admin":
+                    await websocket.send_json({"type": "error", "message": "Only admins can send official notices."})
+                    continue
+
+                h_id = data.get("hospital_id")
+                msg_body = (data.get("message") or "").strip()
+                subj = (data.get("subject") or "Notice from Platform Admin").strip()
+                prio = data.get("priority", "normal")
+
+                if not h_id or not msg_body:
+                    await websocket.send_json({"type": "error", "message": "hospital_id and message required."})
+                    continue
+
+                db_ws = SessionLocal()
+                try:
+                    hosp = db_ws.query(Hospital).filter(Hospital.id == h_id).first()
+                    if not hosp:
+                        await websocket.send_json({"type": "error", "message": "Hospital not found."})
+                        continue
+
+                    admin_msg = HospitalDirectMessage(
+                        hospital_id=h_id,
+                        sender_role="admin",
+                        sender_name="Platform Admin",
+                        subject=subj,
+                        message=msg_body,
+                        priority=prio,
+                        is_read=False,
+                    )
+                    db_ws.add(admin_msg)
+                    db_ws.commit()
+                    db_ws.refresh(admin_msg)
+
+                    admin_payload = {
+                        "id": admin_msg.id,
+                        "hospital_id": admin_msg.hospital_id,
+                        "hospital_name": hosp.name,
+                        "sender_role": admin_msg.sender_role,
+                        "sender_name": admin_msg.sender_name,
+                        "subject": admin_msg.subject,
+                        "message": admin_msg.message,
+                        "priority": admin_msg.priority,
+                        "is_read": admin_msg.is_read,
+                        "created_at": admin_msg.created_at.isoformat() if admin_msg.created_at else datetime.utcnow().isoformat(),
+                    }
+                    await ws_manager.broadcast_admin_message(admin_payload)
+                finally:
+                    db_ws.close()
+
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
+    except Exception as e:
+        logging.warning("WebSocket loop exception: %s", e)
+        ws_manager.disconnect(websocket)
+
+
 # ============================================================
 # DIRECT COMMUNICATION: ADMIN <-> HOSPITAL
 # ============================================================
@@ -11349,6 +11873,8 @@ class HospitalReplyMessageRequest(BaseModel):
 @app.get("/admin/hospitals/{hospital_id}/messages")
 def admin_get_hospital_messages(
     hospital_id: int,
+    limit: Optional[int] = None,
+    offset: int = 0,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("admin")),
 ):
@@ -11357,12 +11883,15 @@ def admin_get_hospital_messages(
     if not hospital:
         raise HTTPException(status_code=404, detail="Hospital not found")
 
-    messages = (
+    msg_query = (
         db.query(HospitalDirectMessage)
         .filter(HospitalDirectMessage.hospital_id == hospital_id)
         .order_by(HospitalDirectMessage.created_at.asc())
-        .all()
     )
+    if limit is not None and limit > 0:
+        messages = msg_query.offset(offset).limit(limit).all()
+    else:
+        messages = msg_query.all()
 
     # Mark hospital replies as read by admin
     for m in messages:
@@ -11481,6 +12010,25 @@ def admin_send_hospital_message(
     db.commit()
     db.refresh(msg)
 
+    # Real-Time WebSocket broadcast
+    try:
+        broadcast_now(ws_manager.broadcast_admin_message({
+            "id": msg.id,
+            "hospital_id": msg.hospital_id,
+            "hospital_name": hospital.name,
+            "sender_role": msg.sender_role,
+            "sender_name": msg.sender_name,
+            "subject": msg.subject,
+            "message": msg.message,
+            "priority": msg.priority,
+            "is_read": msg.is_read,
+            "created_at": msg.created_at.isoformat() if msg.created_at else datetime.utcnow().isoformat(),
+        }))
+    except Exception as ws_err:
+        logging.warning("Admin WS broadcast skipped: %s", ws_err)
+
+
+
     return {
         "success": True,
         "message": "Message delivered to hospital successfully.",
@@ -11557,8 +12105,8 @@ def hospital_get_direct_messages(
     import re
     result_messages = []
     for m in messages:
-        sender_phone = None
-        if m.sender_name:
+        sender_phone = getattr(m, "patient_phone", None)
+        if not sender_phone and m.sender_name:
             phone_match = re.search(r'\(([^)]+)\)', m.sender_name)
             if phone_match:
                 sender_phone = phone_match.group(1).strip()
@@ -11568,6 +12116,9 @@ def hospital_get_direct_messages(
             "sender_role": m.sender_role,
             "sender_name": m.sender_name,
             "sender_phone": sender_phone,
+            "patient_phone": getattr(m, "patient_phone", None) or sender_phone,
+            "patient_id": getattr(m, "patient_id", None),
+            "reply_to_id": getattr(m, "reply_to_id", None),
             "subject": m.subject,
             "message": m.message,
             "priority": m.priority,
@@ -11740,7 +12291,7 @@ Message:
 You can view and reply to this inquiry directly on your CarePath Hospital Dashboard.
 """
         try:
-            send_email_notification(
+            send_carepath_email(
                 to_email=hospital.email,
                 subject=f"CarePath Patient Inquiry: {subj}",
                 body=email_body,
@@ -11752,6 +12303,26 @@ You can view and reply to this inquiry directly on your CarePath Hospital Dashbo
     db.add(msg)
     db.commit()
     db.refresh(msg)
+
+    # Real-Time WebSocket broadcast
+    try:
+        broadcast_now(ws_manager.broadcast_inquiry({
+            "id": msg.id,
+            "hospital_id": msg.hospital_id,
+            "hospital_name": hospital.name,
+            "hospital_city": hospital.city,
+            "sender_role": msg.sender_role,
+            "sender_name": msg.sender_name,
+            "patient_phone": msg.patient_phone,
+            "patient_id": msg.patient_id,
+            "subject": msg.subject,
+            "message": msg.message,
+            "priority": msg.priority,
+            "is_read": msg.is_read,
+            "created_at": msg.created_at.isoformat() if msg.created_at else datetime.utcnow().isoformat(),
+        }))
+    except Exception as ws_err:
+        logging.warning("Inquiry WS broadcast skipped: %s", ws_err)
 
     return {
         "success": True,
@@ -11823,6 +12394,26 @@ def hospital_reply_to_patient_inquiry(
     db.add(reply_msg)
     db.commit()
     db.refresh(reply_msg)
+
+    # Real-Time WebSocket broadcast
+    try:
+        broadcast_now(ws_manager.broadcast_reply({
+            "id": reply_msg.id,
+            "hospital_id": reply_msg.hospital_id,
+            "hospital_name": hospital.name,
+            "hospital_city": hospital.city,
+            "sender_role": reply_msg.sender_role,
+            "sender_name": reply_msg.sender_name,
+            "patient_phone": reply_msg.patient_phone,
+            "patient_id": reply_msg.patient_id,
+            "reply_to_id": reply_msg.reply_to_id,
+            "subject": reply_msg.subject,
+            "message": reply_msg.message,
+            "is_read": reply_msg.is_read,
+            "created_at": reply_msg.created_at.isoformat() if reply_msg.created_at else datetime.utcnow().isoformat(),
+        }))
+    except Exception as ws_err:
+        logging.warning("Reply WS broadcast skipped: %s", ws_err)
 
     return {
         "success": True,

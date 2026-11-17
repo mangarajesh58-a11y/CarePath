@@ -38,6 +38,7 @@
   <!-- Load dashboard JavaScript dependencies -->
   <script src="https://sdk.cashfree.com/js/v3/cashfree.js" defer></script>
   <script src="./carepath-instant-nav.js"></script>
+  <script src="./carepath-realtime.js"></script>
   <link rel="prefetch" href="doctor.html" as="document">
   <link rel="prefetch" href="my-tokens.html" as="document">
   <link rel="prefetch" href="profile.html" as="document">
@@ -4503,6 +4504,18 @@ async function handlePatientSendFollowup(e) {
     // Clear input immediately in 0ms
     if (input) input.value = "";
 
+    // Broadcast immediately over real-time WebSocket
+    if (typeof CarePathRealtime !== "undefined" && CarePathRealtime.isConnected) {
+        CarePathRealtime.send({
+            type: "patient_inquiry",
+            hospital_id: hospId,
+            patient_name: name,
+            patient_phone: phone,
+            subject: "Direct Inquiry",
+            message: message
+        });
+    }
+
     // Silent background dispatch to hospital endpoint
     try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
@@ -4655,6 +4668,54 @@ function escapeHtml(str) {
       }, 1200);
     }, { passive: true });
   })();
+
+  // =====================================================
+  // REAL-TIME WEBSOCKET MESSAGING (PATIENT DESK)
+  // =====================================================
+  function initPatientRealtime() {
+    try {
+      const phone = getActivePatientPhone();
+      if (!phone || typeof CarePathRealtime === "undefined") return;
+      const cleanPhone = phone.replace(/[^0-9]/g, "").slice(-10);
+      if (!cleanPhone) return;
+
+      CarePathRealtime.connect({
+        role: "patient",
+        phone: cleanPhone,
+        onMessage: (data) => {
+          if (data.type === "hospital_inquiry_reply") {
+            const rep = data.reply;
+            console.log("[Patient Realtime] Received reply:", rep);
+
+            if (!Array.isArray(patientChatLoadedMessages)) patientChatLoadedMessages = [];
+            if (!patientChatLoadedMessages.some(m => m.id === rep.id)) {
+              patientChatLoadedMessages.push(rep);
+              renderPatientChatMessages(patientChatLoadedMessages);
+              try {
+                localStorage.setItem("carepath_chat_cache_" + cleanPhone, JSON.stringify(patientChatLoadedMessages));
+              } catch(e) {}
+            }
+
+            const badge = document.getElementById("patientChatUnreadBadge");
+            if (badge) {
+              badge.textContent = "1";
+              badge.style.display = "flex";
+            }
+            if (typeof showCarePathToast === "function") {
+              showCarePathToast(`💬 Reply from ${rep.hospital_name || 'Hospital'}: ${(rep.message || '').substring(0, 45)}...`, "info");
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.warn("Could not init patient realtime:", e);
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    setTimeout(initPatientRealtime, 1000);
+  });
+
 </script>
 </body>
 </html>

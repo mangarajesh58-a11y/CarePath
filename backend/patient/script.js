@@ -1470,10 +1470,10 @@ async function createTokenAfterPayment(
         localStorage.setItem("tokenStatus", token.status || "waiting");
         localStorage.setItem("tokenFee", String(token.token_fee ?? 0));
         localStorage.setItem("platformFee", String(token.platform_fee ?? 10));
-        llocalStorage.setItem(
-    "totalAmount",
-    String(token.total_amount ?? data.total_amount ?? 0)
-);
+        localStorage.setItem(
+            "totalAmount",
+            String(token.total_amount ?? data.total_amount ?? 0)
+        );
         localStorage.setItem("paymentStatus", "Paid");
         localStorage.setItem("cashfreeOrderId", cashfreeOrderId);
 
@@ -1482,14 +1482,21 @@ async function createTokenAfterPayment(
         }
 
         showMessage(
-            `Payment verified! Your token number is ${token.token_number}.`,
+            `Payment verified! Token #${token.token_number} confirmed. Opening receipt in 3 seconds...`,
             "success"
         );
 
-        button.textContent = "Token Created ✓";
+        button.textContent = "Token Confirmed ✓";
 
-        setTimeout(() => {
-            window.location.href = "token.html";
+        let countdown = 3;
+        const countdownTimer = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                button.textContent = `Opening Receipt in ${countdown}s...`;
+            } else {
+                clearInterval(countdownTimer);
+                window.location.href = `token.html?token_id=${encodeURIComponent(token.id)}&order_id=${encodeURIComponent(cashfreeOrderId)}&receipt=true`;
+            }
         }, 1000);
 
     } catch (error) {
