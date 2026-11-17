@@ -7165,6 +7165,8 @@ def resend_token_receipt(
 @app.get("/patient/tokens")
 @app.get("/patient/token-history")
 def get_patient_token_history(
+    phone: Optional[str] = Query(None),
+    email: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("patient")),
 ):
@@ -7174,12 +7176,42 @@ def get_patient_token_history(
     filter_conditions = [Token.patient_id == patient_id]
 
     if patient:
+        # 1. Accounts belonging to the same user by full name
+        if patient.full_name and patient.full_name.strip():
+            clean_name = patient.full_name.strip().lower()
+            same_name_ids = [p_id for (p_id,) in db.query(Patient.id).filter(func.lower(Patient.full_name) == clean_name).all()]
+            if same_name_ids:
+                filter_conditions.append(Token.patient_id.in_(same_name_ids))
+
+            filter_conditions.append(func.lower(Token.patient_name) == clean_name)
+            filter_conditions.append(func.lower(Token.patient_name).ilike(f"{clean_name} (%"))
+            name_parts = clean_name.split()
+            if len(name_parts) >= 2:
+                for part in name_parts:
+                    if len(part) >= 4:
+                        filter_conditions.append(func.lower(Token.patient_name) == part)
+                        filter_conditions.append(func.lower(Token.patient_name).ilike(f"{part} (%"))
+
+        # 2. Email matching (patient's profile email + optional query param)
+        target_emails = set()
         if patient.email and patient.email.strip():
-            clean_email = patient.email.strip().lower()
-            filter_conditions.append(func.lower(Token.patient_email) == clean_email)
-            filter_conditions.append(Token.notes.ilike(f"%{clean_email}%"))
+            target_emails.add(patient.email.strip().lower())
+        if email and email.strip():
+            target_emails.add(email.strip().lower())
+
+        for em in target_emails:
+            filter_conditions.append(func.lower(Token.patient_email) == em)
+            filter_conditions.append(Token.notes.ilike(f"%{em}%"))
+
+        # 3. Phone matching (patient's profile phone + optional query param)
+        target_phones = set()
         if patient.phone and patient.phone.strip():
-            raw_phone = patient.phone.strip()
+            target_phones.add(patient.phone.strip())
+        if phone and phone.strip():
+            target_phones.add(phone.strip())
+
+        for ph in target_phones:
+            raw_phone = ph.strip()
             clean_phone = raw_phone.replace(" ", "").replace("-", "")
             digits_only = re.sub(r"\D", "", raw_phone)
             filter_conditions.append(Token.patient_phone == raw_phone)
@@ -7190,13 +7222,6 @@ def get_patient_token_history(
                     last10 = digits_only[-10:]
                     filter_conditions.append(Token.patient_phone.ilike(f"%{last10}%"))
                     filter_conditions.append(Token.notes.ilike(f"%{last10}%"))
-        if patient.full_name and patient.full_name.strip():
-            filter_conditions.append(
-                and_(
-                    Token.patient_id == None,
-                    func.lower(Token.patient_name) == patient.full_name.strip().lower()
-                )
-            )
 
     tokens = (
         db.query(Token)
@@ -7230,6 +7255,67 @@ def get_patient_token_history(
     return results
 
 
+@app.get("/patient/tokens/lookup")
+def lookup_patient_tokens(
+    phone: Optional[str] = Query(None),
+    email: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    filter_conditions = []
+    if email and email.strip():
+        clean_email = email.strip().lower()
+        filter_conditions.append(func.lower(Token.patient_email) == clean_email)
+        filter_conditions.append(Token.notes.ilike(f"%{clean_email}%"))
+    if phone and phone.strip():
+        raw_phone = phone.strip()
+        clean_phone = raw_phone.replace(" ", "").replace("-", "")
+        digits_only = re.sub(r"\D", "", raw_phone)
+        filter_conditions.append(Token.patient_phone == raw_phone)
+        filter_conditions.append(Token.patient_phone == clean_phone)
+        if digits_only:
+            filter_conditions.append(Token.patient_phone.ilike(f"%{digits_only}%"))
+            if len(digits_only) >= 10:
+                last10 = digits_only[-10:]
+                filter_conditions.append(Token.patient_phone.ilike(f"%{last10}%"))
+                filter_conditions.append(Token.notes.ilike(f"%{last10}%"))
+    if name and name.strip():
+        clean_name = name.strip().lower()
+        same_name_ids = [p_id for (p_id,) in db.query(Patient.id).filter(func.lower(Patient.full_name) == clean_name).all()]
+        if same_name_ids:
+            filter_conditions.append(Token.patient_id.in_(same_name_ids))
+        filter_conditions.append(func.lower(Token.patient_name) == clean_name)
+        filter_conditions.append(func.lower(Token.patient_name).ilike(f"{clean_name} (%"))
+        name_parts = clean_name.split()
+        if len(name_parts) >= 2:
+            for part in name_parts:
+                if len(part) >= 4:
+                    filter_conditions.append(func.lower(Token.patient_name) == part)
+                    filter_conditions.append(func.lower(Token.patient_name).ilike(f"{part} (%"))
+
+    if not filter_conditions:
+        return []
+
+    tokens = (
+        db.query(Token)
+        .filter(or_(*filter_conditions))
+        .order_by(
+            Token.appointment_date.desc(),
+            Token.created_at.desc()
+        )
+        .all()
+    )
+
+    results = []
+    for token in tokens:
+        d = token_to_dict(token)
+        if token.status in ("waiting", "serving"):
+            d.update(get_queue_status_for_token(db, token))
+        results.append(d)
+
+    return results
+
+
 @app.get("/patient/tokens/{token_id}")
 def get_patient_single_token(
     token_id: int,
@@ -7241,6 +7327,13 @@ def get_patient_single_token(
 
     filter_conditions = [and_(Token.id == token_id, Token.patient_id == patient_id)]
     if patient:
+        if patient.full_name and patient.full_name.strip():
+            clean_name = patient.full_name.strip().lower()
+            same_name_ids = [p_id for (p_id,) in db.query(Patient.id).filter(func.lower(Patient.full_name) == clean_name).all()]
+            if same_name_ids:
+                filter_conditions.append(and_(Token.id == token_id, Token.patient_id.in_(same_name_ids)))
+            filter_conditions.append(and_(Token.id == token_id, func.lower(Token.patient_name) == clean_name))
+            filter_conditions.append(and_(Token.id == token_id, func.lower(Token.patient_name).ilike(f"{clean_name} (%")))
         if patient.email and patient.email.strip():
             filter_conditions.append(and_(Token.id == token_id, func.lower(Token.patient_email) == patient.email.strip().lower()))
         if patient.phone and patient.phone.strip():
@@ -7267,7 +7360,10 @@ def get_patient_single_token(
         except Exception:
             db.rollback()
 
-    return token_to_dict(token)
+    d = token_to_dict(token)
+    if token.status in ("waiting", "serving"):
+        d.update(get_queue_status_for_token(db, token))
+    return d
 
 
 # ============================================================
