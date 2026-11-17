@@ -552,6 +552,7 @@
           <h1 style="margin: 0; font-size: 17px; font-weight: 800; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
             🎟️ My Tokens <span style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-size: 11px; padding: 2px 7px; border-radius: 9999px; font-weight: 700;">Live</span>
           </h1>
+          <p id="welcomePatient" style="margin: 2px 0 0; font-size: 11.5px; color: #94a3bd; font-weight: 500;">Logged in as Patient</p>
         </div>
       </div>
 
@@ -806,7 +807,25 @@
       window.location.href = "index.html";
     }
 
-    document.getElementById("welcomePatient").textContent = `Logged in as ${patientName}`;
+    function updateWelcomePatient() {
+      const welcomeEl = document.getElementById("welcomePatient");
+      if (welcomeEl) {
+        welcomeEl.textContent = `Logged in as ${patientName}`;
+      }
+    }
+    updateWelcomePatient();
+    document.addEventListener("DOMContentLoaded", updateWelcomePatient);
+
+    // Refresh Tokens Handler (bound globally)
+    function loadMyTokens() {
+      if (typeof loadInstantCachedTokens === "function") {
+        loadInstantCachedTokens();
+      }
+      if (typeof loadTokenHistory === "function") {
+        return loadTokenHistory();
+      }
+    }
+    window.loadMyTokens = loadMyTokens;
 
     // ============================================================
     // 0ms INSTANT TOKEN CACHE & REAL-TIME QUEUE ENGINE
@@ -1043,13 +1062,17 @@
     }
 
     function updateStats(tokens) {
-      const total = tokens.length;
-      const waiting = tokens.filter(t => (t.status || "").toLowerCase() === "waiting").length;
-      const completed = tokens.filter(t => (t.status || "").toLowerCase() === "completed").length;
+      const list = Array.isArray(tokens) ? tokens : [];
+      const total = list.length;
+      const waiting = list.filter(t => (t.status || "").toLowerCase() === "waiting").length;
+      const completed = list.filter(t => (t.status || "").toLowerCase() === "completed").length;
 
-      document.getElementById("totalCount").textContent = total;
-      document.getElementById("activeCount").textContent = waiting;
-      document.getElementById("completedCount").textContent = completed;
+      const totalEl = document.getElementById("totalCount");
+      const activeEl = document.getElementById("activeCount");
+      const completedEl = document.getElementById("completedCount");
+      if (totalEl) totalEl.textContent = total;
+      if (activeEl) activeEl.textContent = waiting;
+      if (completedEl) completedEl.textContent = completed;
     }
 
     function applyFilter(filter) {
@@ -1336,6 +1359,14 @@
         alert(`Could not send receipt: ${err.message}`);
       }
     }
+
+    // Global bindings for HTML event handlers
+    window.loadTokenHistory = loadTokenHistory;
+    window.loadMyTokens = loadMyTokens;
+    window.applyFilter = applyFilter;
+    window.openReceiptModal = openReceiptModal;
+    window.closeReceiptModal = closeReceiptModal;
+    window.promptEmailReceipt = promptEmailReceipt;
 
     // Initial Load
     loadTokenHistory();
