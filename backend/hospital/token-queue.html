@@ -1882,7 +1882,7 @@ async function loadWalkInDepartments() {
 }
 
 // LIVE OPD QUEUE TRACKER PORTION (WALK-IN SESSION)
-function updateQueueWalkInLiveTracker() {
+async function updateQueueWalkInLiveTracker() {
     const deptSelect = document.getElementById("walkInDepartment");
     const docSelect = document.getElementById("walkInDoctor");
     const doctorLabel = document.getElementById("walkInLqDoctorLabel");
@@ -1932,15 +1932,39 @@ function updateQueueWalkInLiveTracker() {
     const d = String(today.getDate()).padStart(2, '0');
     const todayStr = `${y}-${m}-${d}`;
 
-    let maxToken = 0;
-    filtered.forEach(t => {
-        const tDate = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
-        if (!tDate || tDate === todayStr) {
-            const num = Number(t.token_number || 0);
-            if (num > maxToken) maxToken = num;
+    // Fetch actual doctor-specific next available token from backend
+    if (isDocChosen && typeof hospitalId !== "undefined" && hospitalId) {
+        try {
+            const nextRes = await fetch(`${API}/tokens/next-available?hospital_id=${encodeURIComponent(hospitalId)}&department=${encodeURIComponent(rawDeptVal)}&doctor=${encodeURIComponent(rawDocVal.split("(")[0].trim())}&appointment_date=${encodeURIComponent(todayStr)}`);
+            if (nextRes.ok) {
+                const nextData = await nextRes.json();
+                if (nextData && nextData.next_token_number) {
+                    nextTokenEl.textContent = `#${nextData.next_token_number}`;
+                }
+            }
+        } catch (e) {
+            console.warn("Could not fetch next available token from backend:", e);
+            let maxToken = 0;
+            filtered.forEach(t => {
+                const tDate = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+                if (!tDate || tDate === todayStr) {
+                    const num = Number(t.token_number || 0);
+                    if (num > maxToken) maxToken = num;
+                }
+            });
+            nextTokenEl.textContent = `#${maxToken + 1}`;
         }
-    });
-    nextTokenEl.textContent = `#${maxToken + 1}`;
+    } else {
+        let maxToken = 0;
+        filtered.forEach(t => {
+            const tDate = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            if (!tDate || tDate === todayStr) {
+                const num = Number(t.token_number || 0);
+                if (num > maxToken) maxToken = num;
+            }
+        });
+        nextTokenEl.textContent = `#${maxToken + 1}`;
+    }
 
     const estMins = waiting.length * 5;
     estWaitEl.textContent = estMins > 0 ? `~${estMins}m` : "No wait";
@@ -2202,6 +2226,7 @@ async function registerWalkIn(event) {
         // Refresh shared queue
 
         await loadTokens();
+        await updateQueueWalkInLiveTracker();
         fetchHospitalCollectionSummary();
 
 // Hospital name and live clock managed globally in DOMContentLoaded

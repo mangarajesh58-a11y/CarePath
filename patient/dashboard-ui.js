@@ -1038,17 +1038,134 @@
       actionRow.appendChild(callBtn);
     }
 
-    if (ad.target_link) {
-      const linkBtn = makeElement("a", "sponsored-link-btn", "🌐 Details ↗");
-      linkBtn.href = ad.target_link;
-      linkBtn.target = "_blank";
-      linkBtn.rel = "noopener noreferrer";
-      actionRow.appendChild(linkBtn);
-    }
+    const detailsBtn = makeElement("button", "sponsored-link-btn", "ℹ️ Details");
+    detailsBtn.type = "button";
+    detailsBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      openInAppAdDetails(ad);
+    });
+    actionRow.appendChild(detailsBtn);
 
     card.appendChild(actionRow);
     return card;
   }
+
+  window.openInAppAdDetails = function (ad) {
+    if (!ad) return;
+    const modal = document.getElementById("carepathAdDetailsModal");
+    const content = document.getElementById("carepathAdDetailsContent");
+    if (!modal || !content) return;
+
+    // Visual media: Image or Video
+    const isVideo = (ad.ad_type === "video" || !!ad.video_url);
+    let visualHtml = "";
+    if (isVideo && ad.video_url) {
+      let rawVideoUrl = ad.video_url;
+      if (!rawVideoUrl.startsWith("http") && !rawVideoUrl.startsWith("data:")) {
+        rawVideoUrl = API_BASE + (rawVideoUrl.startsWith("/") ? "" : "/") + rawVideoUrl;
+      }
+      let rawPoster = ad.image_url || ad.hospital_image || "";
+      if (rawPoster && !rawPoster.startsWith("http") && !rawPoster.startsWith("data:")) {
+        rawPoster = API_BASE + (rawPoster.startsWith("/") ? "" : "/") + rawPoster;
+      }
+      visualHtml = `
+        <div style="background: black; border-top-left-radius: 20px; border-top-right-radius: 20px; overflow: hidden; max-height: 280px;">
+          <video controls autoplay playsinline muted src="${escapeHtml(rawVideoUrl)}" poster="${escapeHtml(rawPoster)}" style="width: 100%; max-height: 280px; object-fit: contain; display: block;"></video>
+        </div>
+      `;
+    } else {
+      let rawUrl = ad.image_url || ad.hospital_image || "";
+      if (rawUrl && !rawUrl.startsWith("http") && !rawUrl.startsWith("data:")) {
+        rawUrl = API_BASE + (rawUrl.startsWith("/") ? "" : "/") + rawUrl;
+      }
+      if (rawUrl) {
+        visualHtml = `
+          <div style="background: #f1f5f9; border-top-left-radius: 20px; border-top-right-radius: 20px; overflow: hidden; max-height: 280px;">
+            <img src="${escapeHtml(rawUrl)}" alt="${escapeHtml(ad.title || 'Sponsored')}" style="width: 100%; max-height: 280px; object-fit: cover; display: block;" />
+          </div>
+        `;
+      }
+    }
+
+    const validityText = ad.expires_at ? `Valid until ${ad.expires_at}` : (ad.days_remaining ? `Active for next ${ad.days_remaining} days` : "Active Promotion");
+
+    content.innerHTML = `
+      ${visualHtml}
+      <div style="padding: 22px 20px; box-sizing: border-box;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px;">
+          <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 12px; letter-spacing: 0.5px; text-transform: uppercase;">📢 SPONSORED PROMOTION</span>
+          <span style="font-size: 12px; color: #16a34a; font-weight: 700; background: #dcfce7; padding: 3px 8px; border-radius: 10px;">⏱️ ${escapeHtml(validityText)}</span>
+        </div>
+
+        <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 8px 0 6px; line-height: 1.35;">${escapeHtml(ad.title || "Featured Healthcare Offer")}</h2>
+        
+        <div style="display: flex; align-items: center; gap: 8px; color: #0284c7; font-weight: 700; font-size: 13.5px; margin-bottom: 14px;">
+          <span>🏥 ${escapeHtml(ad.hospital_name || "CarePath Hospital")}</span>
+          ${ad.hospital_city ? `<span style="color: #64748b; font-weight: 500;">• 📍 ${escapeHtml(ad.hospital_city)}</span>` : ""}
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; line-height: 1.6; color: #334155; font-size: 14px;">
+          <strong style="color: #0f172a; display: block; margin-bottom: 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.4px;">Offer & Service Details:</strong>
+          ${escapeHtml(ad.description || "Take advantage of verified healthcare services, modern diagnostics, and experienced OPD specialists.")}
+        </div>
+
+        ${ad.target_link ? `
+          <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 12.5px; color: #0369a1; line-height: 1.45;">
+            <div style="font-weight: 700; margin-bottom: 2px;">🌐 Advertiser Reference / Information URL:</div>
+            <div style="word-break: break-all; color: #0284c7; font-family: monospace; font-size: 12px;">${escapeHtml(ad.target_link)}</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">For your privacy and security, CarePath keeps you safely inside the application.</div>
+          </div>
+        ` : ""}
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+          <button type="button" id="inAppAdBookBtn" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; padding: 13px 18px; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(2,132,199,0.3);">
+            <span>🏥</span> Book Appointment at ${escapeHtml(ad.hospital_name || "Hospital")}
+          </button>
+          
+          <div style="display: flex; gap: 10px;">
+            ${ad.target_phone ? `
+              <a href="tel:${escapeHtml(ad.target_phone)}" style="flex: 1; text-decoration: none; background: #f0fdf4; color: #166534; border: 1.5px solid #86efac; padding: 11px; border-radius: 12px; font-weight: 700; font-size: 13px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span>📞</span> Call Hospital
+              </a>
+            ` : ""}
+            <button type="button" onclick="closeInAppAdDetails()" style="flex: 1; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 11px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer;">
+              ← Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const bookBtn = content.querySelector("#inAppAdBookBtn");
+    if (bookBtn) {
+      bookBtn.addEventListener("click", function () {
+        closeInAppAdDetails();
+        const match = (hospitalRecords || []).find(function (h) {
+          return String(hospitalId(h)) === String(ad.hospital_id);
+        });
+        selectHospital(match || { id: ad.hospital_id, name: ad.hospital_name, city: ad.hospital_city });
+      });
+    }
+
+    modal.style.display = "flex";
+  };
+
+  window.closeInAppAdDetails = function () {
+    const modal = document.getElementById("carepathAdDetailsModal");
+    if (modal) {
+      modal.style.display = "none";
+      // Pause any video inside modal if playing
+      const v = modal.querySelector("video");
+      if (v) v.pause();
+    }
+  };
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      window.closeInAppAdDetails();
+    }
+  });
 
   function readRecentHospitals() {
     try {

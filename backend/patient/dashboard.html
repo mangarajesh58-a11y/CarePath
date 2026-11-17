@@ -2410,6 +2410,21 @@
   </div>
 </div>
 
+<!-- =====================================================
+     IN-APP SPONSORED ADVERTISEMENT DETAILS MODAL
+===================================================== -->
+<div id="carepathAdDetailsModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78); z-index: 2000005; backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;" onclick="if(event.target===this)closeInAppAdDetails()">
+  <div class="carepath-ad-modal-card" style="background: white; border-radius: 20px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); position: relative; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
+    <!-- Modal Close / Back Button -->
+    <div style="position: absolute; top: 12px; right: 12px; z-index: 20;">
+      <button type="button" onclick="closeInAppAdDetails()" style="background: rgba(15, 23, 42, 0.65); color: white; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.25);">✕</button>
+    </div>
+    <div id="carepathAdDetailsContent">
+      <!-- Populated dynamically by openInAppAdDetails(ad) -->
+    </div>
+  </div>
+</div>
+
 <!-- PRESCRIPTION PREVIEW & CONFIRM MODAL -->
 <div id="carepathAIPreviewModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000001; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
   <div style="background: white; border-radius: 18px; max-width: 440px; width: 100%; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">

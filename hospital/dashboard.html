@@ -4211,7 +4211,7 @@ async function onWalkInDepartmentChange() {
 }
 
 // LIVE OPD QUEUE TRACKER AT WALK-IN SESSION
-function updateWalkInLiveQueue() {
+async function updateWalkInLiveQueue() {
     const deptSelect = document.getElementById("walkInDepartment");
     const docSelect = document.getElementById("walkInDoctor");
     const doctorLabel = document.getElementById("walkInLqDoctorLabel");
@@ -4254,12 +4254,34 @@ function updateWalkInLiveQueue() {
 
     waitingEl.textContent = waiting.length;
 
-    let maxToken = 0;
-    (Array.isArray(allHospitalTokens) ? allHospitalTokens : []).forEach(t => {
-        const num = Number(t.token_number || 0);
-        if (num > maxToken) maxToken = num;
-    });
-    nextTokenEl.textContent = `#${maxToken + 1}`;
+    // Fetch actual doctor-specific next available token from backend
+    if (isDocChosen && hospitalId) {
+        try {
+            const todayStr = new Date().toISOString().split("T")[0];
+            const nextRes = await fetch(`${API_URL}/tokens/next-available?hospital_id=${encodeURIComponent(hospitalId)}&department=${encodeURIComponent(rawDeptVal)}&doctor=${encodeURIComponent(rawDocVal.split("(")[0].trim())}&appointment_date=${encodeURIComponent(todayStr)}`);
+            if (nextRes.ok) {
+                const nextData = await nextRes.json();
+                if (nextData && nextData.next_token_number) {
+                    nextTokenEl.textContent = `#${nextData.next_token_number}`;
+                }
+            }
+        } catch (e) {
+            console.warn("Could not fetch next available token from backend:", e);
+            let maxToken = 0;
+            filtered.forEach(t => {
+                const num = Number(t.token_number || 0);
+                if (num > maxToken) maxToken = num;
+            });
+            nextTokenEl.textContent = `#${maxToken + 1}`;
+        }
+    } else {
+        let maxToken = 0;
+        filtered.forEach(t => {
+            const num = Number(t.token_number || 0);
+            if (num > maxToken) maxToken = num;
+        });
+        nextTokenEl.textContent = `#${maxToken + 1}`;
+    }
 
     const estMins = waiting.length * 5;
     estWaitEl.textContent = estMins > 0 ? `~${estMins}m` : "No wait";
@@ -4318,9 +4340,6 @@ async function handleDashboardWalkInSubmit(event) {
             department: department,
             doctor: doctor,
         };
-        if (manualTokenVal && !isNaN(manualTokenVal) && manualTokenVal > 0) {
-            payload.token_number = manualTokenVal;
-        }
         if (patientPhone) {
             payload.patient_phone = patientPhone;
         }
@@ -4368,6 +4387,7 @@ async function handleDashboardWalkInSubmit(event) {
 
         // Reload queue to update counters and show new token in feed immediately
         await loadQueue();
+        await updateWalkInLiveQueue();
 
     } catch (err) {
         console.error("Walk-in registration error:", err);

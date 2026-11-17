@@ -1676,6 +1676,47 @@ def run_database_migration():
                         )
                     """)
                 )
+            if engine.dialect.name == "postgresql":
+                connection.execute(text("ALTER TABLE token_sequences ADD COLUMN IF NOT EXISTS doctor_id INT NULL;"))
+                connection.execute(text("""
+                    UPDATE token_sequences ts
+                    SET doctor_id = d.id
+                    FROM doctors d
+                    WHERE d.hospital_id = ts.hospital_id
+                      AND ts.doctor_id IS NULL
+                      AND (
+                          LOWER(d.name) = LOWER(ts.doctor)
+                          OR LOWER(d.name) = LOWER(regexp_replace(ts.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
+                          OR LOWER(regexp_replace(d.name, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i')) = LOWER(regexp_replace(ts.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
+                      );
+                """))
+                connection.execute(text("""
+                    UPDATE tokens t
+                    SET doctor_id = d.id
+                    FROM doctors d
+                    WHERE d.hospital_id = t.hospital_id
+                      AND t.doctor_id IS NULL
+                      AND (
+                          LOWER(d.name) = LOWER(t.doctor)
+                          OR LOWER(d.name) = LOWER(regexp_replace(t.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
+                          OR LOWER(regexp_replace(d.name, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i')) = LOWER(regexp_replace(t.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
+                      );
+                """))
+                connection.execute(text("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS uq_token_sequences_doc_id 
+                    ON token_sequences (hospital_id, doctor_id, appointment_date) 
+                    WHERE doctor_id IS NOT NULL;
+                """))
+                connection.execute(text("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS uq_tokens_doc_date_num 
+                    ON tokens (hospital_id, doctor_id, appointment_date, token_number) 
+                    WHERE doctor_id IS NOT NULL;
+                """))
+                connection.execute(text("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS uq_tokens_doc_name_date_num 
+                    ON tokens (hospital_id, doctor, appointment_date, token_number) 
+                    WHERE doctor_id IS NULL;
+                """))
     except Exception as error:
         print("token_sequences table creation notice:", error)
 
@@ -3709,33 +3750,49 @@ def allocate_token_number(
     department: str,
     doctor: str,
     appointment_date: date,
+    doctor_id: Optional[int] = None,
 ) -> int:
     clean_dept = (department or "").strip()
     clean_doc = (doctor or "").strip()
 
     # Canonical doctor lookup to prevent case/prefix mismatches in token_sequences
-    clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', clean_doc, flags=re.I).strip()
-    doc_record = (
-        db.query(Doctor)
-        .filter(
-            Doctor.hospital_id == hospital_id,
-            or_(
-                func.lower(Doctor.name) == clean_doc.lower(),
-                func.lower(Doctor.name) == clean_doc_search.lower(),
-                Doctor.name.ilike(f"%{clean_doc_search}%")
+    if not doctor_id and (clean_doc or clean_dept):
+        clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', clean_doc, flags=re.I).strip()
+        doc_record = (
+            db.query(Doctor)
+            .filter(
+                Doctor.hospital_id == hospital_id,
+                or_(
+                    func.lower(Doctor.name) == clean_doc.lower(),
+                    func.lower(Doctor.name) == clean_doc_search.lower(),
+                    Doctor.name.ilike(f"%{clean_doc_search}%")
+                )
             )
+            .first()
         )
-        .first()
-    )
-    if doc_record:
-        clean_doc = doc_record.name
-        clean_dept = doc_record.department
+        if doc_record:
+            doctor_id = doc_record.id
+            clean_doc = doc_record.name
+            clean_dept = doc_record.department
+    elif doctor_id:
+        doc_record = db.query(Doctor).filter(Doctor.id == doctor_id, Doctor.hospital_id == hospital_id).first()
+        if doc_record:
+            clean_doc = doc_record.name
+            clean_dept = doc_record.department
+
+    # Construct unambiguous doctor filter clause to ensure optimal parameter typing in PostgreSQL
+    if doctor_id:
+        doc_where = "(doctor_id = :doctor_id OR LOWER(doctor) = LOWER(:doctor))"
+        tokens_doc_where = "(tokens.doctor_id = :doctor_id OR LOWER(tokens.doctor) = LOWER(:doctor))"
+    else:
+        doc_where = "LOWER(doctor) = LOWER(:doctor)"
+        tokens_doc_where = "LOWER(tokens.doctor) = LOWER(:doctor)"
 
     try:
-        result = db.execute(
-            text("""
+        upsert_query = f"""
                 INSERT INTO token_sequences (
                     hospital_id,
+                    doctor_id,
                     department,
                     doctor,
                     appointment_date,
@@ -3743,6 +3800,7 @@ def allocate_token_number(
                 )
                 VALUES (
                     :hospital_id,
+                    :doctor_id,
                     :department,
                     :doctor,
                     :appointment_date,
@@ -3751,8 +3809,7 @@ def allocate_token_number(
                             SELECT COALESCE(MAX(token_number), 0)
                             FROM tokens
                             WHERE hospital_id = :hospital_id
-                              AND LOWER(department) = LOWER(:department)
-                              AND (doctor = :doctor OR LOWER(doctor) = LOWER(:doctor))
+                              AND {doc_where}
                               AND appointment_date = :appointment_date
                         ),
                         0
@@ -3765,21 +3822,24 @@ def allocate_token_number(
                     appointment_date
                 )
                 DO UPDATE SET
+                    doctor_id = COALESCE(token_sequences.doctor_id, EXCLUDED.doctor_id),
                     last_token_number = GREATEST(
                         COALESCE(token_sequences.last_token_number, 0),
                         COALESCE((
                             SELECT MAX(token_number)
                             FROM tokens
                             WHERE hospital_id = :hospital_id
-                              AND LOWER(department) = LOWER(:department)
-                              AND (doctor = :doctor OR LOWER(doctor) = LOWER(:doctor))
+                              AND {tokens_doc_where}
                               AND appointment_date = :appointment_date
                         ), 0)
                     ) + 1
                 RETURNING last_token_number
-            """),
+            """
+        result = db.execute(
+            text(upsert_query),
             {
                 "hospital_id": hospital_id,
+                "doctor_id": doctor_id,
                 "department": clean_dept,
                 "doctor": clean_doc,
                 "appointment_date": appointment_date,
@@ -3792,8 +3852,10 @@ def allocate_token_number(
             db.query(func.max(Token.token_number))
             .filter(
                 Token.hospital_id == hospital_id,
-                Token.department == clean_dept,
-                Token.doctor == clean_doc,
+                or_(
+                    Token.doctor_id == doctor_id if doctor_id else False,
+                    func.lower(Token.doctor) == clean_doc.lower(),
+                ),
                 Token.appointment_date == appointment_date,
             )
             .scalar()
@@ -3804,8 +3866,9 @@ def allocate_token_number(
 @app.get("/tokens/next-available")
 def get_next_available_token(
     hospital_id: int,
-    department: str,
-    doctor: str,
+    department: str = "",
+    doctor: str = "",
+    doctor_id: Optional[int] = None,
     appointment_date: Optional[date] = None,
     db: Session = Depends(get_db),
 ):
@@ -3813,25 +3876,82 @@ def get_next_available_token(
     target_date = appointment_date or get_ist_today()
     clean_dept = (department or "").strip()
     clean_doc = (doctor or "").strip()
-    
-    max_token = (
-        db.query(func.max(Token.token_number))
-        .filter(
-            Token.hospital_id == hospital_id,
-            Token.department == clean_dept,
-            Token.doctor == clean_doc,
-            Token.appointment_date == target_date,
+
+    # Canonical doctor lookup to ensure doctor_id and normalized doctor name
+    if not doctor_id and (clean_doc or clean_dept):
+        clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', clean_doc, flags=re.I).strip()
+        doc_record = (
+            db.query(Doctor)
+            .filter(
+                Doctor.hospital_id == hospital_id,
+                or_(
+                    func.lower(Doctor.name) == clean_doc.lower(),
+                    func.lower(Doctor.name) == clean_doc_search.lower(),
+                    Doctor.name.ilike(f"%{clean_doc_search}%")
+                )
+            )
+            .first()
         )
+        if doc_record:
+            doctor_id = doc_record.id
+            clean_doc = doc_record.name
+            clean_dept = doc_record.department
+    elif doctor_id:
+        doc_record = db.query(Doctor).filter(Doctor.id == doctor_id, Doctor.hospital_id == hospital_id).first()
+        if doc_record:
+            clean_doc = doc_record.name
+            clean_dept = doc_record.department
+
+    # Check maximum existing token allocated in tokens table
+    token_filter = [
+        Token.hospital_id == hospital_id,
+        Token.appointment_date == target_date,
+    ]
+    if doctor_id:
+        token_filter.append(or_(Token.doctor_id == doctor_id, func.lower(Token.doctor) == clean_doc.lower()))
+    elif clean_doc:
+        token_filter.append(func.lower(Token.doctor) == clean_doc.lower())
+    if clean_dept:
+        token_filter.append(func.lower(Token.department) == clean_dept.lower())
+
+    max_existing = (
+        db.query(func.max(Token.token_number))
+        .filter(and_(*token_filter))
         .scalar()
     ) or 0
 
+    # Also check token_sequences table for the synchronized shared counter
+    seq_last = 0
+    if doctor_id:
+        seq_row = db.execute(text("""
+            SELECT last_token_number FROM token_sequences
+            WHERE hospital_id = :h_id AND (doctor_id = :d_id OR (doctor_id IS NULL AND LOWER(doctor) = LOWER(:d_name)))
+              AND appointment_date = :dt
+            ORDER BY last_token_number DESC LIMIT 1
+        """), {"h_id": hospital_id, "d_id": doctor_id, "d_name": clean_doc, "dt": target_date}).first()
+        if seq_row:
+            seq_last = seq_row[0] or 0
+    elif clean_doc:
+        seq_row = db.execute(text("""
+            SELECT last_token_number FROM token_sequences
+            WHERE hospital_id = :h_id AND LOWER(doctor) = LOWER(:d_name)
+              AND appointment_date = :dt
+            ORDER BY last_token_number DESC LIMIT 1
+        """), {"h_id": hospital_id, "d_name": clean_doc, "dt": target_date}).first()
+        if seq_row:
+            seq_last = seq_row[0] or 0
+
+    current_max = max(int(max_existing), int(seq_last))
+    next_token = current_max + 1
+
     return {
         "hospital_id": hospital_id,
+        "doctor_id": doctor_id,
         "department": clean_dept,
         "doctor": clean_doc,
         "appointment_date": str(target_date),
-        "booked_count": int(max_token),
-        "next_token_number": int(max_token + 1),
+        "booked_count": int(current_max),
+        "next_token_number": int(next_token),
     }
 
 
@@ -6788,6 +6908,7 @@ def create_token(
         department=canonical_dept,
         doctor=canonical_doctor,
         appointment_date=appointment_date,
+        doctor_id=doctor.id if doctor else None,
     )
 
 
@@ -6824,6 +6945,7 @@ def create_token(
         patient_gender=patient_gender,
         hospital=hospital.name,
         hospital_id=hospital.id,
+        doctor_id=doctor.id if doctor else None,
         department=canonical_dept,
         doctor=canonical_doctor,
         token_number=next_token_number,
@@ -7314,100 +7436,15 @@ def create_walk_in_token(
             detail=f"Daily patient capacity of {daily_cap} reached for Dr. {doctor_name} today. Update hospital daily capacity in settings if you wish to accept more walk-in patients.",
         )
 
-    manual_token_number = data.token_number
-
-    if manual_token_number is not None and manual_token_number <= 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Token number must be a positive integer",
-        )
-
     try:
-        if manual_token_number is None:
-            next_token_number = allocate_token_number(
-                db=db,
-                hospital_id=authenticated_hospital_id,
-                department=department,
-                doctor=doctor_name,
-                appointment_date=appointment_date,
-            )
-        else:
-            # Lock/update the shared sequence row before checking duplicates.
-            db.execute(
-                text("""
-                    INSERT INTO token_sequences (
-                        hospital_id,
-                        department,
-                        doctor,
-                        appointment_date,
-                        last_token_number
-                    )
-                    VALUES (
-                        :hospital_id,
-                        :department,
-                        :doctor,
-                        :appointment_date,
-                        0
-                    )
-                    ON CONFLICT (
-                        hospital_id,
-                        department,
-                        doctor,
-                        appointment_date
-                    )
-                    DO UPDATE SET
-                        last_token_number =
-                            token_sequences.last_token_number
-                    RETURNING last_token_number
-                """),
-                {
-                    "hospital_id": authenticated_hospital_id,
-                    "department": department,
-                    "doctor": doctor_name,
-                    "appointment_date": appointment_date,
-                },
-            )
-
-            duplicate_token = (
-                db.query(Token)
-                .filter(
-                    Token.hospital_id == authenticated_hospital_id,
-                    Token.department == department,
-                    Token.doctor == doctor_name,
-                    Token.appointment_date == appointment_date,
-                    Token.token_number == manual_token_number,
-                )
-                .first()
-            )
-
-            if duplicate_token:
-                raise HTTPException(
-                    status_code=409,
-                    detail="This token number is already assigned for this doctor today",
-                )
-
-            next_token_number = manual_token_number
-
-            db.execute(
-                text("""
-                    UPDATE token_sequences
-                    SET last_token_number = GREATEST(
-                        last_token_number,
-                        :manual_token_number
-                    )
-                    WHERE hospital_id = :hospital_id
-                      AND department = :department
-                      AND doctor = :doctor
-                      AND appointment_date = :appointment_date
-                """),
-                {
-                    "hospital_id": authenticated_hospital_id,
-                    "department": department,
-                    "doctor": doctor_name,
-                    "appointment_date": appointment_date,
-                    "manual_token_number": manual_token_number,
-                },
-            )
+        next_token_number = allocate_token_number(
+            db=db,
+            hospital_id=authenticated_hospital_id,
+            department=department,
+            doctor=doctor_name,
+            appointment_date=appointment_date,
+            doctor_id=doctor.id if doctor else None,
+        )
 
         notes_parts = []
         if getattr(data, "patient_phone", None) and str(data.patient_phone).strip():
@@ -11282,6 +11319,8 @@ def get_active_ads(db: Session = Depends(get_db)):
             "target_link": ad.target_link or "",
             "fee_charged": float(ad.fee_charged or ad.amount_paid or 0),
             "days_remaining": max(0, (ad.expires_at - now).days) if ad.expires_at else 0,
+            "expires_at": ad.expires_at.strftime("%b %d, %Y") if ad.expires_at else "",
+            "activated_at": ad.activated_at.strftime("%b %d, %Y") if ad.activated_at else "",
         })
 
     # Shuffle so view is dynamic and rotating (not fixed to one hospital)
