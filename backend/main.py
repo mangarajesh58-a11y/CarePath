@@ -536,9 +536,22 @@ if not os.path.exists(ADMIN_STATIC_DIR):
 # CORS
 # ============================================================
 
+ALLOWED_ORIGINS = [
+    "https://carepath-hospital-ten.vercel.app",
+    "https://carepath-patient-mx5v.vercel.app",
+    "https://carepath-admin.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "capacitor://localhost",
+    "ionic://localhost",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r".*",
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"^https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

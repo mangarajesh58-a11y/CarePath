@@ -3111,12 +3111,18 @@ function renderDoctorRoster() {
 }
 
 // LOAD TOKENS & QUEUE
-async function loadQueue() {
+let loadQueueRetryTimer = null;
+async function loadQueue(isRetry = false) {
     try {
         const res = await fetch(`${API_URL}/hospitals/${hospitalId}/tokens`, {
             headers: getHospitalAuthHeaders()
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+            if (res.status === 401) {
+                console.warn("Hospital session expired.");
+            }
+            return;
+        }
         const data = await res.json();
         const rawTokens = Array.isArray(data) ? data : (data.tokens || []);
 
@@ -3229,7 +3235,13 @@ async function loadQueue() {
             localStorage.setItem("cached_hospital_tokens_" + hospitalId, JSON.stringify(tokens));
         } catch(e) {}
     } catch (e) {
-        console.error("Load queue error:", e);
+        console.warn("Load queue connection notice:", e.message || e);
+        if (!isRetry) {
+            clearTimeout(loadQueueRetryTimer);
+            loadQueueRetryTimer = setTimeout(() => {
+                loadQueue(true);
+            }, 2000);
+        }
     }
 }
 
