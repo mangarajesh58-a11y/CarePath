@@ -1296,7 +1296,7 @@ async function continueAndGetToken() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("patientToken") || ""}`
+                "Authorization": `Bearer ${localStorage.getItem("patientToken") || localStorage.getItem("patient_token") || localStorage.getItem("token") || ""}`
             },
             body: JSON.stringify({
     patient_name: patientName,
@@ -1425,7 +1425,7 @@ async function createTokenAfterPayment(
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("patientToken") || ""}`
+                "Authorization": `Bearer ${localStorage.getItem("patientToken") || localStorage.getItem("patient_token") || localStorage.getItem("token") || ""}`
             },
             body: JSON.stringify({
                 patient_name: patientName,
@@ -1460,7 +1460,6 @@ async function createTokenAfterPayment(
         }
 
         localStorage.setItem("tokenNumber", String(token.token_number));
-        localStorage.setItem("token", String(token.token_number));
         localStorage.setItem("tokenHospital", token.hospital || hospitalName);
         localStorage.setItem("hospital", token.hospital || hospitalName);
         localStorage.setItem("tokenDepartment", token.department || department);
@@ -1479,6 +1478,61 @@ async function createTokenAfterPayment(
 
         if (paymentId) {
             localStorage.setItem("paymentId", String(paymentId));
+        }
+
+        // Cache booked token for instant 0ms history display in my-tokens.html
+        try {
+            const appointmentDate = token.appointment_date || document.getElementById("appointmentDate")?.value || new Date().toISOString().split("T")[0];
+            const fee = Number(token.token_fee ?? 0);
+            const platformFee = Number(token.platform_fee ?? 10);
+            const total = Number(token.total_amount ?? data.total_amount ?? (fee + platformFee));
+            const roomVal = token.doctor_room_number || token.room_number || "Consultation Room";
+            const patientEmail = token.patient_email || localStorage.getItem("patientEmail") || "";
+
+            const newTokenEntry = {
+                id: token.id || ("tk_" + Date.now()),
+                token_number: token.token_number || 1,
+                patient_name: patientName,
+                doctor: token.doctor || doctorName,
+                department: token.department || department,
+                hospital: token.hospital || hospitalName,
+                appointment_date: appointmentDate,
+                status: token.status || "waiting",
+                doctor_room_number: roomVal,
+                patient_email: patientEmail,
+                total_amount: total,
+                token_fee: fee,
+                platform_fee: platformFee,
+                payment_status: "paid",
+                payment_id: paymentId,
+                order_id: cashfreeOrderId,
+                created_at: token.created_at || new Date().toISOString()
+            };
+
+            const cachedRaw = localStorage.getItem("carepath_cached_tokens") || "[]";
+            const cachedList = JSON.parse(cachedRaw);
+            const updatedList = [newTokenEntry, ...cachedList.filter(x => String(x.id) !== String(newTokenEntry.id))];
+            localStorage.setItem("carepath_cached_tokens", JSON.stringify(updatedList));
+            localStorage.setItem("carepath_all_booked_tokens", JSON.stringify(updatedList));
+            localStorage.setItem("lastBookedTokenDetails", JSON.stringify({
+                token: newTokenEntry,
+                appointmentDate: appointmentDate,
+                hospital: token.hospital || hospitalName,
+                department: token.department || department,
+                doctor: token.doctor || doctorName,
+                orderId: cashfreeOrderId,
+                paymentId: paymentId,
+                fee: fee,
+                platformFee: platformFee,
+                total: total,
+                roomVal: roomVal,
+                bData: {
+                    patient_name: patientName,
+                    patient_email: patientEmail
+                }
+            }));
+        } catch (e) {
+            console.warn("Error caching booked token in script.js:", e);
         }
 
         showMessage(
@@ -1519,8 +1573,6 @@ function clearOldBookingData() {
         "tokenId",
 
         "tokenNumber",
-
-        "token",
 
         "tokenHospital",
 

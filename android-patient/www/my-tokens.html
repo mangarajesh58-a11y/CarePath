@@ -784,15 +784,25 @@
   <script>
     "use strict";
 
-    const API_URL = "https://carepath-3q9q.onrender.com";
+    const isCapacitor = typeof window.Capacitor !== "undefined" || (window.location.protocol === "capacitor:" || window.location.protocol === "ionic:");
+    const isLocal = !isCapacitor && (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost");
+    const API_URL = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
     let allTokens = [];
     let currentFilter = "all";
 
     // Authentication Guard
-    const token = localStorage.getItem("patientToken");
-    const patientName = localStorage.getItem("patientName") || "Patient";
+    const token = localStorage.getItem("patientToken") || localStorage.getItem("patient_token") || localStorage.getItem("token") || "";
+    const patientName = localStorage.getItem("patientName") || localStorage.getItem("patient_name") || localStorage.getItem("full_name") || "Patient";
 
-    if (!token) {
+    const hasCachedTokens = !!(
+      localStorage.getItem("carepath_cached_tokens") ||
+      localStorage.getItem("carepath_all_booked_tokens") ||
+      localStorage.getItem("lastBookedTokenDetails") ||
+      localStorage.getItem("tokenId") ||
+      localStorage.getItem("tokenNumber")
+    );
+
+    if (!token && !hasCachedTokens) {
       window.location.href = "index.html";
     }
 
@@ -864,6 +874,33 @@
           } catch(e) {}
         }
 
+        // 3. Fallback: check individual booking keys from localStorage
+        const storedTokenNumber = localStorage.getItem("tokenNumber");
+        const storedTokenId = localStorage.getItem("tokenId");
+        if (storedTokenNumber || storedTokenId) {
+          const fallbackEntry = {
+            id: storedTokenId || ("tk_" + Date.now()),
+            token_number: Number(storedTokenNumber) || 1,
+            patient_name: localStorage.getItem("patientName") || patientName,
+            doctor: localStorage.getItem("tokenDoctor") || localStorage.getItem("doctor") || "Consultant",
+            department: localStorage.getItem("tokenDepartment") || localStorage.getItem("department") || "General",
+            hospital: localStorage.getItem("tokenHospital") || localStorage.getItem("hospital") || "CarePath Hospital",
+            appointment_date: localStorage.getItem("selectedAppointmentDate") || localStorage.getItem("appointmentDate") || new Date().toISOString().split("T")[0],
+            status: localStorage.getItem("tokenStatus") || "waiting",
+            doctor_room_number: localStorage.getItem("tokenRoom") || "Consultation Room",
+            patient_email: localStorage.getItem("patientEmail") || "",
+            total_amount: Number(localStorage.getItem("totalAmount")) || 0,
+            token_fee: Number(localStorage.getItem("tokenFee")) || 0,
+            platform_fee: Number(localStorage.getItem("platformFee")) || 10,
+            payment_status: localStorage.getItem("paymentStatus") || "paid",
+            created_at: new Date().toISOString()
+          };
+          const key = String(fallbackEntry.id || (fallbackEntry.token_number + "_" + fallbackEntry.appointment_date + "_" + fallbackEntry.doctor));
+          if (!mergedMap.has(key)) {
+            mergedMap.set(key, fallbackEntry);
+          }
+        }
+
         if (mergedMap.size > 0) {
           allTokens = Array.from(mergedMap.values());
           allTokens.sort((a, b) => {
@@ -897,6 +934,11 @@
       const container = document.getElementById("tokensList");
       const emptyState = document.getElementById("emptyState");
 
+      if (!token) {
+        // Guest or unauthenticated viewing locally cached tokens
+        return;
+      }
+
       try {
         const response = await fetch(`${API_URL}/patient/tokens`, {
           method: "GET",
@@ -907,8 +949,11 @@
         });
 
         if (response.status === 401) {
-          localStorage.removeItem("patientToken");
-          window.location.href = "index.html";
+          console.warn("Patient session expired for remote sync; retaining cached tokens.");
+          if (allTokens && allTokens.length > 0) {
+            updateStats(allTokens);
+            renderTokens(allTokens);
+          }
           return;
         }
 

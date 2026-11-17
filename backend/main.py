@@ -7036,17 +7036,21 @@ def get_patient_token_history(
 
     if patient:
         if patient.email and patient.email.strip():
-            filter_conditions.append(func.lower(Token.patient_email) == patient.email.strip().lower())
+            clean_email = patient.email.strip().lower()
+            filter_conditions.append(func.lower(Token.patient_email) == clean_email)
+            filter_conditions.append(Token.notes.ilike(f"%{clean_email}%"))
         if patient.phone and patient.phone.strip():
-            clean_phone = patient.phone.strip().replace(" ", "").replace("-", "")
-            filter_conditions.append(Token.patient_phone == patient.phone)
+            raw_phone = patient.phone.strip()
+            clean_phone = raw_phone.replace(" ", "").replace("-", "")
+            digits_only = re.sub(r"\D", "", raw_phone)
+            filter_conditions.append(Token.patient_phone == raw_phone)
             filter_conditions.append(Token.patient_phone == clean_phone)
-            if clean_phone.startswith("+91"):
-                filter_conditions.append(Token.patient_phone == clean_phone[3:])
-                filter_conditions.append(Token.notes.ilike(f"%{clean_phone[3:]}%"))
-            elif len(clean_phone) == 10:
-                filter_conditions.append(Token.patient_phone == f"+91{clean_phone}")
-                filter_conditions.append(Token.notes.ilike(f"%{clean_phone}%"))
+            if digits_only:
+                filter_conditions.append(Token.patient_phone.ilike(f"%{digits_only}%"))
+                if len(digits_only) >= 10:
+                    last10 = digits_only[-10:]
+                    filter_conditions.append(Token.patient_phone.ilike(f"%{last10}%"))
+                    filter_conditions.append(Token.notes.ilike(f"%{last10}%"))
         if patient.full_name and patient.full_name.strip():
             filter_conditions.append(
                 and_(
@@ -7892,6 +7896,7 @@ def call_token(
 
 
 @app.get("/tokens/{token_id}/live-status")
+@app.get("/tokens/{token_id}")
 def get_token_live_status(
     token_id: int,
     db: Session = Depends(get_db),
