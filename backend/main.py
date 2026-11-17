@@ -520,12 +520,16 @@ if not os.path.exists(PATIENT_STATIC_DIR):
     PATIENT_STATIC_DIR = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..", "patient")
     )
-HOSPITAL_STATIC_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "hospital")
-)
-ADMIN_STATIC_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "admin")
-)
+HOSPITAL_STATIC_DIR = os.path.join(os.path.dirname(__file__), "hospital")
+if not os.path.exists(HOSPITAL_STATIC_DIR):
+    HOSPITAL_STATIC_DIR = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "hospital")
+    )
+ADMIN_STATIC_DIR = os.path.join(os.path.dirname(__file__), "admin")
+if not os.path.exists(ADMIN_STATIC_DIR):
+    ADMIN_STATIC_DIR = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "admin")
+    )
 
 
 # ============================================================
@@ -1208,7 +1212,6 @@ def add_column_if_missing(
     if column_name in _migration_table_columns_cache[table_name]:
         return
 
-    import re
     col_def = column_definition
     if engine.dialect.name == "postgresql":
         col_def = re.sub(r'\bDATETIME\b', 'TIMESTAMP', col_def, flags=re.IGNORECASE)
@@ -6921,7 +6924,6 @@ def create_token(
     patient_gender = (getattr(data, "patient_gender", None) or "").strip() or None
 
     if booking_for != "self" and raw_custom_name:
-        import re
         clean_name = re.sub(r'\s*\([^)]*\)$', '', raw_custom_name).strip()
         if raw_relation and raw_relation.lower() != "other":
             actual_patient_name = f"{clean_name} ({raw_relation.capitalize()})"
@@ -12146,7 +12148,6 @@ def hospital_get_direct_messages(
                 m.is_read = True
         db.commit()
 
-    import re
     result_messages = []
     for m in messages:
         sender_phone = getattr(m, "patient_phone", None)
@@ -12413,7 +12414,6 @@ def hospital_reply_to_patient_inquiry(
     # Extract target patient phone
     target_phone = (data.patient_phone or inquiry.patient_phone or "").strip()
     if not target_phone and inquiry.sender_name:
-        import re
         pm = re.search(r'\(([^)]+)\)', inquiry.sender_name)
         if pm:
             target_phone = pm.group(1).strip()
@@ -12992,6 +12992,13 @@ from fastapi.staticfiles import StaticFiles
 
 if os.path.exists(ADMIN_STATIC_DIR):
     app.mount("/admin-portal", StaticFiles(directory=ADMIN_STATIC_DIR, html=True), name="admin_portal")
+
+    @app.get("/online-users.html", include_in_schema=False)
+    def serve_root_online_users():
+        path = os.path.join(ADMIN_STATIC_DIR, "online-users.html")
+        if os.path.exists(path):
+            return FileResponse(path)
+        return RedirectResponse(url="/admin-portal/online-users.html", status_code=302)
 
 if os.path.exists(HOSPITAL_STATIC_DIR):
     app.mount("/hospital", StaticFiles(directory=HOSPITAL_STATIC_DIR, html=True), name="hospital")

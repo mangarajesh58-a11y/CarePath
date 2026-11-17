@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Online Users - CarePath Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            background: #ffffff;
+            padding: 14px 18px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #2563eb;
+        }
+
+        .online-user-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            gap: 14px;
+            flex-wrap: wrap;
+            transition: background 0.15s;
+        }
+
+        .online-user-card:hover {
+            background: #f8fafc;
+        }
+    </style>
+    <script src="carepath-instant-nav.js"></script>
+</head>
+
+<body>
+
+<div class="page-container">
+
+    <!-- MOBILE APP HEADER -->
+    <header class="app-header">
+        <div class="header-brand">
+            <a href="dashboard.html" style="text-decoration: none; font-size: 20px; color: #1e293b; margin-right: 4px; display: flex; align-items: center;">←</a>
+            <img src="carepath-ai-small.png" alt="CarePath AI Logo" class="app-logo">
+            <div>
+                <h1>Live Online Users</h1>
+                <p>Real-Time Platform Sessions</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <!-- Three Dots (Kebab Menu) Button -->
+            <div class="kebab-menu-container">
+                <button type="button" class="btn-kebab" onclick="toggleKebabMenu(event)" aria-label="More options" title="Menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2.2"></circle>
+                        <circle cx="12" cy="12" r="2.2"></circle>
+                        <circle cx="12" cy="19" r="2.2"></circle>
+                    </svg>
+                </button>
+                <div id="kebabDropdown" class="kebab-dropdown">
+                    <div class="kebab-header">Presence Actions</div>
+                    <a href="javascript:void(0)" onclick="loadOnlineUsers()"><span class="kebab-icon">🔄</span> Refresh Sessions</a>
+                    <div class="kebab-divider"></div>
+                    <a href="dashboard.html"><span class="kebab-icon">🏠</span> Admin Dashboard</a>
+                    <a href="patients.html"><span class="kebab-icon">👥</span> Patient Directory</a>
+                    <a href="tokens.html"><span class="kebab-icon">🎫</span> Patient Tokens</a>
+                    <a href="hospitals.html"><span class="kebab-icon">🏥</span> Hospitals Network</a>
+                    <a href="contact-settings.html"><span class="kebab-icon">⚙️</span> Dynamic Pricing</a>
+                    <a href="payments.html"><span class="kebab-icon">💳</span> Payouts Ledger</a>
+                    <a href="broadcasts.html"><span class="kebab-icon">📢</span> Broadcasts</a>
+                    <div class="kebab-divider"></div>
+                    <a href="javascript:void(0)" onclick="adminLogout()" class="kebab-logout"><span class="kebab-icon">🚪</span> Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- LIVE SESSION METRICS -->
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 20px;">
+        <div class="stat-card" style="border-left: 4px solid #16a34a;">
+            <div class="stat-icon" style="background: #f0fdf4; color: #16a34a;">🟢</div>
+            <div>
+                <span>Total Active Users</span>
+                <strong id="onlineCountAll" style="color: #16a34a;">0</strong>
+                <small>Connected in last 3m</small>
+            </div>
+        </div>
+
+        <div class="stat-card" style="border-left: 4px solid #0284c7;">
+            <div class="stat-icon" style="background: #f0f9ff; color: #0284c7;">👤</div>
+            <div>
+                <span>Patients Online</span>
+                <strong id="onlineCountPatients" style="color: #0284c7;">0</strong>
+                <small>Booking & tracking</small>
+            </div>
+        </div>
+
+        <div class="stat-card" style="border-left: 4px solid #2563eb;">
+            <div class="stat-icon" style="background: #eff6ff; color: #2563eb;">🏥</div>
+            <div>
+                <span>Hospital Desks</span>
+                <strong id="onlineCountHospitals" style="color: #2563eb;">0</strong>
+                <small>Staff & receptionists</small>
+            </div>
+        </div>
+
+        <div class="stat-card" style="border-left: 4px solid #7c3aed;">
+            <div class="stat-icon" style="background: #faf5ff; color: #7c3aed;">🩺</div>
+            <div>
+                <span>Doctors On Duty</span>
+                <strong id="statDoctorsOnDuty" style="color: #7c3aed;">0</strong>
+                <small>Active in consultation</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER & REFRESH BAR -->
+    <div class="filter-bar">
+        <button type="button" id="onlineFilterAll" class="filter-btn active" onclick="filterOnlineUsers('all')">
+            All Sessions (<span id="btnOnlineCountAll">0</span>)
+        </button>
+        <button type="button" id="onlineFilterPatients" class="filter-btn" onclick="filterOnlineUsers('patient')">
+            Patients (<span id="btnOnlineCountPatients">0</span>)
+        </button>
+        <button type="button" id="onlineFilterHospitals" class="filter-btn" onclick="filterOnlineUsers('hospital')">
+            Hospital Staff (<span id="btnOnlineCountHospitals">0</span>)
+        </button>
+        <button type="button" id="onlineFilterDoctors" class="filter-btn" onclick="filterOnlineUsers('doctor')">
+            Doctors
+        </button>
+
+        <div style="margin-left: auto; display: flex; gap: 8px;">
+            <button type="button" onclick="loadOnlineUsers()" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                🔄 Refresh Now
+            </button>
+        </div>
+    </div>
+
+    <!-- SESSIONS TABLE CARD -->
+    <div class="table-card" style="padding: 0; overflow: hidden; margin-bottom: 80px;">
+        <div style="padding: 16px 20px; background: #f8fafc; border-bottom: 1.5px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 15px; color: #0f172a; font-weight: 700;">
+                Live User Sessions List
+            </h3>
+            <span style="font-size: 12px; color: #16a34a; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #16a34a; animation: pulse 1.5s infinite;"></span>
+                Live Polling (Every 15s)
+            </span>
+        </div>
+
+        <div id="onlineUsersBody" style="padding: 0;">
+            <p style="text-align: center; color: #94a3b8; padding: 30px;">Connecting to live presence stream...</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- PATIENT MEDICAL & BOOKING DOSSIER MODAL -->
+<div id="patientDossierModal" class="dossier-modal" style="display: none;" onclick="if(event.target===this)closePatientDossier()">
+    <div class="dossier-modal-content">
+        <div class="bottom-sheet-handle"></div>
+        <div class="dossier-modal-header">
+            <div>
+                <h3 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                    📋 Patient 360° Profile & Booking Dossier
+                </h3>
+                <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Complete patient identity, contact, demographics, and multi-hospital token history</p>
+            </div>
+            <button type="button" onclick="closePatientDossier()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+
+        <div class="dossier-modal-body" id="patientDossierBody">
+            <p style="text-align: center; color: #94a3b8; padding: 20px;">Loading patient details...</p>
+        </div>
+
+        <div class="dossier-modal-footer">
+            <button type="button" onclick="closePatientDossier()" style="padding: 8px 18px; background: #e2e8f0; color: #334155; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 360° TOKEN CONSULTATION DOSSIER MODAL -->
+<div id="tokenDossierModal" class="dossier-modal" style="display: none;" onclick="if(event.target===this)closeTokenDossier()">
+    <div class="dossier-modal-content">
+        <div class="bottom-sheet-handle"></div>
+        <div class="dossier-modal-header">
+            <div>
+                <h3 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                    🎟️ 360° Consultation & Patient Dossier
+                </h3>
+                <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Complete patient identity, hospital profile, doctor details, and payment breakdown</p>
+            </div>
+            <button type="button" onclick="closeTokenDossier()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+
+        <div class="dossier-modal-body" id="tokenDossierBody">
+            <p style="text-align: center; color: #94a3b8; padding: 20px;">Loading consultation details...</p>
+        </div>
+
+        <div class="dossier-modal-footer">
+            <button type="button" onclick="closeTokenDossier()" style="padding: 8px 18px; background: #e2e8f0; color: #334155; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- FIXED MOBILE BOTTOM NAVIGATION -->
+<nav class="mobile-bottom-nav">
+    <a href="dashboard.html" class="nav-item" id="navHome">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+    </a>
+    <a href="patients.html" class="nav-item" id="navPatients">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Patients</span>
+    </a>
+    <a href="tokens.html" class="nav-item" id="navTokens">
+        <span class="nav-icon">🎫</span>
+        <span class="nav-label">Tokens</span>
+    </a>
+    <a href="hospitals.html" class="nav-item" id="navHospitals">
+        <span class="nav-icon">🏥</span>
+        <span class="nav-label">Hospitals</span>
+    </a>
+    <a href="contact-settings.html" class="nav-item" id="navSettings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+    </a>
+</nav>
+
+<script src="script.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        loadOnlineUsers();
+        setInterval(loadOnlineUsers, 15000);
+    });
+</script>
+
+</body>
+</html>

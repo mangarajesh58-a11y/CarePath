@@ -13,31 +13,14 @@
   const pageCache = new Map();
 
   const APP_PAGES = [
-    // Patient App
-    "dashboard.html",
-    "doctor.html",
-    "my-tokens.html",
-    "profile.html",
-    "hospital-details.html",
-    "hospital.html",
-    "contact.html",
-    "terms.html",
-    "privacy.html",
-    "refund.html",
     // Hospital App
+    "dashboard.html",
     "token-queue.html",
     "doctors.html",
     "patients.html",
     "ads.html",
     "display.html",
-    // Admin App
-    "hospitals.html",
-    "tokens.html",
-    "patients.html",
-    "payments.html",
-    "broadcasts.html",
-    "online-users.html",
-    "contact-settings.html"
+    "profile.html"
   ];
 
   // 1. Speculation Rules API (Native 0ms Prerendering in Chrome/WebView)

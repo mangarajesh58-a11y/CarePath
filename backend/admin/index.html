@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Admin Login - CarePath</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <!-- Google Identity Services -->
+    <script
+        src="https://accounts.google.com/gsi/client"
+        async
+        defer>
+    </script>
+
+    <script src="carepath-instant-nav.js"></script>
+</head>
+
+
+<body class="auth-page">
+
+<div class="auth-container">
+
+    <!-- LOGO -->
+
+    <div class="logo" style="display: flex; justify-content: center; align-items: center; margin-bottom: 12px;">
+        <img src="carepath-ai-small.png" alt="CarePath AI Logo" style="width: 64px; height: 64px; border-radius: 16px; object-fit: cover; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);">
+    </div>
+
+
+    <!-- TITLE -->
+
+    <h1>
+        CarePath
+    </h1>
+
+
+    <p class="subtitle">
+        Admin Portal
+    </p>
+
+
+    <!-- LOGIN CARD -->
+
+    <div class="form-card">
+
+        <h2>
+            Admin Login
+        </h2>
+
+
+        <form id="adminLoginForm" onsubmit="event.preventDefault(); adminLogin();">
+            <!-- EMAIL -->
+
+            <label for="adminEmail">
+                Email
+            </label>
+
+            <input
+                type="email"
+                id="adminEmail"
+                placeholder="Enter admin email"
+                autocomplete="email"
+                required
+            >
+
+
+            <!-- PASSWORD -->
+
+            <label for="adminPassword">
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="adminPassword"
+                placeholder="Enter password"
+                autocomplete="current-password"
+                required
+            >
+
+
+            <!-- NORMAL LOGIN -->
+
+            <button
+                type="submit"
+                id="adminLoginButton"
+                class="admin-login-btn"
+                style="width: 100%; margin-top: 22px; padding: 14px 20px; border: none; border-radius: 12px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; font-size: 16px; font-weight: 700; letter-spacing: 0.3px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); display: flex; align-items: center; justify-content: center; gap: 8px;"
+            >
+                <span>Login</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+        </form>
+
+
+        <!-- DIVIDER -->
+
+        <div class="login-divider">
+            <span>OR</span>
+        </div>
+
+
+        <!-- GOOGLE LOGIN -->
+
+        <div class="google-login-container">
+
+            <div
+                id="g_id_onload"
+                data-client_id="124194505435-nirpgumce4ek0f368mjnkm8daq5dof9p.apps.googleusercontent.com"
+
+                data-callback="handleGoogleLogin"
+                
+                data-auto_prompt="false">
+            </div>
+
+
+            <div
+                class="g_id_signin"
+                data-type="standard"
+                data-size="large"
+                data-theme="outline"
+                data-text="continue_with"
+                data-shape="rectangular">
+            </div>
+
+        </div>
+
+
+        <!-- LOGIN MESSAGE -->
+
+        <p
+            id="loginMessage"
+            class="message">
+        </p>
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+
+</html>

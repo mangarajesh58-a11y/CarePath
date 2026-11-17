@@ -13,24 +13,8 @@
   const pageCache = new Map();
 
   const APP_PAGES = [
-    // Patient App
-    "dashboard.html",
-    "doctor.html",
-    "my-tokens.html",
-    "profile.html",
-    "hospital-details.html",
-    "hospital.html",
-    "contact.html",
-    "terms.html",
-    "privacy.html",
-    "refund.html",
-    // Hospital App
-    "token-queue.html",
-    "doctors.html",
-    "patients.html",
-    "ads.html",
-    "display.html",
     // Admin App
+    "dashboard.html",
     "hospitals.html",
     "tokens.html",
     "patients.html",

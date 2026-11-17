@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Command Center - CarePath</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="carepath-instant-nav.js"></script>
+    <script src="carepath-realtime.js"></script>
+    <link rel="prefetch" href="hospitals.html" as="document">
+    <link rel="prefetch" href="tokens.html" as="document">
+    <link rel="prefetch" href="patients.html" as="document">
+    <link rel="prefetch" href="payments.html" as="document">
+    <link rel="prefetch" href="broadcasts.html" as="document">
+    <link rel="prefetch" href="online-users.html" as="document">
+    <link rel="prefetch" href="contact-settings.html" as="document">
+    <style>
+        /* Analytics & Charts Styling */
+        .analytics-section {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+            margin-bottom: 25px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .analytics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .hourly-chart-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            height: 140px;
+            padding: 12px 4px 4px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+        }
+
+        .hourly-col {
+            flex: 1;
+            min-width: 22px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+        }
+
+        .hourly-bar {
+            width: 100%;
+            background: #93c5fd;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s;
+            min-height: 4px;
+        }
+
+        .hourly-bar.peak {
+            background: #2563eb;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+        }
+
+        .hourly-bar:hover {
+            opacity: 0.8;
+        }
+
+        .hourly-lbl {
+            font-size: 9px;
+            color: #64748b;
+            margin-top: 6px;
+            white-space: nowrap;
+        }
+
+        .dept-bar-row {
+            margin-bottom: 12px;
+        }
+
+        .dept-bar-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+
+        .dept-bar-track {
+            background: #f1f5f9;
+            height: 10px;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .dept-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0284c7, #2563eb);
+            border-radius: 999px;
+            transition: width 0.5s ease;
+        }
+
+        /* Audit Log Modal */
+        .audit-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+        }
+
+        .audit-modal-card {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            max-height: 85vh;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .audit-modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .audit-log-item {
+            display: flex;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
+        }
+
+        .audit-badge {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            align-self: flex-start;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <!-- MOBILE APP HEADER -->
+    <header class="app-header">
+        <div class="header-brand">
+            <img src="carepath-ai-small.png" alt="CarePath AI Logo" class="app-logo">
+            <div>
+                <h1>CarePath</h1>
+                <p>Master Admin Command Center</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <!-- Live Online Users Pill -->
+            <button type="button" class="live-pill" onclick="openOnlineUsersModal()" title="View Online Users">
+                <span class="pulse-dot"></span>
+                <span id="headerOnlineCount">0</span> Online
+            </button>
+
+            <!-- Three Dots (Kebab Menu) Button -->
+            <div class="kebab-menu-container">
+                <button type="button" class="btn-kebab" onclick="toggleKebabMenu(event)" aria-label="More options" title="Menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2.2"></circle>
+                        <circle cx="12" cy="12" r="2.2"></circle>
+                        <circle cx="12" cy="19" r="2.2"></circle>
+                    </svg>
+                </button>
+                <div id="kebabDropdown" class="kebab-dropdown">
+                    <div class="kebab-header">Admin Quick Actions</div>
+                    <a href="javascript:void(0)" onclick="refreshCurrentPage()"><span class="kebab-icon">🔄</span> Refresh Dashboard</a>
+                    <a href="online-users.html"><span class="kebab-icon">🟢</span> Live Online Users</a>
+                    <a href="patients.html"><span class="kebab-icon">👥</span> Patient Database</a>
+                    <a href="tokens.html"><span class="kebab-icon">🎫</span> Patient Tokens</a>
+                    <a href="hospitals.html"><span class="kebab-icon">🏥</span> Manage Hospitals</a>
+                    <a href="contact-settings.html"><span class="kebab-icon">⚙️</span> Platform & Ad Settings</a>
+                    <a href="payments.html"><span class="kebab-icon">💳</span> Payout Ledger</a>
+                    <a href="broadcasts.html"><span class="kebab-icon">📢</span> Emergency Broadcasts</a>
+                    <a href="javascript:void(0)" onclick="openAuditLogModal()"><span class="kebab-icon">🛡️</span> Audit Activity Trail</a>
+                    <div class="kebab-divider"></div>
+                    <a href="javascript:void(0)" onclick="adminLogout()" class="kebab-logout"><span class="kebab-icon">🚪</span> Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- LICENSE EXPIRY ALERT BANNER (POPULATED VIA JS) -->
+    <div id="dashLicenseAlert" style="display: none; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; color: #92400e; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">⚠️</span>
+                <div>
+                    <strong style="color: #b45309;" id="dashLicenseAlertTitle">Hospital License Compliance Alert</strong>
+                    <div style="font-size: 12px; color: #78350f;" id="dashLicenseAlertText">1 or more hospitals have clinical licenses expiring soon or expired.</div>
+                </div>
+            </div>
+            <a href="hospitals.html" style="background: #d97706; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 12px; text-decoration: none;">
+                Review in Hospitals →
+            </a>
+        </div>
+    </div>
+
+    <!-- EXECUTIVE HERO & SYSTEM STATUS -->
+    <div class="hero-welcome">
+        <div class="hero-top-row">
+            <div class="hero-greeting">
+                <h2>Hello, Administrator 👋</h2>
+                <p id="heroDateTimeDisplay">Live Healthcare Operations & Infrastructure Oversight</p>
+            </div>
+            <div class="hero-status-badge">
+                <span class="pulse-dot"></span>
+                <span>System Operational • API v11.0</span>
+            </div>
+        </div>
+
+        <div class="hero-chips-row">
+            <div class="hero-chip" style="cursor: pointer;" onclick="window.location.href='online-users.html'">
+                <span>🟢 Online Sessions:</span>
+                <strong id="heroOnlineCount">0</strong>
+            </div>
+            <div class="hero-chip">
+                <span>⚡ Platform Fee:</span>
+                <strong id="heroPlatformFee">₹10</strong>
+            </div>
+            <div class="hero-chip">
+                <span>💰 Today's OPD Gross:</span>
+                <strong id="heroTodayGross">₹0</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         8 CORE PLATFORM MODULES (DIRECT DASHBOARD ACCESS)
+    ===================================================== -->
+    <div style="margin: 18px 0 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <h2 style="margin: 0; font-size: 19px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <span>⚡</span> 8 Core Platform Modules
+        </h2>
+        <span style="font-size: 12px; color: #2563eb; font-weight: 700; background: #eff6ff; padding: 4px 12px; border-radius: 999px; border: 1px solid #bfdbfe;">Dedicated Standalone Modules</span>
+    </div>
+
+    <!-- 8 CORE MODULES CARDS GRID -->
+    <div class="dashboard-grid">
+        <!-- 1. ONLINE USERS -->
+        <div class="dashboard-card" style="border-top: 4px solid #22c55e; cursor: pointer;" onclick="window.location.href='online-users.html'">
+            <div class="card-top">
+                <div class="card-icon" style="background: #f0fdf4; color: #16a34a;">🟢</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Online Users</h3>
+                        <span id="cardOnlineCount" class="badge-tag badge-online">0 Online</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #16a34a; font-weight: 600;">Real-time Presence</span>
+                </div>
+            </div>
+            <p>Inspect all patients, doctors, and hospital staff active on the platform in real-time.</p>
+            <button type="button" style="background: #16a34a;" onclick="event.stopPropagation(); window.location.href='online-users.html'">Open Live Sessions &rarr;</button>
+        </div>
+
+        <!-- 2. PATIENTS DIRECTORY -->
+        <div class="dashboard-card" style="border-top: 4px solid #0284c7; cursor: pointer;" onclick="window.location.href='patients.html'">
+            <div class="card-top">
+                <div class="card-icon" style="background: #f0f9ff; color: #0284c7;">👥</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Patient Database</h3>
+                        <span id="cardPatientCount" class="badge-tag" style="background: #e0f2fe; color: #0369a1;">0 Patients</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #0284c7; font-weight: 600;">360° Demographics</span>
+                </div>
+            </div>
+            <p>Complete registered patient records, emergency contacts, and multi-hospital token histories.</p>
+            <button type="button" style="background: #0284c7;" onclick="event.stopPropagation(); window.location.href='patients.html'">Browse Patient Records &rarr;</button>
+        </div>
+
+        <!-- 3. PATIENT TOKENS -->
+        <div class="dashboard-card" style="border-top: 4px solid #7c3aed; cursor: pointer;" onclick="window.location.href='tokens.html'">
+            <div class="card-top">
+                <div class="card-icon" style="background: #faf5ff; color: #7c3aed;">🎫</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>OPD Tokens</h3>
+                        <span id="cardTokenCount" class="badge-tag" style="background: #f3e8ff; color: #7e22ce;">0 Bookings</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #7c3aed; font-weight: 600;">Queues & 360° Dossiers</span>
+                </div>
+            </div>
+            <p>Live consultation statuses, doctor room assignments, patient waiting times, and payment audits.</p>
+            <button type="button" style="background: #7c3aed;" onclick="event.stopPropagation(); window.location.href='tokens.html'">Inspect Tokens Feed &rarr;</button>
+        </div>
+
+        <!-- 4. HOSPITALS NETWORK -->
+        <div class="dashboard-card" style="border-top: 4px solid #2563eb; cursor: pointer;" onclick="window.location.href='hospitals.html'">
+            <div class="card-top">
+                <div class="card-icon" style="background: #eff6ff; color: #2563eb;">🏥</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Hospitals</h3>
+                        <span id="cardHospitalCount" class="badge-tag" style="background: #eff6ff; color: #1d4ed8;">0 Hospitals</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #2563eb; font-weight: 600;">License Verification</span>
+                </div>
+            </div>
+            <p>Inspect clinical establishment certificates, review pending registrations, and manage hospital status.</p>
+            <button type="button" style="background: #2563eb;" onclick="event.stopPropagation(); window.location.href='hospitals.html'">Manage Hospitals &rarr;</button>
+        </div>
+
+        <!-- 5. DYNAMIC PRICING & ADS -->
+        <div class="dashboard-card" style="border-top: 4px solid #f59e0b; cursor: pointer;" onclick="window.location.href='contact-settings.html'">
+            <div class="card-top">
+                <div class="card-icon" style="background: #fffbeb; color: #d97706;">⚙️</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Dynamic Pricing</h3>
+                        <span class="badge-tag" style="background: #fef3c7; color: #b45309;">Non-Fixed Fees</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #d97706; font-weight: 600;">Tokens, Banners & Videos</span>
+                </div>
+            </div>
+            <p>Configure dynamic token booking fees, separate banner ad pricing, and video spotlight rates.</p>
+            <button type="button" style="background: #d97706;" onclick="event.stopPropagation(); window.location.href='contact-settings.html'">Configure Rates &rarr;</button>
+        </div>
+
+        <!-- 6. PAYOUTS & SETTLEMENTS -->
+        <div class="dashboard-card" style="border-top: 4px solid #16a34a; cursor: pointer;" onclick="window.location.href='payments.html'">
+            <div class="card-top">
+                <div class="card-icon" style="background: #f0fdf4; color: #16a34a;">💳</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Payouts Ledger</h3>
+                        <span id="cardSettledAmount" class="badge-tag" style="background: #dcfce7; color: #15803d;">₹0 Collected</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #16a34a; font-weight: 600;">Hospital Balances & UTR</span>
+                </div>
+            </div>
+            <p>Audit hospital ledger balances, verify payout requests, and log bank UTR settlement numbers.</p>
+            <button type="button" style="background: #16a34a;" onclick="event.stopPropagation(); window.location.href='payments.html'">Open Payouts Ledger &rarr;</button>
+        </div>
+
+        <!-- 7. HOSPITAL COMMUNICATIONS -->
+        <div class="dashboard-card" style="border-top: 4px solid #06b6d4; cursor: pointer;" onclick="window.location.href='hospitals.html?open_comm=true'">
+            <div class="card-top">
+                <div class="card-icon" style="background: #ecfeff; color: #0891b2;">💬</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Hospital Desk Chat</h3>
+                        <span class="badge-tag" style="background: #ecfeff; color: #0891b2;">Direct Desk</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #0891b2; font-weight: 600;">Notices & Messaging</span>
+                </div>
+            </div>
+            <p>Send direct administrative messages, compliance notices, and operational alerts to hospital desks.</p>
+            <button type="button" style="background: #0891b2;" onclick="event.stopPropagation(); window.location.href='hospitals.html?open_comm=true'">Send Message &rarr;</button>
+        </div>
+
+        <!-- 8. AUDIT LOGS & ALERTS -->
+        <div class="dashboard-card" style="border-top: 4px solid #475569; cursor: pointer;" onclick="window.location.href='broadcasts.html'">
+            <div class="card-top">
+                <div class="card-icon" style="background: #f8fafc; color: #475569;">🛡️</div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Audits & Broadcasts</h3>
+                        <span class="badge-tag" style="background: #f1f5f9; color: #475569;">Immutable Trail</span>
+                    </div>
+                    <span style="font-size: 11.5px; color: #475569; font-weight: 600;">Activity & Flash Alerts</span>
+                </div>
+            </div>
+            <p>Review tamper-evident admin action logs and trigger urgent emergency announcements platform-wide.</p>
+            <button type="button" style="background: #475569;" onclick="event.stopPropagation(); window.location.href='broadcasts.html'">View Audit Logs &rarr;</button>
+        </div>
+    </div>
+
+        <!-- =====================================================
+         KEY PERFORMANCE METRICS & PLATFORM ANALYTICS
+    ===================================================== -->
+<!-- KEY PERFORMANCE INDICATORS -->
+            <div class="stats-grid">
+                <div class="stat-card" style="cursor: pointer; border-left: 4px solid #22c55e;" onclick="window.location.href='online-users.html'">
+                    <div class="stat-icon" style="background: #f0fdf4; color: #16a34a; position: relative;">
+                        🟢
+                        <span style="position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s infinite;"></span>
+                    </div>
+                    <div>
+                        <span>Online Users</span>
+                        <strong id="onlineUsersCount" style="color: #16a34a;">0</strong>
+                        <small>Active in last 3 mins</small>
+                    </div>
+                </div>
+
+                <div class="stat-card" style="cursor: pointer; border-left: 4px solid #0284c7;" onclick="window.location.href='patients.html'">
+                    <div class="stat-icon" style="background: #f0f9ff; color: #0284c7;">👥</div>
+                    <div>
+                        <span>Registered Patients</span>
+                        <strong id="patientCount" style="color: #0284c7;">0</strong>
+                        <small>Full demographic profiles</small>
+                    </div>
+                </div>
+
+                <div class="stat-card" style="cursor: pointer; border-left: 4px solid #7c3aed;" onclick="window.location.href='tokens.html'">
+                    <div class="stat-icon" style="background: #faf5ff; color: #7c3aed;">🎫</div>
+                    <div>
+                        <span>Total Bookings</span>
+                        <strong id="tokenCount" style="color: #7c3aed;">0</strong>
+                        <small>Consultations across OPD</small>
+                    </div>
+                </div>
+
+                <div class="stat-card" style="cursor: pointer; border-left: 4px solid #0891b2;" onclick="window.location.href='hospitals.html'">
+                    <div class="stat-icon" style="background: #ecfeff; color: #0891b2;">🏥</div>
+                    <div>
+                        <span>Verified Hospitals</span>
+                        <strong id="hospitalCount" style="color: #0891b2;">0</strong>
+                        <small>Clinical establishment network</small>
+                    </div>
+                </div>
+
+                <div class="stat-card" style="cursor: pointer; border-left: 4px solid #16a34a;" onclick="window.location.href='tokens.html'">
+                    <div class="stat-icon" style="background: #f0fdf4; color: #16a34a;">💳</div>
+                    <div>
+                        <span>Paid Tokens</span>
+                        <strong id="paymentCount" style="color: #16a34a;">0</strong>
+                        <small>Settled consultations</small>
+                    </div>
+                </div>
+
+                <div class="stat-card" style="cursor: pointer; border-left: 4px solid #f59e0b;" onclick="window.location.href='contact-settings.html'">
+                    <div class="stat-icon" style="background: #fffbeb; color: #d97706;">💰</div>
+                    <div>
+                        <span>Platform Revenue</span>
+                        <strong id="platformRevenue" style="color: #d97706;">₹0</strong>
+                        <small>Platform conven. share</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REVENUE & SETTLEMENT HUB -->
+            <div class="revenue-card">
+                <div class="revenue-card-header">
+                    <h2>💰 Financial Breakdown & Revenue Distribution</h2>
+                    <span style="font-size: 12px; color: #64748b; font-weight: 600;">Razorpay Gateway Verified</span>
+                </div>
+
+                <!-- Highlight Hero Split -->
+                <div class="revenue-hero-split">
+                    <div>
+                        <span class="revenue-hero-label">Developer Total Net Revenue</span>
+                        <div style="font-size: 12px; color: #166534; margin-top: 2px;">Combined platform convenience fees + dynamic banner & video ad fees</div>
+                    </div>
+                    <strong id="developerTotalRevenue" class="revenue-hero-amount">₹0</strong>
+                </div>
+
+                <div class="revenue-grid">
+                    <div style="background: #f0f9ff; border: 1.5px solid #bae6fd;">
+                        <span style="color: #0369a1;">📅 Today's Collection</span>
+                        <strong id="adminTodayCollection" style="color: #0284c7; font-size: 20px;">₹0</strong>
+                    </div>
+                    <div style="background: #faf5ff; border: 1.5px solid #e9d5ff;">
+                        <span style="color: #6b21a8;">🗓️ This Month</span>
+                        <strong id="adminMonthCollection" style="color: #7c3aed; font-size: 20px;">₹0</strong>
+                    </div>
+                    <div>
+                        <span>🏥 Token Fee (To Hospitals)</span>
+                        <strong id="tokenRevenue">₹0</strong>
+                    </div>
+                    <div>
+                        <span>⚡ Platform Fee (Developer)</span>
+                        <strong id="platformRevenue2" style="color: #0284c7;">₹0</strong>
+                    </div>
+                    <div>
+                        <span>🖼️ Banner Ads (Developer)</span>
+                        <strong id="bannerAdsRevenue" style="color: #6b21a8;">₹0</strong>
+                    </div>
+                    <div>
+                        <span>🎥 Video Spotlight (Developer)</span>
+                        <strong id="videoAdsRevenue" style="color: #7c3aed;">₹0</strong>
+                    </div>
+                    <div style="grid-column: 1 / -1; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <span style="margin-bottom: 0;">Total Gross Collected (Platform + Hospitals)</span>
+                        <strong id="totalCollected" style="font-size: 22px; color: #0f172a;">₹0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PLATFORM-WIDE TOKEN COLLECTION HISTORY -->
+            <div class="analytics-section" style="border-top: 4px solid #7c3aed;">
+                <div class="analytics-header">
+                    <div>
+                        <h2 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                            <span>💰</span> Platform Token Collection History
+                        </h2>
+                        <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">
+                            Master OPD token fee collection records <strong>per day (Today)</strong> and <strong>per month (Monthly)</strong> across all hospitals
+                        </p>
+                    </div>
+
+                    <!-- Segmented Tabs: Daily vs Monthly -->
+                    <div style="display: inline-flex; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 12px; padding: 4px; gap: 4px;">
+                        <button type="button" id="adminTabDaily" onclick="switchAdminCollectionTab('daily')" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                            📅 Per Day History
+                        </button>
+                        <button type="button" id="adminTabMonthly" onclick="switchAdminCollectionTab('monthly')" style="background: transparent; color: #64748b; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                            🗓️ Per Month History
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                    <input type="text" id="adminCollectionSearch" placeholder="Filter by date or month..." oninput="renderAdminCollectionTable()" style="padding: 8px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; width: 260px; outline: none;">
+                    <button type="button" onclick="exportAdminCollectionCSV()" style="padding: 7px 14px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        📥 Export CSV Report
+                    </button>
+                </div>
+
+                <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                        <thead>
+                            <tr id="adminCollectionHeadRow" style="background: #f8fafc; color: #475569; border-bottom: 1.5px solid #e2e8f0;">
+                                <th style="padding: 12px 16px;">Date / Period</th>
+                                <th style="padding: 12px 16px;">Total Tokens</th>
+                                <th style="padding: 12px 16px;">Online Paid</th>
+                                <th style="padding: 12px 16px;">Walk-in</th>
+                                <th style="padding: 12px 16px;">Hospital Collection (₹)</th>
+                                <th style="padding: 12px 16px;">Platform Fee (₹)</th>
+                                <th style="padding: 12px 16px; text-align: right;">Total Gross (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminCollectionTableBody">
+                            <tr><td colspan="7" style="text-align: center; padding: 24px; color: #94a3b8;">Loading collection history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PLATFORM ANALYTICS: PEAK HOURS & QUEUE HEALTH -->
+            <div class="analytics-section">
+                <div class="analytics-header">
+                    <div>
+                        <h2 style="margin: 0; font-size: 18px; color: #0f172a;">📊 Peak OPD Booking Hours & Traffic Velocity</h2>
+                        <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">
+                            Hourly patient token booking patterns (24-Hour IST window)
+                        </p>
+                    </div>
+                    <span id="peakWindowBadge" style="background: #eff6ff; color: #1d4ed8; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid #bfdbfe;">
+                        🔥 Peak Hours: Analyzing...
+                    </span>
+                </div>
+
+                <!-- 24-HOUR BAR CHART -->
+                <div class="hourly-chart-container" id="hourlyChartContainer">
+                    <div style="width: 100%; text-align: center; color: #94a3b8; font-size: 13px; line-height: 130px;">
+                        Loading hourly peak booking trends...
+                    </div>
+                </div>
+            </div>
+
+            <!-- DEPARTMENT DEMAND & QUEUE HEALTH DUAL GRID -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                <!-- Top Departments -->
+                <div class="analytics-section" style="margin-bottom: 0;">
+                    <h3 style="margin: 0 0 14px; font-size: 16px; color: #0f172a;">🩺 OPD Department Demand Breakdown</h3>
+                    <div id="deptBreakdownContainer">
+                        <p style="font-size: 13px; color: #94a3b8;">Loading department distribution...</p>
+                    </div>
+                </div>
+
+                <!-- Real-Time Queue Health -->
+                <div class="analytics-section" style="margin-bottom: 0;">
+                    <h3 style="margin: 0 0 14px; font-size: 16px; color: #0f172a;">⏱️ Live Queue Health & Operations</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px; text-align: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: #166534; text-transform: uppercase;">In Consultation</span>
+                            <strong style="display: block; font-size: 24px; color: #15803d; margin-top: 2px;" id="statServing">0</strong>
+                        </div>
+                        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 12px; text-align: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: #075985; text-transform: uppercase;">Waiting in Queue</span>
+                            <strong style="display: block; font-size: 24px; color: #0284c7; margin-top: 2px;" id="statWaiting">0</strong>
+                        </div>
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase;">Completed Today</span>
+                            <strong style="display: block; font-size: 24px; color: #334155; margin-top: 2px;" id="statCompleted">0</strong>
+                        </div>
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; text-align: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: #991b1b; text-transform: uppercase;">Doctors On Duty</span>
+                            <strong style="display: block; font-size: 24px; color: #b91c1c; margin-top: 2px;" id="statDoctorsOnDuty">0</strong>
+                        </div>
+                    </div>
+                    <div style="margin-top: 14px; font-size: 12px; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 8px;">
+                        💡 <strong>Average Consultation Duration:</strong> Standard 15 min per patient. Queue ETA automatically re-indexes when doctors call tokens.
+                    </div>
+                </div>
+            </div>
+</div>
+
+<!-- AUDIT LOG MODAL -->
+<div id="auditLogModal" class="audit-modal" style="display: none;" onclick="if(event.target===this)closeAuditLogModal()">
+    <div class="audit-modal-card">
+        <div class="bottom-sheet-handle"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+            <h3 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                🛡️ CarePath Admin Audit Activity Trail
+            </h3>
+            <button type="button" onclick="closeAuditLogModal()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+        <div class="audit-modal-body" id="auditLogBody">
+            <p style="text-align: center; color: #94a3b8;">Loading audit trail...</p>
+        </div>
+        <div style="padding: 12px 24px; border-top: 1px solid #e2e8f0; text-align: right; background: #f8fafc;">
+            <button type="button" onclick="closeAuditLogModal()" style="padding: 8px 18px; background: #e2e8f0; color: #334155; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ONLINE USERS MODAL -->
+<div id="onlineUsersModal" class="audit-modal" style="display: none;" onclick="if(event.target===this)closeOnlineUsersModal()">
+    <div class="audit-modal-card" style="max-width: 850px;">
+        <div class="bottom-sheet-handle"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+            <div>
+                <h3 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                    🟢 Live Online Platform Users
+                </h3>
+                <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Active sessions detected in the last 3 minutes across Patient and Hospital portals</p>
+            </div>
+            <button type="button" onclick="closeOnlineUsersModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+        <div style="padding: 12px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: #ffffff;">
+            <div style="display: flex; gap: 8px;">
+                <button type="button" id="onlineFilterAll" onclick="filterOnlineUsers('all')" style="padding: 6px 14px; border-radius: 6px; border: none; background: #2563eb; color: white; font-size: 12px; font-weight: 700; cursor: pointer;">All (<span id="onlineCountAll">0</span>)</button>
+                <button type="button" id="onlineFilterPatients" onclick="filterOnlineUsers('patient')" style="padding: 6px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; font-size: 12px; font-weight: 700; cursor: pointer;">Patients (<span id="onlineCountPatients">0</span>)</button>
+                <button type="button" id="onlineFilterHospitals" onclick="filterOnlineUsers('hospital')" style="padding: 6px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #475569; font-size: 12px; font-weight: 700; cursor: pointer;">Hospital Staff (<span id="onlineCountHospitals">0</span>)</button>
+            </div>
+            <button type="button" onclick="loadOnlineUsers()" style="padding: 6px 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; color: #334155; display: flex; align-items: center; gap: 4px;">
+                🔄 Refresh
+            </button>
+        </div>
+        <div class="audit-modal-body" id="onlineUsersBody" style="padding: 0;">
+            <p style="text-align: center; color: #94a3b8; padding: 24px;">Loading active online users...</p>
+        </div>
+        <div style="padding: 12px 24px; border-top: 1px solid #e2e8f0; text-align: right; background: #f8fafc;">
+            <button type="button" onclick="closeOnlineUsersModal()" style="padding: 8px 18px; background: #e2e8f0; color: #334155; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- PATIENT MEDICAL & BOOKING DOSSIER MODAL -->
+<div id="patientDossierModal" class="dossier-modal" style="display: none;" onclick="if(event.target===this)closePatientDossier()">
+    <div class="dossier-modal-content">
+        <div class="bottom-sheet-handle"></div>
+        <div class="dossier-modal-header">
+            <div>
+                <h3 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                    📋 Patient 360° Profile & Booking Dossier
+                </h3>
+                <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Complete patient identity, contact, demographics, and multi-hospital token history</p>
+            </div>
+            <button type="button" onclick="closePatientDossier()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+
+        <div class="dossier-modal-body" id="patientDossierBody">
+            <p style="text-align: center; color: #94a3b8; padding: 20px;">Loading patient details...</p>
+        </div>
+
+        <div class="dossier-modal-footer">
+            <button type="button" onclick="closePatientDossier()" style="padding: 8px 18px; background: #e2e8f0; color: #334155; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 360° TOKEN CONSULTATION DOSSIER MODAL -->
+<div id="tokenDossierModal" class="dossier-modal" style="display: none;" onclick="if(event.target===this)closeTokenDossier()">
+    <div class="dossier-modal-content">
+        <div class="bottom-sheet-handle"></div>
+        <div class="dossier-modal-header">
+            <div>
+                <h3 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                    🎫 360° Consultation & Patient Dossier
+                </h3>
+                <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">Complete patient identity, hospital profile, doctor details, and payment breakdown</p>
+            </div>
+            <button type="button" onclick="closeTokenDossier()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+
+        <div class="dossier-modal-body" id="tokenDossierBody">
+            <p style="text-align: center; color: #94a3b8; padding: 20px;">Loading consultation details...</p>
+        </div>
+
+        <div class="dossier-modal-footer">
+            <button type="button" onclick="closeTokenDossier()" style="padding: 8px 18px; background: #e2e8f0; color: #334155; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- FIXED MOBILE BOTTOM NAVIGATION -->
+<nav class="mobile-bottom-nav">
+    <a href="dashboard.html" class="nav-item active" id="navHome">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+    </a>
+    <a href="patients.html" class="nav-item" id="navPatients">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Patients</span>
+    </a>
+    <a href="tokens.html" class="nav-item" id="navTokens">
+        <span class="nav-icon">🎫</span>
+        <span class="nav-label">Tokens</span>
+    </a>
+    <a href="hospitals.html" class="nav-item" id="navHospitals">
+        <span class="nav-icon">🏥</span>
+        <span class="nav-label">Hospitals</span>
+    </a>
+    <a href="contact-settings.html" class="nav-item" id="navSettings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+    </a>
+</nav>
+
+<script src="script.js"></script>
+
+</body>
+</html>

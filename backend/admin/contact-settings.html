@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Contact Settings - CarePath Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .settings-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+            margin-bottom: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-field.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-field label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .form-field input, .form-field textarea {
+            padding: 12px 14px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .form-field input:focus, .form-field textarea:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .field-hint {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .btn-save {
+            background: #2563eb;
+            color: white;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 9px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-save:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-save:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-back-dash {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            color: #374151;
+            font-weight: 600;
+            font-size: 13px;
+            text-decoration: none;
+            margin-bottom: 16px;
+        }
+
+        .btn-back-dash:hover {
+            background: #f9fafb;
+        }
+
+        .preview-box {
+            background: #f8fafc;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+        }
+
+        .preview-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0284c7;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .preview-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+        }
+
+        .preview-item strong {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+    </style>
+    <script src="carepath-instant-nav.js"></script>
+</head>
+<body>
+
+<div class="page-container">
+    <!-- MOBILE APP HEADER -->
+    <header class="app-header">
+        <div class="header-brand">
+            <a href="dashboard.html" style="text-decoration: none; font-size: 20px; color: #1e293b; margin-right: 4px; display: flex; align-items: center;">←</a>
+            <img src="carepath-ai-small.png" alt="CarePath AI Logo" class="app-logo">
+            <div>
+                <h1>Settings & Fees</h1>
+                <p>Platform & Dynamic Ads Fee Engine</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <!-- Three Dots (Kebab Menu) Button -->
+            <div class="kebab-menu-container">
+                <button type="button" class="btn-kebab" onclick="toggleKebabMenu(event)" aria-label="More options" title="Menu">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2.2"></circle>
+                        <circle cx="12" cy="12" r="2.2"></circle>
+                        <circle cx="12" cy="19" r="2.2"></circle>
+                    </svg>
+                </button>
+                <div id="kebabDropdown" class="kebab-dropdown">
+                    <div class="kebab-header">Settings Actions</div>
+                    <a href="javascript:void(0)" onclick="loadContactSettings()"><span class="kebab-icon">🔄</span> Reload Settings</a>
+                    <div class="kebab-divider"></div>
+                    <a href="dashboard.html"><span class="kebab-icon">🏠</span> Admin Dashboard</a>
+                    <a href="patients.html"><span class="kebab-icon">👥</span> Patient Directory</a>
+                    <a href="tokens.html"><span class="kebab-icon">🎫</span> Patient Tokens</a>
+                    <a href="hospitals.html"><span class="kebab-icon">🏥</span> Hospitals</a>
+                    <a href="payments.html"><span class="kebab-icon">💳</span> Payout Ledger</a>
+                    <div class="kebab-divider"></div>
+                    <a href="javascript:void(0)" onclick="adminLogout()" class="kebab-logout"><span class="kebab-icon">🚪</span> Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <a href="dashboard.html" class="btn-back-dash">← Back to Dashboard</a>
+
+    <div class="settings-card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h2 style="margin: 0; font-size: 20px; color: #111827;">Official Business & Support Information</h2>
+                <p style="margin: 4px 0 0; color: #6b7280; font-size: 13px;">
+                    These contact details appear on the patient website, Contact Us page, receipts, and payment gateway KYC.
+                </p>
+            </div>
+            <span style="background: #ecfdf5; color: #047857; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid #a7f3d0;">
+                ✓ RBI Compliance Ready
+            </span>
+        </div>
+
+        <div id="contactMessage" class="message" style="display: none; margin-top: 18px;"></div>
+
+        <form id="contactSettingsForm" onsubmit="handleSaveContact(event)">
+            <div class="form-grid">
+                <!-- Legal Business Name -->
+                <div class="form-field full-width">
+                    <label for="businessName">Official / Legal Entity Name *</label>
+                    <input type="text" id="businessName" placeholder="e.g., CarePath Healthcare Technologies" required>
+                    <span class="field-hint">Your registered proprietorship, LLP, or company name as registered with government/PAN.</span>
+                </div>
+
+                <!-- Support Email -->
+                <div class="form-field">
+                    <label for="supportEmail">Customer Support Email *</label>
+                    <input type="email" id="supportEmail" placeholder="e.g., support@carepath.health" required>
+                    <span class="field-hint">Primary inbox where patients and hospitals send support queries.</span>
+                </div>
+
+                <!-- Support Phone -->
+                <div class="form-field">
+                    <label for="supportPhone">Customer Support Phone / Helpline *</label>
+                    <input type="tel" id="supportPhone" placeholder="e.g., +91 98765 43210" required>
+                    <span class="field-hint">Helpline displayed to patients for payment & token queries.</span>
+                </div>
+
+                <!-- Working Hours -->
+                <div class="form-field">
+                    <label for="workingHours">Support Working Hours *</label>
+                    <input type="text" id="workingHours" placeholder="e.g., Mon - Sat: 9:00 AM - 7:00 PM IST" required>
+                    <span class="field-hint">Official operational hours for patient customer assistance.</span>
+                </div>
+
+                <!-- Grievance Officer -->
+                <div class="form-field">
+                    <label for="grievanceOfficer">Grievance Officer Name *</label>
+                    <input type="text" id="grievanceOfficer" placeholder="e.g., Rajesh Mangaraj" required>
+                    <span class="field-hint">Mandatory under IT & RBI guidelines for customer dispute resolution.</span>
+                </div>
+
+                <!-- Grievance Email -->
+                <div class="form-field">
+                    <label for="grievanceEmail">Grievance Officer Email *</label>
+                    <input type="email" id="grievanceEmail" placeholder="e.g., grievance@carepath.health" required>
+                    <span class="field-hint">Email for escalations and legal/compliance notices.</span>
+                </div>
+
+                <!-- Physical Address -->
+                <div class="form-field full-width">
+                    <label for="operatingAddress">Operating / Registered Physical Address *</label>
+                    <textarea id="operatingAddress" placeholder="e.g., Plot No 12, Sector 5, Bhubaneswar, Odisha, India - 751024" required></textarea>
+                    <span class="field-hint">Full physical business address required by payment gateways (Cashfree / Razorpay).</span>
+                </div>
+
+                <!-- Platform Convenience Fee -->
+                <div class="form-field full-width" style="background: #eff6ff; border: 1.5px solid #bfdbfe; padding: 18px; border-radius: 12px; margin-top: 10px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <label for="platformFee" style="color: #1e40af; font-size: 15px;">⚙️ Platform Convenience Fee per Token (₹) *</label>
+                            <div style="font-size: 12px; color: #475569; margin-top: 2px;">
+                                Dynamic fee added to OPD tokens during checkout. Set to ₹0 to run free booking promotions for new hospitals.
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px; font-weight: 800; color: #1e40af;">₹</span>
+                            <input type="number" id="platformFee" min="0" max="100" style="width: 100px; font-size: 18px; font-weight: 800; text-align: center; color: #1e40af; border: 2px solid #3b82f6;" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Advertisement Pricing Engine -->
+                <div class="form-field full-width" style="background: #faf5ff; border: 1.5px solid #d8b4fe; padding: 18px; border-radius: 12px; margin-top: 10px;">
+                    <div style="margin-bottom: 14px;">
+                        <label style="color: #6b21a8; font-size: 15px; margin-top: 0;">📢 Dynamic Advertisement & Spotlight Fee Engine</label>
+                        <div style="font-size: 12px; color: #475569; margin-top: 2px;">
+                            Configure flexible pricing for hospital promotional campaigns. Banner ads and video spotlight campaigns have distinct, customizable fees.
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                        <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e9d5ff;">
+                            <label for="bannerAdFee" style="font-size: 12px; color: #6b21a8; margin-top: 0;">🖼️ Standard Banner Ad Fee (₹) *</label>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                                <span style="font-size: 16px; font-weight: 800; color: #6b21a8;">₹</span>
+                                <input type="number" id="bannerAdFee" min="0" max="50000" style="font-size: 16px; font-weight: 700; color: #6b21a8;" required>
+                            </div>
+                            <span class="field-hint">Static image ad banner on patient dashboard</span>
+                        </div>
+
+                        <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e9d5ff;">
+                            <label for="videoAdFee" style="font-size: 12px; color: #7c3aed; margin-top: 0;">🎥 Video Spotlight Ad Fee (₹) *</label>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                                <span style="font-size: 16px; font-weight: 800; color: #7c3aed;">₹</span>
+                                <input type="number" id="videoAdFee" min="0" max="100000" style="font-size: 16px; font-weight: 700; color: #7c3aed;" required>
+                            </div>
+                            <span class="field-hint">Interactive video story spotlight on patient dashboard</span>
+                        </div>
+
+                        <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e9d5ff;">
+                            <label for="adDurationDays" style="font-size: 12px; color: #475569; margin-top: 0;">⏱️ Active Campaign Duration (Days) *</label>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                                <input type="number" id="adDurationDays" min="1" max="365" style="font-size: 16px; font-weight: 700; color: #334155;" required>
+                                <span style="font-size: 13px; font-weight: 600; color: #64748b;">Days</span>
+                            </div>
+                            <span class="field-hint">Duration the hospital ad remains active after payment</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" id="btnSaveContact" class="btn-save">
+                💾 Save Contact Details
+            </button>
+        </form>
+
+        <!-- Live Preview Card -->
+        <div class="preview-box">
+            <div class="preview-title">
+                👁️ Live Preview: What Patients & Gateway Reviewers See
+            </div>
+            <div class="preview-grid">
+                <div class="preview-item">
+                    <strong>Business Name</strong>
+                    <span id="prevBusinessName">CarePath Healthcare Technologies</span>
+                </div>
+                <div class="preview-item">
+                    <strong>Support Email</strong>
+                    <span id="prevSupportEmail">mangarajesh58@gmail.com</span>
+                </div>
+                <div class="preview-item">
+                    <strong>Platform Fee</strong>
+                    <span id="prevPlatformFee" style="font-weight: 700; color: #2563eb;">₹10 per booking</span>
+                </div>
+                <div class="preview-item">
+                    <strong>Support Phone</strong>
+                    <span id="prevSupportPhone">+91 98765 43210</span>
+                </div>
+                <div class="preview-item">
+                    <strong>Support Hours</strong>
+                    <span id="prevWorkingHours">Mon - Sat: 9:00 AM - 7:00 PM IST</span>
+                </div>
+                <div class="preview-item">
+                    <strong>Banner Ad Fee</strong>
+                    <span id="prevBannerAdFee" style="font-weight: 700; color: #6b21a8;">₹999 / campaign</span>
+                </div>
+                <div class="preview-item">
+                    <strong>Video Spotlight Fee</strong>
+                    <span id="prevVideoAdFee" style="font-weight: 700; color: #7c3aed;">₹1,999 / campaign</span>
+                </div>
+                <div class="preview-item" style="grid-column: 1 / -1;">
+                    <strong>Physical Operating Address</strong>
+                    <span id="prevAddress">Bhubaneswar / Cuttack, Odisha, India - 751024</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FIXED MOBILE BOTTOM NAVIGATION -->
+<nav class="mobile-bottom-nav">
+    <a href="dashboard.html" class="nav-item" id="navHome">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+    </a>
+    <a href="patients.html" class="nav-item" id="navPatients">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Patients</span>
+    </a>
+    <a href="tokens.html" class="nav-item" id="navTokens">
+        <span class="nav-icon">🎫</span>
+        <span class="nav-label">Tokens</span>
+    </a>
+    <a href="hospitals.html" class="nav-item" id="navHospitals">
+        <span class="nav-icon">🏥</span>
+        <span class="nav-label">Hospitals</span>
+    </a>
+    <a href="contact-settings.html" class="nav-item active" id="navSettings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+    </a>
+</nav>
+
+<script src="script.js"></script>
+<script>
+"use strict";
+
+// Require admin authentication
+requireAdminLogin();
+
+// Live input sync to preview
+const fields = ["businessName", "supportEmail", "supportPhone", "workingHours", "operatingAddress", "bannerAdFee", "videoAdFee", "adDurationDays", "platformFee"];
+fields.forEach(f => {
+    const el = document.getElementById(f);
+    if (el) {
+        el.addEventListener("input", updatePreview);
+    }
+});
+
+function updatePreview() {
+    document.getElementById("prevBusinessName").textContent = document.getElementById("businessName").value || "—";
+    const feeVal = document.getElementById("platformFee") ? document.getElementById("platformFee").value : "10";
+    if (document.getElementById("prevPlatformFee")) {
+        document.getElementById("prevPlatformFee").textContent = `₹${feeVal} per booking`;
+    }
+    const bannerVal = document.getElementById("bannerAdFee") ? document.getElementById("bannerAdFee").value : "999";
+    const videoVal = document.getElementById("videoAdFee") ? document.getElementById("videoAdFee").value : "1999";
+    const durVal = document.getElementById("adDurationDays") ? document.getElementById("adDurationDays").value : "30";
+    if (document.getElementById("prevBannerAdFee")) {
+        document.getElementById("prevBannerAdFee").textContent = `₹${bannerVal} (${durVal} days)`;
+    }
+    if (document.getElementById("prevVideoAdFee")) {
+        document.getElementById("prevVideoAdFee").textContent = `₹${videoVal} (${durVal} days)`;
+    }
+    document.getElementById("prevSupportEmail").textContent = document.getElementById("supportEmail").value || "—";
+    document.getElementById("prevSupportPhone").textContent = document.getElementById("supportPhone").value || "—";
+    document.getElementById("prevWorkingHours").textContent = document.getElementById("workingHours").value || "—";
+    document.getElementById("prevAddress").textContent = document.getElementById("operatingAddress").value || "—";
+}
+
+// Load current contact settings
+async function loadContactSettings() {
+    const msg = document.getElementById("contactMessage");
+    try {
+        const response = await fetch(`${API}/admin/contact`, {
+            method: "GET",
+            headers: getAdminAuthHeaders({ "Content-Type": "application/json" })
+        });
+
+        if (response.status === 401) {
+            requireAdminLogin();
+            return;
+        }
+
+        const data = await response.json();
+        if (response.ok && data) {
+            document.getElementById("businessName").value = data.business_name || "";
+            document.getElementById("supportEmail").value = data.support_email || "";
+            document.getElementById("supportPhone").value = data.support_phone || "";
+            document.getElementById("workingHours").value = data.working_hours || "";
+            document.getElementById("operatingAddress").value = data.operating_address || "";
+            document.getElementById("grievanceOfficer").value = data.grievance_officer || "";
+            document.getElementById("grievanceEmail").value = data.grievance_email || "";
+            if (document.getElementById("platformFee")) {
+                document.getElementById("platformFee").value = data.platform_fee ?? 10;
+            }
+            if (document.getElementById("bannerAdFee")) {
+                document.getElementById("bannerAdFee").value = data.banner_ad_fee ?? 999;
+            }
+            if (document.getElementById("videoAdFee")) {
+                document.getElementById("videoAdFee").value = data.video_ad_fee ?? 1999;
+            }
+            if (document.getElementById("adDurationDays")) {
+                document.getElementById("adDurationDays").value = data.ad_duration_days ?? 30;
+            }
+            updatePreview();
+        }
+    } catch (err) {
+        console.error("Load contact error:", err);
+    }
+}
+
+// Save contact settings
+async function handleSaveContact(event) {
+    event.preventDefault();
+    const btn = document.getElementById("btnSaveContact");
+    const msg = document.getElementById("contactMessage");
+
+    const payload = {
+        business_name: document.getElementById("businessName").value.trim(),
+        support_email: document.getElementById("supportEmail").value.trim(),
+        support_phone: document.getElementById("supportPhone").value.trim(),
+        working_hours: document.getElementById("workingHours").value.trim(),
+        operating_address: document.getElementById("operatingAddress").value.trim(),
+        grievance_officer: document.getElementById("grievanceOfficer").value.trim(),
+        grievance_email: document.getElementById("grievanceEmail").value.trim(),
+        platform_fee: parseInt(document.getElementById("platformFee")?.value || "10", 10),
+        banner_ad_fee: parseFloat(document.getElementById("bannerAdFee")?.value || "999"),
+        video_ad_fee: parseFloat(document.getElementById("videoAdFee")?.value || "1999"),
+        ad_duration_days: parseInt(document.getElementById("adDurationDays")?.value || "30", 10)
+    };
+
+    btn.disabled = true;
+    btn.textContent = "Saving Changes...";
+    msg.style.display = "none";
+
+    try {
+        const response = await fetch(`${API}/admin/contact`, {
+            method: "POST",
+            headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload)
+        });
+
+        const data = await readResponse(response);
+
+        if (!response.ok) {
+            throw new Error(data.detail || "Unable to save contact details.");
+        }
+
+        msg.className = "message success";
+        msg.textContent = "✓ Official contact details & dynamic ad fees updated successfully! These details are now live across patient pages and payment gateway policies.";
+        msg.style.display = "block";
+        updatePreview();
+    } catch (err) {
+        console.error("Save error:", err);
+        msg.className = "message error";
+        msg.textContent = err.message || "Failed to save contact details.";
+        msg.style.display = "block";
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "💾 Save Contact Details";
+    }
+}
+
+// Initial load
+loadContactSettings();
+</script>
+</body>
+</html>
