@@ -156,8 +156,17 @@
           })
           .catch(function() {});
       } catch(e) {}
+    },
+    handleImageLoad: function(img) {},
+    handleImageError: function(img) {
+      if (img && img.parentElement) {
+        img.parentElement.innerHTML = '<span>👨‍⚕️</span>';
+      }
     }
   };
+
+  // Export to window for global inline event handlers (onload, onerror)
+  window.CarePathDoctorPhotos = CarePathDoctorPhotos;
 
   let dashboardDoctorsList = PRESEED_DASHBOARD_DOCTORS.slice();
 
