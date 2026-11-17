@@ -540,6 +540,8 @@ ALLOWED_ORIGINS = [
     "https://carepath-hospital-ten.vercel.app",
     "https://carepath-patient-mx5v.vercel.app",
     "https://carepath-admin.vercel.app",
+    "http://localhost",
+    "https://localhost",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://localhost:8000",

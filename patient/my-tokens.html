@@ -785,9 +785,10 @@
   <script>
     "use strict";
 
-    const isCapacitor = typeof window.Capacitor !== "undefined" || (window.location.protocol === "capacitor:" || window.location.protocol === "ionic:");
-    const isLocal = !isCapacitor && (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost");
-    const API_URL = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+    // Robust Production API resolution for Web and Android/iOS Mobile Apps
+    const isLocalDevDesktop = (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") && 
+                              (window.location.port === "8000" || window.location.port === "5500" || window.location.search.includes("dev=1"));
+    const API_URL = isLocalDevDesktop ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
     let allTokens = [];
     let currentFilter = "all";
 
@@ -949,7 +950,8 @@
     loadInstantCachedTokens();
 
     // Load Token History (Background Silent Sync with Intelligent Non-Destructive Merge)
-    async function loadTokenHistory() {
+    let tokenSyncRetryTimer = null;
+    async function loadTokenHistory(isRetry = false) {
       const container = document.getElementById("tokensList");
       const emptyState = document.getElementById("emptyState");
 
@@ -1049,15 +1051,16 @@
         }
 
       } catch (err) {
-        console.warn("Silent token sync error:", err);
-        // Seamless fallback: keep existing tokens or clean empty state without alarming banner
-        if (allTokens && allTokens.length > 0) {
-          updateStats(allTokens);
-          renderTokens(allTokens);
-          return;
+        console.warn("Silent token sync notice (retrying shortly):", err.message || err);
+        // Seamless fallback: keep existing tokens from local instant cache rendered
+        loadInstantCachedTokens();
+        // Fast automatic retry after 2.5s to handle backend cold-starts/restarts seamlessly
+        if (!isRetry) {
+          clearTimeout(tokenSyncRetryTimer);
+          tokenSyncRetryTimer = setTimeout(() => {
+            loadTokenHistory(true);
+          }, 2500);
         }
-        if (emptyState) emptyState.style.display = "block";
-        if (container) container.innerHTML = "";
       }
     }
 
