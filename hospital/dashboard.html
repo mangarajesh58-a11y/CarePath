@@ -4700,16 +4700,24 @@ function hydrateDashboardFromCache() {
             const serving = allHospitalTokens.filter(t => (t.status || "").toLowerCase() === "serving");
             const completed = allHospitalTokens.filter(t => (t.status || "").toLowerCase() === "completed");
 
-            document.getElementById("waitingCount").textContent = waiting.length;
-            document.getElementById("queueBadgeTotal").textContent = waiting.length;
-            document.getElementById("completedCount").textContent = completed.length;
-            document.getElementById("completedTokensCount").textContent = `${completed.length} Consultations Done`;
-            document.getElementById("estimatedWaitTime").textContent = `~${waiting.length * 3} min estimated wait`;
+            const elWaiting = document.getElementById("waitingCount");
+            const elBadge = document.getElementById("queueBadgeTotal");
+            const elCompleted = document.getElementById("completedCount");
+            const elCompDone = document.getElementById("completedTokensCount");
+            const elEstWait = document.getElementById("estimatedWaitTime");
+            if (elWaiting) elWaiting.textContent = waiting.length;
+            if (elBadge) elBadge.textContent = waiting.length;
+            if (elCompleted) elCompleted.textContent = completed.length;
+            if (elCompDone) elCompDone.textContent = `${completed.length} Consultations Done`;
+            if (elEstWait) elEstWait.textContent = `~${waiting.length * 3} min estimated wait`;
 
             if (serving.length > 0) {
-                document.getElementById("currentToken").textContent = `#${serving[0].token_number}`;
-                document.getElementById("heroTokenDisplay").textContent = `#${serving[0].token_number}`;
-                document.getElementById("heroPatientName").textContent = serving[0].patient_name || "Patient in Consultation";
+                const elCurToken = document.getElementById("currentToken");
+                const elHeroToken = document.getElementById("heroTokenDisplay");
+                const elHeroName = document.getElementById("heroPatientName");
+                if (elCurToken) elCurToken.textContent = `#${serving[0].token_number}`;
+                if (elHeroToken) elHeroToken.textContent = `#${serving[0].token_number}`;
+                if (elHeroName) elHeroName.textContent = serving[0].patient_name || "Patient in Consultation";
             }
             renderQueueFeed(waiting);
             updateWalkInLiveQueue();
