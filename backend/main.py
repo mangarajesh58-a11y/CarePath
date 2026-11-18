@@ -3386,6 +3386,9 @@ class WalkInTokenRequest(BaseModel):
     token_number: Optional[int] = None
     patient_phone: Optional[str] = None
     notes: Optional[str] = None
+    token_fee: Optional[int] = None
+    payment_type: Optional[str] = None
+    payment_status: Optional[str] = None
 # ============================================================
 # HELPER - HOSPITAL OPD & BREAK TIMINGS
 # ============================================================
@@ -3770,10 +3773,17 @@ def allocate_token_number(
     appointment_date: date,
     doctor_id: Optional[int] = None,
 ) -> int:
+    """
+    Centralized, atomic token number allocation function for CarePath.
+    Used for both Online Bookings and Walk-in OPD Registrations.
+    Uses PostgreSQL row locking (SELECT ... FOR UPDATE) on token_sequences
+    to ensure 100% strict atomicity and zero duplicate allocations under concurrent registrations.
+    Separates token counters per (hospital_id, doctor_id, appointment_date).
+    """
     clean_dept = (department or "").strip()
     clean_doc = (doctor or "").strip()
 
-    # Canonical doctor lookup to prevent case/prefix mismatches in token_sequences
+    # Canonical doctor lookup to prevent case/prefix mismatches
     if not doctor_id and (clean_doc or clean_dept):
         clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', clean_doc, flags=re.I).strip()
         doc_record = (
@@ -3798,87 +3808,102 @@ def allocate_token_number(
             clean_doc = doc_record.name
             clean_dept = doc_record.department
 
-    # Construct unambiguous doctor filter clause to ensure optimal parameter typing in PostgreSQL
-    if doctor_id:
-        doc_where = "(doctor_id = :doctor_id OR LOWER(doctor) = LOWER(:doctor))"
-        tokens_doc_where = "(tokens.doctor_id = :doctor_id OR LOWER(tokens.doctor) = LOWER(:doctor))"
-    else:
-        doc_where = "LOWER(doctor) = LOWER(:doctor)"
-        tokens_doc_where = "LOWER(tokens.doctor) = LOWER(:doctor)"
-
-    try:
-        upsert_query = f"""
-                INSERT INTO token_sequences (
-                    hospital_id,
-                    doctor_id,
-                    department,
-                    doctor,
-                    appointment_date,
-                    last_token_number
-                )
-                VALUES (
-                    :hospital_id,
-                    :doctor_id,
-                    :department,
-                    :doctor,
-                    :appointment_date,
-                    GREATEST(
-                        (
-                            SELECT COALESCE(MAX(token_number), 0)
-                            FROM tokens
-                            WHERE hospital_id = :hospital_id
-                              AND {doc_where}
-                              AND appointment_date = :appointment_date
-                        ),
-                        0
-                    ) + 1
-                )
-                ON CONFLICT (
-                    hospital_id,
-                    department,
-                    doctor,
-                    appointment_date
-                )
-                DO UPDATE SET
-                    doctor_id = COALESCE(token_sequences.doctor_id, EXCLUDED.doctor_id),
-                    last_token_number = GREATEST(
-                        COALESCE(token_sequences.last_token_number, 0),
-                        COALESCE((
-                            SELECT MAX(token_number)
-                            FROM tokens
-                            WHERE hospital_id = :hospital_id
-                              AND {tokens_doc_where}
-                              AND appointment_date = :appointment_date
-                        ), 0)
-                    ) + 1
-                RETURNING last_token_number
-            """
-        result = db.execute(
-            text(upsert_query),
-            {
-                "hospital_id": hospital_id,
-                "doctor_id": doctor_id,
-                "department": clean_dept,
-                "doctor": clean_doc,
-                "appointment_date": appointment_date,
-            },
-        )
-        return int(result.scalar_one())
-    except Exception as e:
-        logging.warning("Atomic sequence allocation warning, using max token fallback: %s", e)
-        max_token = (
-            db.query(func.max(Token.token_number))
-            .filter(
-                Token.hospital_id == hospital_id,
-                or_(
-                    Token.doctor_id == doctor_id if doctor_id else False,
-                    func.lower(Token.doctor) == clean_doc.lower(),
-                ),
-                Token.appointment_date == appointment_date,
+    # Check maximum existing token allocated in tokens table for this doctor and date
+    max_in_tokens = (
+        db.query(func.max(Token.token_number))
+        .filter(
+            Token.hospital_id == hospital_id,
+            Token.appointment_date == appointment_date,
+            or_(
+                Token.doctor_id == doctor_id if doctor_id else False,
+                func.lower(Token.doctor) == clean_doc.lower()
             )
-            .scalar()
         )
-        return int((max_token or 0) + 1)
+        .scalar() or 0
+    )
+
+    # Lock existing sequence row using SELECT ... FOR UPDATE
+    seq_last = 0
+    seq_row = None
+    if doctor_id:
+        seq_row = db.execute(text("""
+            SELECT last_token_number FROM token_sequences
+            WHERE hospital_id = :h_id AND appointment_date = :dt
+              AND (doctor_id = :d_id OR LOWER(doctor) = LOWER(:d_name))
+            ORDER BY last_token_number DESC
+            LIMIT 1
+            FOR UPDATE
+        """), {"h_id": hospital_id, "d_id": doctor_id, "d_name": clean_doc, "dt": appointment_date}).first()
+    else:
+        seq_row = db.execute(text("""
+            SELECT last_token_number FROM token_sequences
+            WHERE hospital_id = :h_id AND appointment_date = :dt
+              AND LOWER(doctor) = LOWER(:d_name)
+            ORDER BY last_token_number DESC
+            LIMIT 1
+            FOR UPDATE
+        """), {"h_id": hospital_id, "d_name": clean_doc, "dt": appointment_date}).first()
+
+    if seq_row and seq_row[0] is not None:
+        seq_last = seq_row[0]
+
+    next_token = max(int(seq_last), int(max_in_tokens)) + 1
+
+    if seq_row:
+        if doctor_id:
+            db.execute(text("""
+                UPDATE token_sequences
+                SET last_token_number = :next_num,
+                    doctor_id = COALESCE(:d_id, doctor_id),
+                    doctor = :d_name,
+                    department = :dept
+                WHERE hospital_id = :h_id AND appointment_date = :dt
+                  AND (doctor_id = :d_id OR LOWER(doctor) = LOWER(:d_name))
+            """), {"next_num": next_token, "d_id": doctor_id, "d_name": clean_doc, "dept": clean_dept, "h_id": hospital_id, "dt": appointment_date})
+        else:
+            db.execute(text("""
+                UPDATE token_sequences
+                SET last_token_number = :next_num,
+                    doctor = :d_name,
+                    department = :dept
+                WHERE hospital_id = :h_id AND appointment_date = :dt
+                  AND LOWER(doctor) = LOWER(:d_name)
+            """), {"next_num": next_token, "d_name": clean_doc, "dept": clean_dept, "h_id": hospital_id, "dt": appointment_date})
+    else:
+        try:
+            savepoint = db.begin_nested()
+            db.execute(text("""
+                INSERT INTO token_sequences (hospital_id, doctor_id, department, doctor, appointment_date, last_token_number)
+                VALUES (:h_id, :d_id, :dept, :d_name, :dt, :next_num)
+            """), {"h_id": hospital_id, "d_id": doctor_id, "dept": clean_dept, "d_name": clean_doc, "dt": appointment_date, "next_num": next_token})
+            savepoint.commit()
+        except Exception:
+            savepoint.rollback()
+            # If concurrent insert occurred, lock and update
+            if doctor_id:
+                seq_row2 = db.execute(text("""
+                    SELECT last_token_number FROM token_sequences
+                    WHERE hospital_id = :h_id AND appointment_date = :dt
+                      AND (doctor_id = :d_id OR LOWER(doctor) = LOWER(:d_name))
+                    FOR UPDATE
+                """), {"h_id": hospital_id, "d_id": doctor_id, "d_name": clean_doc, "dt": appointment_date}).first()
+            else:
+                seq_row2 = db.execute(text("""
+                    SELECT last_token_number FROM token_sequences
+                    WHERE hospital_id = :h_id AND appointment_date = :dt
+                      AND LOWER(doctor) = LOWER(:d_name)
+                    FOR UPDATE
+                """), {"h_id": hospital_id, "d_name": clean_doc, "dt": appointment_date}).first()
+            seq_last2 = seq_row2[0] if seq_row2 and seq_row2[0] is not None else 0
+            next_token = max(int(seq_last2), int(max_in_tokens)) + 1
+            db.execute(text("""
+                UPDATE token_sequences
+                SET last_token_number = :next_num
+                WHERE hospital_id = :h_id AND appointment_date = :dt
+                  AND (doctor_id = :d_id OR LOWER(doctor) = LOWER(:d_name))
+            """), {"next_num": next_token, "h_id": hospital_id, "d_id": doctor_id, "d_name": clean_doc, "dt": appointment_date})
+
+    return int(next_token)
 
 
 @app.get("/tokens/next-available")
@@ -3890,87 +3915,178 @@ def get_next_available_token(
     appointment_date: Optional[date] = None,
     db: Session = Depends(get_db),
 ):
-    """Returns the current queue count and the next available token number for a doctor on a specific date."""
+    """
+    Returns the dynamic next available token number, currently serving token,
+    and waiting queue count separately for each hospital and doctor.
+    When All Doctors is selected, aggregates the hospital-wide queue without mixing statistics.
+    Never hardcodes 8 or any other fixed number.
+    """
     target_date = appointment_date or get_ist_today()
     clean_dept = (department or "").strip()
     clean_doc = (doctor or "").strip()
 
-    # Canonical doctor lookup to ensure doctor_id and normalized doctor name
-    if not doctor_id and (clean_doc or clean_dept):
-        clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', clean_doc, flags=re.I).strip()
-        doc_record = (
-            db.query(Doctor)
+    # If specific doctor requested
+    if clean_doc or doctor_id:
+        if not doctor_id:
+            clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', clean_doc, flags=re.I).strip()
+            doc_record = (
+                db.query(Doctor)
+                .filter(
+                    Doctor.hospital_id == hospital_id,
+                    or_(
+                        func.lower(Doctor.name) == clean_doc.lower(),
+                        func.lower(Doctor.name) == clean_doc_search.lower(),
+                        Doctor.name.ilike(f"%{clean_doc_search}%")
+                    )
+                )
+                .first()
+            )
+            if doc_record:
+                doctor_id = doc_record.id
+                clean_doc = doc_record.name
+                clean_dept = doc_record.department
+        elif doctor_id:
+            doc_record = db.query(Doctor).filter(Doctor.id == doctor_id, Doctor.hospital_id == hospital_id).first()
+            if doc_record:
+                clean_doc = doc_record.name
+                clean_dept = doc_record.department
+
+        # Check maximum existing token allocated in tokens table
+        max_existing = (
+            db.query(func.max(Token.token_number))
             .filter(
-                Doctor.hospital_id == hospital_id,
+                Token.hospital_id == hospital_id,
+                Token.appointment_date == target_date,
                 or_(
-                    func.lower(Doctor.name) == clean_doc.lower(),
-                    func.lower(Doctor.name) == clean_doc_search.lower(),
-                    Doctor.name.ilike(f"%{clean_doc_search}%")
+                    Token.doctor_id == doctor_id if doctor_id else False,
+                    func.lower(Token.doctor) == clean_doc.lower()
                 )
             )
-            .first()
+            .scalar() or 0
         )
-        if doc_record:
-            doctor_id = doc_record.id
-            clean_doc = doc_record.name
-            clean_dept = doc_record.department
-    elif doctor_id:
-        doc_record = db.query(Doctor).filter(Doctor.id == doctor_id, Doctor.hospital_id == hospital_id).first()
-        if doc_record:
-            clean_doc = doc_record.name
-            clean_dept = doc_record.department
 
-    # Check maximum existing token allocated in tokens table
-    token_filter = [
-        Token.hospital_id == hospital_id,
-        Token.appointment_date == target_date,
-    ]
-    if doctor_id:
-        token_filter.append(or_(Token.doctor_id == doctor_id, func.lower(Token.doctor) == clean_doc.lower()))
-    elif clean_doc:
-        token_filter.append(func.lower(Token.doctor) == clean_doc.lower())
-    if clean_dept:
-        token_filter.append(func.lower(Token.department) == clean_dept.lower())
+        seq_last = 0
+        if doctor_id:
+            seq_val = db.execute(text("""
+                SELECT MAX(last_token_number) FROM token_sequences
+                WHERE hospital_id = :h_id AND appointment_date = :dt
+                  AND (doctor_id = :d_id OR LOWER(doctor) = LOWER(:d_name))
+            """), {"h_id": hospital_id, "d_id": doctor_id, "d_name": clean_doc, "dt": target_date}).scalar()
+            seq_last = seq_val or 0
+        else:
+            seq_val = db.execute(text("""
+                SELECT MAX(last_token_number) FROM token_sequences
+                WHERE hospital_id = :h_id AND appointment_date = :dt
+                  AND LOWER(doctor) = LOWER(:d_name)
+            """), {"h_id": hospital_id, "d_name": clean_doc, "dt": target_date}).scalar()
+            seq_last = seq_val or 0
 
-    max_existing = (
-        db.query(func.max(Token.token_number))
-        .filter(and_(*token_filter))
-        .scalar()
-    ) or 0
+        current_max = max(int(max_existing), int(seq_last))
+        next_token = current_max + 1
 
-    # Also check token_sequences table for the synchronized shared counter
-    seq_last = 0
-    if doctor_id:
-        seq_row = db.execute(text("""
-            SELECT last_token_number FROM token_sequences
-            WHERE hospital_id = :h_id AND (doctor_id = :d_id OR (doctor_id IS NULL AND LOWER(doctor) = LOWER(:d_name)))
-              AND appointment_date = :dt
-            ORDER BY last_token_number DESC LIMIT 1
-        """), {"h_id": hospital_id, "d_id": doctor_id, "d_name": clean_doc, "dt": target_date}).first()
-        if seq_row:
-            seq_last = seq_row[0] or 0
-    elif clean_doc:
-        seq_row = db.execute(text("""
-            SELECT last_token_number FROM token_sequences
-            WHERE hospital_id = :h_id AND LOWER(doctor) = LOWER(:d_name)
-              AND appointment_date = :dt
-            ORDER BY last_token_number DESC LIMIT 1
-        """), {"h_id": hospital_id, "d_name": clean_doc, "dt": target_date}).first()
-        if seq_row:
-            seq_last = seq_row[0] or 0
+        serving_tok = db.query(Token.token_number).filter(
+            Token.hospital_id == hospital_id,
+            Token.appointment_date == target_date,
+            Token.status == "serving",
+            or_(
+                Token.doctor_id == doctor_id if doctor_id else False,
+                func.lower(Token.doctor) == clean_doc.lower()
+            )
+        ).order_by(Token.called_at.desc(), Token.id.desc()).first()
 
-    current_max = max(int(max_existing), int(seq_last))
-    next_token = current_max + 1
+        waiting_cnt = db.query(func.count(Token.id)).filter(
+            Token.hospital_id == hospital_id,
+            Token.appointment_date == target_date,
+            Token.status == "waiting",
+            or_(
+                Token.doctor_id == doctor_id if doctor_id else False,
+                func.lower(Token.doctor) == clean_doc.lower()
+            )
+        ).scalar() or 0
 
-    return {
-        "hospital_id": hospital_id,
-        "doctor_id": doctor_id,
-        "department": clean_dept,
-        "doctor": clean_doc,
-        "appointment_date": str(target_date),
-        "booked_count": int(current_max),
-        "next_token_number": int(next_token),
-    }
+        completed_cnt = db.query(func.count(Token.id)).filter(
+            Token.hospital_id == hospital_id,
+            Token.appointment_date == target_date,
+            Token.status == "completed",
+            or_(
+                Token.doctor_id == doctor_id if doctor_id else False,
+                func.lower(Token.doctor) == clean_doc.lower()
+            )
+        ).scalar() or 0
+
+        return {
+            "hospital_id": hospital_id,
+            "doctor_id": doctor_id,
+            "department": clean_dept,
+            "doctor": clean_doc,
+            "appointment_date": str(target_date),
+            "is_all_doctors": False,
+            "booked_count": int(current_max),
+            "next_token_number": int(next_token),
+            "serving_token": serving_tok[0] if serving_tok else None,
+            "waiting_count": int(waiting_cnt),
+            "completed_count": int(completed_cnt),
+            "estimated_wait_minutes": int(waiting_cnt * 5),
+        }
+    else:
+        # ALL DOCTORS OVERVIEW
+        doctors = db.query(Doctor).filter(Doctor.hospital_id == hospital_id).all()
+        doc_queues = []
+        total_waiting = 0
+        serving_tokens_list = []
+        for d in doctors:
+            m_tok = db.query(func.max(Token.token_number)).filter(
+                Token.hospital_id == hospital_id,
+                Token.appointment_date == target_date,
+                or_(Token.doctor_id == d.id, func.lower(Token.doctor) == d.name.lower())
+            ).scalar() or 0
+            s_tok = db.execute(text("""
+                SELECT MAX(last_token_number) FROM token_sequences
+                WHERE hospital_id = :h_id AND appointment_date = :dt
+                  AND (doctor_id = :d_id OR LOWER(doctor) = LOWER(:d_name))
+            """), {"h_id": hospital_id, "d_id": d.id, "d_name": d.name, "dt": target_date}).scalar() or 0
+            n_tok = max(int(m_tok), int(s_tok)) + 1
+
+            srv = db.query(Token.token_number).filter(
+                Token.hospital_id == hospital_id,
+                Token.appointment_date == target_date,
+                Token.status == "serving",
+                or_(Token.doctor_id == d.id, func.lower(Token.doctor) == d.name.lower())
+            ).order_by(Token.called_at.desc(), Token.id.desc()).first()
+            if srv:
+                serving_tokens_list.append(f"#{srv[0]} (Dr. {d.name})")
+
+            w_cnt = db.query(func.count(Token.id)).filter(
+                Token.hospital_id == hospital_id,
+                Token.appointment_date == target_date,
+                Token.status == "waiting",
+                or_(Token.doctor_id == d.id, func.lower(Token.doctor) == d.name.lower())
+            ).scalar() or 0
+            total_waiting += w_cnt
+
+            doc_queues.append({
+                "doctor_id": d.id,
+                "doctor_name": d.name,
+                "department": d.department,
+                "next_token_number": n_tok,
+                "serving_token": srv[0] if srv else None,
+                "waiting_count": w_cnt,
+            })
+
+        return {
+            "hospital_id": hospital_id,
+            "doctor_id": None,
+            "department": "",
+            "doctor": "All Doctors",
+            "appointment_date": str(target_date),
+            "is_all_doctors": True,
+            "next_token_number": None,
+            "next_token_display": "Select Doctor",
+            "serving_token": ", ".join(serving_tokens_list) if serving_tokens_list else None,
+            "waiting_count": total_waiting,
+            "estimated_wait_minutes": int(total_waiting * 5),
+            "doctors": doc_queues,
+        }
 
 
 @app.post("/hospitals/{hospital_id}/reset-doctor-queue")
@@ -7584,6 +7700,17 @@ def create_walk_in_token(
                 p_queries.append(Patient.phone == f"+91{clean_p}")
             matching_patient = db.query(Patient).filter(or_(*p_queries)).first()
 
+        # Determine walk-in token fee & payment collection status
+        fee_to_charge = 0
+        if getattr(data, "token_fee", None) is not None:
+            fee_to_charge = max(0, int(data.token_fee))
+        elif getattr(hospital, "token_fee", None) is not None and int(hospital.token_fee) > 0:
+            fee_to_charge = int(hospital.token_fee)
+
+        pay_status = getattr(data, "payment_status", None)
+        if not pay_status:
+            pay_status = "paid" if fee_to_charge > 0 else "not_required"
+
         token = Token(
             patient_id=matching_patient.id if matching_patient else None,
             patient_name=patient_name,
@@ -7598,10 +7725,10 @@ def create_walk_in_token(
             appointment_date=appointment_date,
             platform=PLATFORM_NAME,
             booking_type="WALK_IN",
-            token_fee=0,
+            token_fee=fee_to_charge,
             platform_fee=0,
-            total_amount=0,
-            payment_status="not_required",
+            total_amount=fee_to_charge,
+            payment_status=pay_status,
             status="waiting",
             notes=walkin_notes,
         )
@@ -9903,6 +10030,8 @@ def get_hospital_collection_summary(
     Returns Token Collection History breakdown:
     - Today's collection & token count
     - Current month's collection & token count
+    - All-time collection & token count
+    - Filterable collection records (date, patient name, token number, doctor, department, payment type, amount)
     - Daily history list (per day)
     - Monthly history list (per month)
     """
@@ -9924,64 +10053,87 @@ def get_hospital_collection_summary(
     ist_today = ist_now.date()
     curr_month_str = ist_today.strftime("%Y-%m")
 
-    tokens = (
+    # Fetch successful payments and collections only:
+    # payment_status IN ('paid', 'succeeded', 'completed')
+    # status != 'cancelled'
+    # token_fee > 0 or total_amount > 0
+    # Do NOT count pending, failed, cancelled, or refunded
+    valid_tokens = (
         db.query(Token)
         .filter(
             Token.hospital_id == target_hospital_id,
             Token.status != "cancelled",
-            Token.payment_status != "refunded"
+            Token.payment_status.in_(["paid", "succeeded", "completed"]),
+            or_(
+                Token.token_fee > 0,
+                Token.total_amount > 0
+            )
         )
         .order_by(Token.appointment_date.desc(), Token.id.desc())
         .all()
     )
 
+    today_collection = 0
+    today_tokens_count = 0
+    month_collection = 0
+    month_tokens_count = 0
+    all_time_collection = 0
+    all_time_tokens_count = 0
+
+    detailed_records = []
     daily_map = {}
     monthly_map = {}
 
-    today_summary = {
-        "date": str(ist_today),
-        "date_display": ist_today.strftime("%d %b %Y"),
-        "total_tokens": 0,
-        "online_tokens": 0,
-        "walkin_tokens": 0,
-        "completed_tokens": 0,
-        "collection": 0,
-    }
-
-    month_summary = {
-        "month": curr_month_str,
-        "month_name": ist_today.strftime("%B %Y"),
-        "total_tokens": 0,
-        "online_tokens": 0,
-        "walkin_tokens": 0,
-        "completed_tokens": 0,
-        "collection": 0,
-    }
-
-    total_all_time_collection = 0
-    total_all_time_tokens = 0
-
     days_short = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-    for t in tokens:
-        d = t.appointment_date
-        if not d:
-            continue
+    for t in valid_tokens:
+        d = t.appointment_date or (t.created_at.date() if t.created_at else ist_today)
         d_str = str(d)
         m_str = d.strftime("%Y-%m")
         m_name = d.strftime("%B %Y")
         day_name = days_short[d.weekday()]
 
-        fee = int(t.token_fee or 0)
+        fee = int(t.token_fee or t.total_amount or 0)
         is_walkin = (t.booking_type == "WALK_IN")
-        is_completed = (t.status == "completed")
+        booking_type_label = "Walk-in" if is_walkin else "Online"
+        payment_type_label = "Cash / Counter" if is_walkin else "Online (Paid)"
 
-        total_all_time_collection += fee
-        total_all_time_tokens += 1
+        all_time_collection += fee
+        all_time_tokens_count += 1
+
+        is_today = (d == ist_today)
+        is_this_month = (m_str == curr_month_str)
+
+        if is_today:
+            today_collection += fee
+            today_tokens_count += 1
+
+        if is_this_month:
+            month_collection += fee
+            month_tokens_count += 1
+
+        rec = {
+            "id": t.id,
+            "date": d_str,
+            "date_display": d.strftime("%d %b %Y"),
+            "patient_name": t.patient_name,
+            "patient_phone": t.patient_phone or "-",
+            "token_number": t.token_number,
+            "doctor": t.doctor,
+            "department": t.department,
+            "booking_type": booking_type_label,
+            "payment_type": payment_type_label,
+            "payment_status": t.payment_status,
+            "amount": fee,
+            "status": t.status,
+            "is_today": is_today,
+            "is_this_month": is_this_month,
+        }
+        detailed_records.append(rec)
 
         # Daily mapping
         if d_str not in daily_map:
-            label = "Today" if d == ist_today else ("Yesterday" if d == (ist_today - timedelta(days=1)) else day_name)
+            label = "Today" if is_today else ("Yesterday" if d == (ist_today - timedelta(days=1)) else day_name)
             daily_map[d_str] = {
                 "date": d_str,
                 "date_display": f"{d.strftime('%d %b %Y')} ({label})",
@@ -9998,7 +10150,7 @@ def get_hospital_collection_summary(
             daily_map[d_str]["walkin_tokens"] += 1
         else:
             daily_map[d_str]["online_tokens"] += 1
-        if is_completed:
+        if t.status == "completed":
             daily_map[d_str]["completed_tokens"] += 1
         daily_map[d_str]["collection"] += fee
 
@@ -10007,7 +10159,7 @@ def get_hospital_collection_summary(
             monthly_map[m_str] = {
                 "month": m_str,
                 "month_name": m_name,
-                "is_current": (m_str == curr_month_str),
+                "is_current": is_this_month,
                 "total_tokens": 0,
                 "online_tokens": 0,
                 "walkin_tokens": 0,
@@ -10020,31 +10172,9 @@ def get_hospital_collection_summary(
             monthly_map[m_str]["walkin_tokens"] += 1
         else:
             monthly_map[m_str]["online_tokens"] += 1
-        if is_completed:
+        if t.status == "completed":
             monthly_map[m_str]["completed_tokens"] += 1
         monthly_map[m_str]["collection"] += fee
-
-        # Accumulate Today
-        if d == ist_today:
-            today_summary["total_tokens"] += 1
-            if is_walkin:
-                today_summary["walkin_tokens"] += 1
-            else:
-                today_summary["online_tokens"] += 1
-            if is_completed:
-                today_summary["completed_tokens"] += 1
-            today_summary["collection"] += fee
-
-        # Accumulate This Month
-        if m_str == curr_month_str:
-            month_summary["total_tokens"] += 1
-            if is_walkin:
-                month_summary["walkin_tokens"] += 1
-            else:
-                month_summary["online_tokens"] += 1
-            if is_completed:
-                month_summary["completed_tokens"] += 1
-            month_summary["collection"] += fee
 
     daily_history = [v for k, v in sorted(daily_map.items(), key=lambda x: x[0], reverse=True)]
     monthly_history = [v for k, v in sorted(monthly_map.items(), key=lambda x: x[0], reverse=True)]
@@ -10054,12 +10184,25 @@ def get_hospital_collection_summary(
         "hospital_id": hospital.id,
         "hospital_name": hospital.name,
         "hospital_fee": int(hospital.token_fee or 0),
-        "today": today_summary,
-        "this_month": month_summary,
-        "all_time": {
-            "total_collection": total_all_time_collection,
-            "total_tokens": total_all_time_tokens,
+        "today": {
+            "date": str(ist_today),
+            "date_display": ist_today.strftime("%d %b %Y"),
+            "collection": today_collection,
+            "total_tokens": today_tokens_count,
         },
+        "this_month": {
+            "month": curr_month_str,
+            "month_name": ist_today.strftime("%B %Y"),
+            "collection": month_collection,
+            "total_tokens": month_tokens_count,
+        },
+        "all_time": {
+            "total_collection": all_time_collection,
+            "total_tokens": all_time_tokens_count,
+        },
+        "records": detailed_records,
+        "records_today": [r for r in detailed_records if r["is_today"]],
+        "records_month": [r for r in detailed_records if r["is_this_month"]],
         "daily_history": daily_history,
         "monthly_history": monthly_history,
     }
