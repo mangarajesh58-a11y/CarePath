@@ -599,7 +599,7 @@ async def custom_general_exception_handler(request: Request, exc: Exception):
         headers=get_cors_headers(request)
     )
 
-def send_carepath_email(to_email: str, subject: str, text: str, html: str) -> bool:
+def send_carepath_email(to_email: str, subject: str, text: str = "", html: str = "", body: str = "") -> bool:
     """Universal multi-tier email dispatcher with automatic failover across 4 delivery channels."""
     import os
     import json
@@ -607,6 +607,11 @@ def send_carepath_email(to_email: str, subject: str, text: str, html: str) -> bo
     import logging
     import smtplib
     from email.message import EmailMessage
+
+    if not text and body:
+        text = body
+    if not html:
+        html = f"<div style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; white-space: pre-wrap;'>{text}</div>"
 
     delivery_errors = []
 

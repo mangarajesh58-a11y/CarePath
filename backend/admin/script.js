@@ -85,8 +85,13 @@ async function readResponse(response) {
 // ADMIN AUTHENTICATION HEADERS
 // =====================================================
 
+function getAdminToken() {
+    return localStorage.getItem("adminToken") || sessionStorage.getItem("adminToken") || "";
+}
+window.getAdminToken = getAdminToken;
+
 function getAdminAuthHeaders(extraHeaders = {}) {
-    const token = localStorage.getItem("adminToken");
+    const token = getAdminToken();
 
     return {
         ...extraHeaders,
@@ -3438,6 +3443,34 @@ function openDirectHospitalComm(target = 'all') {
         openGeneralDirectCommunicationModal();
     }
 }
+
+function onCommHospitalSelectChange(hospitalId) {
+    if (!hospitalId) return;
+    currentDirectCommHospitalId = Number(hospitalId);
+    if (typeof loadDirectCommMessages === "function") {
+        loadDirectCommMessages(currentDirectCommHospitalId);
+    }
+}
+
+function switchHospitalModalTab(tabName) {
+    const chatTab = document.getElementById("commModalChatTab");
+    const infoTab = document.getElementById("commModalInfoTab");
+    const chatContent = document.getElementById("commModalChatContent");
+    const infoContent = document.getElementById("commModalInfoContent");
+    if (chatTab) chatTab.classList.toggle("active", tabName === "chat");
+    if (infoTab) infoTab.classList.toggle("active", tabName === "info");
+    if (chatContent) chatContent.style.display = tabName === "chat" ? "block" : "none";
+    if (infoContent) infoContent.style.display = tabName === "info" ? "block" : "none";
+}
+
+function refreshCurrentCommMessages() {
+    const select = document.getElementById("commModalHospitalSelect");
+    const hospitalId = currentDirectCommHospitalId || (select ? select.value : null);
+    if (hospitalId && typeof loadDirectCommMessages === "function") {
+        loadDirectCommMessages(Number(hospitalId));
+    }
+}
+
 window.openDirectHospitalComm = openDirectHospitalComm;
 window.onCommHospitalSelectChange = onCommHospitalSelectChange;
 window.switchHospitalModalTab = switchHospitalModalTab;

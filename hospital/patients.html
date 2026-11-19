@@ -266,7 +266,7 @@
             <p id="currentPatientText"></p>
         </div>
 
-        <button type="button" id="nextPatientButton" onclick="callNextPatient">
+        <button type="button" id="nextPatientButton" onclick="callNextPatient()">
             📢 Call Next Patient
         </button>
     </div>
@@ -888,6 +888,24 @@ setInterval(function() {
     </div>
     
 <script>
+    function getToken() {
+        return localStorage.getItem("hospitalToken") || "";
+    }
+
+    function showToast(message) {
+        if (typeof showQueueMessage === "function") {
+            showQueueMessage(message, true);
+        } else {
+            alert(message);
+        }
+    }
+
+    function fetchPatients() {
+        if (typeof loadPatients === "function") {
+            return loadPatients();
+        }
+    }
+
     async function callPatientToken(tokenId) {
         const token = getToken();
         if (!token) return;

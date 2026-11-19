@@ -617,6 +617,15 @@ const API = "https://carepath-3q9q.onrender.com";
 let PLATFORM_FEE = parseInt(localStorage.getItem("carepath_platform_fee") || "10", 10);
 
 const byId = id => document.getElementById(id);
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
 const stored = (...keys) => {
     for (const key of keys) {
         const value = localStorage.getItem(key);
