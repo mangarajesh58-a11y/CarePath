@@ -1817,6 +1817,7 @@
           type="button"
           id="logoutButton"
           class="btn-topbar-icon"
+          onclick="handlePatientLogout()"
           aria-label="Logout"
           title="Logout"
         >
@@ -4280,6 +4281,7 @@
 // =====================================================
 let patientChatLoadedMessages = [];
 let patientChatActiveHospitalId = null;
+let patientChatActiveHospitalName = null;
 
 function openPatientHospitalChatModal() {
     const modal = document.getElementById("patientHospitalChatModal");
@@ -4440,6 +4442,7 @@ function renderPatientChatMessages(messages) {
     const lastHospitalMsg = [...messages].reverse().find(m => m.hospital_id);
     if (lastHospitalMsg) {
         patientChatActiveHospitalId = lastHospitalMsg.hospital_id;
+        patientChatActiveHospitalName = lastHospitalMsg.hospital_name || "Hospital Helpdesk";
         if (recipientInfo && recipientName) {
             recipientInfo.style.display = "block";
             recipientName.textContent = lastHospitalMsg.hospital_name || "Hospital Helpdesk";
@@ -4740,6 +4743,73 @@ function escapeHtml(str) {
   window.addEventListener("DOMContentLoaded", () => {
     setTimeout(initPatientRealtime, 1000);
   });
+
+
+// =====================================================
+// PATIENT NAVIGATION, PERMISSIONS & LOGOUT HANDLERS
+// =====================================================
+function scrollToHospitals() {
+    const el = document.getElementById("availableHospitalsSection") || document.querySelector(".hospital-section");
+    if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+}
+window.scrollToHospitals = scrollToHospitals;
+
+function handlePatientLogout() {
+    if (confirm("Are you sure you want to sign out of CarePath?")) {
+        localStorage.removeItem("patient_logged_in");
+        localStorage.removeItem("patient_id");
+        localStorage.removeItem("patient_phone");
+        localStorage.removeItem("patient_name");
+        localStorage.removeItem("patient_email");
+        localStorage.removeItem("patientToken");
+        localStorage.removeItem("patient_token");
+        localStorage.removeItem("token");
+        sessionStorage.clear();
+        window.location.replace("index.html");
+    }
+}
+window.handlePatientLogout = handlePatientLogout;
+
+let pendingPermissionResolver = null;
+
+function showCarePathPermissionDialog(type = 'camera') {
+    const dialog = document.getElementById("carepathPermissionDialog");
+    const icon = document.getElementById("cpPermIcon");
+    const title = document.getElementById("cpPermTitle");
+    const desc = document.getElementById("cpPermDesc");
+
+    if (type === 'microphone') {
+        if (icon) icon.textContent = "🎙️";
+        if (title) title.textContent = "Allow CarePath to record audio?";
+        if (desc) desc.textContent = "Used by CarePath AI voice assistant to recognize spoken symptoms and answer medical queries.";
+    } else {
+        if (icon) icon.textContent = "📷";
+        if (title) title.textContent = "Allow CarePath to take pictures and record video?";
+        if (desc) desc.textContent = "Used by CarePath AI to scan doctor prescriptions, read handwriting, and decode medicines.";
+    }
+
+    if (dialog) dialog.style.display = "flex";
+    return new Promise((resolve) => {
+        pendingPermissionResolver = resolve;
+    });
+}
+window.showCarePathPermissionDialog = showCarePathPermissionDialog;
+
+function handleCarePathPermChoice(choice) {
+    const dialog = document.getElementById("carepathPermissionDialog");
+    if (dialog) dialog.style.display = "none";
+    if (choice === 'always' || choice === 'once') {
+        localStorage.setItem("carepath_perm_choice", choice);
+        if (pendingPermissionResolver) pendingPermissionResolver(true);
+    } else {
+        localStorage.setItem("carepath_perm_choice", "deny");
+        if (pendingPermissionResolver) pendingPermissionResolver(false);
+    }
+    pendingPermissionResolver = null;
+}
+window.handleCarePathPermChoice = handleCarePathPermChoice;
 
 </script>
 </body>
