@@ -8,6 +8,10 @@
 
     <link rel="stylesheet" href="style.css">
 
+    <!-- 0ms Instant Dashboard Prefetching -->
+    <link rel="prefetch" href="dashboard.html" as="document">
+    <link rel="prerender" href="dashboard.html">
+
     <!-- Check whether a valid hospital session already exists -->
     <script>
         (function () {
@@ -21,6 +25,7 @@
                 localStorage.getItem("hospital_logged_in") === "true";
 
             if (hospitalId && hospitalToken && loggedIn) {
+                document.documentElement.style.visibility = 'hidden';
                 window.location.replace("dashboard.html");
             }
         })();
@@ -199,6 +204,29 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="carepath-ai-small.png">
     <script src="./carepath-instant-nav.js"></script>
+    <script>
+        (function() {
+            var prefetchTriggered = false;
+            function triggerDashboardPrefetch() {
+                if (prefetchTriggered) return;
+                prefetchTriggered = true;
+                try {
+                    var l = document.createElement("link");
+                    l.rel = "prefetch";
+                    l.href = "dashboard.html";
+                    l.as = "document";
+                    document.head.appendChild(l);
+                } catch(e) {}
+            }
+            document.addEventListener("DOMContentLoaded", function() {
+                var elList = document.querySelectorAll("input, button");
+                elList.forEach(function(el) {
+                    el.addEventListener("focus", triggerDashboardPrefetch, { once: true });
+                    el.addEventListener("pointerdown", triggerDashboardPrefetch, { once: true });
+                });
+            });
+        })();
+    </script>
 </head>
 
 <body>

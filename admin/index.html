@@ -5,6 +5,25 @@
 
     <meta charset="UTF-8">
 
+    <!-- 0ms Instant Dashboard Prefetching -->
+    <link rel="prefetch" href="dashboard.html" as="document">
+    <link rel="prerender" href="dashboard.html">
+
+    <!-- Check whether a valid admin session already exists (0ms immediate redirect) -->
+    <script>
+        (function () {
+            try {
+                var token = localStorage.getItem("adminToken");
+                var role = localStorage.getItem("adminRole");
+                var loggedIn = localStorage.getItem("adminLoggedIn") === "true";
+                if (token && role === "admin" && loggedIn) {
+                    document.documentElement.style.visibility = 'hidden';
+                    window.location.replace("dashboard.html");
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"

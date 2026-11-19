@@ -30,6 +30,10 @@
 
     <title>CarePath- Patient Login</title>
 
+    <!-- 0ms Instant Dashboard Prefetching -->
+    <link rel="prefetch" href="dashboard.html" as="document">
+    <link rel="prerender" href="dashboard.html">
+
 
     <!-- =====================================================
          GOOGLE IDENTITY SERVICES
@@ -1459,13 +1463,9 @@
                         const redirectUrl = sessionStorage.getItem("loginRedirect");
                         if (redirectUrl) {
                             sessionStorage.removeItem("loginRedirect");
-                            setTimeout(function() {
-                                window.location.href = redirectUrl;
-                            }, 500);
+                            window.location.replace(redirectUrl);
                         } else {
-                            setTimeout(function() {
-                                window.location.href = "dashboard.html";
-                            }, 700);
+                            window.location.replace("dashboard.html");
                         }
 
 
@@ -1729,19 +1729,8 @@
                     );
 
 
-                    // Open profile completion page
-
-                    setTimeout(
-                        function() {
-
-                            window.location.replace(
-                                "profile.html"
-                            );
-
-                        },
-                        600
-                    );
-
+                    // Open profile completion page immediately (0ms)
+                    window.location.replace("profile.html");
 
                 }
 
@@ -1761,18 +1750,13 @@
                     );
 
 
-                    // Open dashboard
-
+                    // Open dashboard immediately (0ms)
                     const redirectUrlGoogle = sessionStorage.getItem("loginRedirect");
                     if (redirectUrlGoogle) {
                         sessionStorage.removeItem("loginRedirect");
-                        setTimeout(function() {
-                            window.location.replace(redirectUrlGoogle);
-                        }, 500);
+                        window.location.replace(redirectUrlGoogle);
                     } else {
-                        setTimeout(function() {
-                            window.location.replace("dashboard.html");
-                        }, 600);
+                        window.location.replace("dashboard.html");
                     }
 
                 }

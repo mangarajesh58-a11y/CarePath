@@ -318,9 +318,8 @@ async function adminLogin() {
             "success"
         );
 
-        setTimeout(() => {
-            window.location.href = "dashboard.html";
-        }, 350);
+        // Immediate 0ms transition to dashboard
+        window.location.replace("dashboard.html");
 
     } catch (error) {
         console.error(
@@ -437,9 +436,8 @@ async function handleGoogleLogin(response) {
             "success"
         );
 
-        setTimeout(() => {
-            window.location.href = "dashboard.html";
-        }, 350);
+        // Immediate 0ms transition to dashboard
+        window.location.replace("dashboard.html");
 
     } catch (error) {
         console.error(
