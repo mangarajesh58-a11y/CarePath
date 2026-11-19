@@ -217,94 +217,57 @@
       color: #b45309;
       border: 1px solid #fde68a;
     }
-    .status-serving {
+    .status-completed {
       background: #dcfce7;
       color: #15803d;
-      border: 1px solid #86efac;
-      animation: pulseGreen 1.8s infinite;
-    }
-    @keyframes pulseGreen {
-      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-      70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-    }
-    .status-completed {
-      background: #ecfdf5;
-      color: #047857;
-      border: 1px solid #a7f3d0;
+      border: 1px solid #bbf7d0;
     }
     .status-cancelled {
       background: #fee2e2;
       color: #b91c1c;
       border: 1px solid #fecaca;
     }
-    .status-skipped {
-      background: #ffedd5;
-      color: #c2410c;
-      border: 1px solid #fed7aa;
+
+    .token-card-body {
+      padding: 16px;
     }
 
-    .booking-type-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      padding: 2px 8px;
-      border-radius: 12px;
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .info-item .info-label {
       font-size: 11px;
-      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.3px;
     }
-    .booking-type-badge.online-badge {
-      background: #e0f2fe;
-      color: #0284c7;
-      border: 1px solid #bae6fd;
+    .info-item .info-value {
+      font-size: 14px;
+      color: #1e293b;
+      font-weight: 600;
+      margin-top: 2px;
     }
-    .booking-type-badge.walkin-badge {
-      background: #f3e8ff;
-      color: #7e22ce;
-      border: 1px solid #e9d5ff;
+
+    .token-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-top: 1px solid #f1f5f9;
     }
 
     .payment-tag {
       font-size: 12px;
-      font-weight: 700;
-      display: inline-flex;
+      color: #059669;
+      font-weight: 600;
+      display: flex;
       align-items: center;
       gap: 4px;
-      padding: 4px 10px;
-      border-radius: 8px;
-    }
-    .payment-tag.paid {
-      color: #059669;
-      background: #ecfdf5;
-      border: 1px solid #a7f3d0;
-    }
-    .payment-tag.refunded {
-      color: #d97706;
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-    }
-    .payment-tag.pending {
-      color: #b45309;
-      background: #fef3c7;
-      border: 1px solid #fde68a;
-    }
-    .payment-tag.counter {
-      color: #0284c7;
-      background: #f0f9ff;
-      border: 1px solid #bae6fd;
-    }
-
-    .sync-spinner {
-      width: 44px;
-      height: 44px;
-      border: 4px solid #e2e8f0;
-      border-top-color: #0284c7;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 14px;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
     }
 
     .btn-receipt {
@@ -654,22 +617,8 @@
       <button class="filter-tab" data-filter="completed" onclick="applyFilter('completed')">✅ Completed</button>
     </div>
 
-    <!-- Loading State Container -->
-    <div id="loadingState" class="empty-box" style="display: none;">
-      <div class="sync-spinner"></div>
-      <h2>Syncing Token History...</h2>
-      <p>Connecting securely to CarePath OPD Queue Server...</p>
-    </div>
-
-    <!-- Error State Container -->
-    <div id="errorState" class="empty-box" style="display: none; border-color: #fecaca; background: #fffafb;">
-      <div class="empty-icon">⚠️</div>
-      <h2>Unable to Sync Token History</h2>
-      <p id="errorStateMsg">We couldn't connect to the server. Please check your internet connection and try again.</p>
-      <button type="button" onclick="loadMyTokens()" class="btn-book" style="background: #0284c7; cursor: pointer; border: none;">
-        🔄 Retry Sync
-      </button>
-    </div>
+    <!-- Token Cards List Container (0ms Instant Load) -->
+    <div id="tokensList"></div>
 
     <!-- Empty State Container -->
     <div id="emptyState" class="empty-box" style="display: none;">
@@ -678,9 +627,6 @@
       <p>You haven't booked any hospital OPD appointments yet. Find your hospital and get your token online to skip the waiting line!</p>
       <a href="dashboard.html" class="btn-book">Find Hospital & Book Token</a>
     </div>
-
-    <!-- Token Cards List Container (0ms Instant Load) -->
-    <div id="tokensList"></div>
   </div>
 
   <!-- Receipt Details Modal -->
@@ -840,8 +786,7 @@
     "use strict";
 
     // Robust Production API resolution for Web and Android/iOS Mobile Apps
-    const isCapacitorApp = window.Capacitor !== undefined || window.location.protocol === "capacitor:" || window.location.protocol === "ionic:" || (window.location.hostname === "localhost" && !window.location.port);
-    const isLocalDevDesktop = !isCapacitorApp && (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") && 
+    const isLocalDevDesktop = (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") && 
                               (window.location.port === "8000" || window.location.port === "5500" || window.location.search.includes("dev=1"));
     const API_URL = isLocalDevDesktop ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
     let allTokens = [];
@@ -850,9 +795,6 @@
     // Authentication Guard
     const token = localStorage.getItem("patientToken") || localStorage.getItem("patient_token") || localStorage.getItem("token") || sessionStorage.getItem("patientToken") || sessionStorage.getItem("patient_token") || sessionStorage.getItem("token") || "";
     const patientName = localStorage.getItem("patientName") || localStorage.getItem("patient_name") || localStorage.getItem("full_name") || sessionStorage.getItem("patientName") || sessionStorage.getItem("patient_name") || "Patient";
-    const patientPhone = localStorage.getItem("patientPhone") || localStorage.getItem("patient_phone") || localStorage.getItem("phone") || "";
-    const patientEmail = localStorage.getItem("patientEmail") || localStorage.getItem("patient_email") || localStorage.getItem("email") || "";
-    const patientId = localStorage.getItem("patientId") || localStorage.getItem("patient_id") || "";
 
     const hasCachedTokens = !!(
       localStorage.getItem("carepath_cached_tokens") ||
@@ -865,9 +807,11 @@
     const hasUserIdentity = !!(
       token ||
       hasCachedTokens ||
-      patientPhone ||
-      patientEmail ||
-      patientId
+      localStorage.getItem("patientPhone") ||
+      localStorage.getItem("patient_phone") ||
+      localStorage.getItem("patientEmail") ||
+      localStorage.getItem("patient_email") ||
+      localStorage.getItem("patientId")
     );
 
     if (!hasUserIdentity) {
@@ -1003,16 +947,11 @@
         console.warn("Instant token cache read error:", e);
       }
 
-      // If no tokens in local cache, do not prematurely display empty box
-      // while remote sync is about to begin.
+      // If no tokens in local cache, immediately render clean empty state (0ms, zero spinner wait!)
       const container = document.getElementById("tokensList");
       const emptyState = document.getElementById("emptyState");
-      const loadingState = document.getElementById("loadingState");
-      const errorState = document.getElementById("errorState");
       if (container) container.innerHTML = "";
-      if (emptyState) emptyState.style.display = "none";
-      if (errorState) errorState.style.display = "none";
-      if (loadingState) loadingState.style.display = "block";
+      if (emptyState) emptyState.style.display = "block";
       updateStats([]);
       return false;
     }
@@ -1020,111 +959,74 @@
     // 0ms instant render from memory cache
     loadInstantCachedTokens();
 
-    // Load Token History (Multi-Source Robust Sync for Web & Mobile)
+    // Load Token History (Background Silent Sync with Intelligent Non-Destructive Merge)
     let tokenSyncRetryTimer = null;
-    let isSyncingTokens = false;
-
     async function loadTokenHistory(isRetry = false) {
-      if (isSyncingTokens) return;
-      isSyncingTokens = true;
-
       const container = document.getElementById("tokensList");
       const emptyState = document.getElementById("emptyState");
-      const loadingState = document.getElementById("loadingState");
-      const errorState = document.getElementById("errorState");
 
       const currentToken = localStorage.getItem("patientToken") || localStorage.getItem("patient_token") || localStorage.getItem("token") || sessionStorage.getItem("patientToken") || sessionStorage.getItem("patient_token") || sessionStorage.getItem("token") || "";
       const currentPhone = localStorage.getItem("patientPhone") || localStorage.getItem("patient_phone") || localStorage.getItem("phone") || "";
       const currentEmail = localStorage.getItem("patientEmail") || localStorage.getItem("patient_email") || localStorage.getItem("email") || "";
       const currentName = localStorage.getItem("patientName") || localStorage.getItem("patient_name") || localStorage.getItem("full_name") || "";
 
-      // Show loading spinner if no tokens are currently rendered
-      if (!allTokens || allTokens.length === 0) {
-        if (loadingState) loadingState.style.display = "block";
-        if (emptyState) emptyState.style.display = "none";
-        if (errorState) errorState.style.display = "none";
+      if (!currentToken && !currentPhone && !currentEmail) {
+        // Guest or unauthenticated viewing locally cached tokens
+        return;
       }
 
       try {
-        let remoteTokens = null;
-        let authFailed = false;
-
-        // 1. Primary Sync: Authenticated /patient/tokens
+        let response = null;
         if (currentToken) {
-          try {
-            const queryParams = new URLSearchParams();
-            if (currentPhone) queryParams.set("phone", currentPhone);
-            if (currentEmail) queryParams.set("email", currentEmail);
-            if (currentName) queryParams.set("name", currentName);
-            const qs = queryParams.toString() ? `?${queryParams.toString()}` : "";
-            
-            const response = await fetch(`${API_URL}/patient/tokens${qs}`, {
-              method: "GET",
-              headers: {
-                "Authorization": `Bearer ${currentToken}`,
-                "Content-Type": "application/json"
-              }
-            });
-
-            if (response.ok) {
-              remoteTokens = await response.json();
-            } else if (response.status === 401) {
-              authFailed = true;
-              console.warn("JWT token expired; falling back to phone/email lookup.");
+          const queryParams = new URLSearchParams();
+          if (currentPhone) queryParams.set("phone", currentPhone);
+          if (currentEmail) queryParams.set("email", currentEmail);
+          const qs = queryParams.toString() ? `?${queryParams.toString()}` : "";
+          
+          response = await fetch(`${API_URL}/patient/tokens${qs}`, {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${currentToken}`,
+              "Content-Type": "application/json"
             }
-          } catch (fetchErr) {
-            console.warn("Primary /patient/tokens fetch error:", fetchErr);
-          }
+          });
         }
 
-        // 2. Fallback / Augment Sync: Unauthenticated lookup by phone/email/name
-        // Used if not logged in, JWT expired (401), or to find walk-in/unlinked tokens
-        if ((!remoteTokens || remoteTokens.length === 0 || authFailed) && (currentPhone || currentEmail || currentName)) {
-          try {
-            const lookupParams = new URLSearchParams();
-            if (currentPhone) lookupParams.set("phone", currentPhone);
-            if (currentEmail) lookupParams.set("email", currentEmail);
-            if (currentName) lookupParams.set("name", currentName);
-            
-            const lookupRes = await fetch(`${API_URL}/patient/tokens/lookup?${lookupParams.toString()}`, {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json"
-              }
-            });
-
-            if (lookupRes.ok) {
-              const lookupData = await lookupRes.json();
-              if (Array.isArray(lookupData)) {
-                if (!remoteTokens) remoteTokens = [];
-                const seenIds = new Set(remoteTokens.map(t => String(t.id)));
-                lookupData.forEach(t => {
-                  if (t && !seenIds.has(String(t.id))) {
-                    remoteTokens.push(t);
-                    seenIds.add(String(t.id));
-                  }
-                });
-              }
+        // If 401 (expired session) or no currentToken, attempt graceful lookup using phone/email/name
+        if ((!response || response.status === 401) && (currentPhone || currentEmail || currentName)) {
+          const lookupParams = new URLSearchParams();
+          if (currentPhone) lookupParams.set("phone", currentPhone);
+          if (currentEmail) lookupParams.set("email", currentEmail);
+          if (currentName) lookupParams.set("name", currentName);
+          
+          response = await fetch(`${API_URL}/patient/tokens/lookup?${lookupParams.toString()}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json"
             }
-          } catch (lookupErr) {
-            console.warn("Lookup fallback error:", lookupErr);
+          });
+        }
+
+        if (response && response.status === 401) {
+          console.warn("Patient session expired for remote sync; retaining cached tokens.");
+          if (allTokens && allTokens.length > 0) {
+            updateStats(allTokens);
+            renderTokens(allTokens);
           }
+          return;
         }
 
-        if (loadingState) loadingState.style.display = "none";
-        if (errorState) errorState.style.display = "none";
-
-        if (!remoteTokens && (!allTokens || allTokens.length === 0)) {
-          // If network failed completely and no tokens in local cache
-          if (errorState) errorState.style.display = "block";
-          if (emptyState) emptyState.style.display = "none";
-          throw new Error("Unable to reach token server.");
+        if (!response || !response.ok) {
+          throw new Error("Unable to fetch token history.");
         }
+
+        const remoteTokens = await response.json();
 
         // Intelligent Non-Destructive Merge:
-        // Merge remote tokens and local cache so walk-in & online tokens are preserved without duplicates
+        // Remote server has authoritative queue statuses, but local cache must NEVER be wiped if remote is empty
         const mergedMap = new Map();
 
+        // 1. First add remote tokens
         if (Array.isArray(remoteTokens)) {
           remoteTokens.forEach(t => {
             if (!t) return;
@@ -1133,6 +1035,7 @@
           });
         }
 
+        // 2. Merge local tokens so previously booked tokens are ALWAYS preserved
         (allTokens || []).forEach(localT => {
           if (!localT) return;
           const key = String(localT.id || (localT.token_number + "_" + (localT.appointment_date || "") + "_" + (localT.doctor || "")));
@@ -1159,7 +1062,7 @@
           } catch (e) {}
         }
 
-        // Check if any token transitioned to 'serving'
+        // Check if any token just transitioned to 'serving'
         allTokens.forEach(t => {
           const prevStatus = previousTokenStatuses[t.id];
           if (prevStatus === "waiting" && t.status === "serving") {
@@ -1186,31 +1089,23 @@
         }
 
       } catch (err) {
-        console.warn("Silent token sync notice:", err.message || err);
-        if (loadingState) loadingState.style.display = "none";
-        // If we have cached tokens, keep them rendered; otherwise show error retry box
-        if (allTokens && allTokens.length > 0) {
-          renderTokens(allTokens);
-        } else {
-          if (errorState) errorState.style.display = "block";
-          if (emptyState) emptyState.style.display = "none";
-        }
-        // Auto retry after 3s on initial failure to handle cold starts
+        console.warn("Silent token sync notice (retrying shortly):", err.message || err);
+        // Seamless fallback: keep existing tokens from local instant cache rendered
+        loadInstantCachedTokens();
+        // Fast automatic retry after 2.5s to handle backend cold-starts/restarts seamlessly
         if (!isRetry) {
           clearTimeout(tokenSyncRetryTimer);
           tokenSyncRetryTimer = setTimeout(() => {
             loadTokenHistory(true);
-          }, 3000);
+          }, 2500);
         }
-      } finally {
-        isSyncingTokens = false;
       }
     }
 
     function updateStats(tokens) {
       const list = Array.isArray(tokens) ? tokens : [];
       const total = list.length;
-      const waiting = list.filter(t => ["waiting", "serving", "called"].includes((t.status || "").toLowerCase())).length;
+      const waiting = list.filter(t => (t.status || "").toLowerCase() === "waiting").length;
       const completed = list.filter(t => (t.status || "").toLowerCase() === "completed").length;
 
       const totalEl = document.getElementById("totalCount");
@@ -1266,67 +1161,26 @@
     function renderTokens(tokens) {
       const container = document.getElementById("tokensList");
       const emptyState = document.getElementById("emptyState");
-      const loadingState = document.getElementById("loadingState");
-      const errorState = document.getElementById("errorState");
-
-      if (loadingState) loadingState.style.display = "none";
-      if (errorState) errorState.style.display = "none";
 
       if (!tokens || tokens.length === 0) {
-        if (container) container.innerHTML = "";
-        if (emptyState) emptyState.style.display = "block";
+        container.innerHTML = "";
+        emptyState.style.display = "block";
         return;
       }
 
-      if (emptyState) emptyState.style.display = "none";
+      emptyState.style.display = "none";
 
       const html = tokens.map(t => {
-        const rawStatus = (t.status || "waiting").toLowerCase();
-        let statusClass = "status-waiting";
-        let statusText = "⏳ Waiting";
-        if (rawStatus === "serving" || rawStatus === "called") {
-          statusClass = "status-serving";
-          statusText = "📢 Now Serving";
-        } else if (rawStatus === "completed") {
-          statusClass = "status-completed";
-          statusText = "✓ Completed";
-        } else if (rawStatus === "cancelled") {
-          statusClass = "status-cancelled";
-          statusText = "✖ Cancelled";
-        } else if (rawStatus === "skipped") {
-          statusClass = "status-skipped";
-          statusText = "⏭ Skipped";
-        }
+        const statusClass = t.status === "completed" ? "status-completed" : (t.status === "cancelled" ? "status-cancelled" : "status-waiting");
+        const statusText = t.status === "completed" ? "✓ Completed" : (t.status === "cancelled" ? "✖ Cancelled" : "⏳ Waiting");
         
-        // Booking Type badge
-        const rawType = (t.booking_type || "ONLINE").toUpperCase();
-        const isWalkIn = rawType.includes("WALK");
-        const bookingTypeBadge = isWalkIn
-          ? `<span class="booking-type-badge walkin-badge">🚶 Walk-in</span>`
-          : `<span class="booking-type-badge online-badge">🌐 Online</span>`;
-
-        // Payment Status badge
-        const rawPay = (t.payment_status || "paid").toLowerCase();
-        let payBadgeClass = "paid";
-        let payText = "✓ Payment Confirmed";
-        if (rawPay === "refunded" || (t.notes && t.notes.toLowerCase().includes("refund"))) {
-          payBadgeClass = "refunded";
-          payText = "💰 100% Refunded";
-        } else if (rawPay === "pending" || rawPay === "unpaid") {
-          payBadgeClass = "pending";
-          payText = "⏳ Payment Pending";
-        } else if (rawPay === "not_required" || rawPay === "cash" || rawPay === "counter") {
-          payBadgeClass = "counter";
-          payText = "💵 Hospital Counter";
-        }
-
         let formattedDate = formatApptDate(t.appointment_date);
 
         let bookedOn = "-";
         if (t.created_at) {
           try {
             const cd = new Date(t.created_at);
-            bookedOn = cd.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) + " at " + cd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+            bookedOn = cd.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " at " + cd.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
           } catch(e) {}
         }
 
@@ -1339,9 +1193,8 @@
                   <span class="lbl">Token</span>
                 </div>
                 <div class="token-details">
-                  <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px; flex-wrap: wrap;">
+                  <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
                     <span style="font-size: 14.5px; font-weight: 800; color: #0f172a;">👤 ${escapeHtml(t.patient_name || patientName)}</span>
-                    ${bookingTypeBadge}
                     ${t.booking_for === "family" ? `<span style="font-size: 10.5px; background: #e0f2fe; color: #0369a1; padding: 2px 7px; border-radius: 12px; font-weight: 700;">Family</span>` : ""}
                   </div>
                   <h3 style="font-size: 14.5px; font-weight: 700; color: #0284c7; margin: 0;">🏥 ${escapeHtml(t.hospital || "Hospital")}</h3>
@@ -1350,7 +1203,7 @@
               </div>
               <span class="status-pill ${statusClass}">${statusText}</span>
             </div>
-            ${(rawStatus === "serving" || rawStatus === "called") ? `
+            ${t.status === "serving" ? `
               <div style="background: linear-gradient(135deg, #16a34a, #15803d); color: white; padding: 14px 18px; border-radius: 12px; margin: 12px 16px 0; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 16px rgba(22, 163, 74, 0.4); animation: pulse 2s infinite;">
                 <span style="font-size: 26px;">📢</span>
                 <div style="font-weight: 700; font-size: 14px; line-height: 1.4;">
@@ -1360,7 +1213,9 @@
               </div>
             ` : ""}
 
-            ${(rawStatus === "cancelled" && (t.payment_status === "refunded" || (t.notes && t.notes.toLowerCase().includes("refund")))) ? `
+
+
+            ${(t.status === "cancelled" && (t.payment_status === "refunded" || (t.notes && t.notes.toLowerCase().includes("refund")))) ? `
               <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 12px 16px; margin: 12px 16px 0; color: #065f46; display: flex; align-items: flex-start; gap: 10px;">
                 <span style="font-size: 22px;">💰</span>
                 <div style="font-size: 13px; line-height: 1.4;">
@@ -1370,7 +1225,7 @@
               </div>
             ` : ""}
 
-            ${["waiting", "serving", "called"].includes(rawStatus) ? `
+            ${["waiting", "serving"].includes(t.status) ? `
               <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 12px 16px; margin: 12px 16px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; text-align: center;">
                 <div style="background: white; border-radius: 8px; padding: 8px; border: 1px solid #e0f2fe;">
                   <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Now Serving</div>
@@ -1390,42 +1245,42 @@
             <div class="token-card-body">
               <div class="info-grid">
                 <div class="info-item">
+                  <div class="info-label">Patient</div>
+                  <div class="info-value" style="font-weight: 700; color: #0f172a;">👤 ${escapeHtml(t.patient_name || patientName)}</div>
+                </div>
+                <div class="info-item">
                   <div class="info-label">Doctor</div>
-                  <div class="info-value">👨‍⚕️ ${escapeHtml(t.doctor || "Consultant Doctor")}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">Booking Type</div>
-                  <div class="info-value">${isWalkIn ? "🚶 Walk-in OPD" : "🌐 Online Booking"}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">Appointment Date</div>
-                  <div class="info-value">📅 ${formattedDate}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">Scheduled / ETA</div>
-                  <div class="info-value" style="color: #16a34a; font-weight: 700;">⏱️ ${t.estimated_time_12h || t.scheduled_time_12h || "OPD Queue"}</div>
+                  <div class="info-value">👨‍⚕️ ${t.doctor || "Consultant Doctor"}</div>
                 </div>
                 <div class="info-item">
                   <div class="info-label">Room / Cabin</div>
                   <div class="info-value" style="color: #0284c7; font-weight: 700;">🚪 ${(t.doctor_room_number || t.room_number) ? (String(t.doctor_room_number || t.room_number).startsWith('Room') ? (t.doctor_room_number || t.room_number) : 'Room ' + (t.doctor_room_number || t.room_number)) : 'OPD Cabin'}</div>
                 </div>
                 <div class="info-item">
-                  <div class="info-label">Booked At</div>
-                  <div class="info-value" style="font-size: 13px; color: #475569;">🕒 ${bookedOn}</div>
+                  <div class="info-label">Estimated Time</div>
+                  <div class="info-value" style="color: #16a34a; font-weight: 700;">⏱️ ${t.estimated_time_12h || t.scheduled_time_12h || "As per queue"}</div>
                 </div>
                 <div class="info-item">
-                  <div class="info-label">Receipt Email</div>
-                  <div class="info-value" style="font-size: 12px; color: #0284c7; word-break: break-all;">✉️ ${escapeHtml(t.patient_email || patientEmail || "Registered Email")}</div>
+                  <div class="info-label">Appointment Date</div>
+                  <div class="info-value">📅 ${formattedDate}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Receipt Sent To</div>
+                  <div class="info-value" style="font-size: 12px; color: #0284c7; word-break: break-all;">✉️ ${escapeHtml(t.patient_email || "Registered Email")}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">Booked At</div>
+                  <div class="info-value" style="font-size: 13px; color: #475569;">${bookedOn}</div>
                 </div>
                 <div class="info-item">
                   <div class="info-label">Amount Paid</div>
-                  <div class="info-value" style="color: #0284c7; font-weight: 700;">₹${(Number(t.total_amount) || 0).toFixed(2)}</div>
+                  <div class="info-value" style="color: #0284c7;">₹${(Number(t.total_amount) || 0).toFixed(2)}</div>
                 </div>
               </div>
             </div>
             <div class="token-card-footer">
-              <span class="payment-tag ${payBadgeClass}">
-                ${payText}
+              <span class="payment-tag">
+                ✓ Payment Confirmed
               </span>
               ${t.prescription ? `
                 <button class="btn-receipt" onclick="openPatientRxModal('${t.id}')" style="background:#16a34a; margin-right:8px;">
@@ -1446,7 +1301,7 @@
         `;
       }).join("");
 
-      if (container) container.innerHTML = html;
+      container.innerHTML = html;
     }
 
     function openReceiptModal(tokenId) {
@@ -1618,27 +1473,10 @@
       document.getElementById("patientRxModal").style.display = "none";
     }
 
-    // =====================================================
-    // REAL-TIME AUTO-SYNC & LIFECYCLE REFRESH HANDLERS
-    // =====================================================
-    // 1. Auto-refresh when patient returns to the screen/app
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        loadTokenHistory();
-      }
-    });
-
-    window.addEventListener("focus", () => {
-      loadTokenHistory();
-    });
-
-    window.addEventListener("pageshow", () => {
-      loadTokenHistory();
-    });
-
-    // 2. Continuous real-time queue polling (every 8 seconds when visible)
+    // Auto-poll live queue status every 8 seconds if there are active tokens
     setInterval(() => {
-      if (document.visibilityState === "visible") {
+      const hasActive = allTokens && allTokens.some(t => ["waiting", "serving"].includes(t.status));
+      if (hasActive && document.visibilityState === "visible") {
         loadTokenHistory();
       }
     }, 8000);
