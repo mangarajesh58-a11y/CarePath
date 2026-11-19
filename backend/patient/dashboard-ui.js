@@ -1047,15 +1047,6 @@
       actionRow.appendChild(callBtn);
     }
 
-    const detailsBtn = makeElement("button", "sponsored-link-btn", "ℹ️ Details");
-    detailsBtn.type = "button";
-    detailsBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      openInAppAdDetails(ad);
-    });
-    actionRow.appendChild(detailsBtn);
-
     card.appendChild(actionRow);
     return card;
   }
