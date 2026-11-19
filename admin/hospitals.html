@@ -293,6 +293,15 @@
 
                 <button
                     type="button"
+                    class="delete-btn"
+                    onclick="deleteHospitalFromDetailsModal()"
+                    style="background: #dc2626; color: white; border: none;"
+                >
+                    🗑 Delete Hospital
+                </button>
+
+                <button
+                    type="button"
                     class="view-btn"
                     onclick="closeHospitalDetails()"
                 >
@@ -447,6 +456,105 @@
             <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
                 <button type="button" class="view-btn" onclick="closeDirectCommModal()" style="padding: 8px 20px; font-size: 13px;">
                     Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================= -->
+    <!-- DELETE HOSPITAL CONFIRMATION MODAL            -->
+    <!-- ============================================= -->
+    <div
+        id="deleteHospitalModal"
+        class="hospital-modal"
+        style="display: none;"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delModalTitle"
+    >
+        <div class="hospital-modal-content" style="max-width: 520px; padding: 24px; border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); border: 1.5px solid #fca5a5;">
+            <!-- CLOSE BUTTON -->
+            <button
+                type="button"
+                class="modal-close"
+                onclick="closeDeleteHospitalModal()"
+                aria-label="Close delete modal"
+            >&times;</button>
+
+            <!-- HEADER -->
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+                    🗑️
+                </div>
+                <div>
+                    <h2 id="delModalTitle" style="margin: 0; font-size: 19px; color: #991b1b; font-weight: 800;">
+                        Delete Hospital Confirmation
+                    </h2>
+                    <p style="margin: 2px 0 0; font-size: 12.5px; color: #64748b;">
+                        Safe Soft Deletion &amp; Delisting Protocol
+                    </p>
+                </div>
+            </div>
+
+            <!-- HOSPITAL DETAILS SUMMARY CARD -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+                <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 6px;">
+                    Target Hospital to Remove:
+                </div>
+                <div style="font-size: 16px; font-weight: 800; color: #0f172a;" id="delModalHospitalName">
+                    Hospital Name
+                </div>
+                <div style="font-size: 13px; color: #475569; margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap;">
+                    <span>Hospital ID: <strong id="delModalHospitalId">--</strong></span>
+                    <span>City: <strong id="delModalHospitalCity">--</strong></span>
+                </div>
+            </div>
+
+            <!-- WARNING & SYSTEM CONSEQUENCES -->
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 12.5px; color: #991b1b; line-height: 1.5;">
+                <strong style="display: block; margin-bottom: 4px;">⚠️ What happens when deleted:</strong>
+                <ul style="margin: 0; padding-left: 18px;">
+                    <li>Hospital will be <strong>immediately delisted</strong> from patient search and booking options.</li>
+                    <li>Hospital portal login sessions will be <strong>revoked</strong>.</li>
+                    <li>Upcoming waiting tokens will be automatically cancelled with notification.</li>
+                    <li><strong>Historical patient appointments, tokens, payments, and receipts remain safely preserved.</strong></li>
+                </ul>
+            </div>
+
+            <!-- EXPLICIT CONFIRMATION INPUT -->
+            <div style="margin-bottom: 20px;">
+                <label for="delModalConfirmInput" style="display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+                    To confirm deletion, please type <span style="color: #dc2626; font-family: monospace; font-size: 14px; font-weight: 800;">DELETE</span> in the box below:
+                </label>
+                <input
+                    type="text"
+                    id="delModalConfirmInput"
+                    placeholder="Type DELETE"
+                    autocomplete="off"
+                    style="width: 100%; box-sizing: border-box; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-weight: 700; color: #0f172a; outline: none;"
+                    oninput="onDeleteHospitalInput(this.value)"
+                >
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button
+                    type="button"
+                    class="view-btn"
+                    onclick="closeDeleteHospitalModal()"
+                    style="padding: 10px 18px; font-size: 13.5px; border-radius: 8px;"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    id="delModalConfirmBtn"
+                    onclick="executeConfirmedHospitalDeletion()"
+                    disabled
+                    style="padding: 10px 20px; font-size: 13.5px; border-radius: 8px; background: #dc2626; color: white; border: none; font-weight: 800; cursor: not-allowed; opacity: 0.5; transition: all 0.2s;"
+                >
+                    Permanently Remove Hospital
                 </button>
             </div>
         </div>

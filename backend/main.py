@@ -267,6 +267,16 @@ def create_access_token(user_id: int, role: str) -> str:
     )
 
 
+def decode_access_token(token: str) -> dict:
+    if not JWT_SECRET_KEY:
+        raise HTTPException(status_code=500, detail="JWT not configured.")
+    return jwt.decode(
+        token.strip(),
+        JWT_SECRET_KEY,
+        algorithms=[JWT_ALGORITHM],
+    )
+
+
 def get_optional_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
 ) -> Optional[dict]:
@@ -1345,6 +1355,15 @@ def run_database_migration():
 
         "ambulance_phone":
             "VARCHAR(50) NULL",
+
+        "is_deleted":
+            "BOOLEAN NOT NULL DEFAULT FALSE",
+
+        "deleted_at":
+            "TIMESTAMP NULL",
+
+        "deleted_by":
+            "VARCHAR(255) NULL",
 
         "created_at":
             "TIMESTAMP NULL",
@@ -3249,6 +3268,7 @@ class DoctorLeaveRequest(BaseModel):
 
 class HospitalUpdate(BaseModel):
 
+    name: Optional[str] = None
     phone: Optional[str] = None
     ambulance_phone: Optional[str] = None
     daily_token_limit: Optional[int] = None
@@ -3265,9 +3285,13 @@ class HospitalUpdate(BaseModel):
 
     token_fee: Optional[int] = None
 
-    latitude: Optional[str] = None
+    latitude: Optional[Union[float, str]] = None
 
-    longitude: Optional[str] = None
+    longitude: Optional[Union[float, str]] = None
+
+    registration_number: Optional[str] = None
+    issuing_authority: Optional[str] = None
+    license_id: Optional[str] = None
 
 
 class GoogleCredentialRequest(BaseModel):
@@ -3608,6 +3632,19 @@ def hospital_to_dict(hospital):
         "certificate_verification_status": (
             hospital.certificate_verification_status or "PENDING"
         ),
+        "payment_account_name": getattr(hospital, "payment_account_name", None),
+        "payment_account_number": getattr(hospital, "payment_account_number", None),
+        "payment_ifsc": getattr(hospital, "payment_ifsc", None),
+        "payment_upi": getattr(hospital, "payment_upi", None),
+        "razorpay_account_id": getattr(hospital, "razorpay_account_id", None),
+        "cashfree_vendor_id": getattr(hospital, "cashfree_vendor_id", None),
+        "is_deleted": bool(getattr(hospital, "is_deleted", False)),
+        "deleted_at": (
+            hospital.deleted_at.isoformat()
+            if getattr(hospital, "deleted_at", None)
+            else None
+        ),
+        "deleted_by": getattr(hospital, "deleted_by", None),
     }
 
 
@@ -3780,6 +3817,19 @@ def allocate_token_number(
     to ensure 100% strict atomicity and zero duplicate allocations under concurrent registrations.
     Separates token counters per (hospital_id, doctor_id, appointment_date).
     """
+    if isinstance(appointment_date, str):
+        try:
+            appointment_date = datetime.strptime(appointment_date.strip(), "%Y-%m-%d").date()
+        except Exception:
+            try:
+                appointment_date = date.fromisoformat(appointment_date.strip())
+            except Exception:
+                appointment_date = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+    elif isinstance(appointment_date, datetime):
+        appointment_date = appointment_date.date()
+    elif not appointment_date:
+        appointment_date = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+
     clean_dept = (department or "").strip()
     clean_doc = (doctor or "").strip()
 
@@ -4785,8 +4835,8 @@ def get_authenticated_user_profile(
 
     if role == "hospital":
         hospital = db.query(Hospital).filter(Hospital.id == user_id).first()
-        if not hospital:
-            raise HTTPException(status_code=404, detail="Hospital account not found.")
+        if not hospital or getattr(hospital, "is_deleted", False):
+            raise HTTPException(status_code=401, detail="Hospital account has been deactivated or deleted.")
         return {
             "success": True,
             "authenticated": True,
@@ -5504,6 +5554,12 @@ def hospital_login(
             detail="Invalid hospital email or password",
         )
 
+    if getattr(hospital, "is_deleted", False):
+        raise HTTPException(
+            status_code=403,
+            detail="This hospital account has been deleted or deactivated. Please contact CarePath administrator.",
+        )
+
     access_token = create_access_token(
         user_id=hospital.id,
         role="hospital",
@@ -5547,6 +5603,12 @@ def hospital_google_login(
                 "this Google email. Please register "
                 "the hospital first."
             ),
+        )
+
+    if getattr(hospital, "is_deleted", False):
+        raise HTTPException(
+            status_code=403,
+            detail="This hospital account has been deleted or deactivated. Please contact CarePath administrator.",
         )
 
     hospital.google_id = (
@@ -5712,6 +5774,9 @@ def get_hospitals(
 
             Hospital.is_published ==
             True,
+
+            Hospital.is_deleted ==
+            False,
         )
         .order_by(
             Hospital.name.asc()
@@ -5751,12 +5816,51 @@ def invalidate_hospital_cache(hosp_id: Optional[int] = None):
     else:
         _HOSPITAL_CACHE.clear()
 
+@app.get("/hospitals/me")
+@app.get("/api/hospitals/me")
+def get_my_hospital_profile(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("hospital")),
+):
+    hospital_id = current_user["user_id"]
+    hospital = db.query(Hospital).filter(Hospital.id == hospital_id).first()
+    if not hospital or getattr(hospital, "is_deleted", False):
+        raise HTTPException(status_code=404, detail="Hospital account not found or has been deactivated.")
+    return hospital_to_dict(hospital)
+
 @app.get("/hospitals/{hospital_id}")
 def get_hospital(
     hospital_id: int,
     response: Response = None,
     db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
 ):
+    # Check if request has hospital or admin auth for this hospital
+    is_authorized = False
+    if credentials and credentials.credentials:
+        try:
+            payload = decode_access_token(credentials.credentials)
+            role = payload.get("role")
+            user_id = payload.get("sub")
+            if (role == "hospital" and user_id and int(user_id) == hospital_id) or role == "admin":
+                is_authorized = True
+        except Exception:
+            pass
+
+    if is_authorized:
+        hospital = (
+            db.query(Hospital)
+            .filter(Hospital.id == hospital_id)
+            .first()
+        )
+        if not hospital or getattr(hospital, "is_deleted", False):
+            raise HTTPException(
+                status_code=404,
+                detail="Hospital not found",
+            )
+        return hospital_to_dict(hospital)
+
+    # Public patient view
     cached = get_cached_hospital(hospital_id)
     if cached is not None:
         if response:
@@ -5770,6 +5874,7 @@ def get_hospital(
             Hospital.id == hospital_id,
             Hospital.approval_status == "APPROVED",
             Hospital.is_published == True,
+            Hospital.is_deleted == False,
         )
         .first()
     )
@@ -6005,21 +6110,36 @@ def update_hospital(
             data.token_fee
         )
 
-    if data.latitude is not None:
+    if data.name is not None and data.name.strip():
+        hospital.name = data.name.strip()
 
-        hospital.latitude = (
-            data.latitude
-        )
+    if data.registration_number is not None:
+        hospital.registration_number = data.registration_number.strip()
+
+    if data.issuing_authority is not None:
+        hospital.issuing_authority = data.issuing_authority.strip()
+
+    if data.license_id is not None:
+        hospital.license_id = data.license_id.strip()
+
+    if data.latitude is not None:
+        try:
+            hospital.latitude = float(data.latitude) if str(data.latitude).strip() else None
+        except Exception:
+            hospital.latitude = None
 
     if data.longitude is not None:
-
-        hospital.longitude = (
-            data.longitude
-        )
+        try:
+            hospital.longitude = float(data.longitude) if str(data.longitude).strip() else None
+        except Exception:
+            hospital.longitude = None
 
     db.commit()
 
     db.refresh(hospital)
+
+    invalidate_hospital_cache(hospital_id)
+    invalidate_admin_hospitals_cache()
 
     return {
 
@@ -6502,6 +6622,9 @@ def find_published_hospital(
 
             Hospital.is_published ==
             True,
+
+            Hospital.is_deleted ==
+            False,
         )
         .first()
     )
@@ -7579,6 +7702,8 @@ def get_hospital_tokens(
 # ============================================================
 
 @app.post("/hospital/walk-in-tokens")
+@app.post("/walk-in-tokens")
+@app.post("/walk-in-token")
 def create_walk_in_token(
     data: WalkInTokenRequest,
     db: Session = Depends(get_db),
@@ -7700,16 +7825,16 @@ def create_walk_in_token(
                 p_queries.append(Patient.phone == f"+91{clean_p}")
             matching_patient = db.query(Patient).filter(or_(*p_queries)).first()
 
-        # Determine walk-in token fee & payment collection status
-        fee_to_charge = 0
-        if getattr(data, "token_fee", None) is not None:
-            fee_to_charge = max(0, int(data.token_fee))
-        elif getattr(hospital, "token_fee", None) is not None and int(hospital.token_fee) > 0:
-            fee_to_charge = int(hospital.token_fee)
+        if getattr(hospital, "is_deleted", False):
+            raise HTTPException(
+                status_code=400,
+                detail="This hospital account has been deleted or deactivated. New walk-in registrations are disabled.",
+            )
 
-        pay_status = getattr(data, "payment_status", None)
-        if not pay_status:
-            pay_status = "paid" if fee_to_charge > 0 else "not_required"
+        # Determine walk-in token fee & payment collection status:
+        # Walk-in registrations are completely separated from online payment collections
+        fee_to_charge = 0
+        pay_status = "not_required"
 
         token = Token(
             patient_id=matching_patient.id if matching_patient else None,
@@ -8956,19 +9081,25 @@ def invalidate_admin_hospitals_cache():
 
 @app.get("/admin/hospitals")
 def admin_get_hospitals(
+    include_deleted: bool = False,
     response: Response = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("admin")),
 ):
-    cached = get_cached_admin_hospitals()
-    if cached is not None:
-        if response:
-            response.headers["Cache-Control"] = "private, max-age=30"
-            response.headers["X-Cache"] = "HIT"
-        return cached
+    if not include_deleted:
+        cached = get_cached_admin_hospitals()
+        if cached is not None:
+            if response:
+                response.headers["Cache-Control"] = "private, max-age=30"
+                response.headers["X-Cache"] = "HIT"
+            return cached
+
+    query = db.query(Hospital)
+    if not include_deleted:
+        query = query.filter(Hospital.is_deleted == False)
 
     hospitals = (
-        db.query(Hospital)
+        query
         .order_by(Hospital.id.desc())
         .all()
     )
@@ -9207,11 +9338,19 @@ CarePath Verification Team
 # Supports PDF, JPG, JPEG, PNGF
 # ============================================================
 @app.get("/admin/hospitals/{hospital_id}/certificate")
+@app.get("/hospitals/{hospital_id}/certificate")
 def get_hospital_certificate(
     hospital_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("admin")),
+    current_user: dict = Depends(get_current_user),
 ):
+    role = current_user.get("role")
+    user_id = current_user.get("user_id")
+    if role == "hospital":
+        if user_id != hospital_id:
+            raise HTTPException(status_code=403, detail="You cannot access another hospital's certificate.")
+    elif role != "admin":
+        raise HTTPException(status_code=403, detail="Access denied.")
     hospital = (
         db.query(Hospital)
         .filter(Hospital.id == hospital_id)
@@ -9511,7 +9650,7 @@ def unpublish_hospital(
         "message": "Hospital unpublished",
     }
 # ============================================================
-# ADMIN - DELETE HOSPITAL
+# ADMIN - DELETE HOSPITAL (SAFE SOFT DELETION)
 # ============================================================
 
 @app.delete("/admin/hospitals/{hospital_id}")
@@ -9522,9 +9661,7 @@ def delete_hospital(
 ):
     hospital = (
         db.query(Hospital)
-        .filter(
-            Hospital.id == hospital_id
-        )
+        .filter(Hospital.id == hospital_id)
         .first()
     )
 
@@ -9534,36 +9671,59 @@ def delete_hospital(
             detail="Hospital not found",
         )
 
-    # Delete doctors belonging to this hospital
+    if getattr(hospital, "is_deleted", False):
+        raise HTTPException(
+            status_code=400,
+            detail="Hospital has already been deleted or deactivated.",
+        )
+
+    admin_email = current_user.get("email", "admin")
+
+    # Safe Soft Deletion Strategy:
+    # 1. Soft-delete hospital and revoke publishing/approval
+    hospital.is_deleted = True
+    hospital.is_published = False
+    hospital.approval_status = "DELETED"
+    hospital.deleted_at = datetime.utcnow()
+    hospital.deleted_by = admin_email
+
+    # 2. Deactivate doctor schedules so no new appointments can be booked
     db.query(Doctor).filter(
         Doctor.hospital_id == hospital_id
-    ).delete(
-        synchronize_session=False
-    )
+    ).update({"is_available": False}, synchronize_session=False)
 
-    # Delete tokens linked to this hospital
+    # 3. Cancel any upcoming waiting tokens with cancellation audit reason
+    # (PRESERVE all historical tokens, patient appointments, payments, and receipts!)
+    today_date = date.today()
     db.query(Token).filter(
-        Token.hospital_id == hospital_id
-    ).delete(
-        synchronize_session=False
-    )
+        Token.hospital_id == hospital_id,
+        Token.status == "waiting",
+        Token.appointment_date >= today_date,
+    ).update({
+        "status": "cancelled",
+        "notes": "Hospital facility deactivated by administration"
+    }, synchronize_session=False)
 
-    # Delete legacy tokens without hospital_id
-    db.query(Token).filter(
-        Token.hospital == hospital.name,
-        Token.hospital_id.is_(None),
-    ).delete(
-        synchronize_session=False
+    # 4. Record Admin Audit Log
+    log_admin_action(
+        db,
+        admin_email=admin_email,
+        action="DELETE_HOSPITAL",
+        target_type="HOSPITAL",
+        target_id=str(hospital_id),
+        details=f"Admin soft-deleted hospital '{hospital.name}' (ID: {hospital_id}). Historical patient tokens, payments and receipts preserved.",
     )
-
-    # Delete the hospital
-    db.delete(hospital)
 
     db.commit()
 
+    # 5. Invalidate all public and admin caches
+    invalidate_doctor_cache()
+    invalidate_hospital_cache()
+    invalidate_admin_hospitals_cache()
+
     return {
         "success": True,
-        "message": "Hospital deleted successfully",
+        "message": f"Hospital '{hospital.name}' deleted and deactivated successfully. Historical patient records preserved.",
     }
 # ============================================================
 # ADD DOCTOR TO SPECIFIC HOSPITAL
@@ -10053,20 +10213,24 @@ def get_hospital_collection_summary(
     ist_today = ist_now.date()
     curr_month_str = ist_today.strftime("%Y-%m")
 
-    # Fetch successful payments and collections only:
-    # payment_status IN ('paid', 'succeeded', 'completed')
-    # status != 'cancelled'
-    # token_fee > 0 or total_amount > 0
-    # Do NOT count pending, failed, cancelled, or refunded
+    # Fetch successful collections (Online paid tokens) and walk-in registrations:
+    # Walk-in tokens are tracked for attendance volume but are strictly separated from token fee collection ($0)
+    # Online tokens count only when payment_status IN ('paid', 'succeeded', 'completed')
     valid_tokens = (
         db.query(Token)
         .filter(
             Token.hospital_id == target_hospital_id,
             Token.status != "cancelled",
-            Token.payment_status.in_(["paid", "succeeded", "completed"]),
+            Token.payment_status != "refunded",
             or_(
-                Token.token_fee > 0,
-                Token.total_amount > 0
+                Token.booking_type == "WALK_IN",
+                and_(
+                    Token.payment_status.in_(["paid", "succeeded", "completed"]),
+                    or_(
+                        Token.token_fee > 0,
+                        Token.total_amount > 0
+                    )
+                )
             )
         )
         .order_by(Token.appointment_date.desc(), Token.id.desc())
@@ -10093,10 +10257,11 @@ def get_hospital_collection_summary(
         m_name = d.strftime("%B %Y")
         day_name = days_short[d.weekday()]
 
-        fee = int(t.token_fee or t.total_amount or 0)
         is_walkin = (t.booking_type == "WALK_IN")
+        # Walk-in registrations are completely separated from online fee collection ($0 fee)
+        fee = 0 if is_walkin else int(t.token_fee or t.total_amount or 0)
         booking_type_label = "Walk-in" if is_walkin else "Online"
-        payment_type_label = "Cash / Counter" if is_walkin else "Online (Paid)"
+        payment_type_label = "Walk-in (Counter)" if is_walkin else "Online (Paid)"
 
         all_time_collection += fee
         all_time_tokens_count += 1
@@ -10271,10 +10436,10 @@ def get_admin_collection_summary(
         m_name = d.strftime("%B %Y")
         day_name = days_short[d.weekday()]
 
-        fee = int(t.token_fee or 0)
-        p_fee = int(t.platform_fee or 0)
-        gross = int(t.total_amount or (fee + p_fee))
         is_walkin = (t.booking_type == "WALK_IN")
+        fee = 0 if is_walkin else int(t.token_fee or 0)
+        p_fee = 0 if is_walkin else int(t.platform_fee or 0)
+        gross = 0 if is_walkin else int(t.total_amount or (fee + p_fee))
         is_completed = (t.status == "completed")
 
         # Daily mapping

@@ -108,6 +108,11 @@ class Hospital(Base):
     daily_token_limit = Column(Integer, default=100, nullable=True)
     ambulance_phone = Column(String(50), nullable=True)
 
+    # Soft deletion / deactivation
+    is_deleted = Column(Boolean, default=False, nullable=False, index=True)
+    deleted_at = Column(DateTime, nullable=True)
+    deleted_by = Column(String(255), nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
 

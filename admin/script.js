@@ -1962,27 +1962,94 @@ async function unpublishHospital(id) {
 }
 
 // =====================================================
-// DELETE HOSPITAL
+// DELETE HOSPITAL (SOFT DELETION WITH EXPLICIT CONFIRMATION)
 // =====================================================
 
-async function deleteHospital(id) {
-    const confirmed =
-        confirm(
-            "WARNING!\n\n" +
-            "Deleting this hospital may remove " +
-            "its doctors and tokens.\n\n" +
-            "Are you sure?"
-        );
+let pendingDeleteHospitalId = null;
 
-    if (!confirmed) {
+function deleteHospital(id) {
+    pendingDeleteHospitalId = id;
+    const hosp = (window.allLoadedHospitals || []).find(h => Number(h.id) === Number(id)) || {};
+
+    const modal = document.getElementById("deleteHospitalModal");
+    if (!modal) {
+        // Fallback
+        if (confirm(`WARNING: Are you sure you want to delete ${hosp.name || 'this hospital'} (ID: ${id})?\n\nType OK to confirm deletion.`)) {
+            hospitalAction(id, "delete");
+        }
         return;
     }
 
+    const nameEl = document.getElementById("delModalHospitalName");
+    if (nameEl) nameEl.textContent = hosp.name || `Hospital #${id}`;
+    const idEl = document.getElementById("delModalHospitalId");
+    if (idEl) idEl.textContent = `#${id}`;
+    const cityEl = document.getElementById("delModalHospitalCity");
+    if (cityEl) cityEl.textContent = hosp.city || "Not specified";
+
+    const input = document.getElementById("delModalConfirmInput");
+    if (input) input.value = "";
+
+    const btn = document.getElementById("delModalConfirmBtn");
+    if (btn) {
+        btn.disabled = true;
+        btn.style.cursor = "not-allowed";
+        btn.style.opacity = "0.5";
+    }
+
+    modal.style.display = "flex";
+}
+
+function closeDeleteHospitalModal() {
+    pendingDeleteHospitalId = null;
+    const modal = document.getElementById("deleteHospitalModal");
+    if (modal) modal.style.display = "none";
+}
+
+function onDeleteHospitalInput(val) {
+    const btn = document.getElementById("delModalConfirmBtn");
+    if (!btn) return;
+    if ((val || "").trim() === "DELETE") {
+        btn.disabled = false;
+        btn.style.cursor = "pointer";
+        btn.style.opacity = "1";
+    } else {
+        btn.disabled = true;
+        btn.style.cursor = "not-allowed";
+        btn.style.opacity = "0.5";
+    }
+}
+
+async function executeConfirmedHospitalDeletion() {
+    if (!pendingDeleteHospitalId) return;
+    const input = document.getElementById("delModalConfirmInput");
+    if (!input || input.value.trim() !== "DELETE") {
+        alert("Please type DELETE to confirm hospital removal.");
+        return;
+    }
+
+    const idToDelete = pendingDeleteHospitalId;
+    closeDeleteHospitalModal();
+
     await hospitalAction(
-        id,
+        idToDelete,
         "delete"
     );
 }
+
+function deleteHospitalFromDetailsModal() {
+    if (typeof currentHospitalDetailsId !== "undefined" && currentHospitalDetailsId) {
+        const targetId = currentHospitalDetailsId;
+        closeHospitalDetails();
+        deleteHospital(targetId);
+    }
+}
+
+window.deleteHospital = deleteHospital;
+window.closeDeleteHospitalModal = closeDeleteHospitalModal;
+window.onDeleteHospitalInput = onDeleteHospitalInput;
+window.executeConfirmedHospitalDeletion = executeConfirmedHospitalDeletion;
+window.deleteHospitalFromDetailsModal = deleteHospitalFromDetailsModal;
 
 // =====================================================
 // HOSPITAL ACTION
