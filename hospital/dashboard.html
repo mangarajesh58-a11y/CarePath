@@ -3153,8 +3153,7 @@ function renderDoctorRoster() {
     container.innerHTML = allHospitalDoctors.map((doc, idx) => {
         const isOnline = doc.is_available !== false;
         const statusClass = isOnline ? "badge-consulting" : "badge-offline";
-        const statusText = isOnline ? "🟢 In Session" : "⚪ Offline";
-        const roomNum = doc.room_number || `Rm ${idx + 1}`;
+        const roomNum = doc.room_number || `OPD Room ${idx + 1}`;
         const initials = (doc.name || "Doctor").split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
         const isSelected = selectedCallingDoctor && selectedCallingDoctor.toLowerCase() === (doc.name || '').toLowerCase();
 
@@ -3164,19 +3163,103 @@ function renderDoctorRoster() {
                     <div class="doc-avatar" style="${isSelected ? 'background: #0284c7; color: white;' : ''}">${initials}</div>
                     <div>
                         <div class="doc-name" style="${isSelected ? 'color: #0369a1; font-weight: 800;' : ''}">Dr. ${escapeHtml(doc.name)}</div>
-                        <div class="doc-meta">
+                        <div class="doc-meta" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                             <span>${escapeHtml(doc.department || 'General')}</span>
                             <span>•</span>
-                            <span style="font-weight: 700; color: #1e40af;">${roomNum}</span>
+                            <span style="font-weight: 700; color: #1e40af; background: #eff6ff; padding: 2px 7px; border-radius: 6px; border: 1px solid #bfdbfe; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="event.stopPropagation(); quickEditDoctorRoom(${doc.id}, '${escapeJs(doc.room_number || '')}', '${escapeJs(doc.name)}')" title="Click to edit OPD Room Number">
+                                🚪 ${escapeHtml(roomNum)} <span style="font-size: 10px; color: #3b82f6;">✏️</span>
+                            </span>
                         </div>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span class="badge-status-pill ${statusClass}">${statusText}</span>
+                    <button type="button" class="btn-duty-toggle" onclick="event.stopPropagation(); toggleDoctorDuty(${doc.id})" style="border: 1.5px solid ${isOnline ? '#86efac' : '#cbd5e1'}; background: ${isOnline ? '#f0fdf4' : '#f8fafc'}; color: ${isOnline ? '#166534' : '#64748b'}; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" title="Tap to switch Doctor Duty (In Session / Offline)">
+                        <span>${isOnline ? '🟢' : '⚪'}</span> ${isOnline ? 'On Duty' : 'Off Duty'}
+                    </button>
                 </div>
             </div>
         `;
     }).join("");
+}
+
+// TOGGLE DOCTOR DUTY DIRECTLY ON DASHBOARD
+async function toggleDoctorDuty(doctorId) {
+    if (!doctorId) return;
+    try {
+        const doc = (allHospitalDoctors || []).find(d => Number(d.id) === Number(doctorId));
+        if (doc) {
+            doc.is_available = (doc.is_available === false);
+            renderDoctorRoster();
+            updateCallingDoctorDropdown();
+        }
+
+        const res = await fetch(`${API_URL}/doctors/${doctorId}/toggle-availability`, {
+            method: "POST",
+            headers: getHospitalAuthHeaders(true)
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            if (doc && typeof data.is_available === "boolean") {
+                doc.is_available = data.is_available;
+            }
+            showToast(data.message || "Doctor duty status updated!", "🩺");
+        } else {
+            const res2 = await fetch(`${API_URL}/hospitals/${hospitalId}/doctors/${doctorId}/toggle-availability`, {
+                method: "POST",
+                headers: getHospitalAuthHeaders(true)
+            });
+            if (res2.ok) {
+                const data2 = await res2.json();
+                showToast(data2.message || "Doctor duty status updated!", "🩺");
+            }
+        }
+        await loadDoctors();
+    } catch (e) {
+        console.error("Toggle doctor duty error:", e);
+        showToast("Doctor duty updated locally", "🩺");
+        await loadDoctors();
+    }
+}
+
+// QUICK EDIT OPD ROOM DIRECTLY ON DASHBOARD
+async function quickEditDoctorRoom(doctorId, currentRoom, docName) {
+    const newRoom = prompt(`Enter OPD Room / Cabin number for Dr. ${docName}:`, currentRoom || "");
+    if (newRoom === null) return;
+    const roomTrimmed = newRoom.trim();
+
+    try {
+        const doc = (allHospitalDoctors || []).find(d => Number(d.id) === Number(doctorId));
+        if (doc) {
+            doc.room_number = roomTrimmed;
+            renderDoctorRoster();
+            updateCallingDoctorDropdown();
+        }
+
+        const res = await fetch(`${API_URL}/doctors/${doctorId}`, {
+            method: "PATCH",
+            headers: getHospitalAuthHeaders(true),
+            body: JSON.stringify({ room_number: roomTrimmed })
+        });
+
+        if (res.ok) {
+            showToast(`OPD Room set to "${roomTrimmed || 'General'}" for Dr. ${docName}`, "🚪");
+        } else {
+            const res2 = await fetch(`${API_URL}/hospitals/${hospitalId}/doctors/${doctorId}`, {
+                method: "PUT",
+                headers: getHospitalAuthHeaders(true),
+                body: JSON.stringify({ room_number: roomTrimmed })
+            });
+            if (res2.ok) {
+                showToast(`OPD Room set to "${roomTrimmed || 'General'}" for Dr. ${docName}`, "🚪");
+            }
+        }
+        await loadDoctors();
+    } catch (e) {
+        console.error("Update doctor room error:", e);
+        showToast("Room updated locally", "🚪");
+        await loadDoctors();
+    }
 }
 
 // LOAD TOKENS & QUEUE
@@ -3210,7 +3293,8 @@ async function loadQueue(isRetry = false) {
 
         // Filter tokens strictly scheduled for today (never fall back to past historical dates)
         let todayTokens = tokens.filter(t => {
-            const d = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            const rawD = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            const d = rawD ? String(rawD).split('T')[0].split(' ')[0] : '';
             return d === todayStr;
         });
 
@@ -3295,6 +3379,9 @@ async function loadQueue(isRetry = false) {
 
         renderQueueFeed(waiting);
         updateWalkInLiveQueue();
+        if (typeof computeCollectionFromTokens === "function") {
+            computeCollectionFromTokens();
+        }
         try {
             localStorage.setItem("cached_hospital_tokens_" + hospitalId, JSON.stringify(tokens));
         } catch(e) {}
@@ -3364,7 +3451,8 @@ function filterQueueFeed() {
     let waiting = (allHospitalTokens || [])
         .filter(t => (t.status || "").toLowerCase() === "waiting" && (t.payment_status || "").toLowerCase() !== "refunded")
         .filter(t => {
-            const d = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            const rawD = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            const d = rawD ? String(rawD).split('T')[0].split(' ')[0] : '';
             return !d || d === todayStr;
         })
         .sort((a, b) => Number(a.token_number || 0) - Number(b.token_number || 0));
@@ -3507,11 +3595,16 @@ async function callNextPatient() {
     const btn = document.getElementById("nextButton");
     const msg = document.getElementById("nextMessage");
 
+    if (!Array.isArray(allHospitalTokens) || allHospitalTokens.length === 0) {
+        await loadQueue();
+    }
+
     const todayStr = getTodayDateString();
     let eligibleWaiting = (allHospitalTokens || [])
         .filter(t => (t.status || "").toLowerCase() === "waiting" && (t.payment_status || "").toLowerCase() !== "refunded")
         .filter(t => {
-            const d = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            const rawD = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            const d = rawD ? String(rawD).split('T')[0].split(' ')[0] : '';
             return !d || d === todayStr;
         })
         .sort((a, b) => Number(a.token_number || 0) - Number(b.token_number || 0));
@@ -3934,6 +4027,35 @@ async function loadHospitalAdminMessages(markRead = false) {
         // Update inquiry sidebar widget
         renderInquiriesWidget(messages);
 
+        // Update Admin direct channel notice snippet on dashboard
+        const adminSnippet = document.getElementById("adminNoticeSnippet");
+        if (adminSnippet) {
+            const adminMsgs = messages.filter(m => (m.sender_role || "").toLowerCase() === "admin");
+            if (adminMsgs.length > 0) {
+                const latestAdminMsg = adminMsgs[adminMsgs.length - 1];
+                const timeStr = latestAdminMsg.created_at ? new Date(latestAdminMsg.created_at).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+                adminSnippet.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 11px; font-weight: 800; color: #1e40af; background: #dbeafe; padding: 2px 8px; border-radius: 4px;">🏛️ Platform Admin Notice</span>
+                        <span style="font-size: 11px; color: #64748b;">${timeStr}</span>
+                    </div>
+                    ${latestAdminMsg.subject ? `<div style="font-weight: 700; color: #0f172a; margin-bottom: 4px; font-size: 13px;">${escapeHtml(latestAdminMsg.subject)}</div>` : ''}
+                    <div style="color: #334155; line-height: 1.45; word-break: break-word; font-size: 12.5px;">${escapeHtml(latestAdminMsg.message || '')}</div>
+                `;
+                adminSnippet.style.background = "#eff6ff";
+                adminSnippet.style.border = "1.5px solid #bfdbfe";
+            } else {
+                adminSnippet.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 6px; color: #166534; font-weight: 700; font-size: 12.5px; margin-bottom: 3px;">
+                        <span>🟢</span> Connected with Platform Admin
+                    </div>
+                    <div style="color: #64748b; font-size: 12px; line-height: 1.4;">Official platform announcements, verification status, and direct two-way chat will appear here.</div>
+                `;
+                adminSnippet.style.background = "var(--slate-50)";
+                adminSnippet.style.border = "1px solid var(--slate-200)";
+            }
+        }
+
         if (!container) return;
 
         if (messages.length === 0) {
@@ -4124,7 +4246,8 @@ async function sendHospitalReplyToAdmin() {
         if (!res.ok) throw new Error("Could not send reply");
         if (textInput) textInput.value = "";
         if (subjInput) subjInput.value = "";
-        await loadHospitalAdminMessages();
+        showToast("✓ Reply delivered to Platform Admin!", "✉️");
+        await loadHospitalAdminMessages(true);
     } catch(e) {
         alert("Send reply error: " + e.message);
     } finally {
@@ -4346,11 +4469,12 @@ async function updateWalkInLiveQueue() {
     const isDocChosen = cleanDoc && !cleanDoc.includes("select") && !cleanDoc.includes("loading") && !cleanDoc.includes("first");
 
     const todayStr = getTodayDateString();
-    const activeHospId = hospitalId || (storedHospital && storedHospital.id) || (cachedHospitalProfile && cachedHospitalProfile.id) || "";
+    const activeHospId = hospitalId || (storedHospital && storedHospital.id) || "";
 
     // Filter tokens strictly for today
     let todayTokens = (Array.isArray(allHospitalTokens) ? allHospitalTokens : []).filter(t => {
-        const d = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+        const rawD = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+        const d = rawD ? String(rawD).split('T')[0].split(' ')[0] : '';
         return d === todayStr;
     });
 
@@ -4730,6 +4854,9 @@ function hydrateDashboardFromCache() {
             }
             renderQueueFeed(waiting);
             updateWalkInLiveQueue();
+            if (typeof computeCollectionFromTokens === "function") {
+                computeCollectionFromTokens();
+            }
         }
     } catch(e) {
         console.warn("Hydrate cache warning:", e);
@@ -4746,12 +4873,10 @@ hydrateDashboardFromCache();
 Promise.allSettled([
     loadHospital(),
     loadDoctors().then(() => loadWalkInDepartments()),
-    loadQueue()
+    loadQueue(),
+    loadHospitalAdminMessages(false),
+    checkAdminMessagesUnreadCount()
 ]).then(() => {
-    setTimeout(() => {
-        loadHospitalAdminMessages(false);
-        checkAdminMessagesUnreadCount();
-    }, 1500);
     // Load collection summary after hospital data is ready
     fetchHospitalCollectionSummary();
 });
@@ -4913,14 +5038,165 @@ async function saveHospitalSettings() {
     let currentCollectionTab = "today";
     let cachedCollectionSummary = null;
 
+    // Real-time calculation from available tokens (0ms offline-first fallback)
+    function computeCollectionFromTokens() {
+        if (!Array.isArray(allHospitalTokens)) return;
+        const todayStr = getTodayDateString();
+        const thisMonthStr = todayStr.substring(0, 7);
+        const hospFee = Number(storedHospital && storedHospital.token_fee ? storedHospital.token_fee : 50);
+
+        let todayCount = 0;
+        let todayRev = 0;
+        let monthCount = 0;
+        let monthRev = 0;
+        let allCount = 0;
+        let allRev = 0;
+
+        const dailyMap = {};
+        const monthlyMap = {};
+        const detailedRecords = [];
+        const daysShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+        allHospitalTokens.forEach(t => {
+            const rawDate = t.appointment_date || (t.created_at ? t.created_at.split('T')[0] : '');
+            const tokenDate = rawDate ? String(rawDate).split('T')[0].split(' ')[0] : '';
+            const tokenMonth = tokenDate ? tokenDate.substring(0, 7) : '';
+
+            const isWalkin = String(t.booking_type || "").toUpperCase() === "WALK_IN";
+            const isCancelled = (t.status || "").toLowerCase() === "cancelled";
+            const isRefunded = (t.payment_status || "").toLowerCase() === "refunded";
+            const isCompleted = (t.status || "").toLowerCase() === "completed";
+
+            // Walk-in patients are completely free of CarePath token fee (fee = 0)
+            const fee = isWalkin ? 0 : Number(t.token_fee || t.amount || hospFee || 0);
+
+            if (!isCancelled && !isRefunded) {
+                allCount++;
+                allRev += fee;
+
+                if (tokenDate === todayStr) {
+                    todayCount++;
+                    todayRev += fee;
+                }
+
+                if (tokenMonth === thisMonthStr) {
+                    monthCount++;
+                    monthRev += fee;
+                }
+            }
+
+            if (tokenDate) {
+                if (!dailyMap[tokenDate]) {
+                    const parts = tokenDate.split("-");
+                    const dateObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                    const dayName = isNaN(dateObj.getTime()) ? "" : daysShort[dateObj.getDay()];
+                    dailyMap[tokenDate] = {
+                        date: tokenDate,
+                        date_display: isNaN(dateObj.getTime()) ? tokenDate : dateObj.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }),
+                        day_name: dayName,
+                        total_tokens: 0,
+                        online_tokens: 0,
+                        walkin_tokens: 0,
+                        completed_tokens: 0,
+                        collection: 0
+                    };
+                }
+                dailyMap[tokenDate].total_tokens++;
+                dailyMap[tokenDate].collection += fee;
+                if (isWalkin) dailyMap[tokenDate].walkin_tokens++;
+                else dailyMap[tokenDate].online_tokens++;
+                if (isCompleted) dailyMap[tokenDate].completed_tokens++;
+            }
+
+            if (tokenMonth) {
+                if (!monthlyMap[tokenMonth]) {
+                    const [my, mm] = tokenMonth.split("-");
+                    const dateObj = new Date(Number(my), Number(mm) - 1, 1);
+                    const monthName = isNaN(dateObj.getTime()) ? tokenMonth : dateObj.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+                    monthlyMap[tokenMonth] = {
+                        month: tokenMonth,
+                        month_name: monthName,
+                        total_tokens: 0,
+                        online_tokens: 0,
+                        walkin_tokens: 0,
+                        completed_tokens: 0,
+                        collection: 0,
+                        is_current: tokenMonth === thisMonthStr
+                    };
+                }
+                monthlyMap[tokenMonth].total_tokens++;
+                monthlyMap[tokenMonth].collection += fee;
+                if (isWalkin) monthlyMap[tokenMonth].walkin_tokens++;
+                else monthlyMap[tokenMonth].online_tokens++;
+                if (isCompleted) monthlyMap[tokenMonth].completed_tokens++;
+            }
+
+            detailedRecords.push({
+                id: t.id,
+                date: tokenDate,
+                date_display: tokenDate,
+                patient_name: t.patient_name || 'Patient',
+                patient_phone: t.patient_phone || '-',
+                token_number: t.token_number,
+                doctor: t.doctor || '-',
+                department: t.department || '-',
+                booking_type: isWalkin ? "Walk-in" : "Online",
+                payment_type: isWalkin ? "Walk-in (Counter)" : "Online (Paid)",
+                payment_status: t.payment_status || (isWalkin ? "Walk-in" : "Paid"),
+                amount: fee,
+                status: t.status,
+                is_today: tokenDate === todayStr,
+                is_this_month: tokenMonth === thisMonthStr
+            });
+        });
+
+        const todayEl = document.getElementById("todayRevenueDisplay");
+        if (todayEl) todayEl.textContent = `₹${todayRev.toLocaleString()}`;
+
+        const monthEl = document.getElementById("monthRevenueDisplay");
+        if (monthEl) monthEl.textContent = `₹${monthRev.toLocaleString()}`;
+
+        const kpiTodayColl = document.getElementById("kpiTodayCollection");
+        if (kpiTodayColl) kpiTodayColl.textContent = `₹${todayRev.toLocaleString()}`;
+
+        const kpiTodayTok = document.getElementById("kpiTodayTokens");
+        if (kpiTodayTok) kpiTodayTok.textContent = `${todayCount} Tokens Collected Today`;
+
+        const kpiMonthColl = document.getElementById("kpiMonthCollection");
+        if (kpiMonthColl) kpiMonthColl.textContent = `₹${monthRev.toLocaleString()}`;
+
+        const kpiMonthTok = document.getElementById("kpiMonthTokens");
+        if (kpiMonthTok) kpiMonthTok.textContent = `${monthCount} Tokens (This Month)`;
+
+        const kpiAllTimeColl = document.getElementById("kpiAllTimeCollection");
+        if (kpiAllTimeColl) kpiAllTimeColl.textContent = `₹${allRev.toLocaleString()}`;
+
+        const kpiAllTimeTok = document.getElementById("kpiAllTimeTokens");
+        if (kpiAllTimeTok) kpiAllTimeTok.textContent = `${allCount} Total Collections`;
+
+        cachedCollectionSummary = {
+            today: { date: todayStr, collection: todayRev, total_tokens: todayCount },
+            this_month: { month: thisMonthStr, collection: monthRev, total_tokens: monthCount },
+            all_time: { total_collection: allRev, total_tokens: allCount },
+            daily_history: Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date)),
+            monthly_history: Object.values(monthlyMap).sort((a, b) => b.month.localeCompare(a.month)),
+            records_today: detailedRecords.filter(r => r.is_today),
+            records_month: detailedRecords.filter(r => r.is_this_month),
+            records: detailedRecords
+        };
+
+        renderCollectionHistoryTable();
+    }
+
     async function fetchHospitalCollectionSummary() {
-        const token = localStorage.getItem("hospitalToken") || localStorage.getItem("token") || "";
+        computeCollectionFromTokens();
+
         const hospId = (storedHospital && storedHospital.id) || hospitalId || "";
         if (!hospId) return;
 
         try {
             const res = await fetch(`${API_URL}/hospitals/${encodeURIComponent(hospId)}/collection-summary`, {
-                headers: { "Authorization": `Bearer ${token}` }
+                headers: getHospitalAuthHeaders()
             });
 
             if (res.ok) {
@@ -4963,7 +5239,8 @@ async function saveHospitalSettings() {
                 renderCollectionHistoryTable();
             }
         } catch (e) {
-            console.warn("Could not load hospital collection summary:", e);
+            console.warn("Could not load hospital collection summary from API, using real-time computation:", e);
+            computeCollectionFromTokens();
         }
     }
 
@@ -5189,6 +5466,9 @@ async function saveHospitalSettings() {
     }
 
     function exportCollectionHistoryCSV() {
+        if (!cachedCollectionSummary && typeof computeCollectionFromTokens === "function") {
+            computeCollectionFromTokens();
+        }
         if (!cachedCollectionSummary) {
             alert("No collection history available to export.");
             return;
@@ -5224,6 +5504,7 @@ async function saveHospitalSettings() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        showToast("✓ Collection report exported to CSV!", "📥");
     }
     function openCollectionHistoryModal() {
         const modal = document.getElementById("collectionHistoryModal");

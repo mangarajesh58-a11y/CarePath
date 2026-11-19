@@ -10204,9 +10204,9 @@ def get_hospital_collection_summary(
     auth_user_id = current_user.get("user_id")
 
     if user_role == "hospital":
-        target_hospital_id = auth_user_id
+        target_hospital_id = int(auth_user_id) if auth_user_id is not None else None
     elif user_role == "admin":
-        target_hospital_id = hospital_id or auth_user_id
+        target_hospital_id = int(hospital_id or auth_user_id) if (hospital_id or auth_user_id) is not None else None
     else:
         raise HTTPException(status_code=403, detail="Unauthorized access to hospital collection history.")
 
