@@ -938,7 +938,7 @@
         }
 
         .queue-feed-item {
-            background: var(--slate-50);
+            background: #ffffff;
             border: 1px solid var(--slate-200);
             border-radius: var(--radius-md);
             padding: 10px 12px;
@@ -946,51 +946,64 @@
             align-items: center;
             justify-content: space-between;
             gap: 10px;
+            min-height: 58px;
+            box-sizing: border-box;
             transition: var(--transition-fast);
         }
 
         .queue-feed-item.next-up-card {
             background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
             border: 2px solid #0284c7;
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.18);
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.15);
         }
 
         .badge-walkin-pill {
             background: #ecfdf5;
             color: #065f46;
             border: 1px solid #a7f3d0;
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: 700;
-            padding: 1.5px 6px;
+            padding: 2px 7px;
             border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
+            display: inline-flex !important;
+            align-items: center !important;
             gap: 3px;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            line-height: 1.2 !important;
         }
 
         .badge-online-pill {
             background: #eff6ff;
             color: #1e40af;
             border: 1px solid #bfdbfe;
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: 700;
-            padding: 1.5px 6px;
+            padding: 2px 7px;
             border-radius: 999px;
-            display: inline-flex;
-            align-items: center;
+            display: inline-flex !important;
+            align-items: center !important;
             gap: 3px;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            line-height: 1.2 !important;
         }
 
         .badge-next-up-gold {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: #ffffff;
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: 800;
             padding: 2px 7px;
             border-radius: 999px;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.3px;
             text-transform: uppercase;
-            box-shadow: 0 2px 6px rgba(217, 119, 6, 0.35);
+            box-shadow: 0 1px 4px rgba(217, 119, 6, 0.3);
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            line-height: 1.2 !important;
         }
 
         .queue-feed-item:active {
@@ -1002,33 +1015,48 @@
             background: var(--primary-light);
             color: var(--primary);
             border: 1px solid var(--primary-border);
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 800;
-            padding: 5px 9px;
-            border-radius: 8px;
-            min-width: 48px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            min-width: 44px;
             text-align: center;
             letter-spacing: -0.3px;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
         }
 
         .patient-snippet-info {
             flex: 1;
             min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 3px;
+        }
+
+        .patient-name-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
         .patient-name-text {
             font-size: 13.5px;
             font-weight: 700;
             color: var(--slate-900);
-            margin-bottom: 2px;
+            line-height: 1.25;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .patient-sub-meta {
-            font-size: 11.5px;
+            font-size: 11px;
             color: var(--slate-500);
             display: flex;
             align-items: center;
@@ -1039,24 +1067,39 @@
         }
 
         .btn-call-specific {
-            background: #ffffff;
-            color: var(--primary);
-            border: 1.5px solid var(--primary-border);
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: var(--transition-fast);
-            white-space: nowrap;
-            box-shadow: var(--shadow-subtle);
-            flex-shrink: 0;
+            width: auto !important;
+            max-width: fit-content !important;
+            margin: 0 !important;
+            margin-top: 0 !important;
+            padding: 7px 12px !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+            border-radius: 8px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            background: #ffffff !important;
+            color: #0284c7 !important;
+            border: 1.5px solid #0284c7 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+            cursor: pointer !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 4px !important;
+            height: auto !important;
+            line-height: normal !important;
+            transition: all 0.15s ease !important;
+        }
+
+        .btn-call-specific:hover {
+            background: #0284c7 !important;
+            color: #ffffff !important;
         }
 
         .btn-call-specific:active {
-            background: var(--primary);
-            color: #ffffff;
-            transform: scale(0.95);
+            background: #0369a1 !important;
+            color: #ffffff !important;
+            transform: scale(0.96) !important;
         }
 
         /* =====================================================
@@ -3424,7 +3467,7 @@ function renderQueueFeed(waitingTokens) {
             <div class="${cardClass}">
                 <div class="token-chip" style="${isNextUp ? 'background: #0284c7; color: white;' : ''}">#${t.token_number}</div>
                 <div class="patient-snippet-info">
-                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <div class="patient-name-row">
                         <span class="patient-name-text">${escapeHtml(t.patient_name || 'Patient')}</span>
                         ${nextUpBadge}
                         ${typeBadge}
