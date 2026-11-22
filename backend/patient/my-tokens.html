@@ -647,6 +647,76 @@
     </div>
   </div>
 
+  <!-- Medical Documents Upload Modal -->
+  <div id="docUploadModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeDocUploadModal()">
+    <div class="modal-card" style="max-width: 520px; max-height: 90vh; overflow-y: auto;">
+      <button class="modal-close no-print" onclick="closeDocUploadModal()">&times;</button>
+      <div style="margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">📎</span> Medical Documents
+        </h3>
+        <p id="docModalSubtitle" style="margin: 4px 0 0; font-size: 12.5px; color: #64748b;">
+          Upload prescriptions, lab reports, and medical records for this token.
+        </p>
+      </div>
+
+      <!-- File Drop & Selection Zone -->
+      <div id="docDropZone" onclick="document.getElementById('medicalFileInput').click()" style="border: 2px dashed #93c5fd; background: #f0f9ff; border-radius: 12px; padding: 22px 16px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 14px;">
+        <input type="file" id="medicalFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" style="display: none;" onchange="handleFileSelect(event)" />
+        <div style="font-size: 30px; margin-bottom: 4px;">📁</div>
+        <div style="font-size: 13.5px; font-weight: 700; color: #0284c7;">Click here to select documents</div>
+        <div style="font-size: 11.5px; color: #64748b; margin-top: 3px;">Supports multiple files: PDF, JPG, JPEG, PNG (up to 15MB each)</div>
+      </div>
+
+      <!-- Staged Files List (Selected but not yet uploaded) -->
+      <div id="stagedFilesContainer" style="display: none; margin-bottom: 14px;">
+        <div style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px;">Selected files to upload:</div>
+        <div id="stagedFilesList" style="display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto;"></div>
+        <button id="btnUploadSubmit" type="button" onclick="submitDocumentUpload()" style="width: 100%; margin-top: 10px; padding: 11px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          🚀 Upload Selected Documents
+        </button>
+      </div>
+
+      <!-- Previously Uploaded Documents -->
+      <div id="modalExistingDocsWrap" style="border-top: 1px solid #e2e8f0; padding-top: 14px; margin-top: 14px;">
+        <div style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 8px;">
+          Uploaded for this Token (<span id="modalExistingCount">0</span>):
+        </div>
+        <div id="modalExistingDocsList" style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;">
+          <div style="color: #94a3b8; font-size: 12px; text-align: center; padding: 12px;">No documents uploaded yet.</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 18px; text-align: right;">
+        <button type="button" onclick="closeDocUploadModal()" style="padding: 9px 18px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer;">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Medical Document Preview Modal -->
+  <div id="docPreviewModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeDocPreviewModal()">
+    <div class="modal-card" style="max-width: 680px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h4 id="previewDocTitle" style="margin: 0; font-size: 14px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px;">Document Preview</h4>
+        <button class="modal-close" onclick="closeDocPreviewModal()" style="position: static;">&times;</button>
+      </div>
+      <div id="previewDocBody" style="flex: 1; min-height: 350px; max-height: 65vh; overflow: auto; background: #f8fafc; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 8px;">
+        <!-- Preview Content -->
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+        <a id="previewDocDownloadBtn" href="#" target="_blank" download style="display: inline-flex; align-items: center; gap: 5px; padding: 8px 14px; background: #0284c7; color: white; border-radius: 8px; text-decoration: none; font-size: 12.5px; font-weight: 700;">
+          ⬇️ Download Document
+        </a>
+        <button type="button" onclick="closeDocPreviewModal()" style="padding: 8px 16px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer;">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+
   <style>
     @keyframes spin { to { transform: rotate(360deg); } }
   
@@ -1278,10 +1348,16 @@
                 </div>
               </div>
             </div>
-            <div class="token-card-footer">
+            <!-- Uploaded Documents Display Container -->
+            <div id="token-docs-wrap-${t.id}" class="token-docs-container" style="display: none; padding: 10px 16px; background: #f8fafc; border-top: 1px dashed #e2e8f0;"></div>
+            <div class="token-card-footer" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between;">
               <span class="payment-tag">
                 ✓ Payment Confirmed
               </span>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <button class="btn-receipt" onclick="openDocUploadModal(${t.id}, '${escapeHtml(t.patient_id || '')}', '${escapeHtml(t.hospital_id || '')}', '${t.token_number}', '${escapeHtml(t.patient_name || 'Patient')}')" style="background: #4f46e5; color: white; display: inline-flex; align-items: center; gap: 4px; border: none; cursor: pointer;">
+                  📎 Upload Documents
+                </button>
               ${t.prescription ? `
                 <button class="btn-receipt" onclick="openPatientRxModal('${t.id}')" style="background:#16a34a; margin-right:8px;">
                   📋 Prescription
@@ -1296,12 +1372,14 @@
               <button class="btn-receipt" onclick="openReceiptModal('${t.id}')">
                 🧾 View Receipt
               </button>
+              </div>
             </div>
           </div>
         `;
       }).join("");
 
       container.innerHTML = html;
+      loadDocumentsForTokens(tokens);
     }
 
     function openReceiptModal(tokenId) {
@@ -1703,7 +1781,320 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
         }
       } catch(e) {}
     }
-  </script>
+  
+
+    /* =====================================================
+       MEDICAL DOCUMENTS UPLOAD & PREVIEW LOGIC
+       ===================================================== */
+    let currentUploadTokenId = null;
+    let stagedFiles = [];
+    const tokenDocsCache = new Map();
+
+    function escapeJs(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r");
+    }
+
+    async function loadDocumentsForTokens(tokensList) {
+      if (!tokensList || tokensList.length === 0) return;
+      const validIds = tokensList.map(t => t.id).filter(id => id && !String(id).startsWith("tk_"));
+      if (validIds.length === 0) return;
+      try {
+        const res = await fetch(`${API_URL}/patient/tokens-documents-batch?token_ids=${validIds.join(",")}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.documents_by_token) {
+          Object.keys(data.documents_by_token).forEach(tId => {
+            tokenDocsCache.set(String(tId), data.documents_by_token[tId]);
+            renderTokenDocsUnderCard(tId, data.documents_by_token[tId]);
+          });
+        }
+      } catch (err) {
+        console.warn("Could not load token documents batch:", err);
+      }
+    }
+
+    function renderTokenDocsUnderCard(tokenId, docs) {
+      const wrap = document.getElementById(`token-docs-wrap-${tokenId}`);
+      const list = document.getElementById(`token-docs-list-${tokenId}`);
+      const countEl = document.getElementById(`token-docs-count-${tokenId}`);
+      if (!wrap || !list) return;
+
+      if (!docs || docs.length === 0) {
+        wrap.style.display = "none";
+        list.innerHTML = "";
+        if (countEl) countEl.textContent = "0";
+        return;
+      }
+
+      wrap.style.display = "block";
+      if (countEl) countEl.textContent = String(docs.length);
+
+      list.innerHTML = docs.map(d => {
+        const isPdf = (d.file_type || "").includes("pdf") || (d.original_filename || "").toLowerCase().endsWith(".pdf");
+        return `
+          <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 10px; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+              <span style="font-size: 16px;">${isPdf ? '📄' : '🖼️'}</span>
+              <div style="min-width: 0; flex: 1;">
+                <div style="font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(d.original_filename)}">${escapeHtml(d.original_filename)}</div>
+                <div style="font-size: 10.5px; color: #64748b;">${d.file_size_formatted || ''}</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+              <button type="button" onclick="previewMedicalDoc(${d.id}, '${escapeJs(d.original_filename)}', '${escapeJs(d.file_type || '')}')" style="padding: 4px 8px; font-size: 11px; font-weight: 700; background: #eff6ff; color: #0284c7; border: 1px solid #bfdbfe; border-radius: 6px; cursor: pointer;">
+                👁️ Preview
+              </button>
+              <a href="${API_URL}/patient/documents/${d.id}/download" target="_blank" download style="padding: 4px 8px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 2px;">
+                ⬇️ Download
+              </a>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function openDocUploadModal(tokenId) {
+      currentUploadTokenId = tokenId;
+      stagedFiles = [];
+      updateStagedFilesList();
+
+      const token = allTokens.find(t => String(t.id) === String(tokenId));
+      const subTitle = document.getElementById("docModalSubtitle");
+      if (subTitle && token) {
+        subTitle.textContent = `Token #${token.token_number || ''} • ${token.hospital || 'Hospital'} • Dr. ${token.doctor || 'Doctor'} • ${formatApptDate(token.appointment_date)}`;
+      }
+
+      loadModalExistingDocs(tokenId);
+      const modal = document.getElementById("docUploadModal");
+      if (modal) modal.style.display = "flex";
+    }
+
+    function closeDocUploadModal() {
+      const modal = document.getElementById("docUploadModal");
+      if (modal) modal.style.display = "none";
+      currentUploadTokenId = null;
+      stagedFiles = [];
+    }
+
+    async function loadModalExistingDocs(tokenId) {
+      const listEl = document.getElementById("modalExistingDocsList");
+      const countEl = document.getElementById("modalExistingCount");
+      if (!listEl) return;
+
+      listEl.innerHTML = '<div style="color: #64748b; font-size: 12px; text-align: center; padding: 12px;">⏳ Loading documents...</div>';
+
+      try {
+        const res = await fetch(`${API_URL}/patient/tokens/${tokenId}/documents`);
+        if (!res.ok) throw new Error("Could not fetch documents");
+        const data = await res.json();
+        const docs = data.documents || [];
+        tokenDocsCache.set(String(tokenId), docs);
+        renderTokenDocsUnderCard(tokenId, docs);
+
+        if (countEl) countEl.textContent = String(docs.length);
+        if (docs.length === 0) {
+          listEl.innerHTML = '<div style="color: #94a3b8; font-size: 12px; text-align: center; padding: 12px;">No documents uploaded for this token yet.</div>';
+          return;
+        }
+
+        listEl.innerHTML = docs.map(d => {
+          const isPdf = (d.file_type || "").includes("pdf") || (d.original_filename || "").toLowerCase().endsWith(".pdf");
+          return `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 10px; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                <span style="font-size: 16px;">${isPdf ? '📄' : '🖼️'}</span>
+                <div style="min-width: 0; flex: 1;">
+                  <div style="font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(d.original_filename)}">${escapeHtml(d.original_filename)}</div>
+                  <div style="font-size: 10.5px; color: #64748b;">${d.file_size_formatted || ''}</div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <button type="button" onclick="previewMedicalDoc(${d.id}, '${escapeJs(d.original_filename)}', '${escapeJs(d.file_type || '')}')" style="padding: 4px 8px; font-size: 11px; font-weight: 700; background: #eff6ff; color: #0284c7; border: 1px solid #bfdbfe; border-radius: 6px; cursor: pointer;">
+                  👁️ Preview
+                </button>
+                <a href="${API_URL}/patient/documents/${d.id}/download" target="_blank" download style="padding: 4px 8px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none;">
+                  ⬇️ Download
+                </a>
+                <button type="button" onclick="deleteMedicalDoc(${d.id})" style="padding: 4px 8px; font-size: 11px; font-weight: 700; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer;">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          `;
+        }).join("");
+      } catch (err) {
+        listEl.innerHTML = '<div style="color: #ef4444; font-size: 12px; text-align: center; padding: 12px;">Failed to load documents.</div>';
+      }
+    }
+
+    function handleFileSelect(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      const allowedExts = [".pdf", ".jpg", ".jpeg", ".png"];
+      for (const f of files) {
+        const ext = f.name.substring(f.name.lastIndexOf(".")).toLowerCase();
+        if (!allowedExts.includes(ext)) {
+          alert(`File "${f.name}" has an unsupported format. Only PDF, JPG, JPEG, and PNG are allowed.`);
+          continue;
+        }
+        if (f.size > 15 * 1024 * 1024) {
+          alert(`File "${f.name}" exceeds the 15MB size limit.`);
+          continue;
+        }
+        stagedFiles.push(f);
+      }
+      event.target.value = "";
+      updateStagedFilesList();
+    }
+
+    function removeStagedFile(index) {
+      stagedFiles.splice(index, 1);
+      updateStagedFilesList();
+    }
+
+    function updateStagedFilesList() {
+      const cont = document.getElementById("stagedFilesContainer");
+      const list = document.getElementById("stagedFilesList");
+      if (!cont || !list) return;
+
+      if (stagedFiles.length === 0) {
+        cont.style.display = "none";
+        list.innerHTML = "";
+        return;
+      }
+
+      cont.style.display = "block";
+      list.innerHTML = stagedFiles.map((f, idx) => {
+        const sizeKb = (f.size / 1024).toFixed(1) + " KB";
+        return `
+          <div style="display: flex; align-items: center; justify-content: space-between; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; font-size: 12px;">
+            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; font-weight: 600; color: #1e293b;">📄 ${escapeHtml(f.name)} (${sizeKb})</span>
+            <button type="button" onclick="removeStagedFile(${idx})" style="background: none; border: none; color: #ef4444; font-weight: 700; cursor: pointer; padding: 0 4px;">✕</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function submitDocumentUpload() {
+      if (!currentUploadTokenId) return;
+      if (stagedFiles.length === 0) {
+        alert("Please select at least one document to upload.");
+        return;
+      }
+
+      const btn = document.getElementById("btnUploadSubmit");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "⏳ Uploading Documents...";
+      }
+
+      const formData = new FormData();
+      stagedFiles.forEach(f => {
+        formData.append("files", f);
+      });
+
+      const tokenJwt = localStorage.getItem("token") || localStorage.getItem("patientToken");
+
+      try {
+        const res = await fetch(`${API_URL}/patient/tokens/${currentUploadTokenId}/documents`, {
+          method: "POST",
+          headers: {
+            ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+          },
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || data.message || "Failed to upload documents.");
+
+        stagedFiles = [];
+        updateStagedFilesList();
+        await loadModalExistingDocs(currentUploadTokenId);
+        alert(`✓ Successfully uploaded ${data.documents ? data.documents.length : 'your'} document(s)!`);
+      } catch (err) {
+        alert(`Upload error: ${err.message}`);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "🚀 Upload Selected Documents";
+        }
+      }
+    }
+
+    async function deleteMedicalDoc(docId) {
+      if (!confirm("Are you sure you want to delete this document?")) return;
+      const tokenJwt = localStorage.getItem("token") || localStorage.getItem("patientToken");
+      try {
+        const res = await fetch(`${API_URL}/patient/documents/${docId}`, {
+          method: "DELETE",
+          headers: {
+            ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+          }
+        });
+        if (!res.ok) throw new Error("Failed to delete document.");
+        if (currentUploadTokenId) {
+          await loadModalExistingDocs(currentUploadTokenId);
+        }
+      } catch (err) {
+        alert("Delete error: " + err.message);
+      }
+    }
+
+    function previewMedicalDoc(docId, filename, fileType) {
+      const modal = document.getElementById("docPreviewModal");
+      const titleEl = document.getElementById("previewDocTitle");
+      const bodyEl = document.getElementById("previewDocBody");
+      const downloadBtn = document.getElementById("previewDocDownloadBtn");
+
+      if (titleEl) titleEl.textContent = filename || "Document Preview";
+      const docUrl = `${API_URL}/patient/documents/${docId}/preview?preview=true`;
+      const downloadUrl = `${API_URL}/patient/documents/${docId}/download`;
+
+      if (downloadBtn) {
+        downloadBtn.href = downloadUrl;
+        downloadBtn.download = filename || "document";
+      }
+
+      const isPdf = (fileType || "").includes("pdf") || (filename || "").toLowerCase().endsWith(".pdf");
+
+      if (bodyEl) {
+        if (isPdf) {
+          bodyEl.innerHTML = `
+            <iframe src="${docUrl}" style="width: 100%; height: 550px; border: none; border-radius: 8px;"></iframe>
+          `;
+        } else {
+          bodyEl.innerHTML = `
+            <img src="${docUrl}" alt="Preview" style="max-width: 100%; max-height: 550px; object-fit: contain; border-radius: 8px;" />
+          `;
+        }
+      }
+
+      if (modal) modal.style.display = "flex";
+    }
+
+    function closeDocPreviewModal() {
+      const modal = document.getElementById("docPreviewModal");
+      if (modal) modal.style.display = "none";
+      const bodyEl = document.getElementById("previewDocBody");
+      if (bodyEl) bodyEl.innerHTML = "";
+    }
+
+    window.openDocUploadModal = openDocUploadModal;
+    window.closeDocUploadModal = closeDocUploadModal;
+    window.handleFileSelect = handleFileSelect;
+    window.removeStagedFile = removeStagedFile;
+    window.submitDocumentUpload = submitDocumentUpload;
+    window.deleteMedicalDoc = deleteMedicalDoc;
+    window.previewMedicalDoc = previewMedicalDoc;
+    window.closeDocPreviewModal = closeDocPreviewModal;
+
+</script>
 
 </body>
 

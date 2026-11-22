@@ -433,3 +433,18 @@ class UserPresence(Base):
     last_seen_at = Column(DateTime, default=datetime.utcnow, index=True)
     ip_address = Column(String(100), nullable=True)
 
+
+class MedicalDocument(Base):
+    __tablename__ = "medical_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token_id = Column(Integer, nullable=False, index=True)
+    patient_id = Column(Integer, nullable=True, index=True)
+    hospital_id = Column(Integer, nullable=True, index=True)
+    original_filename = Column(String(255), nullable=False)
+    stored_filename = Column(String(255), nullable=False)
+    file_type = Column(String(100), nullable=False)
+    file_size = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+

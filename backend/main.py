@@ -95,6 +95,7 @@ from models import (
     HospitalSettlement,
     AdminAuditLog,
     UserPresence,
+    MedicalDocument,
 )
 from fastapi.responses import FileResponse, Response, JSONResponse
 
@@ -449,6 +450,34 @@ ALLOWED_AD_VIDEO_TYPES = {
     "video/x-matroska": ".mkv",
 }
 MAX_AD_VIDEO_SIZE = 30 * 1024 * 1024  # 30 MB
+
+# ============================================================
+# MEDICAL DOCUMENTS STORAGE
+# ============================================================
+MEDICAL_DOCUMENTS_DIR = os.path.join(
+    os.path.dirname(__file__),
+    "uploads",
+    "medical_documents",
+)
+os.makedirs(MEDICAL_DOCUMENTS_DIR, exist_ok=True)
+ALLOWED_DOCUMENT_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png"}
+ALLOWED_DOCUMENT_TYPES = {
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/jpg",
+}
+MAX_DOCUMENT_SIZE = 15 * 1024 * 1024  # 15 MB per file
+
+
+def format_file_size(size_bytes: int) -> str:
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    else:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+
 
 
 
@@ -7615,6 +7644,227 @@ def get_patient_single_token(
     if token.status in ("waiting", "serving"):
         d.update(get_queue_status_for_token(db, token))
     return d
+
+
+# ============================================================
+# MEDICAL DOCUMENT UPLOAD & MANAGEMENT FOR TOKENS
+# ============================================================
+
+@app.post("/patient/tokens/{token_id}/documents")
+@app.post("/tokens/{token_id}/documents")
+async def upload_token_documents(
+    token_id: int,
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_user),
+):
+    """
+    Uploads one or multiple medical documents (PDF, JPG, JPEG, PNG) for a specific token.
+    Associates each document with the correct existing patient_id, token_id and hospital_id.
+    Works for today's token and all previous token dates.
+    """
+    token = db.query(Token).filter(Token.id == token_id).first()
+    if not token:
+        raise HTTPException(status_code=404, detail="Token record not found.")
+
+    if not files or len(files) == 0:
+        raise HTTPException(status_code=400, detail="No files provided for upload.")
+
+    uploaded_records = []
+    for f in files:
+        orig_name = f.filename or "medical_document"
+        ext = os.path.splitext(orig_name)[1].lower()
+        content_type = (f.content_type or "").lower()
+
+        if ext not in ALLOWED_DOCUMENT_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File '{orig_name}' has an unsupported format. Allowed types: PDF, JPG, JPEG, PNG."
+            )
+
+        content = await f.read()
+        if not content or len(content) == 0:
+            raise HTTPException(status_code=400, detail=f"File '{orig_name}' is empty.")
+
+        if len(content) > MAX_DOCUMENT_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File '{orig_name}' exceeds maximum allowed size of {MAX_DOCUMENT_SIZE // (1024 * 1024)}MB."
+            )
+
+        unique_name = f"med_doc_{token.id}_{secrets.token_hex(12)}{ext}"
+        file_path = os.path.join(MEDICAL_DOCUMENTS_DIR, unique_name)
+
+        try:
+            with open(file_path, "wb") as out_f:
+                out_f.write(content)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to store document: {str(e)}")
+
+        resolved_patient_id = token.patient_id
+        if not resolved_patient_id and current_user and current_user.get("role") == "patient":
+            resolved_patient_id = current_user.get("user_id")
+
+        doc = MedicalDocument(
+            token_id=token.id,
+            patient_id=resolved_patient_id,
+            hospital_id=token.hospital_id,
+            original_filename=orig_name,
+            stored_filename=unique_name,
+            file_type=content_type or (mimetypes.guess_type(orig_name)[0] or "application/octet-stream"),
+            file_size=len(content),
+            created_at=datetime.utcnow()
+        )
+        db.add(doc)
+        db.flush()
+
+        uploaded_records.append({
+            "id": doc.id,
+            "token_id": doc.token_id,
+            "original_filename": doc.original_filename,
+            "file_type": doc.file_type,
+            "file_size": doc.file_size,
+            "file_size_formatted": format_file_size(doc.file_size),
+            "created_at": doc.created_at.isoformat()
+        })
+
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Successfully uploaded {len(uploaded_records)} document(s).",
+        "documents": uploaded_records
+    }
+
+
+@app.get("/patient/tokens/{token_id}/documents")
+@app.get("/tokens/{token_id}/documents")
+def get_token_documents(
+    token_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_user),
+):
+    """Retrieves all medical documents uploaded for a specific token."""
+    token = db.query(Token).filter(Token.id == token_id).first()
+    if not token:
+        raise HTTPException(status_code=404, detail="Token record not found.")
+
+    docs = (
+        db.query(MedicalDocument)
+        .filter(MedicalDocument.token_id == token_id)
+        .order_by(MedicalDocument.created_at.asc())
+        .all()
+    )
+
+    return {
+        "success": True,
+        "token_id": token_id,
+        "count": len(docs),
+        "documents": [
+            {
+                "id": d.id,
+                "token_id": d.token_id,
+                "patient_id": d.patient_id,
+                "hospital_id": d.hospital_id,
+                "original_filename": d.original_filename,
+                "file_type": d.file_type,
+                "file_size": d.file_size,
+                "file_size_formatted": format_file_size(d.file_size),
+                "created_at": d.created_at.isoformat() if d.created_at else None
+            }
+            for d in docs
+        ]
+    }
+
+
+@app.get("/patient/documents/{document_id}/download")
+@app.get("/patient/documents/{document_id}/preview")
+@app.get("/patient/documents/{document_id}")
+def get_medical_document_file(
+    document_id: int,
+    preview: bool = Query(False),
+    db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_user),
+):
+    """Allows patients to preview (inline) or download their uploaded medical document."""
+    doc = db.query(MedicalDocument).filter(MedicalDocument.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Medical document not found.")
+
+    file_path = os.path.join(MEDICAL_DOCUMENTS_DIR, doc.stored_filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Physical document file missing from storage.")
+
+    disposition = "inline" if preview else "attachment"
+    return FileResponse(
+        path=file_path,
+        media_type=doc.file_type or "application/octet-stream",
+        filename=doc.original_filename,
+        content_disposition_type=disposition
+    )
+
+
+@app.delete("/patient/documents/{document_id}")
+def delete_medical_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_user),
+):
+    """Allows patient to delete an uploaded document."""
+    doc = db.query(MedicalDocument).filter(MedicalDocument.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Medical document not found.")
+
+    file_path = os.path.join(MEDICAL_DOCUMENTS_DIR, doc.stored_filename)
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            print("Notice: could not delete physical file:", e)
+
+    db.delete(doc)
+    db.commit()
+    return {"success": True, "message": "Document deleted successfully."}
+
+
+@app.get("/patient/tokens-documents-batch")
+def get_batch_token_documents(
+    token_ids: str = Query(..., description="Comma-separated token IDs"),
+    db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_user),
+):
+    """Fast batch retrieval of documents for all rendered tokens in Token History."""
+    try:
+        ids = [int(tid.strip()) for tid in token_ids.split(",") if tid.strip().isdigit()]
+    except Exception:
+        ids = []
+
+    if not ids:
+        return {"success": True, "documents_by_token": {}}
+
+    docs = (
+        db.query(MedicalDocument)
+        .filter(MedicalDocument.token_id.in_(ids))
+        .order_by(MedicalDocument.created_at.asc())
+        .all()
+    )
+
+    grouped = {}
+    for d in docs:
+        tid_str = str(d.token_id)
+        if tid_str not in grouped:
+            grouped[tid_str] = []
+        grouped[tid_str].append({
+            "id": d.id,
+            "token_id": d.token_id,
+            "original_filename": d.original_filename,
+            "file_type": d.file_type,
+            "file_size": d.file_size,
+            "file_size_formatted": format_file_size(d.file_size),
+            "created_at": d.created_at.isoformat() if d.created_at else None
+        })
+
+    return {"success": True, "documents_by_token": grouped}
 
 
 # ============================================================

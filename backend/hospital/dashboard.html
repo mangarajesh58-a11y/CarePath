@@ -941,33 +941,36 @@
             background: #ffffff;
             border: 1px solid var(--slate-200);
             border-radius: var(--radius-md);
-            padding: 10px 12px;
+            padding: 8px 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: 8px;
             min-height: 58px;
             box-sizing: border-box;
             transition: var(--transition-fast);
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
         }
 
         .queue-feed-item.next-up-card {
             background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
             border: 2px solid #0284c7;
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.15);
+            box-shadow: 0 3px 12px rgba(2, 132, 199, 0.12);
         }
 
         .badge-walkin-pill {
             background: #ecfdf5;
             color: #065f46;
             border: 1px solid #a7f3d0;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
-            padding: 2px 7px;
+            padding: 1.5px 6px;
             border-radius: 999px;
             display: inline-flex !important;
             align-items: center !important;
-            gap: 3px;
+            gap: 2.5px;
             white-space: nowrap !important;
             flex-shrink: 0 !important;
             line-height: 1.2 !important;
@@ -977,13 +980,13 @@
             background: #eff6ff;
             color: #1e40af;
             border: 1px solid #bfdbfe;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
-            padding: 2px 7px;
+            padding: 1.5px 6px;
             border-radius: 999px;
             display: inline-flex !important;
             align-items: center !important;
-            gap: 3px;
+            gap: 2.5px;
             white-space: nowrap !important;
             flex-shrink: 0 !important;
             line-height: 1.2 !important;
@@ -992,13 +995,13 @@
         .badge-next-up-gold {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: #ffffff;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 800;
-            padding: 2px 7px;
+            padding: 1.5px 6px;
             border-radius: 999px;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.25px;
             text-transform: uppercase;
-            box-shadow: 0 1px 4px rgba(217, 119, 6, 0.3);
+            box-shadow: 0 1px 3px rgba(217, 119, 6, 0.25);
             white-space: nowrap !important;
             flex-shrink: 0 !important;
             display: inline-flex !important;
@@ -1015,11 +1018,12 @@
             background: var(--primary-light);
             color: var(--primary);
             border: 1px solid var(--primary-border);
-            font-size: 15px;
+            font-size: 13.5px;
             font-weight: 800;
-            padding: 8px 10px;
-            border-radius: 10px;
-            min-width: 44px;
+            padding: 4px 6px;
+            border-radius: 9px;
+            min-width: 38px;
+            height: 38px;
             text-align: center;
             letter-spacing: -0.3px;
             flex-shrink: 0;
@@ -1029,38 +1033,46 @@
             box-sizing: border-box;
         }
 
+        .queue-feed-item.next-up-card .token-chip {
+            background: #0284c7 !important;
+            color: #ffffff !important;
+            border-color: #0284c7 !important;
+        }
+
         .patient-snippet-info {
-            flex: 1;
+            flex: 1 1 0;
             min-width: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 3px;
-        }
-
-        .patient-name-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
+            gap: 2.5px;
+            overflow: hidden;
         }
 
         .patient-name-text {
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--slate-900);
             line-height: 1.25;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            display: block;
+        }
+
+        .patient-badges-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
         }
 
         .patient-sub-meta {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--slate-500);
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1071,8 +1083,8 @@
             max-width: fit-content !important;
             margin: 0 !important;
             margin-top: 0 !important;
-            padding: 7px 12px !important;
-            font-size: 12px !important;
+            padding: 6px 10px !important;
+            font-size: 11px !important;
             font-weight: 700 !important;
             border-radius: 8px !important;
             white-space: nowrap !important;
@@ -1085,7 +1097,7 @@
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
-            gap: 4px !important;
+            gap: 3px !important;
             height: auto !important;
             line-height: normal !important;
             transition: all 0.15s ease !important;
@@ -3467,20 +3479,18 @@ function renderQueueFeed(waitingTokens) {
             <div class="${cardClass}">
                 <div class="token-chip" style="${isNextUp ? 'background: #0284c7; color: white;' : ''}">#${t.token_number}</div>
                 <div class="patient-snippet-info">
-                    <div class="patient-name-row">
-                        <span class="patient-name-text">${escapeHtml(t.patient_name || 'Patient')}</span>
+                    <span class="patient-name-text">${escapeHtml(t.patient_name || 'Patient')}</span>
+                    <div class="patient-badges-row">
                         ${nextUpBadge}
                         ${typeBadge}
                     </div>
                     <div class="patient-sub-meta">
                         <span>👨‍⚕️ ${escapeHtml(t.doctor || 'OPD')}</span>
                         <span>•</span>
-                        <span>📅 ${escapeHtml(t.appointment_date || 'Today')}</span>
-                        <span>•</span>
                         <span>⏳ ~${estWait} min wait</span>
                     </div>
                 </div>
-                <button type="button" class="btn-call-specific" onclick="callSpecificToken(${t.id}, ${t.token_number}, '${escapeJs(t.patient_name || '')}', '${escapeJs(t.doctor || '')}')">
+                <button type="button" class="btn-call-specific" onclick="callSpecificToken(${t.id}, ${t.token_number}, '${escapeJs(t.patient_name || '')}', '${escapeJs(t.doctor || '')}', this)">
                     📢 Call Now
                 </button>
             </div>
