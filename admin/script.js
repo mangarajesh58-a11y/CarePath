@@ -2,7 +2,7 @@
 // Q-AROVIA ADMIN JAVASCRIPT
 // =====================================================
 
-const REMOTE_API = "https://qarovia-3q9q.onrender.com";
+const REMOTE_API = "https://carepath-3q9q.onrender.com";
 const LOCAL_API = "http://127.0.0.1:8000";
 
 function resolveApiBase() {

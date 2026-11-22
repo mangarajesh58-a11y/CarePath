@@ -53,7 +53,7 @@
 
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-    const deleteUrl = isLocal ? "http://127.0.0.1:8000/patients/me" : "https://qarovia-3q9q.onrender.com/patients/me";
+    const deleteUrl = isLocal ? "http://127.0.0.1:8000/patients/me" : "https://carepath-3q9q.onrender.com/patients/me";
 
     try {
       if (token) {
@@ -1133,7 +1133,7 @@
   <script>
     "use strict";
 
-    const API = "https://qarovia-3q9q.onrender.com";
+    const API = "https://carepath-3q9q.onrender.com";
 
     function byId(id) {
       return document.getElementById(id);

@@ -7,7 +7,7 @@
 (function () {
   "use strict";
 
-  const API_BASE = "https://qarovia-3q9q.onrender.com";
+  const API_BASE = "https://carepath-3q9q.onrender.com";
   const RECENT_KEY = "QAroviaRecentlyViewed";
 
   const FALLBACK_HOSPITAL_PHOTOS = [

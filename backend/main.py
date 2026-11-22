@@ -660,14 +660,14 @@ if not os.path.exists(ADMIN_STATIC_DIR):
 # ============================================================
 
 ALLOWED_ORIGINS = [
+    "https://carepath-patient-mx5v.vercel.app",
+    "https://carepath-admin.vercel.app",
+    "https://carepath-hospital-ten.vercel.app",
+    "https://patient-mx5v.vercel.app",
+    "https://hospital-ten.vercel.app",
     "https://q-arovia-hospital.vercel.app",
     "https://q-arovia-patient.vercel.app",
     "https://q-arovia-admin.vercel.app",
-    "https://hospital-ten.vercel.app",
-    "https://patient-mx5v.vercel.app",
-    "https://hospital-ten.vercel.app",
-    "https://patient-mx5v.vercel.app",
-    "https://carepath-admin.vercel.app",
     "http://localhost",
     "https://localhost",
     "http://localhost:3000",

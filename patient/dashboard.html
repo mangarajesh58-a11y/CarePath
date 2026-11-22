@@ -3106,7 +3106,7 @@
     }
 
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-    const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
+    const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
     const ttsLangCode = (shortCode === "or") ? "hi" : shortCode;
     const backendTtsUrl = `${apiBase}/ai/tts?text=${encodeURIComponent(toSpeak)}&lang=${ttsLangCode}`;
     const directTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${shortCode}&client=tw-ob&q=${encodeURIComponent(toSpeak)}`;
@@ -3968,7 +3968,7 @@
 
     const token = localStorage.getItem("patientToken") || localStorage.getItem("token") || "";
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-    const apiUrl = isLocal ? "http://127.0.0.1:8000/ai/chat" : "https://qarovia-3q9q.onrender.com/ai/chat";
+    const apiUrl = isLocal ? "http://127.0.0.1:8000/ai/chat" : "https://carepath-3q9q.onrender.com/ai/chat";
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
@@ -4132,7 +4132,7 @@
     formData.append("notes", userNotes || "");
 
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-    const primaryUrl = isLocal ? "http://127.0.0.1:8000/ai/analyze-prescription" : "https://qarovia-3q9q.onrender.com/ai/analyze-prescription";
+    const primaryUrl = isLocal ? "http://127.0.0.1:8000/ai/analyze-prescription" : "https://carepath-3q9q.onrender.com/ai/analyze-prescription";
 
     const submitBtn = document.getElementById("btnConfirmDecodePrescription");
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "⏳ Analyzing..."; }
@@ -4411,7 +4411,7 @@ async function loadPatientHospitalChat() {
     // Silent background network sync
     try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
         const res = await fetch(`${apiBase}/patients/messages?phone=${encodeURIComponent(phone)}`);
         if (res.ok) {
             const data = await res.json();
@@ -4576,7 +4576,7 @@ async function handlePatientSendFollowup(e) {
     // Silent background dispatch to hospital endpoint
     try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
         fetch(`${apiBase}/hospitals/${hospId}/patient-inquiry`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -4599,7 +4599,7 @@ async function markPatientChatAsRead() {
     if (!phone) return;
     try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
         await fetch(`${apiBase}/patients/messages/mark-read`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -4616,7 +4616,7 @@ async function checkPatientChatUnread() {
     if (!phone || !badge) return;
     try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
         const res = await fetch(`${apiBase}/patients/messages?phone=${encodeURIComponent(phone)}`);
         if (!res.ok) return;
         const data = await res.json();

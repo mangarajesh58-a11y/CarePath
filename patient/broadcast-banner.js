@@ -3,7 +3,7 @@
  * Automatically fetches and renders active emergency alerts and announcements
  */
 (function () {
-    const API_URL = (typeof API !== "undefined" ? API : (typeof API_BASE !== "undefined" ? API_BASE : "https://qarovia-3q9q.onrender.com")).replace(/\/+$/, "");
+    const API_URL = (typeof API !== "undefined" ? API : (typeof API_BASE !== "undefined" ? API_BASE : "https://carepath-3q9q.onrender.com")).replace(/\/+$/, "");
 
     // Determine target audience based on location
     const isHospital = window.location.pathname.includes("/hospital/") || document.title.toLowerCase().includes("hospital");

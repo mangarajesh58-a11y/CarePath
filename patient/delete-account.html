@@ -71,7 +71,7 @@
 
       try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-        const apiUrl = isLocal ? "http://127.0.0.1:8000/patients/request-account-deletion" : "https://qarovia-3q9q.onrender.com/patients/request-account-deletion";
+        const apiUrl = isLocal ? "http://127.0.0.1:8000/patients/request-account-deletion" : "https://carepath-3q9q.onrender.com/patients/request-account-deletion";
 
         const res = await fetch(apiUrl, {
           method: "POST",

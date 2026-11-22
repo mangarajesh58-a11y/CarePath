@@ -125,13 +125,19 @@ class QAroviaSecurityRemediationTests(unittest.TestCase):
 
     def test_09_cors_trusted_origin_allowed(self):
         """Trusted Q-Arovia Vercel domain must be permitted."""
-        headers = {
-            "Origin": "https://hospital-ten.vercel.app",
-            "Access-Control-Request-Method": "GET",
-        }
-        res = self.client.options("/hospitals", headers=headers)
-        self.assertEqual(res.headers.get("access-control-allow-credentials"), "true")
-        self.assertEqual(res.headers.get("access-control-allow-origin"), "https://hospital-ten.vercel.app")
+        for origin in [
+            "https://hospital-ten.vercel.app",
+            "https://carepath-patient-mx5v.vercel.app",
+            "https://carepath-admin.vercel.app",
+            "https://carepath-hospital-ten.vercel.app",
+        ]:
+            headers = {
+                "Origin": origin,
+                "Access-Control-Request-Method": "GET",
+            }
+            res = self.client.options("/hospitals", headers=headers)
+            self.assertEqual(res.headers.get("access-control-allow-credentials"), "true")
+            self.assertEqual(res.headers.get("access-control-allow-origin"), origin)
 
     # =========================================================================
     # PHASE 2 - HIGH-RISK REMEDIATION TESTS

@@ -282,7 +282,7 @@
 
         const API = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
             ? "http://127.0.0.1:8000"
-            : "https://qarovia-3q9q.onrender.com";
+            : "https://carepath-3q9q.onrender.com";
 
         function addDetail(container, label, value) {
             const row = document.createElement("p");
@@ -485,7 +485,7 @@
                 image.src = imageUrl
                     ? (imageUrl.startsWith("http") || imageUrl.startsWith("data:")
                         ? imageUrl
-                        : "https://qarovia-3q9q.onrender.com/" + imageUrl.replace(/^\/+/, ""))
+                        : "https://carepath-3q9q.onrender.com/" + imageUrl.replace(/^\/+/, ""))
                     : fallbackPhoto;
                 image.alt = "Hospital building";
                 image.onerror = function() {

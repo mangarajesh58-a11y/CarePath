@@ -41,7 +41,7 @@
         window.location.hostname === "127.0.0.1" ||
         window.location.hostname === "localhost";
       const wsProtocol = window.location.protocol === "https:" ? "wss:" : (isLocal ? "ws:" : "wss:");
-      const wsHost = isLocal ? "127.0.0.1:8000" : "qarovia-3q9q.onrender.com";
+      const wsHost = isLocal ? "127.0.0.1:8000" : "carepath-3q9q.onrender.com";
 
       const params = new URLSearchParams();
       if (token) params.set("token", token);
