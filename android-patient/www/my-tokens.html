@@ -538,6 +538,7 @@
 
   </style>
     <script src="./qarovia-instant-nav.js"></script>
+    <script src="./qarovia-realtime.js"></script>
 </head>
 <body>
 
@@ -1504,6 +1505,36 @@
 
     // Initial Load
     loadTokenHistory();
+
+    // ============================================================
+    // UNIFIED REAL-TIME AUTO-SYNCHRONIZATION (WEB, ANDROID, IOS)
+    // ============================================================
+    if (typeof QAroviaRealtime !== "undefined") {
+      const activePhone = currentPhone || localStorage.getItem("patientPhone") || "";
+      QAroviaRealtime.connect({
+        role: "patient",
+        phone: activePhone,
+        token: currentToken,
+      });
+
+      // Synchronize immediately when a token is booked, called, completed, or cancelled
+      window.addEventListener("qarovia:token_update", (e) => {
+        console.log("[MyTokens] Real-time token event received, syncing:", e.detail);
+        loadTokenHistory();
+      });
+
+      // Synchronize when medical documents are uploaded or deleted
+      window.addEventListener("qarovia:document_update", (e) => {
+        console.log("[MyTokens] Real-time document event received, syncing:", e.detail);
+        loadTokenHistory();
+      });
+
+      // Synchronize when app returns from background / unlocks / reconnects
+      window.addEventListener("qarovia:resume", () => {
+        console.log("[MyTokens] App resumed, fetching latest server data...");
+        loadTokenHistory();
+      });
+    }
   </script>
 
     <!-- Patient Prescription Modal -->

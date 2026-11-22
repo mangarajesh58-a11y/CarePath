@@ -230,4 +230,8 @@
     } else {
         loadActiveBroadcasts();
     }
+
+    // Reactive Unified Sync on Real-Time broadcasts & app resume
+    window.addEventListener("qarovia:emergency_broadcast", loadActiveBroadcasts);
+    window.addEventListener("qarovia:resume", loadActiveBroadcasts);
 })();

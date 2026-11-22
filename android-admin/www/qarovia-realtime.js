@@ -1,7 +1,7 @@
 /**
- * Q-Arovia Real-Time Messaging Engine
+ * Q-Arovia Real-Time & Unified Data Synchronization Engine
  * Multi-party low-latency WebSocket communication between
- * Patients, Hospitals, and Admins.
+ * Patients, Hospitals, and Admins across Website, Android, and iOS.
  */
 (function (global) {
   "use strict";
@@ -10,12 +10,13 @@
     constructor() {
       this.ws = null;
       this.reconnectAttempts = 0;
-      this.maxReconnectDelay = 10000;
+      this.maxReconnectDelay = 8000;
       this.heartbeatTimer = null;
       this.options = null;
       this.listeners = new Set();
       this.isConnected = false;
       this.lastHeartbeatAck = Date.now();
+      this._bindLifecycleHooks();
     }
 
     /**
@@ -36,7 +37,7 @@
         return;
       }
 
-      // Determine WebSocket scheme & host
+      // Determine WebSocket scheme & host (Single source of truth)
       const isLocal =
         window.location.hostname === "127.0.0.1" ||
         window.location.hostname === "localhost";
@@ -63,6 +64,10 @@
           if (typeof this.options.onStatusChange === "function") {
             this.options.onStatusChange("connected");
           }
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("qarovia:connected", { detail: { role } }));
+            window.dispatchEvent(new CustomEvent("qarovia:sync", { detail: { reason: "connected" } }));
+          }
         };
 
         this.ws.onmessage = (event) => {
@@ -85,6 +90,15 @@
             if (typeof this.options.onMessage === "function") {
               this.options.onMessage(data);
             }
+
+            // Global browser/webview events for reactive UI sync
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("qarovia:realtime", { detail: data }));
+              window.dispatchEvent(new CustomEvent(`qarovia:${data.type}`, { detail: data }));
+              if (data.action) {
+                window.dispatchEvent(new CustomEvent(`qarovia:${data.type}:${data.action}`, { detail: data }));
+              }
+            }
           } catch (err) {
             console.warn("[Q-Arovia Realtime] Frame parsing failed:", err);
           }
@@ -101,12 +115,45 @@
           if (typeof this.options.onStatusChange === "function") {
             this.options.onStatusChange("disconnected");
           }
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("qarovia:disconnected", { detail: { code: event.code } }));
+          }
           this._scheduleReconnect();
         };
       } catch (err) {
         console.warn("[Q-Arovia Realtime] Connection initiation error:", err);
         this._scheduleReconnect();
       }
+    }
+
+    _bindLifecycleHooks() {
+      if (typeof window === "undefined" || typeof document === "undefined") return;
+
+      const triggerResume = () => {
+        if (!this.isConnected && this.options) {
+          console.log("[Q-Arovia Realtime] App resumed/visible, reconnecting WebSocket...");
+          this.connect(this.options);
+        }
+        window.dispatchEvent(new CustomEvent("qarovia:resume"));
+        window.dispatchEvent(new CustomEvent("qarovia:sync", { detail: { reason: "resume" } }));
+      };
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          triggerResume();
+        }
+      });
+
+      window.addEventListener("focus", triggerResume);
+      window.addEventListener("online", () => {
+        console.log("[Q-Arovia Realtime] Network online, initiating immediate sync...");
+        triggerResume();
+      });
+      window.addEventListener("pageshow", (e) => {
+        if (e.persisted) {
+          triggerResume();
+        }
+      });
     }
 
     _startHeartbeat() {

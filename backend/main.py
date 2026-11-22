@@ -7564,6 +7564,17 @@ def create_token(
         print("Token creation error:", str(error))
         raise HTTPException(status_code=500, detail="Unable to create the hospital token.")
 
+    # Real-Time WebSocket broadcast (instant sync across website and mobile apps)
+    try:
+        broadcast_now(ws_manager.broadcast_token_event(
+            event_type="token_booked",
+            token_data=token_to_dict(token),
+            hospital_id=token.hospital_id,
+            patient_phone=token.patient_phone or getattr(patient, "phone", None),
+        ))
+    except Exception as ws_err:
+        logging.warning("Token creation WS broadcast skipped: %s", ws_err)
+
     # --- ASYNC HIGH-CONCURRENCY EMAIL DISPATCH (ZERO-LAG BACKGROUND TASKS) ---
     try:
         op_hours = hospital.operating_hours_12h if hasattr(hospital, "operating_hours_12h") else f"{hospital.opening_time or '09:00'} - {hospital.closing_time or '21:00'}"
@@ -8070,6 +8081,18 @@ async def upload_token_documents(
 
     db.commit()
 
+    # Real-Time WebSocket broadcast (instant sync across website and mobile apps)
+    try:
+        broadcast_now(ws_manager.broadcast_document_event(
+            event_type="document_uploaded",
+            token_id=token.id,
+            hospital_id=token.hospital_id,
+            patient_phone=token.patient_phone,
+            documents=uploaded_records,
+        ))
+    except Exception as ws_err:
+        logging.warning("Document upload WS broadcast skipped: %s", ws_err)
+
     return {
         "success": True,
         "message": f"Successfully uploaded {len(uploaded_records)} document(s).",
@@ -8225,8 +8248,23 @@ def delete_medical_document(
         except Exception as e:
             print("Notice: could not delete physical file:", e)
 
+    t_id = doc.token_id
+    h_id = doc.hospital_id
+    d_id = doc.id
     db.delete(doc)
     db.commit()
+
+    # Real-Time WebSocket broadcast (instant sync across website and mobile apps)
+    try:
+        broadcast_now(ws_manager.broadcast_document_event(
+            event_type="document_deleted",
+            token_id=t_id,
+            hospital_id=h_id,
+            document_id=d_id,
+        ))
+    except Exception as ws_err:
+        logging.warning("Document delete WS broadcast skipped: %s", ws_err)
+
     return {"success": True, "message": "Document deleted successfully."}
 
 
@@ -8545,6 +8583,17 @@ def create_walk_in_token(
         db.add(token)
         db.commit()
         db.refresh(token)
+
+        # Real-Time WebSocket broadcast (instant sync across website and mobile apps)
+        try:
+            broadcast_now(ws_manager.broadcast_token_event(
+                event_type="token_booked",
+                token_data=token_to_dict(token),
+                hospital_id=token.hospital_id,
+                patient_phone=token.patient_phone,
+            ))
+        except Exception as ws_err:
+            logging.warning("Walk-in token creation WS broadcast skipped: %s", ws_err)
 
         return {
             "success": True,
@@ -8981,6 +9030,17 @@ def call_token(
     db.commit()
     db.refresh(token)
 
+    # Real-Time WebSocket broadcast (instant sync across website and mobile apps)
+    try:
+        broadcast_now(ws_manager.broadcast_token_event(
+            event_type="token_called",
+            token_data=token_to_dict(token),
+            hospital_id=token.hospital_id,
+            patient_phone=token.patient_phone,
+        ))
+    except Exception as ws_err:
+        logging.warning("Token call WS broadcast skipped: %s", ws_err)
+
     return {
         "success": True,
         "message": f"Token #{token.token_number} called into consultation",
@@ -9110,6 +9170,17 @@ def complete_token(
     db.commit()
     db.refresh(token)
 
+    # Real-Time WebSocket broadcast (instant sync across website and mobile apps)
+    try:
+        broadcast_now(ws_manager.broadcast_token_event(
+            event_type="token_completed",
+            token_data=token_to_dict(token),
+            hospital_id=token.hospital_id,
+            patient_phone=token.patient_phone,
+        ))
+    except Exception as ws_err:
+        logging.warning("Token complete WS broadcast skipped: %s", ws_err)
+
     return {
         "success": True,
         "message": "Token completed successfully",
@@ -9145,6 +9216,17 @@ def skip_token(
 
     db.commit()
     db.refresh(token)
+
+    # Real-Time WebSocket broadcast (instant sync across website and mobile apps)
+    try:
+        broadcast_now(ws_manager.broadcast_token_event(
+            event_type="token_skipped",
+            token_data=token_to_dict(token),
+            hospital_id=token.hospital_id,
+            patient_phone=token.patient_phone,
+        ))
+    except Exception as ws_err:
+        logging.warning("Token skip WS broadcast skipped: %s", ws_err)
 
     return {
         "success": True,
@@ -12771,6 +12853,22 @@ def admin_create_broadcast(
     db.commit()
     db.refresh(broadcast)
 
+    # Real-Time WebSocket broadcast (instant sync across website and mobile apps)
+    try:
+        broadcast_now(ws_manager.broadcast_emergency_announcement({
+            "id": broadcast.id,
+            "title": broadcast.title,
+            "message": broadcast.message,
+            "banner_type": broadcast.banner_type,
+            "target_audience": broadcast.target_audience,
+            "is_dismissible": broadcast.is_dismissible,
+            "action_link": broadcast.action_link,
+            "action_label": broadcast.action_label,
+            "created_at": broadcast.created_at.isoformat() if broadcast.created_at else None,
+        }))
+    except Exception as ws_err:
+        logging.warning("Emergency broadcast WS dispatch skipped: %s", ws_err)
+
     return {
         "success": True,
         "message": "Emergency broadcast published successfully.",
@@ -12799,6 +12897,19 @@ def admin_toggle_broadcast(
     broadcast.is_active = not broadcast.is_active
     db.commit()
     db.refresh(broadcast)
+
+    try:
+        broadcast_now(ws_manager.broadcast_emergency_announcement({
+            "id": broadcast.id,
+            "title": broadcast.title,
+            "message": broadcast.message,
+            "banner_type": broadcast.banner_type,
+            "target_audience": broadcast.target_audience,
+            "is_active": broadcast.is_active,
+            "action": "toggled",
+        }))
+    except Exception as ws_err:
+        logging.warning("Emergency broadcast toggle WS dispatch skipped: %s", ws_err)
 
     return {
         "success": True,
@@ -12973,6 +13084,85 @@ class ConnectionManager:
         hosp_id = message_dict.get("hospital_id")
         if hosp_id:
             await self.broadcast_to_hospital(hosp_id, payload)
+        await self.broadcast_to_admins(payload)
+
+    async def broadcast_token_event(
+        self,
+        event_type: str,
+        token_data: dict,
+        hospital_id: Optional[int] = None,
+        patient_phone: Optional[str] = None,
+    ):
+        payload = {
+            "type": "token_update",
+            "action": event_type,
+            "token": token_data,
+            "hospital_id": hospital_id,
+            "patient_phone": patient_phone,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        if hospital_id:
+            await self.broadcast_to_hospital(hospital_id, payload)
+        if patient_phone:
+            await self.broadcast_to_patient(patient_phone, payload)
+        await self.broadcast_to_admins(payload)
+
+    async def broadcast_document_event(
+        self,
+        event_type: str,
+        token_id: int,
+        hospital_id: Optional[int] = None,
+        patient_phone: Optional[str] = None,
+        documents: Optional[list] = None,
+        document_id: Optional[int] = None,
+    ):
+        payload = {
+            "type": "document_update",
+            "action": event_type,
+            "token_id": token_id,
+            "documents": documents or [],
+            "document_id": document_id,
+            "hospital_id": hospital_id,
+            "patient_phone": patient_phone,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        if hospital_id:
+            await self.broadcast_to_hospital(hospital_id, payload)
+        if patient_phone:
+            await self.broadcast_to_patient(patient_phone, payload)
+        await self.broadcast_to_admins(payload)
+
+    async def broadcast_emergency_announcement(self, broadcast_dict: dict):
+        payload = {
+            "type": "emergency_broadcast",
+            "broadcast": broadcast_dict,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        for ws in list(self.active_connections):
+            try:
+                await ws.send_json(payload)
+            except Exception:
+                self.disconnect(ws)
+
+    async def broadcast_sync_signal(
+        self,
+        module: str,
+        action: str,
+        data: Optional[dict] = None,
+        hospital_id: Optional[int] = None,
+        patient_phone: Optional[str] = None,
+    ):
+        payload = {
+            "type": "data_sync",
+            "module": module,
+            "action": action,
+            "data": data or {},
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        if hospital_id:
+            await self.broadcast_to_hospital(hospital_id, payload)
+        if patient_phone:
+            await self.broadcast_to_patient(patient_phone, payload)
         await self.broadcast_to_admins(payload)
 
 ws_manager = ConnectionManager()

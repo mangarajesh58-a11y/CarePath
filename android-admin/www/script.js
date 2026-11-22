@@ -5257,7 +5257,26 @@ function initAdminRealtime() {
                         refreshCurrentCommMessages();
                     }
                 }
+                if (data.type === "token_created" || data.type === "token_called" || data.type === "token_completed" || data.type === "token_skipped") {
+                    if (typeof loadTokens === "function" && document.getElementById("tokensTableBody")) {
+                        loadTokens();
+                    }
+                    if (typeof loadDashboard === "function" && document.getElementById("heroTodayTokens")) {
+                        loadDashboard();
+                    }
+                }
             }
+        });
+
+        window.addEventListener("qarovia:token_update", function() {
+            if (typeof loadTokens === "function" && document.getElementById("tokensTableBody")) loadTokens();
+            if (typeof loadDashboard === "function" && document.getElementById("heroTodayTokens")) loadDashboard();
+        });
+
+        window.addEventListener("qarovia:resume", function() {
+            if (typeof loadTokens === "function" && document.getElementById("tokensTableBody")) loadTokens();
+            if (typeof loadDashboard === "function" && document.getElementById("heroTodayTokens")) loadDashboard();
+            if (typeof loadHospitals === "function" && document.getElementById("hospitalsTableBody")) loadHospitals();
         });
     } catch(e) {
         console.warn("Could not init admin realtime:", e);

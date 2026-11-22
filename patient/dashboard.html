@@ -4773,6 +4773,17 @@ function escapeHtml(str) {
             if (typeof showQAroviaToast === "function") {
               showQAroviaToast(`💬 Reply from ${rep.hospital_name || 'Hospital'}: ${(rep.message || '').substring(0, 45)}...`, "info");
             }
+          } else if (data.type === "token_update") {
+            const tok = data.token || {};
+            if (data.action === "token_called") {
+              if (typeof showQAroviaToast === "function") {
+                showQAroviaToast(`🔔 Token #${tok.token_number} called for consultation with Dr. ${tok.doctor || 'Doctor'}!`, "success");
+              }
+            } else if (data.action === "token_booked") {
+              if (typeof showQAroviaToast === "function") {
+                showQAroviaToast(`🎫 Token #${tok.token_number} confirmed at ${tok.hospital || 'Hospital'}!`, "info");
+              }
+            }
           }
         }
       });

@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
     <script src="./broadcast-banner.js"></script>
     <script src="./qarovia-permissions.js"></script>
+    <script src="./qarovia-realtime.js"></script>
 
     <style>
         :root {
@@ -2953,6 +2954,29 @@ loadWalkInDepartments();
         // Initial queue loading
         loadTokens();
         fetchHospitalCollectionSummary();
+
+        // Connect unified real-time synchronization engine
+        if (window.QAroviaRealtime) {
+            QAroviaRealtime.connect({
+                role: "hospital",
+                hospitalId: hospitalId,
+                token: hospitalToken
+            });
+            window.addEventListener("qarovia:token_update", function(e) {
+                console.log("[QArovia Realtime] Token update received:", e.detail);
+                loadTokens();
+                fetchHospitalCollectionSummary();
+            });
+            window.addEventListener("qarovia:document_update", function(e) {
+                console.log("[QArovia Realtime] Document update received:", e.detail);
+                loadTokens();
+            });
+            window.addEventListener("qarovia:resume", function() {
+                console.log("[QArovia Realtime] Resuming, syncing tokens...");
+                loadTokens();
+                fetchHospitalCollectionSummary();
+            });
+        }
 
 // Hospital name and live clock managed globally in DOMContentLoaded
 

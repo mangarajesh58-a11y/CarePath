@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Q-Arovia • Waiting Room Queue Display</title>
     <link rel="icon" type="image/png" href="../favicon.png">
+    <script src="./qarovia-realtime.js"></script>
     <style>
         :root {
             --bg-primary: #0f172a;
@@ -1456,6 +1457,22 @@
             } catch (err) {
                 console.warn("Queue fetch error:", err);
             }
+        }
+
+        // Unified real-time synchronization listener
+        if (window.QAroviaRealtime) {
+            QAroviaRealtime.connect({
+                role: "hospital",
+                hospitalId: hospitalId
+            });
+            window.addEventListener("qarovia:token_update", function(e) {
+                console.log("[QArovia Realtime TV] Live token update event:", e.detail);
+                fetchQueue();
+            });
+            window.addEventListener("qarovia:resume", function() {
+                console.log("[QArovia Realtime TV] Screen resumed, refreshing queue...");
+                fetchQueue();
+            });
         }
 
         // Poll every 3 seconds for real-time responsiveness

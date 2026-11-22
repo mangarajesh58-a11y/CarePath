@@ -4937,6 +4937,29 @@ Promise.allSettled([
     fetchHospitalCollectionSummary();
 });
 
+// Unified Real-Time Sync Engine for Hospital Dashboard
+if (window.QAroviaRealtime) {
+    QAroviaRealtime.connect({
+        role: "hospital",
+        hospitalId: hospitalId,
+        token: hospitalToken
+    });
+    window.addEventListener("qarovia:token_update", function(e) {
+        console.log("[QArovia Realtime Dashboard] Live token update:", e.detail);
+        loadQueue();
+        fetchHospitalCollectionSummary();
+    });
+    window.addEventListener("qarovia:document_update", function(e) {
+        console.log("[QArovia Realtime Dashboard] Document event:", e.detail);
+        loadQueue();
+    });
+    window.addEventListener("qarovia:resume", function() {
+        console.log("[QArovia Realtime Dashboard] Resumed from background, refreshing...");
+        loadQueue();
+        fetchHospitalCollectionSummary();
+    });
+}
+
 setInterval(() => {
     loadQueue();
     loadHospitalAdminMessages(false);
