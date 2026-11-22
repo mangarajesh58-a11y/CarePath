@@ -2074,18 +2074,18 @@
         <!-- Search & Filter Controls -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <div style="position: relative; max-width: 290px; width: 100%;">
-                <input type="text" id="collectionSearchInput" placeholder="Search by date or month..." oninput="renderCollectionHistoryTable()" style="width: 100%; box-sizing: border-box; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; padding: 8px 12px; color: white; font-size: 12.5px; outline: none;">
+                <input type="text" id="collectionSearchInput" placeholder="Search by patient, doctor, date..." oninput="renderCollectionHistoryTable()" style="width: 100%; box-sizing: border-box; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 8px 12px; color: #1F2937; font-size: 12.5px; outline: none;">
             </div>
-            <button type="button" onclick="exportCollectionHistoryCSV()" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <button type="button" onclick="exportCollectionHistoryCSV()" style="background: #FFFFFF; border: 1px solid #CBD5E1; color: #475569; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                 <span>📥</span> Export CSV Report
             </button>
         </div>
 
         <!-- History Table Container -->
-        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; border: 1px solid #E2E8F0; background: #FFFFFF;">
             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12.5px;">
                 <thead>
-                    <tr id="collectionTableHeaderRow" style="background: rgba(30, 41, 59, 0.95); color: var(--slate-300); border-bottom: 1px solid rgba(255,255,255,0.12);">
+                    <tr id="collectionTableHeaderRow" style="background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">
                         <th style="padding: 11px 14px;">Date / Period</th>
                         <th style="padding: 11px 14px;">Total Tokens</th>
                         <th style="padding: 11px 14px;">Online Paid</th>
@@ -2096,7 +2096,7 @@
                 </thead>
                 <tbody id="collectionTableBody">
                     <tr>
-                        <td colspan="6" style="padding: 24px; text-align: center; color: var(--slate-400);">Loading token collection history...</td>
+                        <td colspan="6" style="padding: 24px; text-align: center; color: #64748B;">Loading token collection history...</td>
                     </tr>
                 </tbody>
             </table>
@@ -5187,11 +5187,12 @@ async function saveHospitalSettings() {
                 if (isCompleted) monthlyMap[tokenMonth].completed_tokens++;
             }
 
+            const cleanPatName = (t.patient_name && String(t.patient_name).trim()) ? String(t.patient_name).trim() : (isWalkin ? "Walk-in Patient" : "Patient");
             detailedRecords.push({
                 id: t.id,
                 date: tokenDate,
                 date_display: tokenDate,
-                patient_name: t.patient_name || 'Patient',
+                patient_name: cleanPatName,
                 patient_phone: t.patient_phone || '-',
                 token_number: t.token_number,
                 doctor: t.doctor || '-',
@@ -5378,12 +5379,12 @@ async function saveHospitalSettings() {
             // DAILY AGGREGATE SUMMARY VIEW
             if (theadRow) {
                 theadRow.innerHTML = `
-                    <th style="padding: 11px 14px;">Date (Day)</th>
-                    <th style="padding: 11px 14px;">Total Tokens</th>
-                    <th style="padding: 11px 14px;">Online Paid</th>
-                    <th style="padding: 11px 14px;">Offline Walk-in</th>
-                    <th style="padding: 11px 14px;">Completed</th>
-                    <th style="padding: 11px 14px; text-align: right;">Day Collection (₹)</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Date (Day)</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Total Tokens</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Online Paid</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Offline Walk-in</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Completed</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700; text-align: right;">Day Collection (₹)</th>
                 `;
             }
 
@@ -5404,30 +5405,30 @@ async function saveHospitalSettings() {
 
             list.forEach(item => {
                 const isToday = item.date === cachedCollectionSummary.today?.date;
-                const badge = isToday ? '<span style="background: rgba(168, 85, 247, 0.2); color: #d8b4fe; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; margin-left: 6px;">Today</span>' : '';
+                const badge = isToday ? '<span style="background: #F3E8FF; color: #6B21A8; border: 1px solid #D8B4FE; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; margin-left: 6px;">Today</span>' : '';
 
                 rowsHtml += `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); ${isToday ? 'background: rgba(168, 85, 247, 0.06);' : ''}">
-                        <td style="padding: 12px 14px; font-weight: 700; color: #f8fafc;">
+                    <tr style="border-bottom: 1px solid #E2E8F0; ${isToday ? 'background: #FAF5FF;' : 'background: #FFFFFF;'}">
+                        <td style="padding: 12px 14px; font-weight: 700; color: #1F2937;">
                             ${item.date_display || item.date} ${badge}
                         </td>
-                        <td style="padding: 12px 14px; font-weight: 700; color: #38bdf8;">${item.total_tokens}</td>
-                        <td style="padding: 12px 14px; color: #a7f3d0;">${item.online_tokens}</td>
-                        <td style="padding: 12px 14px; color: #fde68a;">${item.walkin_tokens}</td>
-                        <td style="padding: 12px 14px; color: #cbd5e1;">${item.completed_tokens}</td>
-                        <td style="padding: 12px 14px; text-align: right; font-weight: 800; color: #4ade80; font-size: 13.5px;">
+                        <td style="padding: 12px 14px; font-weight: 700; color: #1D4ED8;">${item.total_tokens}</td>
+                        <td style="padding: 12px 14px; color: #6B21A8; font-weight: 600;">${item.online_tokens}</td>
+                        <td style="padding: 12px 14px; color: #166534; font-weight: 600;">${item.walkin_tokens}</td>
+                        <td style="padding: 12px 14px; color: #475569;">${item.completed_tokens}</td>
+                        <td style="padding: 12px 14px; text-align: right; font-weight: 800; color: #166534; font-size: 13.5px;">
                             ₹${Number(item.collection || 0).toLocaleString()}
                         </td>
                     </tr>
                 `;
 
                 modalRowsHtml += `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                        <td style="padding: 10px 12px; font-weight: 700; color: #f8fafc;">${item.date_display || item.date}</td>
-                        <td style="padding: 10px 12px; font-weight: 700; color: #38bdf8;">${item.total_tokens}</td>
-                        <td style="padding: 10px 12px; color: #a7f3d0;">${item.online_tokens}</td>
-                        <td style="padding: 10px 12px; color: #fde68a;">${item.walkin_tokens}</td>
-                        <td style="padding: 10px 12px; text-align: right; font-weight: 800; color: #4ade80;">₹${Number(item.collection || 0).toLocaleString()}</td>
+                    <tr style="border-bottom: 1px solid #E2E8F0; background: #FFFFFF;">
+                        <td style="padding: 10px 12px; font-weight: 700; color: #1F2937;">${item.date_display || item.date}</td>
+                        <td style="padding: 10px 12px; font-weight: 700; color: #1D4ED8;">${item.total_tokens}</td>
+                        <td style="padding: 10px 12px; color: #6B21A8; font-weight: 600;">${item.online_tokens}</td>
+                        <td style="padding: 10px 12px; color: #166534; font-weight: 600;">${item.walkin_tokens}</td>
+                        <td style="padding: 10px 12px; text-align: right; font-weight: 800; color: #166534;">₹${Number(item.collection || 0).toLocaleString()}</td>
                     </tr>
                 `;
             });
@@ -5438,13 +5439,13 @@ async function saveHospitalSettings() {
             // DETAILED TOKEN COLLECTION RECORDS VIEW (TODAY, THIS MONTH, OR ALL)
             if (theadRow) {
                 theadRow.innerHTML = `
-                    <th style="padding: 11px 14px;">Date</th>
-                    <th style="padding: 11px 14px;">Patient Name</th>
-                    <th style="padding: 11px 14px;">Token #</th>
-                    <th style="padding: 11px 14px;">Doctor</th>
-                    <th style="padding: 11px 14px;">Department</th>
-                    <th style="padding: 11px 14px;">Payment Type</th>
-                    <th style="padding: 11px 14px; text-align: right;">Amount (₹)</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Date</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Patient Name</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Token #</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Doctor</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Department</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700;">Payment Type</th>
+                    <th style="padding: 11px 14px; background: #F8FAFC; color: #475569; border-bottom: 1.5px solid #E2E8F0; font-weight: 700; text-align: right;">Amount (₹)</th>
                 `;
             }
 
@@ -5482,36 +5483,39 @@ async function saveHospitalSettings() {
 
             list.forEach(item => {
                 const isOnline = item.booking_type === "Online";
-                const typeBadge = `<span style="background: ${isOnline ? 'rgba(168, 85, 247, 0.2)' : 'rgba(34, 197, 94, 0.2)'}; color: ${isOnline ? '#d8b4fe' : '#86efac'}; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">${escapeHtml(item.payment_type || item.booking_type)}</span>`;
+                const typeBadge = isOnline
+                    ? `<span style="background: #F3E8FF; color: #6B21A8; border: 1px solid #D8B4FE; padding: 2.5px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap;">Online (Paid)</span>`
+                    : `<span style="background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; padding: 2.5px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap;">Walk-in (Counter)</span>`;
+
+                const displayName = escapeHtml(item.patient_name || (isOnline ? "Patient" : "Walk-in Patient"));
 
                 rowsHtml += `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                        <td style="padding: 11px 14px; color: #f8fafc; font-weight: 600; white-space: nowrap;">${item.date_display || item.date}</td>
-                        <td style="padding: 11px 14px; color: #ffffff; font-weight: 700;">
-                            ${escapeHtml(item.patient_name || 'Patient')}
-                            ${item.patient_phone && item.patient_phone !== '-' ? `<div style="font-size: 10.5px; color: var(--slate-400); font-weight: 500;">${escapeHtml(item.patient_phone)}</div>` : ''}
+                    <tr style="border-bottom: 1px solid #E2E8F0; background: #FFFFFF;">
+                        <td style="padding: 11px 14px; color: #1F2937; font-weight: 600; white-space: nowrap;">${item.date_display || item.date}</td>
+                        <td style="padding: 11px 14px; color: #1F2937; font-weight: 700;">
+                            ${displayName}
                         </td>
                         <td style="padding: 11px 14px;">
-                            <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 3px 9px; border-radius: 999px; font-weight: 800; font-size: 12px;">#${item.token_number}</span>
+                            <span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; padding: 3px 9px; border-radius: 999px; font-weight: 800; font-size: 12px;">#${item.token_number}</span>
                         </td>
-                        <td style="padding: 11px 14px; color: #cbd5e1; font-weight: 600;">Dr. ${escapeHtml(item.doctor || '-')}</td>
-                        <td style="padding: 11px 14px; color: #94a3b8;">${escapeHtml(item.department || '-')}</td>
+                        <td style="padding: 11px 14px; color: #475569; font-weight: 600;">Dr. ${escapeHtml(item.doctor || '-')}</td>
+                        <td style="padding: 11px 14px; color: #475569;">${escapeHtml(item.department || '-')}</td>
                         <td style="padding: 11px 14px;">${typeBadge}</td>
-                        <td style="padding: 11px 14px; text-align: right; font-weight: 800; color: #4ade80; font-size: 13.5px;">
-                            ₹${Number(item.amount || 0).toLocaleString()}
+                        <td style="padding: 11px 14px; text-align: right; font-weight: 800; color: ${item.amount > 0 ? '#166534' : '#64748B'}; font-size: 13.5px;">
+                            ${item.amount > 0 ? `₹${Number(item.amount).toLocaleString()}` : '₹0'}
                         </td>
                     </tr>
                 `;
 
                 modalRowsHtml += `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                        <td style="padding: 9px 12px; color: #f8fafc; font-weight: 600;">${item.date_display || item.date}</td>
-                        <td style="padding: 9px 12px; color: #ffffff; font-weight: 700;">${escapeHtml(item.patient_name || 'Patient')}</td>
-                        <td style="padding: 9px 12px; font-weight: 800; color: #38bdf8;">#${item.token_number}</td>
-                        <td style="padding: 9px 12px; color: #cbd5e1;">Dr. ${escapeHtml(item.doctor || '-')}</td>
-                        <td style="padding: 9px 12px; color: #94a3b8;">${escapeHtml(item.department || '-')}</td>
+                    <tr style="border-bottom: 1px solid #E2E8F0; background: #FFFFFF;">
+                        <td style="padding: 9px 12px; color: #1F2937; font-weight: 600;">${item.date_display || item.date}</td>
+                        <td style="padding: 9px 12px; color: #1F2937; font-weight: 700;">${displayName}</td>
+                        <td style="padding: 9px 12px; font-weight: 800; color: #1D4ED8;">#${item.token_number}</td>
+                        <td style="padding: 9px 12px; color: #475569; font-weight: 600;">Dr. ${escapeHtml(item.doctor || '-')}</td>
+                        <td style="padding: 9px 12px; color: #475569;">${escapeHtml(item.department || '-')}</td>
                         <td style="padding: 9px 12px;">${typeBadge}</td>
-                        <td style="padding: 9px 12px; text-align: right; font-weight: 800; color: #4ade80;">₹${Number(item.amount || 0).toLocaleString()}</td>
+                        <td style="padding: 9px 12px; text-align: right; font-weight: 800; color: ${item.amount > 0 ? '#166534' : '#64748B'};">₹${Number(item.amount || 0).toLocaleString()}</td>
                     </tr>
                 `;
             });
