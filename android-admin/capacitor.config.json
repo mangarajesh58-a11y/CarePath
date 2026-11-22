@@ -1,6 +1,6 @@
 {
   "appId": "com.carepath.admin",
-  "appName": "CarePath Admin",
+  "appName": "Q-Arovia Admin",
   "webDir": "www",
   "server": {
     "cleartext": true

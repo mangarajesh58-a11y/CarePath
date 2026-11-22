@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#071329">
-    <title>Hospital Details - CarePath</title>
+    <title>Hospital Details - Q-Arovia</title>
     <link rel="stylesheet" href="./style.css">
 
     <style>
@@ -166,7 +166,7 @@
     
 
   </style>
-    <script src="./carepath-instant-nav.js"></script>
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 
 <body>
@@ -179,7 +179,7 @@
                 <div class="brand">
                     <span class="brand-icon" aria-hidden="true">✚</span>
                     <div>
-                        <h1 style="margin: 0; font-size: 16px;">CarePath</h1>
+                        <h1 style="margin: 0; font-size: 16px;">Q-Arovia</h1>
                         <p style="margin: 0; font-size: 11px; opacity: 0.8;">Hospital Details</p>
                     </div>
                 </div>
@@ -353,7 +353,7 @@
                 // 3. Check cached hospitals list
                 if (!rendered0ms) {
                     try {
-                        const allHospRaw = localStorage.getItem("carepath_hospitals_cache") || localStorage.getItem("cached_hospitals");
+                        const allHospRaw = localStorage.getItem("qarovia_hospitals_cache") || localStorage.getItem("cached_hospitals");
                         if (allHospRaw) {
                             const allHosp = JSON.parse(allHospRaw);
                             const found = allHosp.find(h => String(h.id || h.hospital_id) === String(urlHospitalId));
@@ -384,7 +384,7 @@
                         localStorage.setItem("hospital_id", String(urlHospitalId));
                         localStorage.setItem("hospitalId", String(urlHospitalId));
                         localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
-                        localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
+                        localStorage.setItem("selectedHospitalTokenFee", "0");
                         renderHospitalContent(hospitalData);
                         return;
                     }
@@ -521,12 +521,6 @@
                     );
                 }
 
-                addDetail(
-                    hospitalContainer,
-                    "Token Fee",
-                    "₹" + Number(hospitalData.token_fee ?? hospitalData.tokenFee ?? 0)
-                );
-
                 if (hospitalData.operating_hours_12h || (hospitalData.opening_time && hospitalData.closing_time)) {
                     addDetail(
                         hospitalContainer,
@@ -590,7 +584,7 @@
                             </a>
                         ` : ''}
                         ${cleanPhone ? `
-                            <a href="https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hospName}, I have an inquiry from CarePath regarding doctor appointments and OPD.`)}" target="_blank" rel="noopener noreferrer" style="background: #25D366; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,211,102,0.3);">
+                            <a href="https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hospName}, I have an inquiry from Q-Arovia regarding doctor appointments and OPD.`)}" target="_blank" rel="noopener noreferrer" style="background: #25D366; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,211,102,0.3);">
                                 🟢 Chat on WhatsApp
                             </a>
                             <a href="tel:${cleanPhone}" style="background: #0284c7; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(2,132,199,0.3);">
@@ -615,7 +609,7 @@
                     localStorage.setItem("hospitalId", hId);
                     localStorage.setItem("selectedHospitalId", hId);
                     localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
-                    localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
+                    localStorage.setItem("selectedHospitalTokenFee", "0");
 
                     window.location.href = "./doctor.html?id=" + encodeURIComponent(hId);
                 };
@@ -651,7 +645,7 @@
             const waBtn = document.getElementById("inquiryModalWhatsAppBtn");
             if (waBtn) {
                 if (cleanPhone) {
-                    waBtn.href = `https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hosp.name || "Hospital"}, I have an inquiry from CarePath.`)}`;
+                    waBtn.href = `https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hosp.name || "Hospital"}, I have an inquiry from Q-Arovia.`)}`;
                     waBtn.style.display = "inline-flex";
                 } else {
                     waBtn.style.display = "none";
@@ -710,12 +704,12 @@
 
             // Save immediately in local cache (0ms)
             try {
-                const storedInquiries = JSON.parse(localStorage.getItem("carepath_patient_inquiries") || "[]");
+                const storedInquiries = JSON.parse(localStorage.getItem("qarovia_patient_inquiries") || "[]");
                 storedInquiries.unshift(newInquiry);
-                localStorage.setItem("carepath_patient_inquiries", JSON.stringify(storedInquiries));
+                localStorage.setItem("qarovia_patient_inquiries", JSON.stringify(storedInquiries));
 
                 const cleanPhone = phone.replace(/[^0-9]/g, "");
-                const chatKey = "carepath_chat_cache_" + cleanPhone;
+                const chatKey = "qarovia_chat_cache_" + cleanPhone;
                 const existingChat = JSON.parse(localStorage.getItem(chatKey) || "[]");
                 existingChat.push({
                     sender_role: "patient",

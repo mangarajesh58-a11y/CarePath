@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#2563eb">
-    <title>Promote Hospital & Manage Ads - CarePath</title>
+    <title>Promote Hospital & Manage Ads - Q-Arovia</title>
     
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/png" href="carepath-ai-small.png">
+    <link rel="icon" type="image/png" href="qarovia-ai-small.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
@@ -902,7 +902,7 @@
             }
         }
     </style>
-    <script src="./carepath-instant-nav.js"></script>
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 
 <body>
@@ -1075,7 +1075,7 @@
                         <input type="text" id="hospitalDirectLinkInput" readonly style="background: #ffffff; border: 1px solid #86efac; font-weight: 600; color: #15803d; font-size: 12px; font-family: monospace; padding: 8px 10px; border-radius: 8px; width: 100%; box-sizing: border-box;" value="Generating your direct link...">
                     </div>
                     <div style="font-size: 11px; color: #15803d; margin-top: 4px; line-height: 1.4;">
-                        ✨ When patients click this link, CarePath directly opens your hospital details & appointment booking.
+                        ✨ When patients click this link, Q-Arovia directly opens your hospital details & appointment booking.
                     </div>
                 </div>
 
@@ -1778,7 +1778,7 @@ function generateHospitalDirectLink() {
         }
         directLink = `${loc.origin}${patientPath}?id=${activeHospId}`;
     } else {
-        directLink = `https://carepath-patient-mx5v.vercel.app/hospital-details.html?id=${activeHospId}`;
+        directLink = `https://patient-mx5v.vercel.app/hospital-details.html?id=${activeHospId}`;
     }
 
     const input = document.getElementById("hospitalDirectLinkInput");

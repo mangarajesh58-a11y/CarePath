@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#2563eb">
   <meta name="color-scheme" content="light dark">
 
-  <title>CarePath - Patient Profile & Preferences</title>
+  <title>Q-Arovia - Patient Profile & Preferences</title>
 
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="carepath-ai-small.png">
+  <link rel="icon" type="image/png" href="qarovia-ai-small.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
   <script>
     (function() {
       try {
-        const theme = localStorage.getItem("carepath_theme") || "system";
+        const theme = localStorage.getItem("qarovia_theme") || "system";
         let isDark = false;
         if (theme === "dark") {
           isDark = true;
@@ -41,7 +41,7 @@
   async function triggerInAppAccountDeletion() {
     const confirmed = confirm(
       "⚠️ WARNING: Permanent Account Deletion\n\n" +
-      "Are you sure you want to permanently delete your CarePath account?\n\n" +
+      "Are you sure you want to permanently delete your Q-Arovia account?\n\n" +
       "• Your profile, email, and phone number will be erased.\n" +
       "• Uploaded prescription scans and doctor inquiry messages will be deleted.\n\n" +
       "This action cannot be undone. Click OK to proceed."
@@ -826,7 +826,7 @@
     
 
   </style>
-    <script src="./carepath-instant-nav.js"></script>
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 
 <body>
@@ -884,7 +884,7 @@
     <div id="guestState" class="guest-card" style="display: none;">
       <div class="guest-icon">🔒</div>
       <h2>Patient Sign In Required</h2>
-      <p>Sign in to view and edit your profile, track booked OPD tokens in real-time, and access CarePath AI.</p>
+      <p>Sign in to view and edit your profile, track booked OPD tokens in real-time, and access Q-Arovia AI.</p>
       <a href="index.html" class="btn-login-cta">
         <span>🔑 Sign In to Continue</span>
       </a>
@@ -1160,7 +1160,7 @@
        THEME CONTROLLER (LIGHT / DARK / SYSTEM)
     ===================================================== */
     function setAppTheme(theme) {
-      localStorage.setItem("carepath_theme", theme);
+      localStorage.setItem("qarovia_theme", theme);
       applyTheme(theme);
     }
 
@@ -1199,7 +1199,7 @@
     // Listen for OS theme changes if in system mode
     if (window.matchMedia) {
       window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e => {
-        const currentPref = localStorage.getItem("carepath_theme") || "system";
+        const currentPref = localStorage.getItem("qarovia_theme") || "system";
         if (currentPref === "system") {
           applyTheme("system");
         }
@@ -1211,7 +1211,7 @@
     ===================================================== */
     async function initProfile() {
       // 1. Initialize Theme UI
-      const savedTheme = localStorage.getItem("carepath_theme") || "system";
+      const savedTheme = localStorage.getItem("qarovia_theme") || "system";
       applyTheme(savedTheme);
 
       // 2. Check Auth
@@ -1437,7 +1437,7 @@
        LOGOUT
     ===================================================== */
     function handleLogout() {
-      if (confirm("Are you sure you want to sign out of CarePath?")) {
+      if (confirm("Are you sure you want to sign out of Q-Arovia?")) {
         localStorage.removeItem("patientToken");
         localStorage.removeItem("patient_token");
         localStorage.removeItem("patientName");

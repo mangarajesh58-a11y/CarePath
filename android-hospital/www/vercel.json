@@ -2,12 +2,12 @@
   "redirects": [
     {
       "source": "/patient/hospital-details.html",
-      "destination": "https://carepath-patient-mx5v.vercel.app/hospital-details.html",
+      "destination": "https://patient-mx5v.vercel.app/hospital-details.html",
       "permanent": false
     },
     {
       "source": "/patient/:path*",
-      "destination": "https://carepath-patient-mx5v.vercel.app/:path*",
+      "destination": "https://patient-mx5v.vercel.app/:path*",
       "permanent": false
     }
   ]

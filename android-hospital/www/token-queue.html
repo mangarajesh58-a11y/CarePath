@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>OPD Queue Command Center - CarePath</title>
+    <title>OPD Queue Command Center - Q-Arovia</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="carepath-ai-small.png">
+    <link rel="icon" type="image/png" href="qarovia-ai-small.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
     <script src="./broadcast-banner.js"></script>
-    <script src="./carepath-permissions.js"></script>
+    <script src="./qarovia-permissions.js"></script>
 
     <style>
         :root {
@@ -1187,7 +1187,7 @@
             line-height: 1;
         }
     </style>
-    <script src="./carepath-instant-nav.js"></script>
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 
 <body>
@@ -1200,11 +1200,11 @@
         <div class="mobile-app-bar-inner">
             <div class="app-brand-left">
                 <div class="app-brand-avatar">
-                    <img src="carepath-ai-small.png" alt="CarePath AI">
+                    <img src="qarovia-ai-small.png" alt="Q-Arovia AI">
                 </div>
                 <div class="app-title-group">
                     <div class="app-hospital-title-row">
-                        <div class="app-hospital-name" id="hospitalNameDisplay">CarePath Hospital</div>
+                        <div class="app-hospital-name" id="hospitalNameDisplay">Q-Arovia Hospital</div>
                         <span class="status-pill" id="opdStatusPill">
                             <span class="status-dot"></span>
                             <span id="opdStatusLabel">OPD ACTIVE</span>
@@ -2420,7 +2420,7 @@ async function loadTokens() {
 
         showMessage(
             error.message ||
-            "Could not connect to CarePath API.",
+            "Could not connect to Q-Arovia API.",
             true
         );
 
@@ -3303,7 +3303,7 @@ function exportCollectionHistoryCSV() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `CarePath_Token_Collection_${isDaily ? 'Daily' : 'Monthly'}_${Date.now()}.csv`);
+    link.setAttribute("download", `Q-Arovia_Token_Collection_${isDaily ? 'Daily' : 'Monthly'}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -3335,7 +3335,7 @@ function printTokenSlipById(tokenId) {
 window.printTokenSlipById = printTokenSlipById;
 
 function renderPrintableOpdSlip(token) {
-    const hospName = localStorage.getItem("hospital_name") || "CarePath Partner Hospital";
+    const hospName = localStorage.getItem("hospital_name") || "Q-Arovia Partner Hospital";
     const apptDate = token.appointment_date || (token.created_at ? token.created_at.split('T')[0] : new Date().toISOString().split('T')[0]);
     const isWalkIn = String(token.booking_type || "").toUpperCase() === "WALK_IN";
 
@@ -3410,7 +3410,7 @@ function renderPrintableOpdSlip(token) {
             <div class="divider"></div>
             <div class="slip-footer">
                 Please wait for your token number to appear on the OPD display screen.<br>
-                <em>CarePath Healthcare Network</em>
+                <em>Q-Arovia Healthcare Network</em>
             </div>
             <script>
                 window.onload = function() {

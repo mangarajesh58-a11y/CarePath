@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CarePath - Hospital Command Center</title>
+    <title>Q-Arovia - Hospital Command Center</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="carepath-ai-small.png">
+    <link rel="icon" type="image/png" href="qarovia-ai-small.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js" defer></script>
-    <script src="./carepath-instant-nav.js"></script>
-    <script src="./carepath-realtime.js"></script>
+    <script src="./qarovia-instant-nav.js"></script>
+    <script src="./qarovia-realtime.js"></script>
     <link rel="prefetch" href="token-queue.html" as="document">
     <link rel="prefetch" href="doctors.html" as="document">
     <link rel="prefetch" href="patients.html" as="document">
     <link rel="prefetch" href="ads.html" as="document">
     <link rel="prefetch" href="profile.html" as="document">
     <script src="./broadcast-banner.js"></script>
-    <script src="./carepath-permissions.js"></script>
+    <script src="./qarovia-permissions.js"></script>
 
     <style>
         :root {
@@ -1655,10 +1655,10 @@
     <header class="mobile-app-header">
         <div class="mobile-app-bar-inner">
             <div class="app-brand-left">
-                <div class="app-brand-avatar" style="padding: 0; overflow: hidden; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); border: 1px solid rgba(255, 255, 255, 0.15);"><img src="carepath-ai-small.png" alt="CarePath AI" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></div>
+                <div class="app-brand-avatar" style="padding: 0; overflow: hidden; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); border: 1px solid rgba(255, 255, 255, 0.15);"><img src="qarovia-ai-small.png" alt="Q-Arovia AI" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;"></div>
                 <div class="app-title-group">
                     <div class="app-hospital-title-row">
-                        <div class="app-hospital-name" id="hospitalNameDisplay">CarePath Hospital</div>
+                        <div class="app-hospital-name" id="hospitalNameDisplay">Q-Arovia Hospital</div>
                         <span class="status-pill" id="opdStatusPill">
                             <span class="status-dot"></span>
                             <span id="opdStatusLabel">OPD ACTIVE</span>
@@ -2455,7 +2455,7 @@
             
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 12.5px;">
                 <div style="font-weight: 700; color: #475569; margin-bottom: 2px;">Subject: <span id="replyInquirySubject" style="color: #0f172a;">General Inquiry</span></div>
-                <div style="font-size: 11.5px; color: #64748b;">The patient can view your reply directly in their CarePath chat box.</div>
+                <div style="font-size: 11.5px; color: #64748b;">The patient can view your reply directly in their Q-Arovia chat box.</div>
             </div>
 
             <div>
@@ -2504,7 +2504,7 @@ window.escapeJs = escapeJs;
    API CONFIGURATION
 ===================================================== */
 const _urlParams = new URLSearchParams(window.location.search);
-const API_URL = (_urlParams.get("api") === "local" || localStorage.getItem("carepath_api_mode") === "local")
+const API_URL = (_urlParams.get("api") === "local" || localStorage.getItem("qarovia_api_mode") === "local")
     ? "http://127.0.0.1:8000"
     : "https://carepath-3q9q.onrender.com";
 
@@ -2861,7 +2861,7 @@ const ANNOUNCEMENT_LANGUAGES = {
 };
 
 function getSavedAnnouncementLanguage() {
-    return localStorage.getItem("carepath_announcement_lang") || "en-IN";
+    return localStorage.getItem("qarovia_announcement_lang") || "en-IN";
 }
 
 function getDisplayTvUrl() {
@@ -2878,7 +2878,7 @@ function updateTvLinks() {
 }
 
 function changeAnnouncementLanguage(langKey) {
-    localStorage.setItem("carepath_announcement_lang", langKey);
+    localStorage.setItem("qarovia_announcement_lang", langKey);
     const sel = document.getElementById("announcementLangSelect");
     if (sel && sel.value !== langKey) sel.value = langKey;
     const label = sel ? sel.options[sel.selectedIndex]?.text : langKey;
@@ -3059,7 +3059,7 @@ function getPatientDirectUrl() {
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
     return isLocal
         ? `${window.location.protocol}//${window.location.host}/patient/hospital-details.html?id=${hospitalId}`
-        : `https://carepath-patient-mx5v.vercel.app/hospital-details.html?id=${hospitalId}`;
+        : `https://patient-mx5v.vercel.app/hospital-details.html?id=${hospitalId}`;
 }
 
 function copyHospitalPatientLink() {
@@ -4195,9 +4195,9 @@ function renderInquiriesWidget(messages) {
     if (countBadge) countBadge.textContent = patientMsgs.length;
 
     // Trigger native browser notification on new incoming inquiry
-    if (window.CarePathPermissions && patientMsgs.length > (window.lastInquiriesCount || 0) && window.lastInquiriesCount !== undefined) {
+    if (window.QAroviaPermissions && patientMsgs.length > (window.lastInquiriesCount || 0) && window.lastInquiriesCount !== undefined) {
         const latest = patientMsgs[0];
-        window.CarePathPermissions.sendNotification("📥 New Patient Inquiry", {
+        window.QAroviaPermissions.sendNotification("📥 New Patient Inquiry", {
             body: `From ${latest.sender_name || 'Patient'}: ${latest.subject || latest.message || 'New OPD inquiry'}`,
             tag: `hosp-inq-${latest.id}`,
             onClick: () => {
@@ -4786,7 +4786,7 @@ function printWalkInSlip() {
         return;
     }
     const t = lastRegisteredWalkInToken;
-    const hName = hospitalName || "CarePath Hospital";
+    const hName = hospitalName || "Q-Arovia Hospital";
     const dateStr = new Date().toLocaleDateString('en-IN', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit', hour12: true
@@ -4844,7 +4844,7 @@ function printWalkInSlip() {
             <div class="meta-row" style="font-size: 11px; font-weight: bold;">Status: Paid at Counter</div>
             <div class="footer">
                 Please wait for your token to be announced on the waiting TV screen.<br>
-                Powered by CarePath Queue Management
+                Powered by Q-Arovia Queue Management
             </div>
             <script>
                 window.onload = function() {
@@ -5123,7 +5123,7 @@ async function saveHospitalSettings() {
             const isRefunded = (t.payment_status || "").toLowerCase() === "refunded";
             const isCompleted = (t.status || "").toLowerCase() === "completed";
 
-            // Walk-in patients are completely free of CarePath token fee (fee = 0)
+            // Walk-in patients are completely free of Q-Arovia token fee (fee = 0)
             const fee = isWalkin ? 0 : Number(t.token_fee || t.amount || hospFee || 0);
 
             if (!isCancelled && !isRefunded) {
@@ -5560,7 +5560,7 @@ async function saveHospitalSettings() {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `CarePath_Token_Collection_${currentCollectionTab}_${Date.now()}.csv`);
+        link.setAttribute("download", `Q-Arovia_Token_Collection_${currentCollectionTab}_${Date.now()}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

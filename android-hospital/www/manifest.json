@@ -1,6 +1,6 @@
 {
-  "name": "CarePath Hospital - Clinic & OPD Queue Management",
-  "short_name": "CarePath Hospital",
+  "name": "Q-Arovia Hospital - Clinic & OPD Queue Management",
+  "short_name": "Q-Arovia Hospital",
   "description": "Hospital OPD queue management, digital doctor prescriptions, and waiting room TV display",
   "start_url": "dashboard.html",
   "display": "standalone",
@@ -9,13 +9,13 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "carepath-ai-small.png",
+      "src": "qarovia-ai-small.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "carepath-ai.png",
+      "src": "qarovia-ai.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

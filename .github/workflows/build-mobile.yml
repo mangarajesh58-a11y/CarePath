@@ -1,4 +1,4 @@
-name: Build CarePath Mobile Apps
+name: Build Q-Arovia Mobile Apps
 
 on:
   workflow_dispatch:
@@ -83,7 +83,7 @@ jobs:
       - name: Upload Android APKs
         uses: actions/upload-artifact@v4
         with:
-          name: carepath-android-apks
+          name: q-arovia-android-apks
           path: |
             android-patient/android/app/build/outputs/apk/debug/app-debug.apk
             android-hospital/android/app/build/outputs/apk/debug/app-debug.apk

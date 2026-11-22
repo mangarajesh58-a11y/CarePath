@@ -10,14 +10,14 @@ function formatTime12Hour(timeStr) {
 }
 
 // =========================================================
-// CarePath - HOSPITAL APP SCRIPT
+// Q-Arovia - HOSPITAL APP SCRIPT
 // =========================================================
 
 const API =
     "https://carepath-3q9q.onrender.com";
 
 const FRONTEND =
-    "https://carepath-hospital-ten.vercel.app";
+    "https://hospital-ten.vercel.app";
 
 
 // =========================================================
@@ -472,7 +472,7 @@ async function checkBackend() {
 
 
         console.log(
-            "CarePath backend is healthy:",
+            "Q-Arovia backend is healthy:",
             data
         );
 

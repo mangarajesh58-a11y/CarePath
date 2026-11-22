@@ -1,12 +1,12 @@
 /**
- * CarePath Instant Navigation Engine
+ * Q-Arovia Instant Navigation Engine
  * Intent-driven, lightweight preloading with Speculation Rules and touch/hover prefetching.
  */
 (function () {
   "use strict";
 
-  if (window.__carepathInstantNavLoaded) return;
-  window.__carepathInstantNavLoaded = true;
+  if (window.__qaroviaInstantNavLoaded) return;
+  window.__qaroviaInstantNavLoaded = true;
 
   const prefetchedUrls = new Set();
 

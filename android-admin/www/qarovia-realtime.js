@@ -1,12 +1,12 @@
 /**
- * CarePath Real-Time Messaging Engine
+ * Q-Arovia Real-Time Messaging Engine
  * Multi-party low-latency WebSocket communication between
  * Patients, Hospitals, and Admins.
  */
 (function (global) {
   "use strict";
 
-  class CarePathRealtimeClient {
+  class QAroviaRealtimeClient {
     constructor() {
       this.ws = null;
       this.reconnectAttempts = 0;
@@ -19,7 +19,7 @@
     }
 
     /**
-     * Connect to the CarePath WebSocket message bus
+     * Connect to the Q-Arovia WebSocket message bus
      * @param {Object} options
      * @param {string} options.role - "patient", "hospital", or "admin"
      * @param {string} [options.token] - JWT token for auth
@@ -50,13 +50,13 @@
       if (hospitalId) params.set("hospital_id", String(hospitalId));
 
       const wsUrl = `${wsProtocol}//${wsHost}/ws/messages?${params.toString()}`;
-      console.log(`[CarePath Realtime] Connecting to ${wsUrl} (${role})...`);
+      console.log(`[Q-Arovia Realtime] Connecting to ${wsUrl} (${role})...`);
 
       try {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          console.log(`[CarePath Realtime] Connected successfully (${role})`);
+          console.log(`[Q-Arovia Realtime] Connected successfully (${role})`);
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this._startHeartbeat();
@@ -73,12 +73,12 @@
               return;
             }
 
-            console.log("[CarePath Realtime] Message received:", data.type);
+            console.log("[Q-Arovia Realtime] Message received:", data.type);
             this.listeners.forEach((fn) => {
               try {
                 fn(data);
               } catch (e) {
-                console.error("[CarePath Realtime] Listener error:", e);
+                console.error("[Q-Arovia Realtime] Listener error:", e);
               }
             });
 
@@ -86,25 +86,25 @@
               this.options.onMessage(data);
             }
           } catch (err) {
-            console.warn("[CarePath Realtime] Frame parsing failed:", err);
+            console.warn("[Q-Arovia Realtime] Frame parsing failed:", err);
           }
         };
 
         this.ws.onerror = (err) => {
-          console.warn("[CarePath Realtime] WebSocket error:", err);
+          console.warn("[Q-Arovia Realtime] WebSocket error:", err);
         };
 
         this.ws.onclose = (event) => {
           this.isConnected = false;
           this._stopHeartbeat();
-          console.log(`[CarePath Realtime] Disconnected (code: ${event.code}). Auto-reconnecting...`);
+          console.log(`[Q-Arovia Realtime] Disconnected (code: ${event.code}). Auto-reconnecting...`);
           if (typeof this.options.onStatusChange === "function") {
             this.options.onStatusChange("disconnected");
           }
           this._scheduleReconnect();
         };
       } catch (err) {
-        console.warn("[CarePath Realtime] Connection initiation error:", err);
+        console.warn("[Q-Arovia Realtime] Connection initiation error:", err);
         this._scheduleReconnect();
       }
     }
@@ -152,5 +152,5 @@
     }
   }
 
-  global.CarePathRealtime = new CarePathRealtimeClient();
+  global.QAroviaRealtime = new QAroviaRealtimeClient();
 })(typeof window !== "undefined" ? window : this);

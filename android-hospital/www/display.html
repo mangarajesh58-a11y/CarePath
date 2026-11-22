@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CarePath • Waiting Room Queue Display</title>
+    <title>Q-Arovia • Waiting Room Queue Display</title>
     <link rel="icon" type="image/png" href="../favicon.png">
     <style>
         :root {
@@ -636,8 +636,8 @@
         }
     </style>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="carepath-ai-small.png">
-    <script src="./carepath-instant-nav.js"></script>
+  <link rel="icon" type="image/png" href="qarovia-ai-small.png">
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 <body>
 
@@ -661,7 +661,7 @@
         <div class="brand-wrap">
             <div class="brand-logo">🏥</div>
             <div class="brand-info">
-                <h1 id="hospitalNameDisplay">CarePath Hospital</h1>
+                <h1 id="hospitalNameDisplay">Q-Arovia Hospital</h1>
                 <p id="hospitalSubDisplay">Waiting Room Live Display</p>
             </div>
         </div>
@@ -786,7 +786,7 @@
             <div class="stat-item">Waiting in Lobby: <strong id="statWaiting">0</strong></div>
         </div>
         <div>
-            CarePath Live Queue System • Updated real-time
+            Q-Arovia Live Queue System • Updated real-time
         </div>
     </footer>
 
@@ -797,7 +797,7 @@
         const hospitalId = urlParams.get("hospital_id") || urlParams.get("id") || localStorage.getItem("hospital_id") || "15";
         if (hospitalId) localStorage.setItem("hospital_id", hospitalId);
         const urlLang = urlParams.get("lang");
-        if (urlLang) localStorage.setItem("carepath_announcement_lang", urlLang);
+        if (urlLang) localStorage.setItem("qarovia_announcement_lang", urlLang);
         let lastAnnouncedToken = null;
         let lastAnnouncedCallKey = null;
         let audioEnabled = true;
@@ -1072,11 +1072,11 @@
 
         function getDisplayLanguage() {
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get("lang") || localStorage.getItem("carepath_display_announcement_lang") || "en-IN";
+            return urlParams.get("lang") || localStorage.getItem("qarovia_display_announcement_lang") || "en-IN";
         }
 
         function changeDisplayLanguage(langKey) {
-            localStorage.setItem("carepath_display_announcement_lang", langKey);
+            localStorage.setItem("qarovia_display_announcement_lang", langKey);
             const sel = document.getElementById("displayLangSelect");
             if (sel && sel.value !== langKey) sel.value = langKey;
         }

@@ -1,11 +1,11 @@
 /* =========================================================
-   CarePath - Patient Dashboard
+   Q-Arovia - Patient Dashboard
    ========================================================= */
 
 const API = "https://carepath-3q9q.onrender.com";
-const FRONTEND = "https://carepath-patient-mx5v.vercel.app";
+const FRONTEND = "https://patient-mx5v.vercel.app";
 
-let PLATFORM_FEE = parseInt(localStorage.getItem("carepath_platform_fee") || "10", 10);
+let PLATFORM_FEE = parseInt(localStorage.getItem("qarovia_platform_fee") || "10", 10);
 
 
 // =========================================================
@@ -88,7 +88,7 @@ function getErrorMessage(data, fallback) {
 
 
 document.addEventListener("DOMContentLoaded", async function () {
-    console.log("CarePath patient dashboard loaded.");
+    console.log("Q-Arovia patient dashboard loaded.");
 
     loadPatientName();
     setupEvents();
@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (!hospitalName || !department || !doctorName || !patientName) {
         console.error("Saved booking details are missing.");
         showMessage(
-            "Booking details are missing. Please contact CarePath support before retrying.",
+            "Booking details are missing. Please contact Q-Arovia support before retrying.",
             "error"
         );
         return;
@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     } catch (error) {
         console.error("Cashfree return handling failed:", error);
         showMessage(
-            error.message || "Payment verification failed. Please contact CarePath support.",
+            error.message || "Payment verification failed. Please contact Q-Arovia support.",
             "error"
         );
     }
@@ -1026,7 +1026,7 @@ async function fetchDynamicPlatformFee() {
             const data = await res.json();
             if (typeof data.platform_fee === "number") {
                 PLATFORM_FEE = data.platform_fee;
-                localStorage.setItem("carepath_platform_fee", String(PLATFORM_FEE));
+                localStorage.setItem("qarovia_platform_fee", String(PLATFORM_FEE));
                 if (typeof updateFeeDisplay === "function") {
                     updateFeeDisplay();
                 }
@@ -1509,11 +1509,11 @@ async function createTokenAfterPayment(
                 created_at: token.created_at || new Date().toISOString()
             };
 
-            const cachedRaw = localStorage.getItem("carepath_cached_tokens") || "[]";
+            const cachedRaw = localStorage.getItem("qarovia_cached_tokens") || "[]";
             const cachedList = JSON.parse(cachedRaw);
             const updatedList = [newTokenEntry, ...cachedList.filter(x => String(x.id) !== String(newTokenEntry.id))];
-            localStorage.setItem("carepath_cached_tokens", JSON.stringify(updatedList));
-            localStorage.setItem("carepath_all_booked_tokens", JSON.stringify(updatedList));
+            localStorage.setItem("qarovia_cached_tokens", JSON.stringify(updatedList));
+            localStorage.setItem("qarovia_all_booked_tokens", JSON.stringify(updatedList));
             localStorage.setItem("lastBookedTokenDetails", JSON.stringify({
                 token: newTokenEntry,
                 appointmentDate: appointmentDate,

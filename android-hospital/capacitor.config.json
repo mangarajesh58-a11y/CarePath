@@ -1,6 +1,6 @@
 {
   "appId": "com.carepath.hospital",
-  "appName": "CarePath Hospital",
+  "appName": "Q-Arovia Hospital",
   "webDir": "www",
   "server": {
     "cleartext": true
