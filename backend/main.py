@@ -6984,9 +6984,10 @@ def create_cashfree_order(
         )
 
     doc_fee = getattr(doctor, "token_fee", None)
-    token_fee = int(doc_fee if doc_fee is not None else (hospital.token_fee or 0))
+    # Hospital token fee removed during session entry (do not charge hospital token fee):
+    token_fee = 0
     platform_fee = get_current_platform_fee(db)
-    total_amount = token_fee + platform_fee
+    total_amount = platform_fee
 
     if total_amount <= 0:
         raise HTTPException(status_code=400, detail="Invalid payment amount")
@@ -7318,9 +7319,10 @@ def create_token(
     canonical_dept = doctor.department
 
     doc_fee = getattr(doctor, "token_fee", None)
-    token_fee = int(doc_fee if doc_fee is not None else (hospital.token_fee or 0))
+    # Hospital token fee removed during session entry (do not charge hospital token fee):
+    token_fee = 0
     platform_fee = get_current_platform_fee(db)
-    total_amount = token_fee + platform_fee
+    total_amount = platform_fee
 
     try:
         order_amount = float(order.get("order_amount", 0))

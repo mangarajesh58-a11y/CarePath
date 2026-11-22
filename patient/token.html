@@ -443,9 +443,9 @@
         </div>
 
         <div class="card fees">
-            <div class="row">
+            <div class="row" id="tokenFeeRow" style="display: none;">
                 <span class="label" id="tokenFeeLabel">Hospital token fee</span>
-                <span class="value" id="tokenFee">Loading...</span>
+                <span class="value" id="tokenFee">₹0.00</span>
             </div>
             <div class="row">
                 <span class="label">CarePath platform fee</span>
@@ -508,7 +508,7 @@
             <div class="row"><span class="label">Booking Date & Time</span><span class="value" id="receiptBookingTime">—</span></div>
             <div class="row"><span class="label">Cashfree Order ID</span><span class="value" id="receiptOrderId">—</span></div>
             <div class="row"><span class="label">Receipt Delivered To</span><span class="value" id="receiptEmailDisplay" style="color: #0284c7; font-weight: 700;">—</span></div>
-            <div class="row"><span class="label">Hospital token fee</span><span class="value" id="receiptFee">—</span></div>
+            <div class="row" id="receiptFeeRow" style="display: none;"><span class="label">Hospital token fee</span><span class="value" id="receiptFee">—</span></div>
             <div class="row"><span class="label">Platform fee</span><span class="value" id="receiptPlatformFee">—</span></div>
             <div class="row total"><span>Total paid</span><span class="value" id="receiptTotal">—</span></div>
 
@@ -670,7 +670,7 @@ function getSelectedDoctor() {
     return stored("selectedDoctor", "selectedDoctorName", "tokenDoctor", "doctor");
 }
 
-let hospitalFee = Number(stored("selectedDoctorTokenFee", "selectedHospitalTokenFee", "tokenFee") || 0);
+let hospitalFee = 0;
 let hospitalId = stored("selectedHospitalId", "hospital_id", "hospitalId");
 let currentDoctor = null;
 let isBusy = false;
@@ -688,8 +688,8 @@ function isBookingReady() {
         getSelectedDepartment() &&
         getSelectedDoctor() &&
         byId("appointmentDate").value &&
-        Number.isFinite(hospitalFee) &&
-        hospitalFee >= 0
+        Number.isFinite(PLATFORM_FEE) &&
+        PLATFORM_FEE >= 0
     );
     if (!basicReady) return false;
 
@@ -743,7 +743,7 @@ async function fetchDynamicPlatformFee() {
                 PLATFORM_FEE = data.platform_fee;
                 localStorage.setItem("carepath_platform_fee", String(PLATFORM_FEE));
                 if (byId("platformFee")) byId("platformFee").textContent = money(PLATFORM_FEE);
-                if (byId("totalAmount")) byId("totalAmount").textContent = money(hospitalFee + PLATFORM_FEE);
+                if (byId("totalAmount")) byId("totalAmount").textContent = money(PLATFORM_FEE);
                 if (byId("receiptPlatformFee")) byId("receiptPlatformFee").textContent = money(PLATFORM_FEE);
             }
         }
@@ -783,13 +783,11 @@ function displayBooking() {
         byId("doctorDaysRow").style.display = "flex";
     }
 
-    const selDocName = getSelectedDoctor();
-    if (byId("tokenFeeLabel")) {
-        byId("tokenFeeLabel").textContent = selDocName ? "Doctor consultation fee" : "Hospital token fee";
-    }
-    byId("tokenFee").textContent = money(hospitalFee);
+    hospitalFee = 0;
+    if (byId("tokenFeeRow")) byId("tokenFeeRow").style.display = "none";
+    if (byId("tokenFee")) byId("tokenFee").textContent = money(0);
     byId("platformFee").textContent = money(PLATFORM_FEE);
-    byId("totalAmount").textContent = money(hospitalFee + PLATFORM_FEE);
+    byId("totalAmount").textContent = money(PLATFORM_FEE);
 
     setupBookingDateOptions();
 
@@ -837,14 +835,10 @@ async function loadDoctorSchedule() {
         const doc = doctors.find(d => (docId && String(d.id) === String(docId)) || (docName && d.name === docName));
         if (doc) {
             currentDoctor = doc;
-            const docFee = doc.token_fee != null ? Number(doc.token_fee) : null;
-            if (docFee !== null && !isNaN(docFee) && docFee >= 0) {
-                hospitalFee = docFee;
-                localStorage.setItem("selectedDoctorTokenFee", String(docFee));
-                localStorage.setItem("selectedHospitalTokenFee", String(docFee));
-                if (byId("tokenFee")) byId("tokenFee").textContent = money(hospitalFee);
-                if (byId("totalAmount")) byId("totalAmount").textContent = money(hospitalFee + PLATFORM_FEE);
-            }
+            hospitalFee = 0;
+            if (byId("tokenFeeRow")) byId("tokenFeeRow").style.display = "none";
+            if (byId("tokenFee")) byId("tokenFee").textContent = money(0);
+            if (byId("totalAmount")) byId("totalAmount").textContent = money(PLATFORM_FEE);
             const hours = doc.consultation_hours_12h || (doc.start_time && doc.end_time ? `${doc.start_time_12h || doc.start_time} - ${doc.end_time_12h || doc.end_time}` : "Regular OPD Hours");
             localStorage.setItem("selectedDoctorHours", hours);
             if (byId("consultationHours")) {
@@ -1061,20 +1055,14 @@ async function loadHospitalFee() {
         if (!response.ok) throw new Error("Could not load hospital details.");
 
         const hospital = await response.json();
-        const doctorFeeVal = stored("selectedDoctorTokenFee");
-        if (doctorFeeVal !== null && doctorFeeVal !== undefined && doctorFeeVal !== "" && Number(doctorFeeVal) >= 0) {
-            hospitalFee = Number(doctorFeeVal);
-        } else {
-            hospitalFee = Number(hospital.token_fee ?? hospital.tokenFee ?? 0);
-        }
-
-        if (!Number.isFinite(hospitalFee) || hospitalFee < 0) {
-            throw new Error("The hospital token fee is invalid.");
-        }
+        hospitalFee = 0;
+        if (byId("tokenFeeRow")) byId("tokenFeeRow").style.display = "none";
+        if (byId("tokenFee")) byId("tokenFee").textContent = money(0);
+        if (byId("totalAmount")) byId("totalAmount").textContent = money(PLATFORM_FEE);
 
         hospitalId = String(hospital.id ?? hospital.hospital_id ?? hospitalId);
         localStorage.setItem("selectedHospitalId", hospitalId);
-        localStorage.setItem("selectedHospitalTokenFee", String(hospitalFee));
+        localStorage.setItem("selectedHospitalTokenFee", "0");
 
         if (hospital.name || hospital.hospital_name) {
             localStorage.setItem("selectedHospitalName", hospital.name || hospital.hospital_name);
@@ -1279,9 +1267,9 @@ async function verifyPaymentAndCreateToken(orderId) {
                     doctor: getSelectedDoctor(),
                     orderId,
                     paymentId: data.payment_id || orderId,
-                    fee: hospitalFee,
+                    fee: 0,
                     platformFee: PLATFORM_FEE,
-                    total: hospitalFee + PLATFORM_FEE,
+                    total: PLATFORM_FEE,
                     bData: bData
                 });
             }
@@ -1358,7 +1346,8 @@ function showReceipt(details) {
         byId("receiptEmailDisplay").textContent = receiptEmail;
     }
 
-    byId("receiptFee").textContent = money(fee);
+    if (byId("receiptFeeRow")) byId("receiptFeeRow").style.display = "none";
+    byId("receiptFee").textContent = money(0);
     byId("receiptPlatformFee").textContent = money(platformFee);
     byId("receiptTotal").textContent = money(total);
 
