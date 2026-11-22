@@ -9,7 +9,7 @@
   <script>
     (function() {
       try {
-        const theme = localStorage.getItem("carepath_theme") || "system";
+        const theme = localStorage.getItem("qarovia_theme") || "system";
         let isDark = false;
         if (theme === "dark") isDark = true;
         else if (theme === "light") isDark = false;
@@ -537,7 +537,7 @@
     }
 
   </style>
-    <script src="./carepath-instant-nav.js"></script>
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 <body>
 
@@ -851,14 +851,14 @@
 
   </style>
 
-  <script src="./carepath-permissions.js"></script>
+  <script src="./qarovia-permissions.js"></script>
   <script>
     "use strict";
 
     // Robust Production API resolution for Web and Android/iOS Mobile Apps
     const isLocalDevDesktop = (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") && 
                               (window.location.port === "8000" || window.location.port === "5500" || window.location.search.includes("dev=1"));
-    const API_URL = isLocalDevDesktop ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+    const API_URL = isLocalDevDesktop ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
     let allTokens = [];
     let currentFilter = "all";
 
@@ -867,8 +867,8 @@
     const patientName = localStorage.getItem("patientName") || localStorage.getItem("patient_name") || localStorage.getItem("full_name") || sessionStorage.getItem("patientName") || sessionStorage.getItem("patient_name") || "Patient";
 
     const hasCachedTokens = !!(
-      localStorage.getItem("carepath_cached_tokens") ||
-      localStorage.getItem("carepath_all_booked_tokens") ||
+      localStorage.getItem("qarovia_cached_tokens") ||
+      localStorage.getItem("qarovia_all_booked_tokens") ||
       localStorage.getItem("lastBookedTokenDetails") ||
       localStorage.getItem("tokenId") ||
       localStorage.getItem("tokenNumber")
@@ -927,7 +927,7 @@
 
       try {
         // 1. Primary cache keys
-        const primaryKeys = ["carepath_cached_tokens", "carepath_all_booked_tokens", "bookedTokens", "patientTokens", "myTokens", "patient_tokens_history"];
+        const primaryKeys = ["qarovia_cached_tokens", "qarovia_all_booked_tokens", "bookedTokens", "patientTokens", "myTokens", "patient_tokens_history"];
         primaryKeys.forEach(k => {
           const raw = localStorage.getItem(k);
           if (raw) {
@@ -1142,8 +1142,8 @@
 
         if (allTokens.length > 0) {
           try {
-            localStorage.setItem("carepath_cached_tokens", JSON.stringify(allTokens));
-            localStorage.setItem("carepath_all_booked_tokens", JSON.stringify(allTokens));
+            localStorage.setItem("qarovia_cached_tokens", JSON.stringify(allTokens));
+            localStorage.setItem("qarovia_all_booked_tokens", JSON.stringify(allTokens));
           } catch (e) {}
         }
 
@@ -1154,9 +1154,9 @@
             triggerPatientPhoneAlert(t);
           } else if (t.status === "waiting" && t.tokens_ahead !== undefined && t.tokens_ahead <= 2 && t.tokens_ahead > 0) {
             const lastNearing = window[`notif_near_${t.id}`];
-            if (lastNearing !== t.tokens_ahead && window.CarePathPermissions) {
+            if (lastNearing !== t.tokens_ahead && window.QAroviaPermissions) {
               window[`notif_near_${t.id}`] = t.tokens_ahead;
-              window.CarePathPermissions.sendNotification("⏳ Your Turn Is Near!", {
+              window.QAroviaPermissions.sendNotification("⏳ Your Turn Is Near!", {
                 body: `Token #${t.token_number}: Only ${t.tokens_ahead} patient(s) ahead of you for Dr. ${t.doctor}. Please stay near the room.`,
                 tag: `token-near-${t.id}`
               });
@@ -1164,7 +1164,7 @@
           }
           previousTokenStatuses[t.id] = t.status;
         });
-        window.carepathPrevTokenStatuses = previousTokenStatuses;
+        window.qaroviaPrevTokenStatuses = previousTokenStatuses;
 
         updateStats(allTokens);
         if (currentFilter === "all") {
@@ -1405,7 +1405,7 @@
       modalContent.innerHTML = `
         <div style="text-align: center; margin-bottom: 20px;">
           <h2 style="margin: 0; color: #0284c7; font-size: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <img src="carepath-ai-small.png" alt="Q-Arovia Logo" style="width: 26px; height: 26px; border-radius: 6px; object-fit: cover;" />
+            <img src="qarovia-ai-small.png" alt="Q-Arovia Logo" style="width: 26px; height: 26px; border-radius: 6px; object-fit: cover;" />
             Q-Arovia Appointment Receipt
           </h2>
           <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">Official Appointment & Token Confirmation</p>
@@ -1580,7 +1580,7 @@
     // =====================================================
     let audioContext = null;
     let audioUnlocked = false;
-    let previousTokenStatuses = window.carepathPrevTokenStatuses || {};
+    let previousTokenStatuses = window.qaroviaPrevTokenStatuses || {};
 
     function unlockAudio() {
       if (audioUnlocked) return;
@@ -1665,8 +1665,8 @@
       playPatientCallChime();
 
       // Trigger native browser/Google Chrome notification
-      if (window.CarePathPermissions) {
-        window.CarePathPermissions.sendNotification("🚨 DOCTOR IS CALLING YOU NOW!", {
+      if (window.QAroviaPermissions) {
+        window.QAroviaPermissions.sendNotification("🚨 DOCTOR IS CALLING YOU NOW!", {
           body: `Token #${t.token_number}: Please proceed to Dr. ${t.doctor || 'Doctor'}'s ${rawRoom || 'Consultation Room'} immediately.`,
           tag: `token-called-${t.id}`,
           urgent: true,
@@ -1710,7 +1710,7 @@
       const rawRoom = t.doctor_room_number || t.room_number ? (String(t.doctor_room_number || t.room_number).startsWith('Room') ? (t.doctor_room_number || t.room_number) : 'Room ' + (t.doctor_room_number || t.room_number)) : 'OPD Consultation Room';
       const hospName = t.hospital || 'Q-Arovia Hospital';
       const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospName)}`;
-      const liveQueueUrl = `https://carepath-patient-mx5v.vercel.app/my-tokens.html`;
+      const liveQueueUrl = `https://patient-mx5v.vercel.app/my-tokens.html`;
 
       const msg = 
 `🏥 *Q-Arovia - OPD Token Confirmation*

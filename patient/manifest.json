@@ -9,13 +9,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "carepath-ai-small.png",
+      "src": "qarovia-ai-small.png",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "carepath-ai.png",
+      "src": "qarovia-ai.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

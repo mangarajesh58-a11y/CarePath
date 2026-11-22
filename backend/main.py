@@ -660,11 +660,14 @@ if not os.path.exists(ADMIN_STATIC_DIR):
 # ============================================================
 
 ALLOWED_ORIGINS = [
-    "https://carepath-hospital-ten.vercel.app",
-    "https://carepath-patient-mx5v.vercel.app",
-    "https://carepath-admin.vercel.app",
+    "https://q-arovia-hospital.vercel.app",
+    "https://q-arovia-patient.vercel.app",
+    "https://q-arovia-admin.vercel.app",
     "https://hospital-ten.vercel.app",
     "https://patient-mx5v.vercel.app",
+    "https://hospital-ten.vercel.app",
+    "https://patient-mx5v.vercel.app",
+    "https://carepath-admin.vercel.app",
     "http://localhost",
     "https://localhost",
     "http://localhost:3000",
@@ -678,7 +681,7 @@ ALLOWED_ORIGINS = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"^https:\/\/(carepath-[a-z0-9-]+|hospital-ten|patient-mx5v)\.vercel\.app$",
+    allow_origin_regex=r"^https:\/\/(q-arovia-[a-z0-9-]+|qarovia-[a-z0-9-]+|carepath-[a-z0-9-]+|hospital-ten|patient-mx5v)\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -689,7 +692,7 @@ def is_trusted_cors_origin(origin: Optional[str]) -> bool:
         return False
     if origin in ALLOWED_ORIGINS:
         return True
-    if re.match(r"^https:\/\/(carepath-[a-z0-9-]+|hospital-ten|patient-mx5v)\.vercel\.app$", origin):
+    if re.match(r"^https:\/\/(q-arovia-[a-z0-9-]+|qarovia-[a-z0-9-]+|carepath-[a-z0-9-]+|hospital-ten|patient-mx5v)\.vercel\.app$", origin):
         return True
     return False
 
@@ -721,7 +724,7 @@ async def custom_general_exception_handler(request: Request, exc: Exception):
         headers=get_cors_headers(request)
     )
 
-def send_carepath_email(to_email: str, subject: str, text: str = "", html: str = "", body: str = "") -> bool:
+def send_qarovia_email(to_email: str, subject: str, text: str = "", html: str = "", body: str = "") -> bool:
     """Universal multi-tier email dispatcher with automatic failover across 4 delivery channels."""
     import os
     import json
@@ -901,7 +904,7 @@ Q-Arovia Healthcare Team
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
         <tr>
           <td style="vertical-align: middle; padding-right: 10px;">
-            <img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="Q-Arovia Logo" width="42" height="42" style="display: block; width: 42px; height: 42px; border-radius: 10px; object-fit: cover;" />
+            <img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="42" height="42" style="display: block; width: 42px; height: 42px; border-radius: 10px; object-fit: cover;" />
           </td>
           <td style="vertical-align: middle; text-align: left;">
             <span style="color: #0284c7; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Q-Arovia</span>
@@ -922,7 +925,7 @@ Q-Arovia Healthcare Team
 </body>
 </html>"""
 
-    success = send_carepath_email(receiver_email, subject, body_text, html_content)
+    success = send_qarovia_email(receiver_email, subject, body_text, html_content)
     if not success:
         raise RuntimeError("Unable to send OTP email. Please check server email credentials.")
     return True
@@ -977,7 +980,7 @@ Q-Arovia Healthcare Team
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; text-align: center;">
         <tr>
           <td style="vertical-align: middle; padding-right: 14px;">
-            <img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
           </td>
           <td style="vertical-align: middle; text-align: left;">
             <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; line-height: 1.1;">Q-Arovia</div>
@@ -1052,7 +1055,7 @@ Q-Arovia Healthcare Team
 </body>
 </html>"""
 
-    return send_carepath_email(to_email, subject, body_text, html_content)
+    return send_qarovia_email(to_email, subject, body_text, html_content)
 
 
 def send_payer_payment_receipt_email(
@@ -1108,7 +1111,7 @@ Q-Arovia Healthcare Team
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; text-align: center;">
         <tr>
           <td style="vertical-align: middle; padding-right: 14px;">
-            <img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); object-fit: cover;" />
+            <img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); object-fit: cover;" />
           </td>
           <td style="vertical-align: middle; text-align: left;">
             <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; line-height: 1.1;">Q-Arovia Invoice</div>
@@ -1188,7 +1191,7 @@ Q-Arovia Healthcare Team
 </body>
 </html>"""
 
-    return send_carepath_email(to_email, subject, body_text, html_content)
+    return send_qarovia_email(to_email, subject, body_text, html_content)
 
 
 def send_token_confirmation_email(
@@ -1238,7 +1241,7 @@ Q-Arovia Healthcare Team
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; text-align: center;">
         <tr>
           <td style="vertical-align: middle; padding-right: 14px;">
-            <img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
           </td>
           <td style="vertical-align: middle; text-align: left;">
             <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; line-height: 1.1;">Q-Arovia</div>
@@ -1309,7 +1312,7 @@ Q-Arovia Healthcare Team
 </body>
 </html>"""
 
-    return send_carepath_email(to_email, subject, body_text, html_content)
+    return send_qarovia_email(to_email, subject, body_text, html_content)
 
 
 # ============================================================
@@ -1937,18 +1940,18 @@ class AIChatRequest(BaseModel):
     history: Optional[list] = None
     prescription_context: Optional[str] = None 
 # ==========================================
-# CAREPATH AI - DATABASE CONTEXT
+# Q-AROVIA AI - DATABASE CONTEXT
 # ==========================================
 
-_CAREPATH_CONTEXT_CACHE = {"data": None, "timestamp": 0}
+_QAROVIA_CONTEXT_CACHE = {"data": None, "timestamp": 0}
 
-def get_carepath_ai_context(db: Session, message: str):
+def get_qarovia_ai_context(db: Session, message: str):
     """
     Retrieve relevant Q-Arovia data for the AI with fast in-memory caching.
     """
     now = time.time()
-    if _CAREPATH_CONTEXT_CACHE["data"] is not None and (now - _CAREPATH_CONTEXT_CACHE["timestamp"] < 300):
-        return _CAREPATH_CONTEXT_CACHE["data"]
+    if _QAROVIA_CONTEXT_CACHE["data"] is not None and (now - _QAROVIA_CONTEXT_CACHE["timestamp"] < 300):
+        return _QAROVIA_CONTEXT_CACHE["data"]
 
     try:
         hospitals = (
@@ -1969,12 +1972,12 @@ def get_carepath_ai_context(db: Session, message: str):
                 "fee": hospital.token_fee or 0,
             })
 
-        _CAREPATH_CONTEXT_CACHE["data"] = context
-        _CAREPATH_CONTEXT_CACHE["timestamp"] = now
+        _QAROVIA_CONTEXT_CACHE["data"] = context
+        _QAROVIA_CONTEXT_CACHE["timestamp"] = now
         return context
     except Exception as e:
         print("Context fetch warning:", e)
-        return _CAREPATH_CONTEXT_CACHE["data"] or []
+        return _QAROVIA_CONTEXT_CACHE["data"] or []
 
 
 def check_instant_ai_response(message: str, language: str = "en-IN") -> Optional[str]:
@@ -2034,7 +2037,7 @@ def check_instant_ai_response(message: str, language: str = "en-IN") -> Optional
             "How can I help you today? You can ask about symptoms, medicine dosage, or your token queue! 💙"
         )
 
-    if any(phrase in text for phrase in ["what is carepath", "about carepath", "tell me about carepath", "what does carepath do"]):
+    if any(phrase in text for phrase in ["what is q-arovia", "about q-arovia", "tell me about q-arovia", "what does q-arovia do"]):
         return (
             "Q-Arovia 💙 is a smart healthcare platform that lets you explore verified hospitals, "
             "check token fees, and book consultation queue tokens online to avoid long waiting times."
@@ -2056,16 +2059,16 @@ def check_instant_ai_response(message: str, language: str = "en-IN") -> Optional
     return None
 
 
-def get_carepath_ai_fallback(message: str) -> str:
+def get_qarovia_ai_fallback(message: str) -> str:
     text = message.lower().strip()
 
     # Q-Arovia platform questions
     if any(word in text for word in [
-        "what is carepath",
-        "tell me about carepath",
-        "about carepath",
-        "what does carepath do",
-        "carepath platform",
+        "what is q-arovia",
+        "tell me about q-arovia",
+        "about q-arovia",
+        "what does q-arovia do",
+        "q-arovia platform",
     ]):
         return (
             "Q-Arovia 💙 is a healthcare platform that helps patients "
@@ -2129,7 +2132,7 @@ def get_carepath_ai_fallback(message: str) -> str:
 #GEMINI AI
 
 # ============================================================
-# CAREPATH AI
+# Q-AROVIA AI
 # ============================================================
 
 def detect_user_language_preference(message: str, history: Optional[list] = None) -> str:
@@ -2376,7 +2379,7 @@ def check_specialist_routing_intent(message: str, history: Optional[list], targe
 
 
 @app.post("/ai/chat")
-def carepath_ai_chat(
+def qarovia_ai_chat(
     data: AIChatRequest,
     request: Request,
     db: Session = Depends(get_db),
@@ -2498,9 +2501,9 @@ def carepath_ai_chat(
     # 5. Gemini Multimodal / Multilingual Fallback Engine
     if gemini_client:
         try:
-            carepath_context = get_carepath_ai_context(db, message)
+            qarovia_context = get_qarovia_ai_context(db, message)
         except Exception:
-            carepath_context = []
+            qarovia_context = []
 
         gemini_instruction = (
             "You are Q-Arovia AI, a friendly healthcare assistant on the Q-Arovia platform. "
@@ -2522,7 +2525,7 @@ Previous Conversation:
 Uploaded Prescription Report Context:
 {data.prescription_context or 'None'}
 
-Hospital Context: {carepath_context}
+Hospital Context: {qarovia_context}
 
 Provide a helpful, caring response to the patient in {target_lang_name}:"""
 
@@ -2556,7 +2559,7 @@ Provide a helpful, caring response to the patient in {target_lang_name}:"""
                 continue
 
     # 6. Graceful Instant Fallback
-    fallback_text = get_carepath_ai_fallback(message)
+    fallback_text = get_qarovia_ai_fallback(message)
     return {
         "success": True,
         "reply": fallback_text,
@@ -2566,7 +2569,7 @@ Provide a helpful, caring response to the patient in {target_lang_name}:"""
 
 
 # ============================================================
-# CAREPATH AI - MULTILINGUAL AUDIO TTS & TRANSCRIBE ENGINE
+# Q-AROVIA AI - MULTILINGUAL AUDIO TTS & TRANSCRIBE ENGINE
 # Supports All Indian Languages: Telugu, Hindi, Tamil, Kannada,
 # Malayalam, Marathi, Bengali, Gujarati, Punjabi, Odia, English
 # ============================================================
@@ -2623,13 +2626,13 @@ class QAroviaTTSRequest(BaseModel):
 
 
 @app.post("/ai/tts")
-def carepath_ai_text_to_speech_post(req: QAroviaTTSRequest):
+def qarovia_ai_text_to_speech_post(req: QAroviaTTSRequest):
     """Accepts JSON body for extra-long full-chat voice queries without URL limits."""
-    return carepath_ai_text_to_speech(req.text, req.lang)
+    return qarovia_ai_text_to_speech(req.text, req.lang)
 
 
 @app.get("/ai/tts")
-def carepath_ai_text_to_speech(text: str, lang: str = "en"):
+def qarovia_ai_text_to_speech(text: str, lang: str = "en"):
     """
     Streams crystal-clear native MP3 speech in ALL Indian languages.
     Plays on any phone speaker, Android WebView, and browser without
@@ -2718,7 +2721,7 @@ def carepath_ai_text_to_speech(text: str, lang: str = "en"):
 
 
 @app.post("/ai/transcribe")
-async def carepath_ai_transcribe_audio(
+async def qarovia_ai_transcribe_audio(
     request: Request,
     audio: UploadFile = File(...),
     language: Optional[str] = Form("te-IN"),
@@ -2754,12 +2757,12 @@ async def carepath_ai_transcribe_audio(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# CAREPATH AI - PRESCRIPTION & MEDICAL REPORT EXPLAINER
+# Q-AROVIA AI - PRESCRIPTION & MEDICAL REPORT EXPLAINER
 # ============================================================
 
 @app.post("/ai/analyze-prescription")
 @app.post("/ai/analyze-prescription/")
-async def carepath_ai_analyze_prescription(
+async def qarovia_ai_analyze_prescription(
     request: Request,
     photo: UploadFile = File(...),
     notes: Optional[str] = Form(""),
@@ -5799,7 +5802,7 @@ async def register_hospital(
     # Try Cashfree vendor onboarding if bank details provided
     if clean_account_number and clean_ifsc:
         try:
-            vendor_id = f"carepath_hospital_{hospital.id}"
+            vendor_id = f"qarovia_hospital_{hospital.id}"
             cf_res = create_cashfree_vendor(
                 vendor_id=vendor_id,
                 name=clean_account_name or hospital.name,
@@ -6873,7 +6876,7 @@ def save_payment_account(
         )
 
     # ------------------------------------------------------------
-    # SAVE PAYMENT DETAILS IN CAREPATH
+    # SAVE PAYMENT DETAILS IN Q-AROVIA
     # ------------------------------------------------------------
 
     hospital.payment_account_name = data.account_name
@@ -6886,7 +6889,7 @@ def save_payment_account(
     # ------------------------------------------------------------
 
     if not hospital.cashfree_vendor_id:
-        vendor_id = f"carepath_hospital_{hospital.id}"
+        vendor_id = f"qarovia_hospital_{hospital.id}"
         try:
             cashfree_response = create_cashfree_vendor(
                 vendor_id=vendor_id,
@@ -7094,7 +7097,7 @@ def create_cashfree_order(
     if total_amount <= 0:
         raise HTTPException(status_code=400, detail="Invalid payment amount")
 
-    order_id = f"carepath_{hospital.id}_{secrets.token_hex(8)}"
+    order_id = f"qarovia_{hospital.id}_{secrets.token_hex(8)}"
 
     # Format customer phone (needs 10 valid digits for Cashfree production)
     raw_phone = "".join([c for c in str(getattr(patient, "phone", "") or "9999999999") if c.isdigit()])
@@ -7107,12 +7110,12 @@ def create_cashfree_order(
         "customer_details": {
             "customer_id": str(patient.id),
             "customer_name": (patient.full_name or "Q-Arovia Patient")[:50],
-            "customer_email": patient.email or "patient@carepath.health",
+            "customer_email": patient.email or "patient@q-arovia.in",
             "customer_phone": clean_cust_phone,
         },
         "order_meta": {
             "return_url": (
-                "https://carepath-patient-mx5v.vercel.app/"
+                "https://patient-mx5v.vercel.app/"
                 "token.html?cashfree_order_id={order_id}"
             )
         },
@@ -9393,7 +9396,7 @@ def update_platform_contact(
 
 
 # ============================================================
-# CAREPATH COMMISSION ENGINE (RULES 1 - 7)
+# Q-AROVIA COMMISSION ENGINE (RULES 1 - 7)
 # ============================================================
 
 class CommissionUpdateRequest(BaseModel):
@@ -10206,7 +10209,7 @@ Regards,
 Q-Arovia Verification Team
 """
         try:
-            send_carepath_email(hospital.email, subj, body)
+            send_qarovia_email(hospital.email, subj, body)
         except Exception as err:
             logging.warning("Certificate rejection email error: %s", err)
 
@@ -10445,7 +10448,7 @@ Regards,
 Q-Arovia Healthcare Compliance Team
 """
         try:
-            send_carepath_email(hospital.email, subj, body)
+            send_qarovia_email(hospital.email, subj, body)
         except Exception as err:
             logging.warning("Rejection email error: %s", err)
 
@@ -11962,12 +11965,12 @@ def schedule_hospital_closure(
             if t.patient_id:
                 pat = db.query(Patient).filter(Patient.id == t.patient_id).first()
                 if pat and pat.email:
-                    send_carepath_email(
+                    send_qarovia_email(
                         to_email=pat.email,
                         subject=f"Q-Arovia Refund Notice: {hospital.name} is closed on {closure_dt}",
                         text=f"Dear {pat.full_name}, {hospital.name} will be closed on {closure_dt} ({reason}). Your token #{t.token_number} has been cancelled and a 100% refund of ₹{t.total_amount:.2f} has been processed to your account.",
                         html=f"""<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 20px;">
-                        <h2 style="color: #0284c7; display: flex; align-items: center; gap: 8px;"><img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="Q-Arovia" width="28" height="28" style="vertical-align: middle; border-radius: 6px;" /> Q-Arovia Appointment Cancellation & 100% Refund</h2>
+                        <h2 style="color: #0284c7; display: flex; align-items: center; gap: 8px;"><img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia" width="28" height="28" style="vertical-align: middle; border-radius: 6px;" /> Q-Arovia Appointment Cancellation & 100% Refund</h2>
                         <p>Dear <strong>{pat.full_name}</strong>,</p>
                         <p><strong>{hospital.name}</strong> has announced a scheduled closure on <strong>{closure_dt}</strong> ({reason}).</p>
                         <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; border-radius: 8px; margin: 15px 0;">
@@ -12118,12 +12121,12 @@ def mark_doctor_on_leave(
             if t.patient_id:
                 pat = db.query(Patient).filter(Patient.id == t.patient_id).first()
                 if pat and pat.email:
-                    send_carepath_email(
+                    send_qarovia_email(
                         to_email=pat.email,
                         subject=f"Q-Arovia Refund Notice: Dr. {doctor.name} is on leave on {leave_dt}",
                         text=f"Dear {pat.full_name}, Dr. {doctor.name} is on leave on {leave_dt} ({reason}). Your token #{t.token_number} has been cancelled and a 100% refund of ₹{t.total_amount:.2f} has been processed to your account.",
                         html=f"""<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 20px;">
-                        <h2 style="color: #0284c7; display: flex; align-items: center; gap: 8px;"><img src="https://carepath-patient-mx5v.vercel.app/carepath-ai-small.png" alt="Q-Arovia" width="28" height="28" style="vertical-align: middle; border-radius: 6px;" /> Q-Arovia Appointment Cancellation & 100% Refund</h2>
+                        <h2 style="color: #0284c7; display: flex; align-items: center; gap: 8px;"><img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia" width="28" height="28" style="vertical-align: middle; border-radius: 6px;" /> Q-Arovia Appointment Cancellation & 100% Refund</h2>
                         <p>Dear <strong>{pat.full_name}</strong>,</p>
                         <p><strong>Dr. {doctor.name}</strong> at {hospital.name} is on leave on <strong>{leave_dt}</strong> ({reason}).</p>
                         <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; border-radius: 8px; margin: 15px 0;">
@@ -12391,11 +12394,11 @@ async def create_hospital_ad_order(
             "customer_details": {
                 "customer_id": f"hospital_{hospital_id}",
                 "customer_name": hospital.name[:50],
-                "customer_email": hospital.email or "hospital@carepath.health",
+                "customer_email": hospital.email or "hospital@q-arovia.in",
                 "customer_phone": clean_cust_phone,
             },
             "order_meta": {
-                "return_url": "https://carepath-hospital-ten.vercel.app/ads.html?ad_order_id={order_id}"
+                "return_url": "https://hospital-ten.vercel.app/ads.html?ad_order_id={order_id}"
             },
             "order_note": f"Q-Arovia {ad_type_clean.capitalize()} Campaign for {hospital.name[:40]}",
             "order_tags": {
@@ -13314,7 +13317,7 @@ def admin_send_hospital_message(
             f"----------------------------------------\n\n"
             f"{msg_text}\n\n"
             f"Please log in to your Q-Arovia Hospital Dashboard to view and reply directly:\n"
-            f"https://carepath-hospital-ten.vercel.app/\n\n"
+            f"https://hospital-ten.vercel.app/\n\n"
             f"Warm regards,\n"
             f"Q-Arovia Platform Administration Team"
         )
@@ -13332,7 +13335,7 @@ def admin_send_hospital_message(
                 {msg_text}
             </div>
             <div style="text-align: center; margin: 25px 0;">
-                <a href="https://carepath-hospital-ten.vercel.app/" style="background: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">Open Hospital Dashboard & Reply</a>
+                <a href="https://hospital-ten.vercel.app/" style="background: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">Open Hospital Dashboard & Reply</a>
             </div>
             <div style="border-top: 1px solid #e2e8f0; padding-top: 14px; font-size: 12px; color: #94a3b8; text-align: center;">
                 Q-Arovia Healthcare Technologies • Automated Official Communication System
@@ -13340,7 +13343,7 @@ def admin_send_hospital_message(
         </div>
         """
         try:
-            sent_email_ok = send_carepath_email(
+            sent_email_ok = send_qarovia_email(
                 to_email=hospital.email,
                 subject=email_subj,
                 text=email_body,
@@ -13644,7 +13647,7 @@ Message:
 You can view and reply to this inquiry directly on your Q-Arovia Hospital Dashboard.
 """
         try:
-            send_carepath_email(
+            send_qarovia_email(
                 to_email=hospital.email,
                 subject=f"Q-Arovia Patient Inquiry: {subj}",
                 body=email_body,

@@ -1,5 +1,5 @@
 """
-CarePath Security Remediation & Regression Test Suite
+Q-Arovia Security Remediation & Regression Test Suite
 Automated verification of all Critical, High, and Medium security fixes.
 """
 
@@ -24,7 +24,7 @@ from main import (
     _AI_RATE_LIMITS,
 )
 
-class CarePathSecurityRemediationTests(unittest.TestCase):
+class QAroviaSecurityRemediationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.client = TestClient(app, raise_server_exceptions=False)
@@ -124,7 +124,7 @@ class CarePathSecurityRemediationTests(unittest.TestCase):
         self.assertNotIn("access-control-allow-origin", res.headers)
 
     def test_09_cors_trusted_origin_allowed(self):
-        """Trusted CarePath Vercel domain must be permitted."""
+        """Trusted Q-Arovia Vercel domain must be permitted."""
         headers = {
             "Origin": "https://hospital-ten.vercel.app",
             "Access-Control-Request-Method": "GET",

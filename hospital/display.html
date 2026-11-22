@@ -636,8 +636,8 @@
         }
     </style>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="carepath-ai-small.png">
-    <script src="./carepath-instant-nav.js"></script>
+  <link rel="icon" type="image/png" href="qarovia-ai-small.png">
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 <body>
 
@@ -792,12 +792,12 @@
 
     <script src="./broadcast-banner.js"></script>
     <script>
-        const API = "https://carepath-3q9q.onrender.com";
+        const API = "https://qarovia-3q9q.onrender.com";
         const urlParams = new URLSearchParams(window.location.search);
         const hospitalId = urlParams.get("hospital_id") || urlParams.get("id") || localStorage.getItem("hospital_id") || "15";
         if (hospitalId) localStorage.setItem("hospital_id", hospitalId);
         const urlLang = urlParams.get("lang");
-        if (urlLang) localStorage.setItem("carepath_announcement_lang", urlLang);
+        if (urlLang) localStorage.setItem("qarovia_announcement_lang", urlLang);
         let lastAnnouncedToken = null;
         let lastAnnouncedCallKey = null;
         let audioEnabled = true;
@@ -1072,11 +1072,11 @@
 
         function getDisplayLanguage() {
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get("lang") || localStorage.getItem("carepath_display_announcement_lang") || "en-IN";
+            return urlParams.get("lang") || localStorage.getItem("qarovia_display_announcement_lang") || "en-IN";
         }
 
         function changeDisplayLanguage(langKey) {
-            localStorage.setItem("carepath_display_announcement_lang", langKey);
+            localStorage.setItem("qarovia_display_announcement_lang", langKey);
             const sel = document.getElementById("displayLangSelect");
             if (sel && sel.value !== langKey) sel.value = langKey;
         }

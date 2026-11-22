@@ -3,7 +3,7 @@
  * Automatically fetches and renders active emergency alerts and announcements
  */
 (function () {
-    const API_URL = (typeof API !== "undefined" ? API : (typeof API_BASE !== "undefined" ? API_BASE : "https://carepath-3q9q.onrender.com")).replace(/\/+$/, "");
+    const API_URL = (typeof API !== "undefined" ? API : (typeof API_BASE !== "undefined" ? API_BASE : "https://qarovia-3q9q.onrender.com")).replace(/\/+$/, "");
 
     // Determine target audience based on location
     const isHospital = window.location.pathname.includes("/hospital/") || document.title.toLowerCase().includes("hospital");
@@ -17,7 +17,7 @@
     };
 
     const STYLES = `
-    .carepath-broadcast-container {
+    .qarovia-broadcast-container {
         width: 100%;
         max-width: 1200px;
         margin: 12px auto 20px auto;
@@ -25,7 +25,7 @@
         box-sizing: border-box;
         z-index: 9999;
     }
-    .carepath-broadcast-banner {
+    .qarovia-broadcast-banner {
         padding: 14px 20px;
         border-radius: 12px;
         color: white;
@@ -41,19 +41,19 @@
         from { transform: translateY(-12px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
     }
-    .carepath-broadcast-banner.critical {
+    .qarovia-broadcast-banner.critical {
         background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
         border: 1px solid #b91c1c;
     }
-    .carepath-broadcast-banner.warning {
+    .qarovia-broadcast-banner.warning {
         background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
         border: 1px solid #f97316;
     }
-    .carepath-broadcast-banner.info {
+    .qarovia-broadcast-banner.info {
         background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
         border: 1px solid #38bdf8;
     }
-    .carepath-broadcast-banner.success {
+    .qarovia-broadcast-banner.success {
         background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
         border: 1px solid #22c55e;
     }
@@ -118,7 +118,7 @@
         transform: scale(1.15);
     }
     @media (max-width: 640px) {
-        .carepath-broadcast-banner {
+        .qarovia-broadcast-banner {
             flex-direction: column;
             align-items: flex-start;
         }
@@ -131,9 +131,9 @@
     `;
 
     function injectStyles() {
-        if (document.getElementById("carepath-broadcast-styles")) return;
+        if (document.getElementById("qarovia-broadcast-styles")) return;
         const style = document.createElement("style");
-        style.id = "carepath-broadcast-styles";
+        style.id = "qarovia-broadcast-styles";
         style.textContent = STYLES;
         document.head.appendChild(style);
     }
@@ -153,7 +153,7 @@
             if (!container) {
                 container = document.createElement("div");
                 container.id = "emergencyBroadcastContainer";
-                container.className = "carepath-broadcast-container";
+                container.className = "qarovia-broadcast-container";
 
                 // Insert at the top of the main content or body
                 const header = document.querySelector("header") || document.querySelector(".topbar");
@@ -175,7 +175,7 @@
                 const icon = ICONS[b.banner_type] || "📢";
                 const bannerEl = document.createElement("div");
                 bannerEl.id = `cp-broadcast-${b.id}`;
-                bannerEl.className = `carepath-broadcast-banner ${b.banner_type || "warning"}`;
+                bannerEl.className = `qarovia-broadcast-banner ${b.banner_type || "warning"}`;
 
                 let actionHtml = "";
                 if (b.action_link && b.action_label) {
@@ -183,7 +183,7 @@
                 }
 
                 const closeHtml = b.is_dismissible
-                    ? `<button type="button" class="cp-close-btn" onclick="dismissCarepathBroadcast(${b.id})" title="Dismiss Alert" aria-label="Dismiss">✕</button>`
+                    ? `<button type="button" class="cp-close-btn" onclick="dismissQAroviaBroadcast(${b.id})" title="Dismiss Alert" aria-label="Dismiss">✕</button>`
                     : "";
 
                 bannerEl.innerHTML = `
@@ -214,7 +214,7 @@
         return div.innerHTML;
     }
 
-    window.dismissCarepathBroadcast = function (id) {
+    window.dismissQAroviaBroadcast = function (id) {
         sessionStorage.setItem(`cp_dismissed_broadcast_${id}`, "1");
         const el = document.getElementById(`cp-broadcast-${id}`);
         if (el) {

@@ -10,7 +10,7 @@
   <script>
     (function() {
       try {
-        const theme = localStorage.getItem("carepath_theme") || "system";
+        const theme = localStorage.getItem("qarovia_theme") || "system";
         let isDark = false;
         if (theme === "dark") isDark = true;
         else if (theme === "light") isDark = false;
@@ -30,22 +30,22 @@
 
   <link rel="stylesheet" href="./style.css">
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="carepath-ai-small.png">
+  <link rel="icon" type="image/png" href="qarovia-ai-small.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
 
   <!-- Load dashboard JavaScript dependencies -->
   <script src="https://sdk.cashfree.com/js/v3/cashfree.js" defer></script>
-  <script src="./carepath-instant-nav.js"></script>
-  <script src="./carepath-realtime.js"></script>
+  <script src="./qarovia-instant-nav.js"></script>
+  <script src="./qarovia-realtime.js"></script>
   <link rel="prefetch" href="doctor.html" as="document">
   <link rel="prefetch" href="my-tokens.html" as="document">
   <link rel="prefetch" href="profile.html" as="document">
   <link rel="prefetch" href="hospital-details.html" as="document">
   <script src="./script.js" defer></script>
   <script>
-    window.CarePathDoctorPhotos = window.CarePathDoctorPhotos || {
+    window.QAroviaDoctorPhotos = window.QAroviaDoctorPhotos || {
       resolvePhotoSrc: function() { return null; },
       cacheImageAsync: function() {},
       handleImageLoad: function() {},
@@ -56,7 +56,7 @@
   </script>
   <script src="./dashboard-ui.js"></script>
   <script src="./broadcast-banner.js"></script>
-  <script src="./carepath-permissions.js"></script>
+  <script src="./qarovia-permissions.js"></script>
 
   <style>
     :root {
@@ -1191,9 +1191,9 @@
     }
 
     /* =====================================================
-       CAREPATH AI CHAT ASSISTANT MESSAGE BOX
+       Q-AROVIA AI CHAT ASSISTANT MESSAGE BOX
        ===================================================== */
-    .carepath-ai-chat {
+    .qarovia-ai-chat {
       position: fixed !important;
       bottom: calc(var(--safe-bottom) + 82px) !important;
       right: 14px !important;
@@ -1213,13 +1213,13 @@
     }
 
     @media (min-width: 480px) {
-      .carepath-ai-chat {
+      .qarovia-ai-chat {
         right: 20px !important;
         width: 400px !important;
       }
     }
 
-    .carepath-ai-header {
+    .qarovia-ai-header {
       background: linear-gradient(135deg, #0e1e3d 0%, #172a52 100%) !important;
       color: #f8fafc !important;
       padding: 12px 16px !important;
@@ -1230,7 +1230,7 @@
       flex-shrink: 0 !important;
     }
 
-    .carepath-ai-messages {
+    .qarovia-ai-messages {
       flex: 1 !important;
       padding: 14px !important;
       overflow-y: auto !important;
@@ -1242,7 +1242,7 @@
       box-sizing: border-box !important;
     }
 
-    .carepath-ai-message {
+    .qarovia-ai-message {
       max-width: 88% !important;
       padding: 11px 14px !important;
       border-radius: 16px !important;
@@ -1254,7 +1254,7 @@
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25) !important;
     }
 
-    .carepath-ai-input-area {
+    .qarovia-ai-input-area {
       display: flex !important;
       align-items: center !important;
       gap: 8px !important;
@@ -1265,7 +1265,7 @@
       box-sizing: border-box !important;
     }
 
-    .carepath-ai-icon-btn {
+    .qarovia-ai-icon-btn {
       width: 38px !important;
       height: 38px !important;
       border-radius: 50% !important;
@@ -1278,7 +1278,7 @@
       transition: transform 0.2s !important;
     }
 
-    .carepath-ai-icon-btn:hover {
+    .qarovia-ai-icon-btn:hover {
       transform: scale(1.08) !important;
     }
 
@@ -1294,7 +1294,7 @@
       color: #38bdf8 !important;
     }
 
-    #carepathAIInput {
+    #qaroviaAIInput {
       flex: 1 !important;
       border: 1.5px solid rgba(56, 189, 248, 0.3) !important;
       border-radius: 20px !important;
@@ -1308,16 +1308,16 @@
       box-sizing: border-box !important;
     }
 
-    #carepathAIInput:focus {
+    #qaroviaAIInput:focus {
       border-color: #38bdf8 !important;
       box-shadow: 0 0 12px rgba(56, 189, 248, 0.3) !important;
     }
 
-    #carepathAIInput::placeholder {
+    #qaroviaAIInput::placeholder {
       color: #64748b !important;
     }
 
-    #carepathAISend {
+    #qaroviaAISend {
       width: 38px !important;
       height: 38px !important;
       border-radius: 50% !important;
@@ -1334,12 +1334,12 @@
       transition: transform 0.15s !important;
     }
 
-    #carepathAISend:active {
+    #qaroviaAISend:active {
       transform: scale(0.92) !important;
     }
 
     /* Q-Arovia AI Multilingual Language Switcher */
-    .carepath-ai-lang-bar {
+    .qarovia-ai-lang-bar {
       background: rgba(10, 18, 38, 0.98);
       border-bottom: 1px solid rgba(56, 189, 248, 0.22);
       padding: 7px 10px;
@@ -1352,7 +1352,7 @@
       align-items: center;
       z-index: 5;
     }
-    .carepath-ai-lang-bar::-webkit-scrollbar { display: none; }
+    .qarovia-ai-lang-bar::-webkit-scrollbar { display: none; }
     .lang-pill {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.16);
@@ -1596,10 +1596,10 @@
     }
 
     /* ============================================================
-   CAREPATH AI FLOATING BUTTON (PERFECT CIRCLE & CINEMATIC MOTION)
+   Q-AROVIA AI FLOATING BUTTON (PERFECT CIRCLE & CINEMATIC MOTION)
 ============================================================ */
-.carepath-ai-floating-btn,
-#carepathAIButton {
+.qarovia-ai-floating-btn,
+#qaroviaAIButton {
   position: fixed !important;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 88px) !important;
   right: 16px !important;
@@ -1634,22 +1634,22 @@
   box-sizing: border-box !important;
 }
 
-.carepath-ai-floating-btn:hover,
-#carepathAIButton:hover {
+.qarovia-ai-floating-btn:hover,
+#qaroviaAIButton:hover {
   transform: translateY(-2px) scale(1.04) !important;
   box-shadow: 0 10px 28px rgba(124, 58, 237, 0.7), 0 0 24px rgba(56, 189, 248, 0.55) !important;
   color: #ffffff !important;
 }
 
-.carepath-ai-floating-btn:active,
-#carepathAIButton:active {
+.qarovia-ai-floating-btn:active,
+#qaroviaAIButton:active {
   transform: scale(0.95) !important;
 }
 
 /* Perfect circular logo */
-.carepath-ai-floating-btn .ai-btn-img,
-#carepathAIButton img,
-#carepathAIButton .ai-btn-img {
+.qarovia-ai-floating-btn .ai-btn-img,
+#qaroviaAIButton img,
+#qaroviaAIButton .ai-btn-img {
   width: 32px !important;
   height: 32px !important;
   min-width: 32px !important;
@@ -1667,9 +1667,9 @@
 }
 
 /* Typography with cinematic sliding/collapsing animation */
-.carepath-ai-floating-btn .ai-btn-label,
-#carepathAIButton .ai-btn-label,
-#carepathAIButton span:not(.ai-badge) {
+.qarovia-ai-floating-btn .ai-btn-label,
+#qaroviaAIButton .ai-btn-label,
+#qaroviaAIButton span:not(.ai-badge) {
   color: #ffffff !important;
   font-weight: 800 !important;
   font-size: 13px !important;
@@ -1689,8 +1689,8 @@
 }
 
 /* Collapsed Circular Emblem State (When scrolling down: slowly remove name, show only logo) */
-.carepath-ai-floating-btn.ai-btn-collapsed,
-#carepathAIButton.ai-btn-collapsed {
+.qarovia-ai-floating-btn.ai-btn-collapsed,
+#qaroviaAIButton.ai-btn-collapsed {
   padding: 6px !important;
   width: 46px !important;
   height: 46px !important;
@@ -1702,9 +1702,9 @@
               box-shadow 0.3s ease !important;
 }
 
-.carepath-ai-floating-btn.ai-btn-collapsed .ai-btn-label,
-#carepathAIButton.ai-btn-collapsed .ai-btn-label,
-#carepathAIButton.ai-btn-collapsed span:not(.ai-badge) {
+.qarovia-ai-floating-btn.ai-btn-collapsed .ai-btn-label,
+#qaroviaAIButton.ai-btn-collapsed .ai-btn-label,
+#qaroviaAIButton.ai-btn-collapsed span:not(.ai-badge) {
   max-width: 0 !important;
   opacity: 0 !important;
   transform: translateX(12px) !important;
@@ -1717,15 +1717,15 @@
 }
 
 /* Hovering over collapsed button expands full name smoothly */
-.carepath-ai-floating-btn.ai-btn-collapsed:hover,
-#carepathAIButton.ai-btn-collapsed:hover {
+.qarovia-ai-floating-btn.ai-btn-collapsed:hover,
+#qaroviaAIButton.ai-btn-collapsed:hover {
   padding: 6px 16px 6px 6px !important;
   width: auto !important;
   border-radius: 999px !important;
 }
-.carepath-ai-floating-btn.ai-btn-collapsed:hover .ai-btn-label,
-#carepathAIButton.ai-btn-collapsed:hover .ai-btn-label,
-#carepathAIButton.ai-btn-collapsed:hover span:not(.ai-badge) {
+.qarovia-ai-floating-btn.ai-btn-collapsed:hover .ai-btn-label,
+#qaroviaAIButton.ai-btn-collapsed:hover .ai-btn-label,
+#qaroviaAIButton.ai-btn-collapsed:hover span:not(.ai-badge) {
   max-width: 140px !important;
   opacity: 1 !important;
   transform: translateX(0) !important;
@@ -1733,24 +1733,24 @@
 }
 
 @media (min-width: 768px) {
-  .carepath-ai-floating-btn,
-  #carepathAIButton {
+  .qarovia-ai-floating-btn,
+  #qaroviaAIButton {
     bottom: 24px !important;
     right: 28px !important;
     height: 48px !important;
     padding: 7px 18px 7px 7px !important;
     font-size: 13.5px !important;
   }
-  .carepath-ai-floating-btn .ai-btn-img,
-  #carepathAIButton img,
-  #carepathAIButton .ai-btn-img {
+  .qarovia-ai-floating-btn .ai-btn-img,
+  #qaroviaAIButton img,
+  #qaroviaAIButton .ai-btn-img {
     width: 32px !important;
     height: 32px !important;
     min-width: 32px !important;
     min-height: 32px !important;
   }
-  .carepath-ai-floating-btn.ai-btn-collapsed,
-  #carepathAIButton.ai-btn-collapsed {
+  .qarovia-ai-floating-btn.ai-btn-collapsed,
+  #qaroviaAIButton.ai-btn-collapsed {
     width: 48px !important;
     height: 48px !important;
     padding: 7px !important;
@@ -1765,7 +1765,7 @@
     <!-- Header -->
     <header class="topbar">
       <div class="brand">
-        <img src="carepath-ai-small.png" alt="Q-Arovia AI Logo" class="brand-icon">
+        <img src="qarovia-ai-small.png" alt="Q-Arovia AI Logo" class="brand-icon">
         <div class="brand-text">
           <h1>Q-Arovia <span class="brand-status-tag">OPD Live</span></h1>
         </div>
@@ -1839,7 +1839,7 @@
           </div>
         </div>
 
-        <div class="location-strip" id="carepathLocationBar" onclick="CarePathLocationManagerUI.requestLocation()" title="Tap to detect GPS location">
+        <div class="location-strip" id="qaroviaLocationBar" onclick="QAroviaLocationManagerUI.requestLocation()" title="Tap to detect GPS location">
           <div class="loc-strip-left">
             <span class="loc-strip-pin">📍</span>
             <div class="loc-strip-info">
@@ -1877,7 +1877,7 @@
         </a>
 
         <div class="action-tile tile-ai" onclick="toggleQ-AroviaAIChat(event)">
-          <div class="tile-icon-box ai-icon-box"><img src="carepath-ai-small.png" alt="Q-Arovia AI"></div>
+          <div class="tile-icon-box ai-icon-box"><img src="qarovia-ai-small.png" alt="Q-Arovia AI"></div>
           <div class="tile-content">
             <h3>AI Assistant</h3>
             <p>Scan prescription</p>
@@ -2066,22 +2066,22 @@
 <!-- Q-Arovia AI Floating Assistant Button -->
 <button
   type="button"
-  id="carepathAIButton"
-  class="carepath-ai-floating-btn"
+  id="qaroviaAIButton"
+  class="qarovia-ai-floating-btn"
   onclick="toggleQ-AroviaAIChat(event)"
   aria-label="Open Q-Arovia AI Assistant"
   title="Q-Arovia AI Assistant"
 >
-  <img src="carepath-ai-small.png" alt="Q-Arovia AI" class="ai-btn-img" onerror="this.onerror=null; this.src='carepath-ai.png';">
+  <img src="qarovia-ai-small.png" alt="Q-Arovia AI" class="ai-btn-img" onerror="this.onerror=null; this.src='qarovia-ai.png';">
   <span class="ai-btn-label">Q-Arovia AI</span>
 </button>
 
 
 <!-- Q-Arovia AI Chat Window -->
-<div id="carepathAIChat" class="carepath-ai-chat" style="display: none; z-index: 100000; position: fixed;">
+<div id="qaroviaAIChat" class="qarovia-ai-chat" style="display: none; z-index: 100000; position: fixed;">
 
   <!-- DEDICATED LIVE VOICE ASSISTANT OVERLAY -->
-  <div id="carepathVoiceOverlay" style="display: none; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 30, 0.98) 100%); z-index: 10000; border-radius: 18px; backdrop-filter: blur(8px); flex-direction: column; align-items: center; justify-content: space-between; padding: 16px; box-sizing: border-box; color: white; animation: cpFadeIn 0.2s ease;">
+  <div id="qaroviaVoiceOverlay" style="display: none; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 15, 30, 0.98) 100%); z-index: 10000; border-radius: 18px; backdrop-filter: blur(8px); flex-direction: column; align-items: center; justify-content: space-between; padding: 16px; box-sizing: border-box; color: white; animation: cpFadeIn 0.2s ease;">
     <!-- Top Bar -->
     <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 10px;">
       <div style="display: flex; align-items: center; gap: 8px;">
@@ -2155,9 +2155,9 @@
     </div>
   </div>
 
-  <div class="carepath-ai-header">
+  <div class="qarovia-ai-header">
     <div style="display: flex; align-items: center; gap: 12px;">
-      <img src="carepath-ai.png" alt="AI Avatar" style="width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.45); box-shadow: 0 2px 8px rgba(0,0,0,0.25);" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+      <img src="qarovia-ai.png" alt="AI Avatar" style="width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.45); box-shadow: 0 2px 8px rgba(0,0,0,0.25);" onerror="this.onerror=null; this.src='qarovia-ai.svg';">
       <div>
         <strong style="display: flex; align-items: center; gap: 6px;">
           Q-Arovia AI
@@ -2171,16 +2171,16 @@
       <!-- Auto Multilingual Enabled -->
       <button
         type="button"
-        id="carepathAIVoiceToggle"
+        id="qaroviaAIVoiceToggle"
         onclick="toggleQ-AroviaVoiceOutput()"
         title="Toggle AI Spoken Voice"
         style="background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.4); color: white; border-radius: 16px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; backdrop-filter: blur(4px); transition: all 0.2s;"
       >
-        <span id="carepathVoiceIcon">🔇</span> <span id="carepathVoiceLabel">Voice: OFF</span>
+        <span id="qaroviaVoiceIcon">🔇</span> <span id="qaroviaVoiceLabel">Voice: OFF</span>
       </button>
       <button
         type="button"
-        id="carepathAIClose" onclick="closeQ-AroviaAIChat()"
+        id="qaroviaAIClose" onclick="closeQ-AroviaAIChat()"
         aria-label="Close Q-Arovia AI"
       >
         ×
@@ -2189,7 +2189,7 @@
   </div>
 
   <!-- DYNAMIC MULTILINGUAL INDIAN LANGUAGE SELECTOR -->
-  <div class="carepath-ai-lang-bar" id="carepathAiLangBar">
+  <div class="qarovia-ai-lang-bar" id="qaroviaAiLangBar">
     <button type="button" class="lang-pill active" data-lang="auto" onclick="changeQ-AroviaLanguage('auto')">🌐 Auto Detect</button>
     <button type="button" class="lang-pill" data-lang="te-IN" onclick="changeQ-AroviaLanguage('te-IN')">తెలుగు</button>
     <button type="button" class="lang-pill" data-lang="hi-IN" onclick="changeQ-AroviaLanguage('hi-IN')">हिंदी</button>
@@ -2204,14 +2204,14 @@
     <button type="button" class="lang-pill" data-lang="or-IN" onclick="changeQ-AroviaLanguage('or-IN')">ଓଡ଼ିଆ</button>
   </div>
 
-  <div id="carepathAIMessages" class="carepath-ai-messages">
-    <div class="carepath-ai-message" style="display: flex; gap: 10px; align-items: flex-start;">
-      <img src="carepath-ai.png" alt="Bot" style="width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+  <div id="qaroviaAIMessages" class="qarovia-ai-messages">
+    <div class="qarovia-ai-message" style="display: flex; gap: 10px; align-items: flex-start;">
+      <img src="qarovia-ai.png" alt="Bot" style="width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;" onerror="this.onerror=null; this.src='qarovia-ai.svg';">
       <div>
         Welcome! Ask me about symptoms, doctors, OPD tokens, or <strong>upload / take a photo of your doctor's prescription</strong> and I will explain how to take your medicines.
       </div>
     </div>
-    <div id="carepathInitialActionChips" style="display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px 36px;">
+    <div id="qaroviaInitialActionChips" style="display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px 36px;">
       <button type="button" id="btnScanPrescriptionChip" onclick="triggerPrescriptionCapture()" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
         📸 Scan Doctor's Prescription
       </button>
@@ -2222,50 +2222,50 @@
   </div>
 
   <!-- LIVE AUDIO LISTENING INDICATOR -->
-  <div id="carepathAIListeningBar" style="display: none; padding: 7px 14px; background: #fef2f2; border-top: 1px solid #fecaca; color: #b91c1c; font-size: 12px; font-weight: 700; align-items: center; justify-content: space-between;">
+  <div id="qaroviaAIListeningBar" style="display: none; padding: 7px 14px; background: #fef2f2; border-top: 1px solid #fecaca; color: #b91c1c; font-size: 12px; font-weight: 700; align-items: center; justify-content: space-between;">
     <div style="display: flex; align-items: center; gap: 8px;">
       <span style="display: inline-block; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; animation: cpMicPulse 1s infinite;"></span>
-      <span id="carepathAIListeningText">Listening... Speak your health question now</span>
+      <span id="qaroviaAIListeningText">Listening... Speak your health question now</span>
     </div>
     <button type="button" onclick="stopQ-AroviaVoiceRecognition()" style="background: none; border: none; color: #b91c1c; font-size: 12px; font-weight: 800; cursor: pointer; text-decoration: underline;">Stop</button>
   </div>
 
   
-  <div class="carepath-ai-input-area">
+  <div class="qarovia-ai-input-area">
     <!-- HIDDEN INPUTS FOR CAMERA AND GALLERY CHOOSER -->
-    <input type="file" id="carepathAICameraInput" accept="image/*" capture="environment" style="display: none;">
-    <input type="file" id="carepathAIGalleryInput" accept="image/*" style="display: none;">
+    <input type="file" id="qaroviaAICameraInput" accept="image/*" capture="environment" style="display: none;">
+    <input type="file" id="qaroviaAIGalleryInput" accept="image/*" style="display: none;">
 
     <button
       type="button"
-      id="carepathAIAttachBtn"
+      id="qaroviaAIAttachBtn"
       title="Upload or take photo of prescription / medical report"
       aria-label="Upload prescription photo"
       onclick="openPrescriptionChoiceModal()"
-      class="carepath-ai-icon-btn camera-btn"
+      class="qarovia-ai-icon-btn camera-btn"
     >
       📷
     </button>
     <button
       type="button"
-      id="carepathAIMicBtn"
+      id="qaroviaAIMicBtn"
       title="Speak to Q-Arovia AI with voice"
       aria-label="Voice question to AI"
       onclick="toggleQ-AroviaVoiceRecognition()"
-      class="carepath-ai-icon-btn mic-btn"
+      class="qarovia-ai-icon-btn mic-btn"
     >
       🎙️
     </button>
     <input
       type="text"
-      id="carepathAIInput"
+      id="qaroviaAIInput"
       placeholder="Ask Q-Arovia AI or tap 🎙️ to speak..."
       autocomplete="off"
       
     >
     <button
       type="button"
-      id="carepathAISend"
+      id="qaroviaAISend"
       aria-label="Send"
       
     >
@@ -2278,7 +2278,7 @@
 
 
 <!-- ANDROID-STYLE PERMISSION DIALOG -->
-<div id="carepathPermissionDialog" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 2500000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;">
+<div id="qaroviaPermissionDialog" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 2500000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;">
   <div style="background: #282a2e; color: #e2e8f0; border-radius: 28px; max-width: 340px; width: 100%; padding: 28px 24px 20px; box-shadow: 0 20px 45px rgba(0,0,0,0.6); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
     <div id="cpPermIcon" style="font-size: 34px; margin-bottom: 12px; color: #60a5fa;">📷</div>
     <h3 id="cpPermTitle" style="margin: 0 0 10px; font-size: 18.5px; color: #f1f5f9; font-weight: 700; line-height: 1.35;">
@@ -2305,7 +2305,7 @@
 </div>
 
 <!-- MICROPHONE PERMISSION BLOCKED MODAL -->
-<div id="carepathMicBlockedModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2600000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+<div id="qaroviaMicBlockedModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2600000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
   <div style="background: white; border-radius: 20px; max-width: 380px; width: 100%; padding: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.3); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
     <div style="font-size: 38px; margin-bottom: 8px;">🎙️⚠️</div>
     <h3 style="margin: 0 0 8px; font-size: 18px; color: #0f172a; font-weight: 800;">Microphone Access Needed</h3>
@@ -2339,7 +2339,7 @@
 </div>
 
 <!-- LIVE CAMERA SCANNER MODAL WITH PERMISSION PROMPT -->
-<div id="carepathAICameraModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); z-index: 2000002; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;">
+<div id="qaroviaAICameraModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); z-index: 2000002; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;">
   <div style="background: #1e293b; color: white; border-radius: 18px; max-width: 460px; width: 100%; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5); display: flex; flex-direction: column;">
     <div style="padding: 14px 18px; background: #0f172a; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155;">
       <div style="display: flex; align-items: center; gap: 8px;">
@@ -2351,16 +2351,16 @@
 
     <!-- VIDEO VIEWFINDER AREA -->
     <div style="position: relative; width: 100%; min-height: 280px; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-      <video id="carepathAIVideo" autoplay playsinline style="width: 100%; height: 100%; max-height: 340px; object-fit: cover;"></video>
-      <canvas id="carepathAICanvas" style="display: none;"></canvas>
+      <video id="qaroviaAIVideo" autoplay playsinline style="width: 100%; height: 100%; max-height: 340px; object-fit: cover;"></video>
+      <canvas id="qaroviaAICanvas" style="display: none;"></canvas>
 
       <!-- GUIDELINE OVERLAY -->
-      <div id="carepathAICamGuide" style="position: absolute; inset: 24px; border: 2px dashed rgba(255,255,255,0.7); border-radius: 12px; pointer-events: none; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px;">
+      <div id="qaroviaAICamGuide" style="position: absolute; inset: 24px; border: 2px dashed rgba(255,255,255,0.7); border-radius: 12px; pointer-events: none; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px;">
         <span style="background: rgba(0,0,0,0.6); color: #fff; font-size: 11.5px; padding: 4px 10px; border-radius: 12px; backdrop-filter: blur(2px);">Align prescription inside frame</span>
       </div>
 
       <!-- CAMERA PERMISSION ERROR STATUS -->
-      <div id="carepathAICamStatus" style="display: none; position: absolute; inset: 16px; margin: auto; max-height: 220px; padding: 18px; text-align: center; color: #f87171; font-size: 13px; background: rgba(15,23,42,0.95); border: 1px solid #ef4444; border-radius: 12px; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+      <div id="qaroviaAICamStatus" style="display: none; position: absolute; inset: 16px; margin: auto; max-height: 220px; padding: 18px; text-align: center; color: #f87171; font-size: 13px; background: rgba(15,23,42,0.95); border: 1px solid #ef4444; border-radius: 12px; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
         <div style="font-size: 28px; margin-bottom: 6px;">📷⚠️</div>
         <strong style="color: #fca5a5; font-size: 14px;">Camera Permission Needed</strong>
         <p style="margin: 8px 0; color: #cbd5e1; font-size: 12px; line-height: 1.45;">Please tap <strong>Allow</strong> when your browser asks for camera access, or enable camera in browser settings.</p>
@@ -2381,7 +2381,7 @@
 </div>
 
 <!-- PRESCRIPTION UPLOAD CHOICE MODAL (CAMERA OR GALLERY) -->
-<div id="carepathAIPhotoModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+<div id="qaroviaAIPhotoModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000000; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
   <div style="background: white; border-radius: 18px; max-width: 420px; width: 100%; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
     <div style="font-size: 38px; margin-bottom: 8px;">🩺</div>
     <h3 style="margin: 0 0 6px; font-size: 18px; color: #0f172a; font-weight: 800;">Scan Doctor's Prescription</h3>
@@ -2424,20 +2424,20 @@
 <!-- =====================================================
      IN-APP SPONSORED ADVERTISEMENT DETAILS MODAL
 ===================================================== -->
-<div id="carepathAdDetailsModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78); z-index: 2000005; backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;" onclick="if(event.target===this)closeInAppAdDetails()">
-  <div class="carepath-ad-modal-card" style="background: white; border-radius: 20px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); position: relative; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
+<div id="qaroviaAdDetailsModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78); z-index: 2000005; backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;" onclick="if(event.target===this)closeInAppAdDetails()">
+  <div class="qarovia-ad-modal-card" style="background: white; border-radius: 20px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); position: relative; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
     <!-- Modal Close / Back Button -->
     <div style="position: absolute; top: 12px; right: 12px; z-index: 20;">
       <button type="button" onclick="closeInAppAdDetails()" style="background: rgba(15, 23, 42, 0.65); color: white; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.25);">✕</button>
     </div>
-    <div id="carepathAdDetailsContent">
+    <div id="qaroviaAdDetailsContent">
       <!-- Populated dynamically by openInAppAdDetails(ad) -->
     </div>
   </div>
 </div>
 
 <!-- PRESCRIPTION PREVIEW & CONFIRM MODAL -->
-<div id="carepathAIPreviewModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000001; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+<div id="qaroviaAIPreviewModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 2000001; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
   <div style="background: white; border-radius: 18px; max-width: 440px; width: 100%; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; box-sizing: border-box; animation: cpSlideDown 0.25s ease;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
       <h3 style="margin: 0; font-size: 17px; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 6px;">
@@ -2512,7 +2512,7 @@
 
 <script>
   // =====================================================
-  // CAREPATH AI - ALL INDIAN LANGUAGES TWO-WAY VOICE ENGINE
+  // Q-AROVIA AI - ALL INDIAN LANGUAGES TWO-WAY VOICE ENGINE
   // Supported: Telugu, Hindi, English, Tamil, Kannada, Malayalam,
   // Marathi, Bengali, Gujarati, Punjabi
   // =====================================================
@@ -2523,14 +2523,14 @@
   let cpCameraStream = null;
   let cpCameraFacing = "environment";
   let pendingPrescriptionFile = null;
-  let carepathVoices = [];
+  let qaroviaVoices = [];
   let currentlyPlayingMsgId = null;
   let activeAudioVoice = null;
   window.cpMessageTextMap = window.cpMessageTextMap || {};
 
   // Default to Auto Detect Indian Language
-  let currentAiLang = localStorage.getItem("carepath_lang") || "auto";
-  let currentDetectedLang = localStorage.getItem("carepath_detected_lang") || "te-IN";
+  let currentAiLang = localStorage.getItem("qarovia_lang") || "auto";
+  let currentDetectedLang = localStorage.getItem("qarovia_detected_lang") || "te-IN";
 
   const CP_LANG_CONFIG = {
     "auto": {
@@ -2786,17 +2786,17 @@
   };
 
   // Preload speech synthesis voices as secondary fallback
-  function loadCarepathVoices() {
+  function loadQaroviaVoices() {
     if (!('speechSynthesis' in window)) return;
-    try { carepathVoices = window.speechSynthesis.getVoices() || []; } catch(e) {}
+    try { qaroviaVoices = window.speechSynthesis.getVoices() || []; } catch(e) {}
   }
   if ('speechSynthesis' in window) {
-    loadCarepathVoices();
-    window.speechSynthesis.onvoiceschanged = loadCarepathVoices;
+    loadQaroviaVoices();
+    window.speechSynthesis.onvoiceschanged = loadQaroviaVoices;
   }
 
   // Multi-Turn Conversation History & Prescription Context
-  let carepathConversationHistory = [];
+  let qaroviaConversationHistory = [];
   let lastAnalyzedPrescriptionText = "";
 
   // Prime speech & audio channel on user touch (critical for Android autoplay policy)
@@ -2832,10 +2832,10 @@
   // Detect which Indian language a given piece of text is written in
   // Regional Default Language from Hospital location / GPS / preference
   function getRegionalDefaultLanguage() {
-    const last = localStorage.getItem("carepath_detected_lang");
+    const last = localStorage.getItem("qarovia_detected_lang");
     if (last && CP_LANG_CONFIG[last] && last !== "auto") return last;
 
-    const city = (window.carepathUserCity || "").toLowerCase();
+    const city = (window.qaroviaUserCity || "").toLowerCase();
     const hosp = ((typeof selectedHospitalName !== "undefined" ? selectedHospitalName : "") || "").toLowerCase();
     const loc = city + " " + hosp;
 
@@ -2950,14 +2950,14 @@
       newLang = "auto";
     }
     currentAiLang = newLang;
-    localStorage.setItem("carepath_lang", newLang);
+    localStorage.setItem("qarovia_lang", newLang);
 
     updateLanguagePillUI(newLang);
 
     const effectiveLang = (newLang === "auto") ? getRegionalDefaultLanguage() : newLang;
     const conf = CP_LANG_CONFIG[newLang] || CP_LANG_CONFIG[effectiveLang] || CP_LANG_CONFIG["en-IN"];
 
-    const input = document.getElementById("carepathAIInput");
+    const input = document.getElementById("qaroviaAIInput");
     if (input) input.placeholder = conf.placeholder;
 
     const voiceStatus = document.getElementById("cpVoiceStatusText");
@@ -2978,7 +2978,7 @@
       `).join("");
     }
 
-    const initialChips = document.getElementById("carepathInitialActionChips");
+    const initialChips = document.getElementById("qaroviaInitialActionChips");
     if (initialChips) {
       initialChips.innerHTML = `
         <button type="button" onclick="triggerPrescriptionCapture()" style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
@@ -3077,7 +3077,7 @@
     }
 
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-    const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+    const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
     const ttsLangCode = (shortCode === "or") ? "hi" : shortCode;
     const backendTtsUrl = `${apiBase}/ai/tts?text=${encodeURIComponent(toSpeak)}&lang=${ttsLangCode}`;
     const directTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${shortCode}&client=tw-ob&q=${encodeURIComponent(toSpeak)}`;
@@ -3180,12 +3180,12 @@
       let chunkIndex = 0;
       speechQueueActive = true;
 
-      if (!carepathVoices.length) loadCarepathVoices();
+      if (!qaroviaVoices.length) loadQaroviaVoices();
       const langPrefix = detectedLang.slice(0, 2).toLowerCase();
-      const bestVoice = carepathVoices.find(v => {
+      const bestVoice = qaroviaVoices.find(v => {
         const vl = v.lang.replace('_', '-').toLowerCase();
         return vl === detectedLang.toLowerCase() || vl.startsWith(langPrefix);
-      }) || carepathVoices.find(v => v.lang.toLowerCase().startsWith("en")) || carepathVoices[0];
+      }) || qaroviaVoices.find(v => v.lang.toLowerCase().startsWith("en")) || qaroviaVoices[0];
 
       function speakNextChunk() {
         if (!speechQueueActive || chunkIndex >= chunks.length) {
@@ -3242,10 +3242,10 @@
   // VOICE RECOGNITION (SPEECH-TO-TEXT) & LIVE ASSISTANT OVERLAY
   // =====================================================
   function showVoiceAssistantOverlay(state) {
-    const overlay = document.getElementById("carepathVoiceOverlay");
+    const overlay = document.getElementById("qaroviaVoiceOverlay");
     const statusText = document.getElementById("cpVoiceStatusText");
     const transcriptBox = document.getElementById("cpVoiceTranscriptBox");
-    const micBtn = document.getElementById("carepathAIMicBtn");
+    const micBtn = document.getElementById("qaroviaAIMicBtn");
 
     if (micBtn) micBtn.classList.add("cp-mic-active");
     if (!overlay) return;
@@ -3265,14 +3265,14 @@
   }
 
   function closeVoiceAssistantOverlay() {
-    const overlay = document.getElementById("carepathVoiceOverlay");
+    const overlay = document.getElementById("qaroviaVoiceOverlay");
     if (overlay) overlay.style.display = "none";
     stopQ-AroviaVoiceRecognition();
   }
 
   function updateVoiceAssistantTranscript(transcript) {
     const transcriptBox = document.getElementById("cpVoiceTranscriptBox");
-    const input = document.getElementById("carepathAIInput");
+    const input = document.getElementById("qaroviaAIInput");
     if (transcriptBox) {
       transcriptBox.textContent = transcript || "Listening...";
     }
@@ -3287,7 +3287,7 @@
   }
 
   function handleVoiceDoneSend() {
-    const input = document.getElementById("carepathAIInput");
+    const input = document.getElementById("qaroviaAIInput");
     const val = input ? input.value.trim() : "";
     closeVoiceAssistantOverlay();
     if (val.length > 0) {
@@ -3306,12 +3306,12 @@
   }
 
   function showMicBlockedModal() {
-    const m = document.getElementById("carepathMicBlockedModal");
+    const m = document.getElementById("qaroviaMicBlockedModal");
     if (m) m.style.display = "flex";
   }
 
   function closeMicBlockedModal() {
-    const m = document.getElementById("carepathMicBlockedModal");
+    const m = document.getElementById("qaroviaMicBlockedModal");
     if (m) m.style.display = "none";
   }
 
@@ -3343,9 +3343,9 @@
 
     // Auto-enable voice response when talking to voice assistant
     autoVoiceOutput = true;
-    const voiceLabel = document.getElementById("carepathVoiceLabel");
-    const voiceIcon = document.getElementById("carepathVoiceIcon");
-    const voiceBtn = document.getElementById("carepathAIVoiceToggle");
+    const voiceLabel = document.getElementById("qaroviaVoiceLabel");
+    const voiceIcon = document.getElementById("qaroviaVoiceIcon");
+    const voiceBtn = document.getElementById("qaroviaAIVoiceToggle");
     if (voiceLabel) voiceLabel.textContent = "Voice: ON";
     if (voiceIcon) voiceIcon.textContent = "🔊";
     if (voiceBtn) {
@@ -3399,7 +3399,7 @@
             const detected = detectTextLanguage(transcript);
             if (detected && detected !== "en-IN") {
               currentDetectedLang = detected;
-              localStorage.setItem("carepath_detected_lang", detected);
+              localStorage.setItem("qarovia_detected_lang", detected);
               const langName = CP_LANG_CONFIG[detected] ? CP_LANG_CONFIG[detected].name : detected;
               const status = document.getElementById("cpVoiceStatusText");
               if (status) status.innerHTML = `Listening... 🗣️ <strong>${langName}</strong>`;
@@ -3408,7 +3408,7 @@
 
           if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
           speechSilenceTimer = setTimeout(() => {
-            const input = document.getElementById("carepathAIInput");
+            const input = document.getElementById("qaroviaAIInput");
             if (input && input.value.trim().length > 1) {
               setVoiceAssistantStatus("Thinking & sending to Q-Arovia AI... 💙");
               setTimeout(() => {
@@ -3435,7 +3435,7 @@
       };
 
       cpSpeechRecognition.onend = function() {
-        const input = document.getElementById("carepathAIInput");
+        const input = document.getElementById("qaroviaAIInput");
         const val = input ? input.value.trim() : "";
         if (val.length > 1) {
           stopQ-AroviaVoiceRecognition();
@@ -3466,7 +3466,7 @@
 
   function stopQ-AroviaVoiceRecognition() {
     isCpListening = false;
-    const micBtn = document.getElementById("carepathAIMicBtn");
+    const micBtn = document.getElementById("qaroviaAIMicBtn");
     if (micBtn) micBtn.classList.remove("cp-mic-active");
 
     if (cpSpeechRecognition) {
@@ -3475,7 +3475,7 @@
     }
   }
 
-  // 1. OPEN / CLOSE CAREPATH AI
+  // 1. OPEN / CLOSE Q-AROVIA AI
   function toggleQ-AroviaAIChat(e) {
     if (e && e.stopPropagation) e.stopPropagation();
     const now = Date.now();
@@ -3484,17 +3484,17 @@
 
     primeSpeechSynthesis();
 
-    const chat = document.getElementById("carepathAIChat");
+    const chat = document.getElementById("qaroviaAIChat");
     if (!chat) return;
 
     const isCurrentlyHidden = (chat.style.display === "none" || chat.hidden);
     if (isCurrentlyHidden) {
       // Auto-detect Indian language on opening Q-Arovia AI
-      const savedLang = localStorage.getItem("carepath_lang") || "auto";
+      const savedLang = localStorage.getItem("qarovia_lang") || "auto";
       changeQ-AroviaLanguage(savedLang);
       chat.style.display = "flex";
       chat.hidden = false;
-      const input = document.getElementById("carepathAIInput");
+      const input = document.getElementById("qaroviaAIInput");
       if (input) setTimeout(() => input.focus(), 120);
     } else {
       chat.style.display = "none";
@@ -3506,7 +3506,7 @@
 
   function closeQ-AroviaAIChat(e) {
     if (e && e.stopPropagation) e.stopPropagation();
-    const chat = document.getElementById("carepathAIChat");
+    const chat = document.getElementById("qaroviaAIChat");
     if (chat) {
       chat.style.display = "none";
       chat.hidden = true;
@@ -3518,9 +3518,9 @@
   function toggleQ-AroviaVoiceOutput() {
     primeSpeechSynthesis();
     autoVoiceOutput = !autoVoiceOutput;
-    const label = document.getElementById("carepathVoiceLabel");
-    const icon = document.getElementById("carepathVoiceIcon");
-    const btn = document.getElementById("carepathAIVoiceToggle");
+    const label = document.getElementById("qaroviaVoiceLabel");
+    const icon = document.getElementById("qaroviaVoiceIcon");
+    const btn = document.getElementById("qaroviaAIVoiceToggle");
     if (label) label.textContent = autoVoiceOutput ? "Voice: ON" : "Voice: OFF";
     if (icon) icon.textContent = autoVoiceOutput ? "🔊" : "🔇";
     if (btn) {
@@ -3541,8 +3541,8 @@
   // 4. LIVE CAMERA SCANNER WITH PERMISSION REQUEST
   async function triggerPrescriptionCamera() {
     closePrescriptionChoiceModal();
-    const cameraModal = document.getElementById("carepathAICameraModal");
-    const video = document.getElementById("carepathAIVideo");
+    const cameraModal = document.getElementById("qaroviaAICameraModal");
+    const video = document.getElementById("qaroviaAIVideo");
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && cameraModal && video) {
       try {
@@ -3558,7 +3558,7 @@
 
   function triggerNativeCameraFallback() {
     closeQ-AroviaCameraModal();
-    const cameraInput = document.getElementById("carepathAICameraInput");
+    const cameraInput = document.getElementById("qaroviaAICameraInput");
     if (cameraInput) {
       cameraInput.click();
     } else {
@@ -3567,10 +3567,10 @@
   }
 
   async function startQ-AroviaCameraInternal() {
-    const cameraModal = document.getElementById("carepathAICameraModal");
-    const video = document.getElementById("carepathAIVideo");
-    const statusBox = document.getElementById("carepathAICamStatus");
-    const guide = document.getElementById("carepathAICamGuide");
+    const cameraModal = document.getElementById("qaroviaAICameraModal");
+    const video = document.getElementById("qaroviaAIVideo");
+    const statusBox = document.getElementById("qaroviaAICamStatus");
+    const guide = document.getElementById("qaroviaAICamGuide");
 
     if (!cameraModal) {
       triggerNativeCameraFallback();
@@ -3603,8 +3603,8 @@
       }
     } catch (err) {
       console.warn("Camera stream access failed:", err);
-      if (window.CarePathPermissions && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
-        window.CarePathPermissions.showBlockedModal('camera');
+      if (window.QAroviaPermissions && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+        window.QAroviaPermissions.showBlockedModal('camera');
       }
       if (statusBox) statusBox.style.display = "flex";
       if (guide) guide.style.display = "none";
@@ -3617,8 +3617,8 @@
   }
 
   function captureQ-AroviaPrescriptionSnapshot() {
-    const video = document.getElementById("carepathAIVideo");
-    const canvas = document.getElementById("carepathAICanvas");
+    const video = document.getElementById("qaroviaAIVideo");
+    const canvas = document.getElementById("qaroviaAICanvas");
     if (!video || !canvas) {
       triggerNativeCameraFallback();
       return;
@@ -3646,7 +3646,7 @@
   }
 
   function closeQ-AroviaCameraModal() {
-    const cameraModal = document.getElementById("carepathAICameraModal");
+    const cameraModal = document.getElementById("qaroviaAICameraModal");
     if (cameraModal) cameraModal.style.display = "none";
     if (cpCameraStream) {
       cpCameraStream.getTracks().forEach(t => t.stop());
@@ -3656,17 +3656,17 @@
 
   function triggerPrescriptionGallery() {
     closePrescriptionChoiceModal();
-    const galleryInput = document.getElementById("carepathAIGalleryInput");
+    const galleryInput = document.getElementById("qaroviaAIGalleryInput");
     if (galleryInput) galleryInput.click();
   }
 
   function openPrescriptionChoiceModal() {
-    const choiceModal = document.getElementById("carepathAIPhotoModal");
+    const choiceModal = document.getElementById("qaroviaAIPhotoModal");
     if (choiceModal) choiceModal.style.display = "flex";
   }
 
   function closePrescriptionChoiceModal() {
-    const choiceModal = document.getElementById("carepathAIPhotoModal");
+    const choiceModal = document.getElementById("qaroviaAIPhotoModal");
     if (choiceModal) choiceModal.style.display = "none";
   }
 
@@ -3682,7 +3682,7 @@
     }
     pendingPrescriptionFile = file;
 
-    const previewModal = document.getElementById("carepathAIPreviewModal");
+    const previewModal = document.getElementById("qaroviaAIPreviewModal");
     const previewImg = document.getElementById("prescriptionPreviewImg");
     const userNotesInput = document.getElementById("prescriptionUserNotes");
 
@@ -3697,9 +3697,9 @@
 
   function cancelPrescriptionPreview() {
     pendingPrescriptionFile = null;
-    const previewModal = document.getElementById("carepathAIPreviewModal");
-    const cameraInput = document.getElementById("carepathAICameraInput");
-    const galleryInput = document.getElementById("carepathAIGalleryInput");
+    const previewModal = document.getElementById("qaroviaAIPreviewModal");
+    const cameraInput = document.getElementById("qaroviaAICameraInput");
+    const galleryInput = document.getElementById("qaroviaAIGalleryInput");
     if (previewModal) previewModal.style.display = "none";
     if (cameraInput) cameraInput.value = "";
     if (galleryInput) galleryInput.value = "";
@@ -3890,12 +3890,12 @@
   }
 
   // 6. CHAT MESSAGE RENDERING WITH AUDIO BUTTON
-  const carepathAIMessages = document.getElementById("carepathAIMessages");
+  const qaroviaAIMessages = document.getElementById("qaroviaAIMessages");
 
   function addQ-AroviaMessage(text, type) {
-    if (!carepathAIMessages) return;
+    if (!qaroviaAIMessages) return;
     const message = document.createElement("div");
-    message.className = (type === "user") ? "carepath-ai-message user" : "carepath-ai-message";
+    message.className = (type === "user") ? "qarovia-ai-message user" : "qarovia-ai-message";
 
     if (type === "user") {
       message.textContent = text;
@@ -3917,15 +3917,15 @@
       `;
     }
 
-    carepathAIMessages.appendChild(message);
-    carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+    qaroviaAIMessages.appendChild(message);
+    qaroviaAIMessages.scrollTop = qaroviaAIMessages.scrollHeight;
   }
 
-  // 7. SEND CAREPATH MESSAGE WITH FAST 4.2s TIMEOUT GUARANTEE & LANGUAGE SUPPORT
+  // 7. SEND Q-AROVIA MESSAGE WITH FAST 4.2s TIMEOUT GUARANTEE & LANGUAGE SUPPORT
   async function sendQ-AroviaMessage() {
     primeSpeechSynthesis();
 
-    const input = document.getElementById("carepathAIInput");
+    const input = document.getElementById("qaroviaAIInput");
     if (!input) return;
 
     const text = input.value.trim();
@@ -3939,7 +3939,7 @@
 
     const token = localStorage.getItem("patientToken") || localStorage.getItem("token") || "";
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-    const apiUrl = isLocal ? "http://127.0.0.1:8000/ai/chat" : "https://carepath-3q9q.onrender.com/ai/chat";
+    const apiUrl = isLocal ? "http://127.0.0.1:8000/ai/chat" : "https://qarovia-3q9q.onrender.com/ai/chat";
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
@@ -3953,7 +3953,7 @@
 
       const payload = {
         message: text,
-        history: carepathConversationHistory.slice(-8),
+        history: qaroviaConversationHistory.slice(-8),
         prescription_context: lastAnalyzedPrescriptionText || ""
       };
 
@@ -3973,7 +3973,7 @@
         if (data.detected_language) {
           detectedLang = data.detected_language;
           currentDetectedLang = data.detected_language;
-          localStorage.setItem("carepath_detected_lang", data.detected_language);
+          localStorage.setItem("qarovia_detected_lang", data.detected_language);
           if (currentAiLang === "auto") {
             const autoPill = document.querySelector('.lang-pill[data-lang="auto"]');
             if (autoPill) {
@@ -3993,10 +3993,10 @@
     }
 
     // Save turn into conversation history
-    carepathConversationHistory.push({ role: "user", content: text });
-    carepathConversationHistory.push({ role: "assistant", content: replyText });
-    if (carepathConversationHistory.length > 12) {
-      carepathConversationHistory = carepathConversationHistory.slice(-12);
+    qaroviaConversationHistory.push({ role: "user", content: text });
+    qaroviaConversationHistory.push({ role: "assistant", content: replyText });
+    if (qaroviaConversationHistory.length > 12) {
+      qaroviaConversationHistory = qaroviaConversationHistory.slice(-12);
     }
 
     addQ-AroviaMessage(replyText, "ai");
@@ -4008,8 +4008,8 @@
   }
 
   function removeThinkingMessage() {
-    if (!carepathAIMessages) return;
-    const msgs = carepathAIMessages.querySelectorAll(".carepath-ai-message");
+    if (!qaroviaAIMessages) return;
+    const msgs = qaroviaAIMessages.querySelectorAll(".qarovia-ai-message");
     for (let i = msgs.length - 1; i >= 0; i--) {
       if (msgs[i].textContent.includes("Thinking...")) {
         msgs[i].remove();
@@ -4031,11 +4031,11 @@
     const userNotesInput = document.getElementById("prescriptionUserNotes");
     const previewImg = document.getElementById("prescriptionPreviewImg");
     const userNotes = userNotesInput ? userNotesInput.value.trim() : "";
-    const previewModal = document.getElementById("carepathAIPreviewModal");
+    const previewModal = document.getElementById("qaroviaAIPreviewModal");
     if (previewModal) previewModal.style.display = "none";
 
     const userMsg = document.createElement("div");
-    userMsg.className = "carepath-ai-message user";
+    userMsg.className = "qarovia-ai-message user";
     userMsg.innerHTML = `
       <div style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
         <span>📸</span> Prescription Submitted
@@ -4043,15 +4043,15 @@
       <img src="${previewImg.src}" alt="Prescription" style="width: 100%; max-width: 240px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.4); display: block;">
       ${userNotes ? `<div style="font-size: 12px; margin-top: 6px; opacity: 0.9;"><strong>Note:</strong> ${escapeHtml(userNotes)}</div>` : ''}
     `;
-    carepathAIMessages.appendChild(userMsg);
-    carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+    qaroviaAIMessages.appendChild(userMsg);
+    qaroviaAIMessages.scrollTop = qaroviaAIMessages.scrollHeight;
 
     const analyzingMsg = document.createElement("div");
-    analyzingMsg.className = "carepath-ai-message";
-    analyzingMsg.id = "carepathAIAnalyzingMsg";
+    analyzingMsg.className = "qarovia-ai-message";
+    analyzingMsg.id = "qaroviaAIAnalyzingMsg";
     analyzingMsg.innerHTML = `
       <div style="display: flex; gap: 10px; align-items: center;">
-        <img src="carepath-ai.png" alt="AI" style="width: 28px; height: 28px; border-radius: 50%; animation: cpMicPulse 1.5s infinite;" onerror="this.onerror=null; this.src='carepath-ai.svg';">
+        <img src="qarovia-ai.png" alt="AI" style="width: 28px; height: 28px; border-radius: 50%; animation: cpMicPulse 1.5s infinite;" onerror="this.onerror=null; this.src='qarovia-ai.svg';">
         <div>
           <div style="font-weight: 700; color: #0284c7; display: flex; align-items: center; gap: 6px;">
             <span>⚡</span> Q-Arovia AI High-Speed Vision
@@ -4062,8 +4062,8 @@
         </div>
       </div>
     `;
-    carepathAIMessages.appendChild(analyzingMsg);
-    carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+    qaroviaAIMessages.appendChild(analyzingMsg);
+    qaroviaAIMessages.scrollTop = qaroviaAIMessages.scrollHeight;
 
     const visionSteps = [
       "Reading image & transcribing doctor notes...",
@@ -4103,7 +4103,7 @@
     formData.append("notes", userNotes || "");
 
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-    const primaryUrl = isLocal ? "http://127.0.0.1:8000/ai/analyze-prescription" : "https://carepath-3q9q.onrender.com/ai/analyze-prescription";
+    const primaryUrl = isLocal ? "http://127.0.0.1:8000/ai/analyze-prescription" : "https://qarovia-3q9q.onrender.com/ai/analyze-prescription";
 
     const submitBtn = document.getElementById("btnConfirmDecodePrescription");
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "⏳ Analyzing..."; }
@@ -4121,7 +4121,7 @@
       });
 
       clearTimeout(timeoutId);
-      const analyzingEl = document.getElementById("carepathAIAnalyzingMsg");
+      const analyzingEl = document.getElementById("qaroviaAIAnalyzingMsg");
       if (analyzingEl) analyzingEl.remove();
 
       if (res.ok) {
@@ -4131,7 +4131,7 @@
     } catch (err) {
       clearTimeout(timeoutId);
       console.warn("Prescription fetch notice (fast clinical decoder applied):", err.message);
-      const analyzingEl = document.getElementById("carepathAIAnalyzingMsg");
+      const analyzingEl = document.getElementById("qaroviaAIAnalyzingMsg");
       if (analyzingEl) analyzingEl.remove();
     } finally {
       clearInterval(stepInterval);
@@ -4181,13 +4181,13 @@
 
     lastAnalyzedPrescriptionText = explanationText || "";
     // Save to conversation history so follow-ups ('explain in telugu', dosages, etc.) have full context
-    carepathConversationHistory.push({
+    qaroviaConversationHistory.push({
       role: "system",
       content: "Uploaded Prescription Report: " + lastAnalyzedPrescriptionText.slice(0, 1000)
     });
 
     const aiReply = document.createElement("div");
-    aiReply.className = "carepath-ai-message";
+    aiReply.className = "qarovia-ai-message";
     aiReply.style.background = "#f0fdf4";
     aiReply.style.border = "1.5px solid #86efac";
     aiReply.style.color = "#0f172a";
@@ -4214,8 +4214,8 @@
         <div>${formatted}</div>
       </div>
     `;
-    carepathAIMessages.appendChild(aiReply);
-    carepathAIMessages.scrollTop = carepathAIMessages.scrollHeight;
+    qaroviaAIMessages.appendChild(aiReply);
+    qaroviaAIMessages.scrollTop = qaroviaAIMessages.scrollHeight;
 
     if (autoVoiceOutput) {
       playAudioVoice(explanationText, requestedLangCode, null);
@@ -4224,7 +4224,7 @@
 
   function quickAskAI(text) {
     primeSpeechSynthesis();
-    const input = document.getElementById("carepathAIInput");
+    const input = document.getElementById("qaroviaAIInput");
     if (input) {
       input.value = text;
       sendQ-AroviaMessage();
@@ -4232,10 +4232,10 @@
   }
 
   // 9. EVENT LISTENERS
-  const cameraInput = document.getElementById("carepathAICameraInput");
-  const galleryInput = document.getElementById("carepathAIGalleryInput");
-  const carepathAISend = document.getElementById("carepathAISend");
-  const carepathAIInput = document.getElementById("carepathAIInput");
+  const cameraInput = document.getElementById("qaroviaAICameraInput");
+  const galleryInput = document.getElementById("qaroviaAIGalleryInput");
+  const qaroviaAISend = document.getElementById("qaroviaAISend");
+  const qaroviaAIInput = document.getElementById("qaroviaAIInput");
 
   if (cameraInput) {
     cameraInput.addEventListener("change", function(e) {
@@ -4251,12 +4251,12 @@
     });
   }
 
-  if (carepathAISend) {
-    carepathAISend.addEventListener("click", sendQ-AroviaMessage);
+  if (qaroviaAISend) {
+    qaroviaAISend.addEventListener("click", sendQ-AroviaMessage);
   }
 
-  if (carepathAIInput) {
-    carepathAIInput.addEventListener("keydown", function(event) {
+  if (qaroviaAIInput) {
+    qaroviaAIInput.addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
         event.preventDefault();
         sendQ-AroviaMessage();
@@ -4266,7 +4266,7 @@
 
   // Set initial language from saved preference (default: Auto Detect Indian Language)
   setTimeout(() => {
-    const initLang = localStorage.getItem("carepath_lang") || "auto";
+    const initLang = localStorage.getItem("qarovia_lang") || "auto";
     changeQ-AroviaLanguage(initLang);
   }, 100);
 
@@ -4343,7 +4343,7 @@ async function loadPatientHospitalChat() {
     // ============================================================
     let cachedRendered = false;
     const cleanPhone = phone.replace(/[^0-9]/g, "");
-    const chatKey = "carepath_chat_cache_" + cleanPhone;
+    const chatKey = "qarovia_chat_cache_" + cleanPhone;
     try {
         const cachedRaw = localStorage.getItem(chatKey);
         if (cachedRaw) {
@@ -4357,7 +4357,7 @@ async function loadPatientHospitalChat() {
         
         // Also merge any inquiries sent directly from hospital-details.html
         if (!cachedRendered) {
-            const directInquiries = JSON.parse(localStorage.getItem("carepath_patient_inquiries") || "[]");
+            const directInquiries = JSON.parse(localStorage.getItem("qarovia_patient_inquiries") || "[]");
             if (directInquiries.length > 0) {
                 const converted = directInquiries.map(inq => ({
                     sender_role: "patient",
@@ -4382,7 +4382,7 @@ async function loadPatientHospitalChat() {
     // Silent background network sync
     try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
         const res = await fetch(`${apiBase}/patients/messages?phone=${encodeURIComponent(phone)}`);
         if (res.ok) {
             const data = await res.json();
@@ -4526,15 +4526,15 @@ async function handlePatientSendFollowup(e) {
     // Save to local chat cache immediately
     const cleanPhone = phone.replace(/[^0-9]/g, "");
     try {
-        localStorage.setItem("carepath_chat_cache_" + cleanPhone, JSON.stringify(patientChatLoadedMessages));
+        localStorage.setItem("qarovia_chat_cache_" + cleanPhone, JSON.stringify(patientChatLoadedMessages));
     } catch(e) {}
 
     // Clear input immediately in 0ms
     if (input) input.value = "";
 
     // Broadcast immediately over real-time WebSocket
-    if (typeof CarePathRealtime !== "undefined" && CarePathRealtime.isConnected) {
-        CarePathRealtime.send({
+    if (typeof QAroviaRealtime !== "undefined" && QAroviaRealtime.isConnected) {
+        QAroviaRealtime.send({
             type: "patient_inquiry",
             hospital_id: hospId,
             patient_name: name,
@@ -4547,7 +4547,7 @@ async function handlePatientSendFollowup(e) {
     // Silent background dispatch to hospital endpoint
     try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
         fetch(`${apiBase}/hospitals/${hospId}/patient-inquiry`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -4570,7 +4570,7 @@ async function markPatientChatAsRead() {
     if (!phone) return;
     try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
         await fetch(`${apiBase}/patients/messages/mark-read`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -4587,7 +4587,7 @@ async function checkPatientChatUnread() {
     if (!phone || !badge) return;
     try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://carepath-3q9q.onrender.com";
+        const apiBase = isLocal ? "http://127.0.0.1:8000" : "https://qarovia-3q9q.onrender.com";
         const res = await fetch(`${apiBase}/patients/messages?phone=${encodeURIComponent(phone)}`);
         if (!res.ok) return;
         const data = await res.json();
@@ -4596,8 +4596,8 @@ async function checkPatientChatUnread() {
             badge.textContent = unread;
             badge.style.display = "inline-flex";
 
-            if (unread > (window.lastKnownPatientUnread || 0) && window.CarePathPermissions) {
-                window.CarePathPermissions.sendNotification("💬 New Hospital Reply", {
+            if (unread > (window.lastKnownPatientUnread || 0) && window.QAroviaPermissions) {
+                window.QAroviaPermissions.sendNotification("💬 New Hospital Reply", {
                     body: "You have a new message from the hospital helpdesk. Tap to view.",
                     tag: "hospital-reply-alert",
                     onClick: () => {
@@ -4663,14 +4663,14 @@ function escapeHtml(str) {
 </script>
 <script>
   // =====================================================
-  // CAREPATH AI CINEMATIC SCROLL MOTION
+  // Q-AROVIA AI CINEMATIC SCROLL MOTION
   // Scroll Down: slowly remove name, showing only circle logo
   // Scroll Up: slowly slowly expand full name with cinematic motion
   // =====================================================
   (function initQ-AroviaAIScrollMotion() {
     let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
     let scrollTimer = null;
-    const btn = document.getElementById("carepathAIButton");
+    const btn = document.getElementById("qaroviaAIButton");
     if (!btn) return;
 
     window.addEventListener("scroll", function() {
@@ -4703,11 +4703,11 @@ function escapeHtml(str) {
   function initPatientRealtime() {
     try {
       const phone = getActivePatientPhone();
-      if (!phone || typeof CarePathRealtime === "undefined") return;
+      if (!phone || typeof QAroviaRealtime === "undefined") return;
       const cleanPhone = phone.replace(/[^0-9]/g, "").slice(-10);
       if (!cleanPhone) return;
 
-      CarePathRealtime.connect({
+      QAroviaRealtime.connect({
         role: "patient",
         phone: cleanPhone,
         onMessage: (data) => {
@@ -4720,7 +4720,7 @@ function escapeHtml(str) {
               patientChatLoadedMessages.push(rep);
               renderPatientChatMessages(patientChatLoadedMessages);
               try {
-                localStorage.setItem("carepath_chat_cache_" + cleanPhone, JSON.stringify(patientChatLoadedMessages));
+                localStorage.setItem("qarovia_chat_cache_" + cleanPhone, JSON.stringify(patientChatLoadedMessages));
               } catch(e) {}
             }
 
@@ -4775,7 +4775,7 @@ window.handlePatientLogout = handlePatientLogout;
 let pendingPermissionResolver = null;
 
 function showQ-AroviaPermissionDialog(type = 'camera') {
-    const dialog = document.getElementById("carepathPermissionDialog");
+    const dialog = document.getElementById("qaroviaPermissionDialog");
     const icon = document.getElementById("cpPermIcon");
     const title = document.getElementById("cpPermTitle");
     const desc = document.getElementById("cpPermDesc");
@@ -4798,13 +4798,13 @@ function showQ-AroviaPermissionDialog(type = 'camera') {
 window.showQ-AroviaPermissionDialog = showQ-AroviaPermissionDialog;
 
 function handleQ-AroviaPermChoice(choice) {
-    const dialog = document.getElementById("carepathPermissionDialog");
+    const dialog = document.getElementById("qaroviaPermissionDialog");
     if (dialog) dialog.style.display = "none";
     if (choice === 'always' || choice === 'once') {
-        localStorage.setItem("carepath_perm_choice", choice);
+        localStorage.setItem("qarovia_perm_choice", choice);
         if (pendingPermissionResolver) pendingPermissionResolver(true);
     } else {
-        localStorage.setItem("carepath_perm_choice", "deny");
+        localStorage.setItem("qarovia_perm_choice", "deny");
         if (pendingPermissionResolver) pendingPermissionResolver(false);
     }
     pendingPermissionResolver = null;

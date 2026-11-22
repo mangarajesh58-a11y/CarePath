@@ -9,7 +9,7 @@
   <title>Q-Arovia - Patient Profile & Preferences</title>
 
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="carepath-ai-small.png">
+  <link rel="icon" type="image/png" href="qarovia-ai-small.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
   <script>
     (function() {
       try {
-        const theme = localStorage.getItem("carepath_theme") || "system";
+        const theme = localStorage.getItem("qarovia_theme") || "system";
         let isDark = false;
         if (theme === "dark") {
           isDark = true;
@@ -53,7 +53,7 @@
 
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-    const deleteUrl = isLocal ? "http://127.0.0.1:8000/patients/me" : "https://carepath-3q9q.onrender.com/patients/me";
+    const deleteUrl = isLocal ? "http://127.0.0.1:8000/patients/me" : "https://qarovia-3q9q.onrender.com/patients/me";
 
     try {
       if (token) {
@@ -826,7 +826,7 @@
     
 
   </style>
-    <script src="./carepath-instant-nav.js"></script>
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 
 <body>
@@ -1133,7 +1133,7 @@
   <script>
     "use strict";
 
-    const API = "https://carepath-3q9q.onrender.com";
+    const API = "https://qarovia-3q9q.onrender.com";
 
     function byId(id) {
       return document.getElementById(id);
@@ -1160,7 +1160,7 @@
        THEME CONTROLLER (LIGHT / DARK / SYSTEM)
     ===================================================== */
     function setAppTheme(theme) {
-      localStorage.setItem("carepath_theme", theme);
+      localStorage.setItem("qarovia_theme", theme);
       applyTheme(theme);
     }
 
@@ -1199,7 +1199,7 @@
     // Listen for OS theme changes if in system mode
     if (window.matchMedia) {
       window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e => {
-        const currentPref = localStorage.getItem("carepath_theme") || "system";
+        const currentPref = localStorage.getItem("qarovia_theme") || "system";
         if (currentPref === "system") {
           applyTheme("system");
         }
@@ -1211,7 +1211,7 @@
     ===================================================== */
     async function initProfile() {
       // 1. Initialize Theme UI
-      const savedTheme = localStorage.getItem("carepath_theme") || "system";
+      const savedTheme = localStorage.getItem("qarovia_theme") || "system";
       applyTheme(savedTheme);
 
       // 2. Check Auth

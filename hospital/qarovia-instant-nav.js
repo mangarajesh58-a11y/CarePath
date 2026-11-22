@@ -5,8 +5,8 @@
 (function () {
   "use strict";
 
-  if (window.__carepathInstantNavLoaded) return;
-  window.__carepathInstantNavLoaded = true;
+  if (window.__qaroviaInstantNavLoaded) return;
+  window.__qaroviaInstantNavLoaded = true;
 
   const prefetchedUrls = new Set();
 

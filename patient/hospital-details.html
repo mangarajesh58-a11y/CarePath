@@ -166,7 +166,7 @@
     
 
   </style>
-    <script src="./carepath-instant-nav.js"></script>
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 
 <body>
@@ -282,7 +282,7 @@
 
         const API = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
             ? "http://127.0.0.1:8000"
-            : "https://carepath-3q9q.onrender.com";
+            : "https://qarovia-3q9q.onrender.com";
 
         function addDetail(container, label, value) {
             const row = document.createElement("p");
@@ -353,7 +353,7 @@
                 // 3. Check cached hospitals list
                 if (!rendered0ms) {
                     try {
-                        const allHospRaw = localStorage.getItem("carepath_hospitals_cache") || localStorage.getItem("cached_hospitals");
+                        const allHospRaw = localStorage.getItem("qarovia_hospitals_cache") || localStorage.getItem("cached_hospitals");
                         if (allHospRaw) {
                             const allHosp = JSON.parse(allHospRaw);
                             const found = allHosp.find(h => String(h.id || h.hospital_id) === String(urlHospitalId));
@@ -485,7 +485,7 @@
                 image.src = imageUrl
                     ? (imageUrl.startsWith("http") || imageUrl.startsWith("data:")
                         ? imageUrl
-                        : "https://carepath-3q9q.onrender.com/" + imageUrl.replace(/^\/+/, ""))
+                        : "https://qarovia-3q9q.onrender.com/" + imageUrl.replace(/^\/+/, ""))
                     : fallbackPhoto;
                 image.alt = "Hospital building";
                 image.onerror = function() {
@@ -704,12 +704,12 @@
 
             // Save immediately in local cache (0ms)
             try {
-                const storedInquiries = JSON.parse(localStorage.getItem("carepath_patient_inquiries") || "[]");
+                const storedInquiries = JSON.parse(localStorage.getItem("qarovia_patient_inquiries") || "[]");
                 storedInquiries.unshift(newInquiry);
-                localStorage.setItem("carepath_patient_inquiries", JSON.stringify(storedInquiries));
+                localStorage.setItem("qarovia_patient_inquiries", JSON.stringify(storedInquiries));
 
                 const cleanPhone = phone.replace(/[^0-9]/g, "");
-                const chatKey = "carepath_chat_cache_" + cleanPhone;
+                const chatKey = "qarovia_chat_cache_" + cleanPhone;
                 const existingChat = JSON.parse(localStorage.getItem(chatKey) || "[]");
                 existingChat.push({
                     sender_role: "patient",

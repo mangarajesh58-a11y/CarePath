@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Request Account & Data Deletion - Q-Arovia</title>
   <link rel="stylesheet" href="./style.css">
-  <link rel="icon" type="image/png" href="carepath-ai-small.png">
+  <link rel="icon" type="image/png" href="qarovia-ai-small.png">
   <style>
     body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; margin: 0; padding: 20px; line-height: 1.6; }
     .legal-card { max-width: 650px; margin: 20px auto; background: white; padding: 36px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
@@ -23,7 +23,7 @@
     .alert-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; }
     .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
   </style>
-    <script src="./carepath-instant-nav.js"></script>
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 <body>
   <div class="legal-card">
@@ -55,7 +55,7 @@
 
     <h2>Alternative Methods:</h2>
     <p>1. <strong>In-App Deletion:</strong> You can directly delete your account anytime from within the Q-Arovia App by navigating to <strong>Profile → Account & Privacy Settings → Delete My Account</strong>.</p>
-    <p>2. <strong>Email Request:</strong> You may also email our data protection officer directly at <a href="mailto:privacy@carepath.health" style="color: #0284c7;">privacy@carepath.health</a> with the subject "Account Deletion Request". Requests are processed within 24–48 hours.</p>
+    <p>2. <strong>Email Request:</strong> You may also email our data protection officer directly at <a href="mailto:privacy@q-arovia.in" style="color: #0284c7;">privacy@q-arovia.in</a> with the subject "Account Deletion Request". Requests are processed within 24–48 hours.</p>
   </div>
 
   <script>
@@ -71,7 +71,7 @@
 
       try {
         const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
-        const apiUrl = isLocal ? "http://127.0.0.1:8000/patients/request-account-deletion" : "https://carepath-3q9q.onrender.com/patients/request-account-deletion";
+        const apiUrl = isLocal ? "http://127.0.0.1:8000/patients/request-account-deletion" : "https://qarovia-3q9q.onrender.com/patients/request-account-deletion";
 
         const res = await fetch(apiUrl, {
           method: "POST",

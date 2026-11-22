@@ -1,18 +1,18 @@
 // =====================================================
-// CAREPATH ADMIN JAVASCRIPT
+// Q-AROVIA ADMIN JAVASCRIPT
 // =====================================================
 
-const REMOTE_API = "https://carepath-3q9q.onrender.com";
+const REMOTE_API = "https://qarovia-3q9q.onrender.com";
 const LOCAL_API = "http://127.0.0.1:8000";
 
 function resolveApiBase() {
-    const saved = localStorage.getItem("carepath_api");
+    const saved = localStorage.getItem("qarovia_api");
     if (saved) return saved.replace(/\/+$/, "");
     return REMOTE_API;
 }
 
 let API = resolveApiBase();
-const FRONTEND = "https://carepath-admin.vercel.app";
+const FRONTEND = "https://qarovia-admin.vercel.app";
 
 // Pre-warm backend immediately on load to reduce Render cold-start lag
 try {
@@ -21,7 +21,7 @@ try {
 
 function switchApi(newUrl) {
     API = newUrl.replace(/\/+$/, "");
-    localStorage.setItem("carepath_api", API);
+    localStorage.setItem("qarovia_api", API);
     alert(`Backend API set to: ${API}\nReloading page...`);
     window.location.reload();
 }
@@ -47,7 +47,7 @@ async function fetchWithRetry(url, options = {}, retries = 1, delayMs = 2500) {
                 const localTest = await fetch(`${LOCAL_API}/health`, { signal: AbortSignal.timeout(1500) });
                 if (localTest.ok) {
                     API = LOCAL_API;
-                    localStorage.setItem("carepath_api", LOCAL_API);
+                    localStorage.setItem("qarovia_api", LOCAL_API);
                     console.log("Auto-switched to active local FastAPI backend:", LOCAL_API);
                     if (typeof url === "string" && url.startsWith(REMOTE_API)) {
                         url = url.replace(REMOTE_API, LOCAL_API);
@@ -546,7 +546,7 @@ function goDashboard() {
 
 function hydrateAdminDashboardFromCache() {
     try {
-        const raw = localStorage.getItem("carepath_admin_dash_cache");
+        const raw = localStorage.getItem("qarovia_admin_dash_cache");
         if (raw) {
             const data = JSON.parse(raw);
             if (data.hospitalCount !== undefined && document.getElementById("hospitalCount")) {
@@ -578,7 +578,7 @@ function saveAdminDashboardToCache() {
             totalTokens: document.getElementById("totalTokens")?.textContent,
             savedAt: Date.now()
         };
-        localStorage.setItem("carepath_admin_dash_cache", JSON.stringify(cache));
+        localStorage.setItem("qarovia_admin_dash_cache", JSON.stringify(cache));
     } catch(e) {}
 }
 
@@ -1010,7 +1010,7 @@ async function loadHospitals() {
 
     // 0ms SWR Cache Hydration
     try {
-        const cachedRaw = localStorage.getItem("carepath_cache_admin_hospitals");
+        const cachedRaw = localStorage.getItem("qarovia_cache_admin_hospitals");
         if (cachedRaw) {
             const cached = JSON.parse(cachedRaw);
             if (Array.isArray(cached) && cached.length > 0) {
@@ -1043,7 +1043,7 @@ async function loadHospitals() {
         const hospitals = Array.isArray(data) ? data : data.hospitals || [];
         window.allLoadedHospitals = hospitals;
         try {
-            localStorage.setItem("carepath_cache_admin_hospitals", JSON.stringify(hospitals));
+            localStorage.setItem("qarovia_cache_admin_hospitals", JSON.stringify(hospitals));
         } catch (e) {}
         renderHospitalsTable(hospitals);
     } catch (error) {
@@ -2187,7 +2187,7 @@ async function loadTokens() {
 
     // 0ms SWR Cache Hydration
     try {
-        const cachedRaw = localStorage.getItem("carepath_cache_admin_tokens");
+        const cachedRaw = localStorage.getItem("qarovia_cache_admin_tokens");
         if (cachedRaw) {
             const cached = JSON.parse(cachedRaw);
             if (Array.isArray(cached) && cached.length > 0) {
@@ -2223,7 +2223,7 @@ async function loadTokens() {
         window.allAdminTokens = tokens;
 
         try {
-            localStorage.setItem("carepath_cache_admin_tokens", JSON.stringify(tokens));
+            localStorage.setItem("qarovia_cache_admin_tokens", JSON.stringify(tokens));
         } catch (e) {}
 
         renderTokensTable(tokens);
@@ -2573,7 +2573,7 @@ async function loadPayments() {
 
     // 0ms SWR Cache Hydration
     try {
-        const cachedRaw = localStorage.getItem("carepath_cache_admin_payments");
+        const cachedRaw = localStorage.getItem("qarovia_cache_admin_payments");
         if (cachedRaw) {
             const cached = JSON.parse(cachedRaw);
             if (Array.isArray(cached) && cached.length > 0) {
@@ -2603,13 +2603,13 @@ async function loadPayments() {
 
         const tokens = Array.isArray(data) ? data : data.tokens || [];
         try {
-            localStorage.setItem("carepath_cache_admin_payments", JSON.stringify(tokens));
+            localStorage.setItem("qarovia_cache_admin_payments", JSON.stringify(tokens));
         } catch (e) {}
         renderPaymentsTable(tokens);
     } catch (error) {
         console.error("Payment loading error:", error);
         try {
-            const cachedRaw = localStorage.getItem("carepath_cache_admin_payments");
+            const cachedRaw = localStorage.getItem("qarovia_cache_admin_payments");
             if (cachedRaw) return; // Keep cached rows on error
         } catch (e) {}
         paymentTableBody.innerHTML = `
@@ -3278,7 +3278,7 @@ function openGeneralDirectCommunicationModal() {
     // Hydrate allLoadedHospitals from cache if empty
     if (!Array.isArray(allLoadedHospitals) || allLoadedHospitals.length === 0) {
         try {
-            const cachedRaw = localStorage.getItem("carepath_cache_admin_hospitals");
+            const cachedRaw = localStorage.getItem("qarovia_cache_admin_hospitals");
             if (cachedRaw) {
                 const cached = JSON.parse(cachedRaw);
                 if (Array.isArray(cached) && cached.length > 0) {
@@ -3317,7 +3317,7 @@ async function loadDirectCommMessages(hospitalId) {
 
     // SWR Cache Hydration (0ms Instant Load)
     try {
-        const cachedRaw = sessionStorage.getItem(`carepath_cache_direct_msgs_${hospitalId}`);
+        const cachedRaw = sessionStorage.getItem(`qarovia_cache_direct_msgs_${hospitalId}`);
         if (cachedRaw) {
             const cachedMsgs = JSON.parse(cachedRaw);
             if (Array.isArray(cachedMsgs) && cachedMsgs.length > 0) {
@@ -3347,7 +3347,7 @@ async function loadDirectCommMessages(hospitalId) {
 
         const messages = Array.isArray(data.messages) ? data.messages : [];
         try {
-            sessionStorage.setItem(`carepath_cache_direct_msgs_${hospitalId}`, JSON.stringify(messages));
+            sessionStorage.setItem(`qarovia_cache_direct_msgs_${hospitalId}`, JSON.stringify(messages));
         } catch (e) {}
 
         renderDirectCommMessages(messages, container);
@@ -4494,7 +4494,7 @@ async function loadDashboardPatientsCount() {
         return;
     }
     try {
-        const cachedRaw = localStorage.getItem("carepath_cache_admin_patients");
+        const cachedRaw = localStorage.getItem("qarovia_cache_admin_patients");
         if (cachedRaw) {
             const cached = JSON.parse(cachedRaw);
             if (Array.isArray(cached) && cached.length > 0) {
@@ -4525,7 +4525,7 @@ async function loadAdminPatients() {
 
     // 0ms SWR Cache Hydration
     try {
-        const cachedRaw = localStorage.getItem("carepath_cache_admin_patients");
+        const cachedRaw = localStorage.getItem("qarovia_cache_admin_patients");
         if (cachedRaw) {
             const cached = JSON.parse(cachedRaw);
             if (Array.isArray(cached) && cached.length > 0) {
@@ -4555,7 +4555,7 @@ async function loadAdminPatients() {
         const patients = Array.isArray(data) ? data : data.patients || [];
         window.allAdminPatients = patients;
         try {
-            localStorage.setItem("carepath_cache_admin_patients", JSON.stringify(patients));
+            localStorage.setItem("qarovia_cache_admin_patients", JSON.stringify(patients));
         } catch (e) {}
 
         updatePatientMetrics(patients);
@@ -4836,7 +4836,7 @@ function sendAdminHeartbeat() {
             user_id: "admin_1",
             user_role: "admin",
             user_name: "Master Admin",
-            user_email: "admin@carepath.health",
+            user_email: "admin@q-arovia.in",
             current_page: window.location.pathname.split("/").pop() || "admin_dashboard"
         };
         fetch(`${API}/api/heartbeat`, {
@@ -5245,9 +5245,9 @@ document.addEventListener("DOMContentLoaded", function () {
 function initAdminRealtime() {
     try {
         const token = getAdminToken();
-        if (!token || typeof CarePathRealtime === "undefined") return;
+        if (!token || typeof QAroviaRealtime === "undefined") return;
 
-        CarePathRealtime.connect({
+        QAroviaRealtime.connect({
             role: "admin",
             token: token,
             onMessage: (data) => {
