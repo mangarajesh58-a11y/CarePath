@@ -651,21 +651,21 @@
   <div id="docUploadModal" class="modal-overlay" style="display: none;" onclick="if(event.target===this)closeDocUploadModal()">
     <div class="modal-card" style="max-width: 520px; max-height: 90vh; overflow-y: auto;">
       <button class="modal-close no-print" onclick="closeDocUploadModal()">&times;</button>
-      <div style="margin-bottom: 16px;">
-        <h3 style="margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+      <div style="margin-bottom: 16px; border-bottom: 1px solid #CBD5E1; padding-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 18px; color: #111827; font-weight: 800; display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 20px;">📎</span> Medical Documents
         </h3>
-        <p id="docModalSubtitle" style="margin: 4px 0 0; font-size: 12.5px; color: #64748b;">
+        <p id="docModalSubtitle" style="margin: 4px 0 0; font-size: 12.5px; color: #475569;">
           Upload prescriptions, lab reports, and medical records for this token.
         </p>
       </div>
 
-      <!-- File Drop & Selection Zone -->
-      <div id="docDropZone" onclick="document.getElementById('medicalFileInput').click()" style="border: 2px dashed #93c5fd; background: #f0f9ff; border-radius: 12px; padding: 22px 16px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 14px;">
+      <!-- File Drop & Selection Zone: Background #EFF6FF, Dashed border 2px dashed #60A5FA, Heading #075985, Supporting text #334155 -->
+      <div id="docDropZone" onclick="document.getElementById('medicalFileInput').click()" style="border: 2px dashed #60A5FA; background: #EFF6FF; border-radius: 12px; padding: 22px 16px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 14px;">
         <input type="file" id="medicalFileInput" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" style="display: none;" onchange="handleFileSelect(event)" />
         <div style="font-size: 30px; margin-bottom: 4px;">📁</div>
-        <div style="font-size: 13.5px; font-weight: 700; color: #0284c7;">Click here to select documents</div>
-        <div style="font-size: 11.5px; color: #64748b; margin-top: 3px;">Supports multiple files: PDF, JPG, JPEG, PNG (up to 15MB each)</div>
+        <div style="font-size: 13.5px; font-weight: 700; color: #075985;">Click here to select documents</div>
+        <div style="font-size: 11.5px; color: #334155; margin-top: 3px;">Supports multiple files: PDF, JPG, JPEG, PNG (up to 15MB each)</div>
       </div>
 
       <!-- Staged Files List (Selected but not yet uploaded) -->
@@ -678,7 +678,7 @@
       </div>
 
       <!-- Previously Uploaded Documents -->
-      <div id="modalExistingDocsWrap" style="border-top: 1px solid #e2e8f0; padding-top: 14px; margin-top: 14px;">
+      <div id="modalExistingDocsWrap" style="border-top: 1px solid #CBD5E1; padding-top: 14px; margin-top: 14px;">
         <div style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 8px;">
           Uploaded for this Token (<span id="modalExistingCount">0</span>):
         </div>
@@ -705,11 +705,11 @@
       <div id="previewDocBody" style="flex: 1; min-height: 350px; max-height: 65vh; overflow: auto; background: #f8fafc; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 8px;">
         <!-- Preview Content -->
       </div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
-        <a id="previewDocDownloadBtn" href="#" target="_blank" download style="display: inline-flex; align-items: center; gap: 5px; padding: 8px 14px; background: #0284c7; color: white; border-radius: 8px; text-decoration: none; font-size: 12.5px; font-weight: 700;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid #CBD5E1;">
+        <a id="previewDocDownloadBtn" href="#" target="_blank" download style="display: inline-flex; align-items: center; gap: 5px; padding: 8px 14px; background: #E2E8F0; color: #334155; border: 1px solid #94A3B8; border-radius: 8px; text-decoration: none; font-size: 12.5px; font-weight: 700;">
           ⬇️ Download Document
         </a>
-        <button type="button" onclick="closeDocPreviewModal()" style="padding: 8px 16px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer;">
+        <button type="button" onclick="closeDocPreviewModal()" style="padding: 8px 16px; background: #F1F5F9; border: 1px solid #CBD5E1; color: #475569; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer;">
           Close
         </button>
       </div>
@@ -1846,11 +1846,13 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
                 <div style="font-size: 10.5px; color: #64748b;">${d.file_size_formatted || ''}</div>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-              <button type="button" onclick="previewMedicalDoc(${d.id}, '${escapeJs(d.original_filename)}', '${escapeJs(d.file_type || '')}')" style="padding: 4px 8px; font-size: 11px; font-weight: 700; background: #eff6ff; color: #0284c7; border: 1px solid #bfdbfe; border-radius: 6px; cursor: pointer;">
+            <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+              <!-- Preview: Background #DBEAFE, Text #1D4ED8, Border 1px solid #93C5FD -->
+              <button type="button" onclick="previewMedicalDoc(${d.id}, '${escapeJs(d.original_filename)}', '${escapeJs(d.file_type || '')}')" style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #DBEAFE; color: #1D4ED8; border: 1px solid #93C5FD; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
                 👁️ Preview
               </button>
-              <a href="${API_URL}/patient/documents/${d.id}/download" target="_blank" download style="padding: 4px 8px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 2px;">
+              <!-- Download: Background #E2E8F0, Text #334155, Border 1px solid #94A3B8 -->
+              <a href="${API_URL}/patient/documents/${d.id}/download" target="_blank" download style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #E2E8F0; color: #334155; border: 1px solid #94A3B8; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
                 ⬇️ Download
               </a>
             </div>
@@ -1914,14 +1916,17 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
                   <div style="font-size: 10.5px; color: #64748b;">${d.file_size_formatted || ''}</div>
                 </div>
               </div>
-              <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                <button type="button" onclick="previewMedicalDoc(${d.id}, '${escapeJs(d.original_filename)}', '${escapeJs(d.file_type || '')}')" style="padding: 4px 8px; font-size: 11px; font-weight: 700; background: #eff6ff; color: #0284c7; border: 1px solid #bfdbfe; border-radius: 6px; cursor: pointer;">
+              <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+                <!-- Preview: Background #DBEAFE, Text #1D4ED8, Border 1px solid #93C5FD -->
+                <button type="button" onclick="previewMedicalDoc(${d.id}, '${escapeJs(d.original_filename)}', '${escapeJs(d.file_type || '')}')" style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #DBEAFE; color: #1D4ED8; border: 1px solid #93C5FD; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
                   👁️ Preview
                 </button>
-                <a href="${API_URL}/patient/documents/${d.id}/download" target="_blank" download style="padding: 4px 8px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none;">
+                <!-- Download: Background #E2E8F0, Text #334155, Border 1px solid #94A3B8 -->
+                <a href="${API_URL}/patient/documents/${d.id}/download" target="_blank" download style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #E2E8F0; color: #334155; border: 1px solid #94A3B8; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
                   ⬇️ Download
                 </a>
-                <button type="button" onclick="deleteMedicalDoc(${d.id})" style="padding: 4px 8px; font-size: 11px; font-weight: 700; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer;">
+                <!-- Delete: Background #FEE2E2, Icon #B91C1C, Border 1px solid #FCA5A5 -->
+                <button type="button" onclick="deleteMedicalDoc(${d.id})" style="padding: 5px 8px; font-size: 11px; font-weight: 700; background: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
                   🗑️
                 </button>
               </div>

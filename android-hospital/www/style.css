@@ -14,14 +14,10 @@
 ====================================================== */
 
 body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(
-        135deg,
-        #e3f2fd,
-        #ffffff
-    );
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #F8FAFC;
     min-height: 100vh;
-    color: #1f2937;
+    color: #1F2937;
 }
 
 
@@ -30,7 +26,7 @@ body {
 ====================================================== */
 
 a {
-    color: #1976d2;
+    color: #1D4ED8;
     text-decoration: none;
 }
 
@@ -176,7 +172,7 @@ select {
 input:focus,
 textarea:focus,
 select:focus {
-    border-color: #1976d2;
+    border-color: #1D4ED8;
 
     box-shadow:
         0 0 0 2px rgba(25, 118, 210, 0.1);
@@ -310,7 +306,7 @@ button:disabled {
 
 
 .register-text a {
-    color: #1976d2;
+    color: #1D4ED8;
 
     font-weight: bold;
 
@@ -561,7 +557,7 @@ header p {
 .queue-stats strong {
     font-size: 32px;
 
-    color: #1976d2;
+    color: #1D4ED8;
 }
 
 

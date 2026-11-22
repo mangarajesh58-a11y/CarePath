@@ -8,10 +8,10 @@
 
     <style>
         :root {
-            --primary: #2563eb;
-            --dark: #172554;
-            --muted: #64748b;
-            --border: #e2e8f0;
+            --primary: #1D4ED8;
+            --dark: #1F2937;
+            --muted: #475569;
+            --border: #E2E8F0;
             --shadow: 0 14px 40px rgba(15,23,42,.08);
         }
 
@@ -20,10 +20,8 @@
         body {
             margin: 0;
             min-height: 100vh;
-            color: #172033;
-            background:
-                radial-gradient(circle at 8% 0%, #dbeafe 0, transparent 32%),
-                linear-gradient(135deg, #f8fbff, #eef4ff);
+            color: #1F2937;
+            background: #F8FAFC;
             font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
         }
 
@@ -183,9 +181,9 @@
         }
 
         tbody td {
-            background: white;
-            color: #334155;
-            border-bottom: 1px solid #edf2f7;
+            background: #FFFFFF;
+            color: #1F2937;
+            border-bottom: 1px solid #E2E8F0;
         }
 
         tbody tr:hover td { background: #f8fbff; }
@@ -552,10 +550,10 @@ async function loadPatients(silent = false) {
                     : (token.prescription ? `<button type="button" onclick="viewPrescriptionDetail('${escapeHTML(token.patient_name || '')}', '${escapeHTML(token.diagnosis || '-')}', '${escapeHTML(token.prescription || '')}', '${escapeHTML(token.notes || '')}')" style="background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;">📋 View Rx</button>` : "-");
 
             row.innerHTML = `
-                <td style="padding:12px;"><strong>${escapeHTML(token.token_number)}</strong></td>
-                <td style="padding:12px;">${escapeHTML(token.patient_name)}</td>
-                <td style="padding:12px;">${escapeHTML(token.department)}</td>
-                <td style="padding:12px;">${escapeHTML(token.doctor)}</td>
+                <td style="padding:12px;"><strong style="color: #1D4ED8;">#${escapeHTML(token.token_number)}</strong></td>
+                <td style="padding:12px; font-weight: 700; color: #1F2937;">${escapeHTML(token.patient_name)}</td>
+                <td style="padding:12px; color: #475569;">${escapeHTML(token.department)}</td>
+                <td style="padding:12px; color: #475569; font-weight: 600;">${escapeHTML(token.doctor)}</td>
                 <td style="padding:12px;">${getStatusText(token.status)}</td>
                 <td style="padding:12px;white-space:nowrap;">
                     ${callButtonHtml}${completeButtonHtml}

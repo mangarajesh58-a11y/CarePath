@@ -15,37 +15,37 @@
 
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --primary-light: #eff6ff;
-            --primary-border: #bfdbfe;
-            --primary-glow: rgba(37, 99, 235, 0.2);
-            --secondary: #06b6d4;
-            --success: #059669;
-            --success-light: #ecfdf5;
-            --success-border: #a7f3d0;
-            --warning: #d97706;
-            --warning-light: #fffbeb;
-            --warning-border: #fde68a;
-            --danger: #dc2626;
-            --danger-light: #fef2f2;
-            --danger-border: #fecaca;
-            --purple: #7c3aed;
-            --purple-light: #f5f3ff;
-            --purple-border: #ddd6fe;
+            --primary: #1D4ED8;
+            --primary-dark: #1E40AF;
+            --primary-light: #EFF6FF;
+            --primary-border: #BFDBFE;
+            --primary-glow: rgba(29, 78, 216, 0.2);
+            --secondary: #075985;
+            --success: #166534;
+            --success-light: #DCFCE7;
+            --success-border: #86EFAC;
+            --warning: #92400E;
+            --warning-light: #FEF3C7;
+            --warning-border: #FCD34D;
+            --danger: #B91C1C;
+            --danger-light: #FEE2E2;
+            --danger-border: #FCA5A5;
+            --purple: #6B21A8;
+            --purple-light: #F3E8FF;
+            --purple-border: #D8B4FE;
             --teal: #0d9488;
             --teal-light: #f0fdfa;
             --teal-border: #99f6e4;
-            --slate-50: #f8fafc;
-            --slate-100: #f1f5f9;
-            --slate-200: #e2e8f0;
-            --slate-300: #cbd5e1;
-            --slate-400: #94a3b8;
-            --slate-500: #64748b;
+            --slate-50: #F8FAFC;
+            --slate-100: #F1F5F9;
+            --slate-200: #E2E8F0;
+            --slate-300: #CBD5E1;
+            --slate-400: #94A3B8;
+            --slate-500: #64748B;
             --slate-600: #475569;
             --slate-700: #334155;
-            --slate-800: #1e293b;
-            --slate-900: #0f172a;
+            --slate-800: #1F2937;
+            --slate-900: #1F2937;
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
@@ -1026,8 +1026,9 @@
 
         td {
             padding: 14px 16px;
-            border-bottom: 1px solid var(--slate-100);
-            color: var(--slate-800);
+            border-bottom: 1px solid #E2E8F0;
+            color: #1F2937;
+            background: #FFFFFF;
             vertical-align: middle;
         }
 
@@ -1063,15 +1064,15 @@
         }
 
         .badge.online {
-            background: #eff6ff;
-            color: #1d4ed8;
-            border: 1px solid #bfdbfe;
+            background: #F3E8FF !important;
+            color: #6B21A8 !important;
+            border: 1px solid #D8B4FE !important;
         }
 
         .badge.offline {
-            background: #ecfdf5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
+            background: #DCFCE7 !important;
+            color: #166534 !important;
+            border: 1px solid #86EFAC !important;
         }
 
         .status-badge-waiting {
@@ -1375,22 +1376,25 @@
 
         <!-- Top Collection KPI Ribbon -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 18px;">
-            <div style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 14px 16px;">
-                <span style="font-size: 11px; font-weight: 700; color: #6b21a8; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Today's Token Collection</span>
-                <div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; color: #7e22ce; margin: 4px 0;" id="kpiTodayCollection">₹0</div>
-                <span style="font-size: 11.5px; color: #7c3aed; font-weight: 600;" id="kpiTodayTokens">0 Tokens Today</span>
+            <!-- Today's Collection: Card bg #F3E8FF, border #D8B4FE, heading #6B21A8, amount #581C87, desc #475569 -->
+            <div style="background: #F3E8FF; border: 1.5px solid #D8B4FE; border-radius: 12px; padding: 14px 16px;">
+                <span style="font-size: 11px; font-weight: 700; color: #6B21A8; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Today's Token Collection</span>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; color: #581C87; margin: 4px 0;" id="kpiTodayCollection">₹0</div>
+                <span style="font-size: 11.5px; color: #475569; font-weight: 600;" id="kpiTodayTokens">0 Tokens Today</span>
             </div>
 
-            <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1.5px solid #bae6fd; border-radius: 12px; padding: 14px 16px;">
-                <span style="font-size: 11px; font-weight: 700; color: #0369a1; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Current Month Collection</span>
-                <div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; color: #0284c7; margin: 4px 0;" id="kpiMonthCollection">₹0</div>
-                <span style="font-size: 11.5px; color: #0284c7; font-weight: 600;" id="kpiMonthTokens">0 Tokens (This Month)</span>
+            <!-- This Month's Collection: Card bg #E0F2FE, border #7DD3FC, heading #075985, amount #0C4A6E, desc #475569 -->
+            <div style="background: #E0F2FE; border: 1.5px solid #7DD3FC; border-radius: 12px; padding: 14px 16px;">
+                <span style="font-size: 11px; font-weight: 700; color: #075985; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Current Month Collection</span>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; color: #0C4A6E; margin: 4px 0;" id="kpiMonthCollection">₹0</div>
+                <span style="font-size: 11.5px; color: #475569; font-weight: 600;" id="kpiMonthTokens">0 Tokens (This Month)</span>
             </div>
 
-            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1.5px solid #bbf7d0; border-radius: 12px; padding: 14px 16px;">
+            <!-- All-Time Collection: Card bg #DCFCE7, border #86EFAC, heading #166534, amount #14532D, desc #475569 -->
+            <div style="background: #DCFCE7; border: 1.5px solid #86EFAC; border-radius: 12px; padding: 14px 16px;">
                 <span style="font-size: 11px; font-weight: 700; color: #166534; display: block; text-transform: uppercase; letter-spacing: 0.5px;">All-Time Hospital Collection</span>
-                <div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; color: #15803d; margin: 4px 0;" id="kpiAllTimeCollection">₹0</div>
-                <span style="font-size: 11.5px; color: #16a34a; font-weight: 600;" id="kpiAllTimeTokens">0 Total Tokens</span>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 800; color: #14532D; margin: 4px 0;" id="kpiAllTimeCollection">₹0</div>
+                <span style="font-size: 11.5px; color: #475569; font-weight: 600;" id="kpiAllTimeTokens">0 Total Tokens</span>
             </div>
         </div>
 
@@ -2790,15 +2794,15 @@ function renderTokens() {
                     </span>
                 </td>
 
-                <td>
+                <td style="color: #1F2937; font-weight: 600;">
                     ${escapeHTML(token.patient_name)}
                 </td>
 
-                <td>
+                <td style="color: #475569;">
                     ${escapeHTML(token.department)}
                 </td>
 
-                <td>
+                <td style="color: #475569; font-weight: 600;">
                     ${escapeHTML(token.doctor)}
                 </td>
 
