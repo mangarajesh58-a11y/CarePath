@@ -1039,58 +1039,73 @@
       const currentPhone = localStorage.getItem("patientPhone") || localStorage.getItem("patient_phone") || localStorage.getItem("phone") || "";
       const currentEmail = localStorage.getItem("patientEmail") || localStorage.getItem("patient_email") || localStorage.getItem("email") || "";
       const currentName = localStorage.getItem("patientName") || localStorage.getItem("patient_name") || localStorage.getItem("full_name") || "";
+      const currentPatientId = localStorage.getItem("patientId") || localStorage.getItem("patient_id") || "";
 
-      if (!currentToken && !currentPhone && !currentEmail) {
+      if (!currentToken && !currentPhone && !currentEmail && !currentName && !currentPatientId) {
         // Guest or unauthenticated viewing locally cached tokens
         return;
       }
 
       try {
-        let response = null;
+        let remoteTokens = null;
+
+        // 1. If JWT access token exists, attempt authenticated /patient/tokens
         if (currentToken) {
           const queryParams = new URLSearchParams();
           if (currentPhone) queryParams.set("phone", currentPhone);
           if (currentEmail) queryParams.set("email", currentEmail);
+          if (currentName) queryParams.set("name", currentName);
           const qs = queryParams.toString() ? `?${queryParams.toString()}` : "";
           
-          response = await fetch(`${API_URL}/patient/tokens${qs}`, {
-            method: "GET",
-            headers: {
-              "Authorization": `Bearer ${currentToken}`,
-              "Content-Type": "application/json"
+          try {
+            const authRes = await fetch(`${API_URL}/patient/tokens${qs}`, {
+              method: "GET",
+              headers: {
+                "Authorization": `Bearer ${currentToken}`,
+                "Content-Type": "application/json"
+              }
+            });
+            if (authRes && authRes.ok) {
+              const data = await authRes.json();
+              if (Array.isArray(data) && data.length > 0) {
+                remoteTokens = data;
+              }
             }
-          });
+          } catch (e) {
+            console.warn("Auth token fetch notice, will fallback to lookup:", e);
+          }
         }
 
-        // If 401 (expired session) or no currentToken, attempt graceful lookup using phone/email/name
-        if ((!response || response.status === 401) && (currentPhone || currentEmail || currentName)) {
+        // 2. If no tokens from authenticated endpoint (no token, 401, error, or empty list),
+        // fallback to public lookup by name, phone, email or patientId
+        if ((!remoteTokens || remoteTokens.length === 0) && (currentPhone || currentEmail || currentName || currentPatientId)) {
           const lookupParams = new URLSearchParams();
           if (currentPhone) lookupParams.set("phone", currentPhone);
           if (currentEmail) lookupParams.set("email", currentEmail);
           if (currentName) lookupParams.set("name", currentName);
+          if (currentPatientId) lookupParams.set("patient_id", currentPatientId);
           
-          response = await fetch(`${API_URL}/patient/tokens/lookup?${lookupParams.toString()}`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json"
+          try {
+            const lookupRes = await fetch(`${API_URL}/patient/tokens/lookup?${lookupParams.toString()}`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json"
+              }
+            });
+            if (lookupRes && lookupRes.ok) {
+              const lookupData = await lookupRes.json();
+              if (Array.isArray(lookupData) && lookupData.length > 0) {
+                remoteTokens = lookupData;
+              }
             }
-          });
-        }
-
-        if (response && response.status === 401) {
-          console.warn("Patient session expired for remote sync; retaining cached tokens.");
-          if (allTokens && allTokens.length > 0) {
-            updateStats(allTokens);
-            renderTokens(allTokens);
+          } catch (e) {
+            console.warn("Public token lookup notice:", e);
           }
-          return;
         }
 
-        if (!response || !response.ok) {
-          throw new Error("Unable to fetch token history.");
+        if (!remoteTokens) {
+          remoteTokens = [];
         }
-
-        const remoteTokens = await response.json();
 
         // Intelligent Non-Destructive Merge:
         // Remote server has authoritative queue statuses, but local cache must NEVER be wiped if remote is empty

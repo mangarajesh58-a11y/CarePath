@@ -7540,9 +7540,12 @@ def lookup_patient_tokens(
     phone: Optional[str] = Query(None),
     email: Optional[str] = Query(None),
     name: Optional[str] = Query(None),
+    patient_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
 ):
     filter_conditions = []
+    if patient_id is not None:
+        filter_conditions.append(Token.patient_id == patient_id)
     if email and email.strip():
         clean_email = email.strip().lower()
         filter_conditions.append(func.lower(Token.patient_email) == clean_email)
