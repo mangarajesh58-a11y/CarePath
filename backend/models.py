@@ -10,6 +10,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     UniqueConstraint,
+    Numeric,
 )
 
 from database import Base
@@ -249,6 +250,11 @@ class Token(Base):
     total_amount = Column(Integer, default=10, nullable=False)
     payment_status = Column(String(50), default="pending")
 
+    # Platform Commission & Hospital Payout Tracking (Exact Paisa Decimal Arithmetic)
+    commission_percentage = Column(Numeric(5, 2), default=0.00, nullable=True)
+    commission_amount = Column(Numeric(10, 2), default=0.00, nullable=True)
+    hospital_amount = Column(Numeric(10, 2), default=0.00, nullable=True)
+
     # Razorpay
     razorpay_order_id = Column(String(255), nullable=True)
     razorpay_payment_id = Column(String(255), nullable=True)
@@ -318,6 +324,7 @@ class PlatformContact(Base):
     grievance_email = Column(String(255), default="mangarajesh58@gmail.com")
     working_hours = Column(String(100), default="Mon - Sat: 9:00 AM - 7:00 PM IST")
     platform_fee = Column(Integer, default=10, nullable=False)
+    commission_percentage = Column(Numeric(5, 2), default=10.00, nullable=False)
     banner_ad_fee = Column(Float, default=999.0, nullable=False)
     video_ad_fee = Column(Float, default=1999.0, nullable=False)
     ad_duration_days = Column(Integer, default=30, nullable=False)

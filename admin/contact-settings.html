@@ -273,6 +273,22 @@
                     </div>
                 </div>
 
+                <!-- Platform Commission Percentage -->
+                <div class="form-field full-width" style="background: #f0fdf4; border: 1.5px solid #bbf7d0; padding: 18px; border-radius: 12px; margin-top: 10px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <label for="commissionPercentage" style="color: #166534; font-size: 15px;">💼 Platform Commission Percentage (%) *</label>
+                            <div style="font-size: 12px; color: #475569; margin-top: 2px;">
+                                Rate deducted from eligible paid OPD bookings. Calculated with exact decimal arithmetic rounded to the nearest paisa (₹0.01). Range: 0.00% to 100.00%.
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="number" id="commissionPercentage" min="0" max="100" step="0.01" style="width: 100px; font-size: 18px; font-weight: 800; text-align: center; color: #166534; border: 2px solid #22c55e;" required>
+                            <span style="font-size: 18px; font-weight: 800; color: #166534;">%</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Dynamic Advertisement Pricing Engine -->
                 <div class="form-field full-width" style="background: #faf5ff; border: 1.5px solid #d8b4fe; padding: 18px; border-radius: 12px; margin-top: 10px;">
                     <div style="margin-bottom: 14px;">
@@ -336,6 +352,10 @@
                     <span id="prevPlatformFee" style="font-weight: 700; color: #2563eb;">₹10 per booking</span>
                 </div>
                 <div class="preview-item">
+                    <strong>Platform Commission</strong>
+                    <span id="prevCommissionPercentage" style="font-weight: 700; color: #166534;">10.00% of OPD</span>
+                </div>
+                <div class="preview-item">
                     <strong>Support Phone</strong>
                     <span id="prevSupportPhone">+91 98765 43210</span>
                 </div>
@@ -392,7 +412,7 @@
 requireAdminLogin();
 
 // Live input sync to preview
-const fields = ["businessName", "supportEmail", "supportPhone", "workingHours", "operatingAddress", "bannerAdFee", "videoAdFee", "adDurationDays", "platformFee"];
+const fields = ["businessName", "supportEmail", "supportPhone", "workingHours", "operatingAddress", "bannerAdFee", "videoAdFee", "adDurationDays", "platformFee", "commissionPercentage"];
 fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) {
@@ -405,6 +425,10 @@ function updatePreview() {
     const feeVal = document.getElementById("platformFee") ? document.getElementById("platformFee").value : "10";
     if (document.getElementById("prevPlatformFee")) {
         document.getElementById("prevPlatformFee").textContent = `₹${feeVal} per booking`;
+    }
+    const commVal = document.getElementById("commissionPercentage") ? document.getElementById("commissionPercentage").value : "10";
+    if (document.getElementById("prevCommissionPercentage")) {
+        document.getElementById("prevCommissionPercentage").textContent = `${commVal}% of OPD`;
     }
     const bannerVal = document.getElementById("bannerAdFee") ? document.getElementById("bannerAdFee").value : "999";
     const videoVal = document.getElementById("videoAdFee") ? document.getElementById("videoAdFee").value : "1999";
@@ -447,6 +471,9 @@ async function loadContactSettings() {
             if (document.getElementById("platformFee")) {
                 document.getElementById("platformFee").value = data.platform_fee ?? 10;
             }
+            if (document.getElementById("commissionPercentage")) {
+                document.getElementById("commissionPercentage").value = data.commission_percentage ?? 10;
+            }
             if (document.getElementById("bannerAdFee")) {
                 document.getElementById("bannerAdFee").value = data.banner_ad_fee ?? 999;
             }
@@ -469,6 +496,12 @@ async function handleSaveContact(event) {
     const btn = document.getElementById("btnSaveContact");
     const msg = document.getElementById("contactMessage");
 
+    const commVal = parseFloat(document.getElementById("commissionPercentage")?.value || "10");
+    if (isNaN(commVal) || commVal < 0 || commVal > 100) {
+        alert("Platform commission percentage must be a valid number between 0% and 100%.");
+        return;
+    }
+
     const payload = {
         business_name: document.getElementById("businessName").value.trim(),
         support_email: document.getElementById("supportEmail").value.trim(),
@@ -478,6 +511,7 @@ async function handleSaveContact(event) {
         grievance_officer: document.getElementById("grievanceOfficer").value.trim(),
         grievance_email: document.getElementById("grievanceEmail").value.trim(),
         platform_fee: parseInt(document.getElementById("platformFee")?.value || "10", 10),
+        commission_percentage: commVal,
         banner_ad_fee: parseFloat(document.getElementById("bannerAdFee")?.value || "999"),
         video_ad_fee: parseFloat(document.getElementById("videoAdFee")?.value || "1999"),
         ad_duration_days: parseInt(document.getElementById("adDurationDays")?.value || "30", 10)

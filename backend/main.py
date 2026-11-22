@@ -3,6 +3,7 @@
 # ============================================================
 
 import os
+import json
 import re
 import base64
 import hmac
@@ -13,6 +14,7 @@ import smtplib
 import asyncio
 import logging
 from email.message import EmailMessage
+from decimal import Decimal, ROUND_HALF_UP
 
 from datetime import datetime,date, timedelta
 from typing import Optional, List, Union, Any, Dict, Set
@@ -1694,6 +1696,15 @@ def run_database_migration():
         "patient_gender":
             "VARCHAR(20) NULL",
 
+        "commission_percentage":
+            "NUMERIC(5, 2) DEFAULT 0.00",
+
+        "commission_amount":
+            "NUMERIC(10, 2) DEFAULT 0.00",
+
+        "hospital_amount":
+            "NUMERIC(10, 2) DEFAULT 0.00",
+
         "created_at":
             "TIMESTAMP NULL",
     }
@@ -1755,6 +1766,7 @@ def run_database_migration():
     # --------------------------------------------------------
     platform_contact_columns = {
         "platform_fee": f"INT NOT NULL DEFAULT {PLATFORM_FEE}",
+        "commission_percentage": "NUMERIC(5, 2) NOT NULL DEFAULT 10.00",
         "banner_ad_fee": "FLOAT NOT NULL DEFAULT 999.0",
         "video_ad_fee": "FLOAT NOT NULL DEFAULT 1999.0",
         "ad_duration_days": "INT NOT NULL DEFAULT 30",
@@ -3664,6 +3676,93 @@ def get_current_platform_fee(db: Session) -> int:
     return PLATFORM_FEE
 
 
+DEFAULT_COMMISSION_PERCENTAGE = Decimal("10.00")
+
+
+def get_current_commission_percentage(db: Session) -> Decimal:
+    """Returns the current admin-configured platform commission percentage as Decimal."""
+    try:
+        contact = db.query(PlatformContact).first()
+        if contact and getattr(contact, "commission_percentage", None) is not None:
+            val = Decimal(str(contact.commission_percentage))
+            if Decimal("0.00") <= val <= Decimal("100.00"):
+                return val
+    except Exception as e:
+        logging.warning("Error fetching current commission percentage: %s", e)
+    return DEFAULT_COMMISSION_PERCENTAGE
+
+
+def calculate_commission(
+    eligible_booking_amount: Union[Decimal, float, int, str],
+    commission_percentage: Union[Decimal, float, int, str],
+    is_eligible: bool = True,
+) -> Dict[str, Decimal]:
+    """
+    CarePath Commission & Payout Calculation Engine
+    Rules:
+    1. Commission Amount = Eligible Booking Amount × Commission Percentage ÷ 100
+    2. Calculates commission on backend using decimal arithmetic, not floating-point arithmetic.
+    3. Uses actual eligible booking amount (token_fee), excluding separately collected platform fees/taxes.
+    4. Never calculates commission on cancelled, failed, refunded, or unpaid bookings (returns 0.00).
+    5. Stores and calculates monetary values with 2 decimal places in INR (₹0.01 paisa).
+    6. Uses ROUND_HALF_UP rounding method.
+    7. Hospital Amount = Eligible Booking Amount − Rounded Commission Amount.
+    8. Mathematical guarantee: Commission Amount + Hospital Amount == Eligible Booking Amount (zero-leak).
+    """
+    ZERO = Decimal("0.00")
+    PAISA = Decimal("0.01")
+    HUNDRED = Decimal("100.00")
+
+    if not is_eligible:
+        return {
+            "eligible_amount": ZERO,
+            "commission_percentage": Decimal(str(commission_percentage or 0)).quantize(PAISA),
+            "commission_amount": ZERO,
+            "hospital_amount": ZERO,
+        }
+
+    try:
+        amount_dec = Decimal(str(eligible_booking_amount)).quantize(PAISA, rounding=ROUND_HALF_UP)
+    except Exception:
+        amount_dec = ZERO
+
+    if amount_dec <= ZERO:
+        return {
+            "eligible_amount": ZERO,
+            "commission_percentage": Decimal(str(commission_percentage or 0)).quantize(PAISA),
+            "commission_amount": ZERO,
+            "hospital_amount": ZERO,
+        }
+
+    try:
+        pct_dec = Decimal(str(commission_percentage).strip().rstrip("%"))
+        if pct_dec.is_nan() or pct_dec.is_infinite():
+            raise ValueError()
+    except Exception:
+        raise ValueError(f"Invalid commission percentage: {commission_percentage}")
+
+    if pct_dec < ZERO or pct_dec > HUNDRED:
+        raise ValueError(f"Commission percentage must be between 0.00% and 100.00%, got {pct_dec}")
+
+    # Decimal arithmetic (not float)
+    raw_commission = (amount_dec * pct_dec) / HUNDRED
+    # Round half up to nearest paisa
+    commission_amount = raw_commission.quantize(PAISA, rounding=ROUND_HALF_UP)
+    # Hospital payable = Eligible Booking Amount - Rounded Commission Amount
+    hospital_amount = amount_dec - commission_amount
+
+    # Financial consistency sanity check
+    if commission_amount + hospital_amount != amount_dec:
+        raise ValueError("Reconciliation error: Commission + Hospital Amount != Eligible Booking Amount")
+
+    return {
+        "eligible_amount": amount_dec,
+        "commission_percentage": pct_dec.quantize(PAISA),
+        "commission_amount": commission_amount,
+        "hospital_amount": hospital_amount,
+    }
+
+
 DEFAULT_CITY_COORDINATES = {
     "bhubaneswar": ("20.2961", "85.8245"),
     "cuttack": ("20.4625", "85.8828"),
@@ -3925,6 +4024,9 @@ def token_to_dict(token):
         "booking_for": getattr(token, "booking_for", None) or "self",
         "patient_age": getattr(token, "patient_age", None),
         "patient_gender": getattr(token, "patient_gender", None),
+        "commission_percentage": float(token.commission_percentage) if getattr(token, "commission_percentage", None) is not None else 0.0,
+        "commission_amount": float(token.commission_amount) if getattr(token, "commission_amount", None) is not None else 0.0,
+        "hospital_amount": float(token.hospital_amount) if getattr(token, "hospital_amount", None) is not None else float(getattr(token, "token_fee", 0) or 0),
     }
 
 
@@ -7411,6 +7513,16 @@ def create_token(
         recipient_email = patient.email
         patient_contact_phone = getattr(patient, "phone", None)
 
+    active_commission_pct = get_current_commission_percentage(db)
+    comm_split = calculate_commission(
+        eligible_booking_amount=token_fee,
+        commission_percentage=active_commission_pct,
+        is_eligible=True,
+    )
+    token_commission_pct = comm_split["commission_percentage"]
+    token_commission_amt = comm_split["commission_amount"]
+    token_hospital_amt = comm_split["hospital_amount"]
+
     token = Token(
         patient_id=patient.id,
         patient_name=actual_patient_name,
@@ -7432,6 +7544,9 @@ def create_token(
         platform_fee=platform_fee,
         total_amount=total_amount,
         payment_status="paid",
+        commission_percentage=token_commission_pct,
+        commission_amount=token_commission_amt,
+        hospital_amount=token_hospital_amt,
         cashfree_order_id=order_id,
         cashfree_payment_id=payment_id,
         status="waiting",
@@ -8417,6 +8532,9 @@ def create_walk_in_token(
             platform_fee=0,
             total_amount=fee_to_charge,
             payment_status=pay_status,
+            commission_percentage=Decimal("0.00"),
+            commission_amount=Decimal("0.00"),
+            hospital_amount=Decimal("0.00"),
             status="waiting",
             notes=walkin_notes,
         )
@@ -9037,6 +9155,7 @@ def skip_token(
 class PlatformContactUpdateRequest(BaseModel):
     business_name: str | None = None
     platform_fee: int | None = None
+    commission_percentage: Union[float, str, None] = None
     banner_ad_fee: float | None = None
     video_ad_fee: float | None = None
     ad_duration_days: int | None = None
@@ -9060,6 +9179,7 @@ def get_or_create_contact_settings(db: Session) -> PlatformContact:
             grievance_email="mangarajesh58@gmail.com",
             working_hours="Mon - Sat: 9:00 AM - 7:00 PM IST",
             platform_fee=PLATFORM_FEE,
+            commission_percentage=10.00,
             banner_ad_fee=999.0,
             video_ad_fee=1999.0,
             ad_duration_days=30,
@@ -9153,6 +9273,7 @@ def get_platform_contact(db: Session = Depends(get_db)):
         "grievance_email": contact.grievance_email,
         "working_hours": contact.working_hours,
         "platform_fee": getattr(contact, "platform_fee", PLATFORM_FEE),
+        "commission_percentage": float(getattr(contact, "commission_percentage", 10.0) or 10.0),
         "banner_ad_fee": float(getattr(contact, "banner_ad_fee", 999.0) or 999.0),
         "video_ad_fee": float(getattr(contact, "video_ad_fee", 1999.0) or 1999.0),
         "ad_duration_days": int(getattr(contact, "ad_duration_days", 30) or 30),
@@ -9218,6 +9339,34 @@ def update_platform_contact(
     if data.ad_duration_days is not None and data.ad_duration_days > 0:
         contact.ad_duration_days = int(data.ad_duration_days)
 
+    if data.commission_percentage is not None:
+        try:
+            c_dec = Decimal(str(data.commission_percentage).strip().rstrip("%"))
+            if c_dec < Decimal("0.00") or c_dec > Decimal("100.00"):
+                raise ValueError()
+            c_rounded = c_dec.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            prev_c = Decimal(str(getattr(contact, "commission_percentage", None) or "10.00")).quantize(Decimal("0.01"))
+            contact.commission_percentage = c_rounded
+            log_admin_action(
+                db,
+                current_user.get("email", "admin"),
+                "UPDATE_COMMISSION",
+                target_type="SETTING",
+                target_id="commission_percentage",
+                details=json.dumps({
+                    "admin_id": current_user.get("user_id", 1),
+                    "admin_email": current_user.get("email", "admin"),
+                    "previous_percentage": str(prev_c),
+                    "new_percentage": str(c_rounded),
+                    "updated_at": datetime.utcnow().isoformat(),
+                })
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail="Commission percentage must be a valid number between 0% and 100%."
+            )
+
     contact.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(contact)
@@ -9234,12 +9383,171 @@ def update_platform_contact(
             "grievance_email": contact.grievance_email,
             "working_hours": contact.working_hours,
             "platform_fee": getattr(contact, "platform_fee", PLATFORM_FEE),
+            "commission_percentage": float(getattr(contact, "commission_percentage", 10.0) or 10.0),
             "banner_ad_fee": float(getattr(contact, "banner_ad_fee", 999.0) or 999.0),
             "video_ad_fee": float(getattr(contact, "video_ad_fee", 1999.0) or 1999.0),
             "ad_duration_days": int(getattr(contact, "ad_duration_days", 30) or 30),
             "updated_at": contact.updated_at.isoformat() if contact.updated_at else None,
         },
     }
+
+
+# ============================================================
+# CAREPATH COMMISSION ENGINE (RULES 1 - 7)
+# ============================================================
+
+class CommissionUpdateRequest(BaseModel):
+    commission_percentage: Any
+    confirmed: bool = False
+
+
+@app.get("/admin/commission")
+def get_commission_settings(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """
+    Returns the active CarePath platform commission percentage and audit tracking details.
+    Restricted to CarePath administrators only.
+    """
+    contact = get_or_create_contact_settings(db)
+    current_pct = Decimal(str(getattr(contact, "commission_percentage", None) or "10.00")).quantize(Decimal("0.01"))
+
+    last_log = (
+        db.query(AdminAuditLog)
+        .filter(
+            AdminAuditLog.action == "UPDATE_COMMISSION",
+            AdminAuditLog.target_id == "commission_percentage"
+        )
+        .order_by(AdminAuditLog.created_at.desc())
+        .first()
+    )
+
+    last_update_details = None
+    if last_log:
+        try:
+            parsed = json.loads(last_log.details) if last_log.details else {}
+        except Exception:
+            parsed = {}
+        last_update_details = {
+            "admin_email": last_log.admin_email,
+            "admin_id": parsed.get("admin_id"),
+            "previous_percentage": parsed.get("previous_percentage"),
+            "new_percentage": parsed.get("new_percentage"),
+            "updated_at": last_log.created_at.isoformat() if last_log.created_at else None,
+        }
+
+    return {
+        "success": True,
+        "commission_percentage": float(current_pct),
+        "updated_at": contact.updated_at.isoformat() if contact.updated_at else None,
+        "last_update": last_update_details,
+    }
+
+
+@app.put("/admin/commission")
+@app.post("/admin/commission")
+def update_commission_settings(
+    data: CommissionUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("admin")),
+):
+    """
+    Updates the CarePath platform commission percentage.
+    Validations:
+    - Admin authorization required.
+    - Explicit confirmation required before saving (confirmed=True).
+    - Percentage must be numeric, >= 0.00% and <= 100.00%.
+    - Rejects negative, >100%, empty, or non-numeric values.
+    - Supports decimal percentages (e.g. 2.5%, 5.75%, 10.25%).
+    - Records admin ID, email, previous percentage, new percentage, and timestamp in audit log.
+    - DB transaction safe with rollback.
+    """
+    if not data.confirmed:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin confirmation is required to update the commission percentage. Please confirm before saving."
+        )
+
+    raw_val = data.commission_percentage
+    if raw_val is None or (isinstance(raw_val, str) and not raw_val.strip()):
+        raise HTTPException(
+            status_code=400,
+            detail="Commission percentage is required and cannot be empty."
+        )
+
+    try:
+        cleaned_str = str(raw_val).strip().rstrip("%")
+        pct_dec = Decimal(cleaned_str)
+        if pct_dec.is_nan() or pct_dec.is_infinite():
+            raise ValueError()
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid commission percentage. Value must be a valid number between 0% and 100%."
+        )
+
+    if pct_dec < Decimal("0.00"):
+        raise HTTPException(
+            status_code=400,
+            detail="Commission percentage must be greater than or equal to 0%. Negative values are not permitted."
+        )
+
+    if pct_dec > Decimal("100.00"):
+        raise HTTPException(
+            status_code=400,
+            detail="Commission percentage cannot exceed 100%. Values above 100% are not permitted."
+        )
+
+    pct_rounded = pct_dec.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    contact = get_or_create_contact_settings(db)
+    previous_pct = Decimal(str(getattr(contact, "commission_percentage", None) or "10.00")).quantize(Decimal("0.01"))
+
+    admin_email = current_user.get("email") or current_user.get("sub") or f"admin_{current_user.get('user_id', 1)}"
+    admin_id = current_user.get("user_id") or current_user.get("id") or 1
+
+    try:
+        contact.commission_percentage = pct_rounded
+        contact.updated_at = datetime.utcnow()
+
+        audit_details = json.dumps({
+            "admin_id": admin_id,
+            "admin_email": admin_email,
+            "previous_percentage": str(previous_pct),
+            "new_percentage": str(pct_rounded),
+            "updated_at": datetime.utcnow().isoformat(),
+        })
+
+        log_admin_action(
+            db=db,
+            admin_email=admin_email,
+            action="UPDATE_COMMISSION",
+            target_type="SETTING",
+            target_id="commission_percentage",
+            details=audit_details,
+        )
+
+        db.commit()
+        db.refresh(contact)
+
+        return {
+            "success": True,
+            "message": f"Commission percentage updated successfully from {previous_pct}% to {pct_rounded}%.",
+            "commission_percentage": float(pct_rounded),
+            "previous_percentage": float(previous_pct),
+            "updated_at": contact.updated_at.isoformat() if contact.updated_at else None,
+        }
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as err:
+        db.rollback()
+        logging.error("Failed to update commission settings: %s", err)
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to save commission percentage due to an unexpected database error."
+        )
 
 
 # ============================================================
@@ -13591,21 +13899,50 @@ def get_admin_hospital_ledger(
     ledger = []
 
     for hosp in hospitals:
+        # Never calculate commission on cancelled, failed, refunded, or unpaid bookings
         paid_tokens = db.query(Token).filter(
             Token.hospital_id == hosp.id,
-            Token.payment_status == "paid"
+            Token.payment_status == "paid",
+            Token.status != "cancelled",
         ).all()
 
-        total_opd = sum(int(t.token_fee or 0) for t in paid_tokens)
-        platform_comm = sum(int(t.platform_fee or 0) for t in paid_tokens)
-        total_collected = sum(int(t.total_amount or 0) for t in paid_tokens)
-        net_payable = total_opd
+        total_opd = Decimal("0.00")
+        platform_comm = Decimal("0.00")
+        total_collected = Decimal("0.00")
+        net_payable = Decimal("0.00")
+
+        for t in paid_tokens:
+            opd_fee = Decimal(str(t.token_fee or 0)).quantize(Decimal("0.01"))
+            plat_fee = Decimal(str(t.platform_fee or 0)).quantize(Decimal("0.01"))
+            tot_amt = Decimal(str(t.total_amount or (opd_fee + plat_fee))).quantize(Decimal("0.01"))
+
+            # Historical transaction protection (Rule 5):
+            # Save the commission percentage and final rounded commission amount against each transaction.
+            # Updating the admin commission percentage must affect only new eligible bookings.
+            # Never recalculate historical commissions using the latest percentage.
+            if getattr(t, "commission_amount", None) is not None and getattr(t, "hospital_amount", None) is not None:
+                t_comm = Decimal(str(t.commission_amount)).quantize(Decimal("0.01"))
+                t_hosp = Decimal(str(t.hospital_amount)).quantize(Decimal("0.01"))
+            else:
+                comm_pct = Decimal(str(getattr(t, "commission_percentage", None) or 0))
+                calc_split = calculate_commission(
+                    eligible_booking_amount=opd_fee,
+                    commission_percentage=comm_pct,
+                    is_eligible=True,
+                )
+                t_comm = calc_split["commission_amount"]
+                t_hosp = calc_split["hospital_amount"]
+
+            total_opd += opd_fee
+            platform_comm += t_comm
+            total_collected += tot_amt
+            net_payable += t_hosp
 
         settlements = db.query(HospitalSettlement).filter(
             HospitalSettlement.hospital_id == hosp.id
         ).all()
-        already_settled = sum(float(s.amount or 0.0) for s in settlements)
-        pending_balance = max(0.0, net_payable - already_settled)
+        already_settled = sum(Decimal(str(s.amount or 0)).quantize(Decimal("0.01")) for s in settlements)
+        pending_balance = max(Decimal("0.00"), net_payable - already_settled)
 
         ledger.append({
             "hospital_id": hosp.id,
@@ -13618,21 +13955,26 @@ def get_admin_hospital_ledger(
             "payment_ifsc": hosp.payment_ifsc,
             "payment_upi": hosp.payment_upi,
             "paid_tokens_count": len(paid_tokens),
-            "total_opd_collected": total_opd,
-            "platform_commission": platform_comm,
-            "total_collected": total_collected,
-            "net_payable_to_hospital": net_payable,
-            "already_settled": round(already_settled, 2),
-            "pending_balance": round(pending_balance, 2),
+            "total_opd_collected": float(total_opd),
+            "platform_commission": float(platform_comm),
+            "total_collected": float(total_collected),
+            "net_payable_to_hospital": float(net_payable),
+            "already_settled": float(already_settled),
+            "pending_balance": float(pending_balance),
             "settlements_count": len(settlements),
         })
+
+    total_pending = sum(Decimal(str(item["pending_balance"])) for item in ledger)
+    total_settled = sum(Decimal(str(item["already_settled"])) for item in ledger)
+    total_commission = sum(Decimal(str(item["platform_commission"])) for item in ledger)
 
     return {
         "success": True,
         "ledger": ledger,
         "total_hospitals": len(ledger),
-        "total_pending_payouts": round(sum(item["pending_balance"] for item in ledger), 2),
-        "total_settled_payouts": round(sum(item["already_settled"] for item in ledger), 2),
+        "total_platform_commission": float(total_commission),
+        "total_pending_payouts": float(total_pending),
+        "total_settled_payouts": float(total_settled),
     }
 
 

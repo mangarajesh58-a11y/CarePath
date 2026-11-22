@@ -3532,7 +3532,139 @@ function switchPaymentSection(section) {
 }
 window.switchPaymentSection = switchPaymentSection;
 
+let currentCommissionRate = 10.0;
+
+async function loadCommissionSettings() {
+    const badge = document.getElementById("commissionBadge");
+    const input = document.getElementById("inputCommissionRate");
+    const lastUpdateEl = document.getElementById("commissionLastUpdated");
+    if (!badge && !input) return;
+
+    try {
+        const response = await fetchWithRetry(`${API}/admin/commission`, {
+            headers: getAdminAuthHeaders()
+        });
+        if (response.status === 401) { requireAdminLogin(); return; }
+        const data = await readResponse(response);
+        if (data.success && typeof data.commission_percentage !== "undefined") {
+            currentCommissionRate = parseFloat(data.commission_percentage);
+            if (badge) badge.textContent = `Active: ${currentCommissionRate.toFixed(2)}%`;
+            if (input && !input.matches(":focus")) input.value = currentCommissionRate.toFixed(2);
+            if (lastUpdateEl) {
+                if (data.last_update && data.last_update.updated_at) {
+                    const dt = new Date(data.last_update.updated_at);
+                    lastUpdateEl.textContent = `Last updated: ${dt.toLocaleDateString()} at ${dt.toLocaleTimeString()} by ${data.last_update.admin_email || 'Admin'}`;
+                } else if (data.updated_at) {
+                    const dt = new Date(data.updated_at);
+                    lastUpdateEl.textContent = `Last updated: ${dt.toLocaleDateString()} at ${dt.toLocaleTimeString()}`;
+                } else {
+                    lastUpdateEl.textContent = "Standard default commission active.";
+                }
+            }
+        }
+    } catch (err) {
+        console.warn("Could not load commission configuration:", err);
+    }
+}
+window.loadCommissionSettings = loadCommissionSettings;
+
+async function submitCommissionUpdate() {
+    const input = document.getElementById("inputCommissionRate");
+    const btn = document.getElementById("btnUpdateCommission");
+    if (!input || !btn) return;
+
+    const rawVal = input.value.trim();
+    if (!rawVal) {
+        showCommissionAlert("Please enter a valid commission percentage between 0% and 100%.", "error");
+        return;
+    }
+
+    const numVal = parseFloat(rawVal);
+    if (isNaN(numVal) || !isFinite(numVal)) {
+        showCommissionAlert("Invalid commission percentage. Please enter a valid number.", "error");
+        return;
+    }
+
+    if (numVal < 0) {
+        showCommissionAlert("Commission percentage cannot be negative (minimum 0%).", "error");
+        return;
+    }
+
+    if (numVal > 100) {
+        showCommissionAlert("Commission percentage cannot exceed 100%.", "error");
+        return;
+    }
+
+    // Require admin confirmation before saving (Rule 2)
+    const confirmed = window.confirm(
+        `CONFIRM COMMISSION CHANGE:\n\n` +
+        `Current Rate: ${currentCommissionRate.toFixed(2)}%\n` +
+        `New Rate: ${numVal.toFixed(2)}%\n\n` +
+        `Are you sure you want to update the CarePath platform commission percentage?\n` +
+        `This rate will apply to all subsequent eligible paid OPD bookings. Historical transactions remain protected.`
+    );
+
+    if (!confirmed) return;
+
+    btn.disabled = true;
+    btn.textContent = "Updating...";
+
+    try {
+        const response = await fetchWithRetry(`${API}/admin/commission`, {
+            method: "PUT",
+            headers: {
+                ...getAdminAuthHeaders(),
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                commission_percentage: numVal,
+                confirmed: true
+            })
+        });
+
+        const data = await readResponse(response);
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, "Failed to update commission rate."));
+        }
+
+        currentCommissionRate = parseFloat(data.commission_percentage || numVal);
+        showCommissionAlert(`✓ Commission percentage successfully updated to ${currentCommissionRate.toFixed(2)}%!`, "success");
+        await loadCommissionSettings();
+        await loadHospitalLedger();
+    } catch (err) {
+        console.error("Commission update error:", err);
+        showCommissionAlert(err.message || "Failed to update commission settings.", "error");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Save Commission %";
+    }
+}
+window.submitCommissionUpdate = submitCommissionUpdate;
+
+function showCommissionAlert(msg, type) {
+    const alertEl = document.getElementById("commissionAlert");
+    if (!alertEl) {
+        alert(msg);
+        return;
+    }
+    alertEl.style.display = "block";
+    if (type === "success") {
+        alertEl.style.background = "#dcfce7";
+        alertEl.style.color = "#166534";
+        alertEl.style.border = "1px solid #86efac";
+    } else {
+        alertEl.style.background = "#fee2e2";
+        alertEl.style.color = "#991b1b";
+        alertEl.style.border = "1px solid #fca5a5";
+    }
+    alertEl.textContent = msg;
+    setTimeout(() => {
+        if (alertEl) alertEl.style.display = "none";
+    }, 6000);
+}
+
 async function loadHospitalLedger() {
+    loadCommissionSettings();
     const tableBody = document.getElementById("ledgerTableBody");
     if (!tableBody) return;
 
