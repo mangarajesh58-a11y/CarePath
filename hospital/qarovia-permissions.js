@@ -295,7 +295,7 @@
   // ----------------------------------------------------
   // Q-Arovia Camera & Upload Engine
   // ----------------------------------------------------
-  const Q-AroviaCamera = {
+  const QAroviaCamera = {
     async requestCameraStream(facingMode = 'environment') {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Camera streaming is not supported in this browser.');
@@ -329,8 +329,8 @@
     initNotificationBanner: (cId) => QAroviaNotifications.initBanner(cId),
     dismissBanner: () => QAroviaNotifications.dismissBanner(),
     showBlockedModal: (type) => QAroviaNotifications.showBlockedModal(type),
-    requestCameraStream: (facing) => Q-AroviaCamera.requestCameraStream(facing),
-    triggerFileInput: (id) => Q-AroviaCamera.triggerFileInput(id),
+    requestCameraStream: (facing) => QAroviaCamera.requestCameraStream(facing),
+    triggerFileInput: (id) => QAroviaCamera.triggerFileInput(id),
     playChime: (type) => playAlertChime(type),
     getStatus: () => QAroviaNotifications.getStatus(),
   };

@@ -1596,7 +1596,7 @@
     }
 
     /* ============================================================
-   Q-AROVIA AI FLOATING BUTTON (PERFECT CIRCLE & CINEMATIC MOTION)
+   Q-AROVIA AI FLOATING BUTTON (CINEMATIC SCROLL & MORPHING EMBLEM)
 ============================================================ */
 .qarovia-ai-floating-btn,
 #qaroviaAIButton {
@@ -1612,7 +1612,7 @@
   padding: 6px 16px 6px 6px !important;
   display: inline-flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   gap: 0 !important;
   color: #ffffff !important;
   font-weight: 800 !important;
@@ -1620,18 +1620,28 @@
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   cursor: pointer !important;
   box-shadow: 0 6px 22px rgba(124, 58, 237, 0.55), 0 0 18px rgba(56, 189, 248, 0.4) !important;
-  transition: width 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-              padding 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-              border-radius 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.3s ease,
-              transform 0.25s ease !important;
   text-decoration: none !important;
   overflow: hidden !important;
-  width: auto !important;
-  min-width: auto !important;
-  max-width: none !important;
   height: 46px !important;
+  width: auto !important;
+  min-width: 46px !important;
+  max-width: 180px !important;
   box-sizing: border-box !important;
+  animation: qaroviaPulseGlow 3.5s ease-in-out infinite !important;
+  will-change: max-width, padding, transform, box-shadow !important;
+  transition: max-width 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+              padding 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.4s ease,
+              transform 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+@keyframes qaroviaPulseGlow {
+  0%, 100% {
+    box-shadow: 0 6px 22px rgba(124, 58, 237, 0.55), 0 0 18px rgba(56, 189, 248, 0.4);
+  }
+  50% {
+    box-shadow: 0 9px 30px rgba(124, 58, 237, 0.75), 0 0 24px rgba(56, 189, 248, 0.6);
+  }
 }
 
 .qarovia-ai-floating-btn:hover,
@@ -1663,7 +1673,9 @@
   flex-shrink: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transform: rotate(0deg) scale(1) !important;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.4s ease !important;
 }
 
 /* Typography with cinematic sliding/collapsing animation */
@@ -1676,30 +1688,35 @@
   letter-spacing: -0.2px !important;
   white-space: nowrap !important;
   line-height: 1 !important;
-  max-width: 140px !important;
+  max-width: 120px !important;
   opacity: 1 !important;
-  transform: translateX(0) !important;
+  transform: translateX(0) scale(1) !important;
   margin-left: 8px !important;
+  margin-right: 2px !important;
   padding: 0 !important;
   display: inline-block !important;
-  transition: max-width 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-              margin 0.55s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  filter: blur(0px) !important;
+  pointer-events: auto !important;
+  transition: max-width 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+              margin 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 0.55s ease,
+              letter-spacing 0.7s ease !important;
 }
 
 /* Collapsed Circular Emblem State (When scrolling down: slowly remove name, show only logo) */
 .qarovia-ai-floating-btn.ai-btn-collapsed,
 #qaroviaAIButton.ai-btn-collapsed {
+  max-width: 46px !important;
   padding: 6px !important;
-  width: 46px !important;
-  height: 46px !important;
-  border-radius: 50% !important;
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6), 0 0 16px rgba(56, 189, 248, 0.45) !important;
-  transition: width 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-              padding 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-              border-radius 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.3s ease !important;
+}
+
+.qarovia-ai-floating-btn.ai-btn-collapsed .ai-btn-img,
+#qaroviaAIButton.ai-btn-collapsed .ai-btn-img {
+  transform: rotate(-8deg) scale(1.02) !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
 }
 
 .qarovia-ai-floating-btn.ai-btn-collapsed .ai-btn-label,
@@ -1707,29 +1724,35 @@
 #qaroviaAIButton.ai-btn-collapsed span:not(.ai-badge) {
   max-width: 0 !important;
   opacity: 0 !important;
-  transform: translateX(12px) !important;
+  transform: translateX(10px) scale(0.92) !important;
   margin-left: 0 !important;
+  margin-right: 0 !important;
+  filter: blur(4px) !important;
+  letter-spacing: -0.5px !important;
   pointer-events: none !important;
-  transition: max-width 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.45s ease,
-              transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
-              margin 0.5s ease !important;
 }
 
-/* Hovering over collapsed button expands full name smoothly */
+/* Hovering over collapsed button expands full name smoothly with cinematic motion */
 .qarovia-ai-floating-btn.ai-btn-collapsed:hover,
 #qaroviaAIButton.ai-btn-collapsed:hover {
+  max-width: 180px !important;
   padding: 6px 16px 6px 6px !important;
-  width: auto !important;
-  border-radius: 999px !important;
+}
+.qarovia-ai-floating-btn.ai-btn-collapsed:hover .ai-btn-img,
+#qaroviaAIButton.ai-btn-collapsed:hover .ai-btn-img {
+  transform: rotate(0deg) scale(1) !important;
 }
 .qarovia-ai-floating-btn.ai-btn-collapsed:hover .ai-btn-label,
 #qaroviaAIButton.ai-btn-collapsed:hover .ai-btn-label,
 #qaroviaAIButton.ai-btn-collapsed:hover span:not(.ai-badge) {
-  max-width: 140px !important;
+  max-width: 120px !important;
   opacity: 1 !important;
-  transform: translateX(0) !important;
+  transform: translateX(0) scale(1) !important;
   margin-left: 8px !important;
+  margin-right: 2px !important;
+  filter: blur(0px) !important;
+  letter-spacing: -0.2px !important;
+  pointer-events: auto !important;
 }
 
 @media (min-width: 768px) {
@@ -1738,22 +1761,28 @@
     bottom: 24px !important;
     right: 28px !important;
     height: 48px !important;
+    max-width: 190px !important;
+    min-width: 48px !important;
     padding: 7px 18px 7px 7px !important;
     font-size: 13.5px !important;
   }
   .qarovia-ai-floating-btn .ai-btn-img,
   #qaroviaAIButton img,
   #qaroviaAIButton .ai-btn-img {
-    width: 32px !important;
-    height: 32px !important;
-    min-width: 32px !important;
-    min-height: 32px !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
   }
   .qarovia-ai-floating-btn.ai-btn-collapsed,
   #qaroviaAIButton.ai-btn-collapsed {
-    width: 48px !important;
-    height: 48px !important;
+    max-width: 48px !important;
     padding: 7px !important;
+  }
+  .qarovia-ai-floating-btn.ai-btn-collapsed:hover,
+  #qaroviaAIButton.ai-btn-collapsed:hover {
+    max-width: 190px !important;
+    padding: 7px 18px 7px 7px !important;
   }
 }
   </style>
@@ -1876,7 +1905,7 @@
           <span class="tile-arrow">›</span>
         </a>
 
-        <div class="action-tile tile-ai" onclick="toggleQ-AroviaAIChat(event)">
+        <div class="action-tile tile-ai" onclick="toggleQAroviaAIChat(event)">
           <div class="tile-icon-box ai-icon-box"><img src="qarovia-ai-small.png" alt="Q-Arovia AI"></div>
           <div class="tile-content">
             <h3>AI Assistant</h3>
@@ -2068,7 +2097,7 @@
   type="button"
   id="qaroviaAIButton"
   class="qarovia-ai-floating-btn"
-  onclick="toggleQ-AroviaAIChat(event)"
+  onclick="toggleQAroviaAIChat(event)"
   aria-label="Open Q-Arovia AI Assistant"
   title="Q-Arovia AI Assistant"
 >
@@ -2096,18 +2125,18 @@
 
     <!-- VOICE MULTILINGUAL LANGUAGE SELECTOR -->
     <div class="cp-voice-lang-bar" id="cpVoiceLangBar">
-      <button type="button" class="voice-lang-pill active" data-lang="auto" onclick="changeQ-AroviaLanguage('auto')">🌐 Auto</button>
-      <button type="button" class="voice-lang-pill" data-lang="te-IN" onclick="changeQ-AroviaLanguage('te-IN')">తెలుగు</button>
-      <button type="button" class="voice-lang-pill" data-lang="hi-IN" onclick="changeQ-AroviaLanguage('hi-IN')">हिंदी</button>
-      <button type="button" class="voice-lang-pill" data-lang="en-IN" onclick="changeQ-AroviaLanguage('en-IN')">English</button>
-      <button type="button" class="voice-lang-pill" data-lang="ta-IN" onclick="changeQ-AroviaLanguage('ta-IN')">தமிழ்</button>
-      <button type="button" class="voice-lang-pill" data-lang="kn-IN" onclick="changeQ-AroviaLanguage('kn-IN')">ಕನ್ನಡ</button>
-      <button type="button" class="voice-lang-pill" data-lang="ml-IN" onclick="changeQ-AroviaLanguage('ml-IN')">മലയാളം</button>
-      <button type="button" class="voice-lang-pill" data-lang="mr-IN" onclick="changeQ-AroviaLanguage('mr-IN')">मराठी</button>
-      <button type="button" class="voice-lang-pill" data-lang="bn-IN" onclick="changeQ-AroviaLanguage('bn-IN')">বাংলা</button>
-      <button type="button" class="voice-lang-pill" data-lang="gu-IN" onclick="changeQ-AroviaLanguage('gu-IN')">ગુજરાતી</button>
-      <button type="button" class="voice-lang-pill" data-lang="pa-IN" onclick="changeQ-AroviaLanguage('pa-IN')">ਪੰਜਾਬੀ</button>
-      <button type="button" class="voice-lang-pill" data-lang="or-IN" onclick="changeQ-AroviaLanguage('or-IN')">ଓଡ଼ିଆ</button>
+      <button type="button" class="voice-lang-pill active" data-lang="auto" onclick="changeQAroviaLanguage('auto')">🌐 Auto</button>
+      <button type="button" class="voice-lang-pill" data-lang="te-IN" onclick="changeQAroviaLanguage('te-IN')">తెలుగు</button>
+      <button type="button" class="voice-lang-pill" data-lang="hi-IN" onclick="changeQAroviaLanguage('hi-IN')">हिंदी</button>
+      <button type="button" class="voice-lang-pill" data-lang="en-IN" onclick="changeQAroviaLanguage('en-IN')">English</button>
+      <button type="button" class="voice-lang-pill" data-lang="ta-IN" onclick="changeQAroviaLanguage('ta-IN')">தமிழ்</button>
+      <button type="button" class="voice-lang-pill" data-lang="kn-IN" onclick="changeQAroviaLanguage('kn-IN')">ಕನ್ನಡ</button>
+      <button type="button" class="voice-lang-pill" data-lang="ml-IN" onclick="changeQAroviaLanguage('ml-IN')">മലയാളം</button>
+      <button type="button" class="voice-lang-pill" data-lang="mr-IN" onclick="changeQAroviaLanguage('mr-IN')">मराठी</button>
+      <button type="button" class="voice-lang-pill" data-lang="bn-IN" onclick="changeQAroviaLanguage('bn-IN')">বাংলা</button>
+      <button type="button" class="voice-lang-pill" data-lang="gu-IN" onclick="changeQAroviaLanguage('gu-IN')">ગુજરાતી</button>
+      <button type="button" class="voice-lang-pill" data-lang="pa-IN" onclick="changeQAroviaLanguage('pa-IN')">ਪੰਜਾਬੀ</button>
+      <button type="button" class="voice-lang-pill" data-lang="or-IN" onclick="changeQAroviaLanguage('or-IN')">ଓଡ଼ିଆ</button>
     </div>
 
     <!-- Center Orb & Live Status -->
@@ -2172,7 +2201,7 @@
       <button
         type="button"
         id="qaroviaAIVoiceToggle"
-        onclick="toggleQ-AroviaVoiceOutput()"
+        onclick="toggleQAroviaVoiceOutput()"
         title="Toggle AI Spoken Voice"
         style="background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.4); color: white; border-radius: 16px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; backdrop-filter: blur(4px); transition: all 0.2s;"
       >
@@ -2180,7 +2209,7 @@
       </button>
       <button
         type="button"
-        id="qaroviaAIClose" onclick="closeQ-AroviaAIChat()"
+        id="qaroviaAIClose" onclick="closeQAroviaAIChat()"
         aria-label="Close Q-Arovia AI"
       >
         ×
@@ -2190,18 +2219,18 @@
 
   <!-- DYNAMIC MULTILINGUAL INDIAN LANGUAGE SELECTOR -->
   <div class="qarovia-ai-lang-bar" id="qaroviaAiLangBar">
-    <button type="button" class="lang-pill active" data-lang="auto" onclick="changeQ-AroviaLanguage('auto')">🌐 Auto Detect</button>
-    <button type="button" class="lang-pill" data-lang="te-IN" onclick="changeQ-AroviaLanguage('te-IN')">తెలుగు</button>
-    <button type="button" class="lang-pill" data-lang="hi-IN" onclick="changeQ-AroviaLanguage('hi-IN')">हिंदी</button>
-    <button type="button" class="lang-pill" data-lang="en-IN" onclick="changeQ-AroviaLanguage('en-IN')">English</button>
-    <button type="button" class="lang-pill" data-lang="ta-IN" onclick="changeQ-AroviaLanguage('ta-IN')">தமிழ்</button>
-    <button type="button" class="lang-pill" data-lang="kn-IN" onclick="changeQ-AroviaLanguage('kn-IN')">ಕನ್ನಡ</button>
-    <button type="button" class="lang-pill" data-lang="ml-IN" onclick="changeQ-AroviaLanguage('ml-IN')">മലയാളം</button>
-    <button type="button" class="lang-pill" data-lang="mr-IN" onclick="changeQ-AroviaLanguage('mr-IN')">मराठी</button>
-    <button type="button" class="lang-pill" data-lang="bn-IN" onclick="changeQ-AroviaLanguage('bn-IN')">বাংলা</button>
-    <button type="button" class="lang-pill" data-lang="gu-IN" onclick="changeQ-AroviaLanguage('gu-IN')">ગુજરાતી</button>
-    <button type="button" class="lang-pill" data-lang="pa-IN" onclick="changeQ-AroviaLanguage('pa-IN')">ਪੰਜਾਬੀ</button>
-    <button type="button" class="lang-pill" data-lang="or-IN" onclick="changeQ-AroviaLanguage('or-IN')">ଓଡ଼ିଆ</button>
+    <button type="button" class="lang-pill active" data-lang="auto" onclick="changeQAroviaLanguage('auto')">🌐 Auto Detect</button>
+    <button type="button" class="lang-pill" data-lang="te-IN" onclick="changeQAroviaLanguage('te-IN')">తెలుగు</button>
+    <button type="button" class="lang-pill" data-lang="hi-IN" onclick="changeQAroviaLanguage('hi-IN')">हिंदी</button>
+    <button type="button" class="lang-pill" data-lang="en-IN" onclick="changeQAroviaLanguage('en-IN')">English</button>
+    <button type="button" class="lang-pill" data-lang="ta-IN" onclick="changeQAroviaLanguage('ta-IN')">தமிழ்</button>
+    <button type="button" class="lang-pill" data-lang="kn-IN" onclick="changeQAroviaLanguage('kn-IN')">ಕನ್ನಡ</button>
+    <button type="button" class="lang-pill" data-lang="ml-IN" onclick="changeQAroviaLanguage('ml-IN')">മലയാളം</button>
+    <button type="button" class="lang-pill" data-lang="mr-IN" onclick="changeQAroviaLanguage('mr-IN')">मराठी</button>
+    <button type="button" class="lang-pill" data-lang="bn-IN" onclick="changeQAroviaLanguage('bn-IN')">বাংলা</button>
+    <button type="button" class="lang-pill" data-lang="gu-IN" onclick="changeQAroviaLanguage('gu-IN')">ગુજરાતી</button>
+    <button type="button" class="lang-pill" data-lang="pa-IN" onclick="changeQAroviaLanguage('pa-IN')">ਪੰਜਾਬੀ</button>
+    <button type="button" class="lang-pill" data-lang="or-IN" onclick="changeQAroviaLanguage('or-IN')">ଓଡ଼ିଆ</button>
   </div>
 
   <div id="qaroviaAIMessages" class="qarovia-ai-messages">
@@ -2227,7 +2256,7 @@
       <span style="display: inline-block; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; animation: cpMicPulse 1s infinite;"></span>
       <span id="qaroviaAIListeningText">Listening... Speak your health question now</span>
     </div>
-    <button type="button" onclick="stopQ-AroviaVoiceRecognition()" style="background: none; border: none; color: #b91c1c; font-size: 12px; font-weight: 800; cursor: pointer; text-decoration: underline;">Stop</button>
+    <button type="button" onclick="stopQAroviaVoiceRecognition()" style="background: none; border: none; color: #b91c1c; font-size: 12px; font-weight: 800; cursor: pointer; text-decoration: underline;">Stop</button>
   </div>
 
   
@@ -2251,7 +2280,7 @@
       id="qaroviaAIMicBtn"
       title="Speak to Q-Arovia AI with voice"
       aria-label="Voice question to AI"
-      onclick="toggleQ-AroviaVoiceRecognition()"
+      onclick="toggleQAroviaVoiceRecognition()"
       class="qarovia-ai-icon-btn mic-btn"
     >
       🎙️
@@ -2289,15 +2318,15 @@
     </p>
 
     <div style="display: flex; flex-direction: column; gap: 8px;">
-      <button type="button" onclick="handleQ-AroviaPermChoice('always')" style="background: #383b40; color: #8ab4f8; border: none; border-radius: 22px; padding: 14px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; box-sizing: border-box;">
+      <button type="button" onclick="handleQAroviaPermChoice('always')" style="background: #383b40; color: #8ab4f8; border: none; border-radius: 22px; padding: 14px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; box-sizing: border-box;">
         While using the app
       </button>
 
-      <button type="button" onclick="handleQ-AroviaPermChoice('once')" style="background: #383b40; color: #8ab4f8; border: none; border-radius: 22px; padding: 14px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; box-sizing: border-box;">
+      <button type="button" onclick="handleQAroviaPermChoice('once')" style="background: #383b40; color: #8ab4f8; border: none; border-radius: 22px; padding: 14px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; box-sizing: border-box;">
         Only this time
       </button>
 
-      <button type="button" onclick="handleQ-AroviaPermChoice('deny')" style="background: transparent; color: #8ab4f8; border: none; border-radius: 22px; padding: 13px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; box-sizing: border-box;">
+      <button type="button" onclick="handleQAroviaPermChoice('deny')" style="background: transparent; color: #8ab4f8; border: none; border-radius: 22px; padding: 13px 20px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; box-sizing: border-box;">
         Don't allow
       </button>
     </div>
@@ -2346,7 +2375,7 @@
         <span style="font-size: 20px;">📸</span>
         <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: #f8fafc;">Prescription Camera Scanner</h4>
       </div>
-      <button type="button" onclick="closeQ-AroviaCameraModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+      <button type="button" onclick="closeQAroviaCameraModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
     </div>
 
     <!-- VIDEO VIEWFINDER AREA -->
@@ -2366,16 +2395,16 @@
         <p style="margin: 8px 0; color: #cbd5e1; font-size: 12px; line-height: 1.45;">Please tap <strong>Allow</strong> when your browser asks for camera access, or enable camera in browser settings.</p>
         <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; justify-content: center;">
           <button type="button" onclick="triggerNativeCameraFallback()" style="padding: 8px 14px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">📸 Open Camera App</button>
-          <button type="button" onclick="triggerPrescriptionGallery(); closeQ-AroviaCameraModal();" style="padding: 8px 14px; background: #16a34a; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">🖼️ Choose from Gallery</button>
+          <button type="button" onclick="triggerPrescriptionGallery(); closeQAroviaCameraModal();" style="padding: 8px 14px; background: #16a34a; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">🖼️ Choose from Gallery</button>
         </div>
       </div>
     </div>
 
     <!-- CONTROLS ROW -->
     <div style="padding: 14px 18px; background: #0f172a; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #334155;">
-      <button type="button" onclick="switchQ-AroviaCameraFacing()" id="btnSwitchCam" style="padding: 8px 12px; background: #334155; color: #cbd5e1; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">🔄 Flip</button>
-      <button type="button" onclick="captureQ-AroviaPrescriptionSnapshot()" style="width: 58px; height: 58px; border-radius: 50%; background: #ffffff; border: 4px solid #0284c7; box-shadow: 0 0 0 3px rgba(255,255,255,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: transform 0.1s;" onmousedown="this.style.transform='scale(0.92)'" onmouseup="this.style.transform='scale(1)'">📸</button>
-      <button type="button" onclick="closeQ-AroviaCameraModal()" style="padding: 8px 14px; background: #334155; color: #cbd5e1; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+      <button type="button" onclick="switchQAroviaCameraFacing()" id="btnSwitchCam" style="padding: 8px 12px; background: #334155; color: #cbd5e1; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">🔄 Flip</button>
+      <button type="button" onclick="captureQAroviaPrescriptionSnapshot()" style="width: 58px; height: 58px; border-radius: 50%; background: #ffffff; border: 4px solid #0284c7; box-shadow: 0 0 0 3px rgba(255,255,255,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: transform 0.1s;" onmousedown="this.style.transform='scale(0.92)'" onmouseup="this.style.transform='scale(1)'">📸</button>
+      <button type="button" onclick="closeQAroviaCameraModal()" style="padding: 8px 14px; background: #334155; color: #cbd5e1; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
     </div>
   </div>
 </div>
@@ -2944,7 +2973,7 @@
   }
 
   // Switch Active Language (Supports 'auto' or specific Indian language code)
-  function changeQ-AroviaLanguage(newLang) {
+  function changeQAroviaLanguage(newLang) {
     primeSpeechSynthesis();
     if (!newLang || (!CP_LANG_CONFIG[newLang] && newLang !== "auto")) {
       newLang = "auto";
@@ -2997,7 +3026,7 @@
       } catch(e) {}
     }
 
-    stopQ-AroviaSpeech();
+    stopQAroviaSpeech();
   }
 
   function handleDosageChipClick() {
@@ -3010,7 +3039,7 @@
   // Plays via backend /ai/tts stream for 100% guarantee on all phones,
   // with instant fallback to browser SpeechSynthesis!
   // =====================================================
-  function stopQ-AroviaSpeech() {
+  function stopQAroviaSpeech() {
     speechQueueActive = false;
     if (activeAudioVoice) {
       try {
@@ -3038,7 +3067,7 @@
   }
 
   function playAudioVoice(text, langCode, msgId) {
-    stopQ-AroviaSpeech();
+    stopQAroviaSpeech();
 
     let raw = String(text || "");
     try {
@@ -3224,7 +3253,7 @@
   function togglePlayMessageSpeech(msgId, btn) {
     primeSpeechSynthesis();
     if (currentlyPlayingMsgId === msgId) {
-      stopQ-AroviaSpeech();
+      stopQAroviaSpeech();
       return;
     }
     const fullText = (window.cpMessageTextMap && window.cpMessageTextMap[msgId]) || "";
@@ -3234,7 +3263,7 @@
   }
 
   // Alias for backward compatibility
-  function speakQ-AroviaText(text, msgId) {
+  function speakQAroviaText(text, msgId) {
     playAudioVoice(text, currentAiLang, msgId);
   }
 
@@ -3267,7 +3296,7 @@
   function closeVoiceAssistantOverlay() {
     const overlay = document.getElementById("qaroviaVoiceOverlay");
     if (overlay) overlay.style.display = "none";
-    stopQ-AroviaVoiceRecognition();
+    stopQAroviaVoiceRecognition();
   }
 
   function updateVoiceAssistantTranscript(transcript) {
@@ -3291,7 +3320,7 @@
     const val = input ? input.value.trim() : "";
     closeVoiceAssistantOverlay();
     if (val.length > 0) {
-      sendQ-AroviaMessage();
+      sendQAroviaMessage();
     } else {
       const conf = CP_LANG_CONFIG[currentAiLang] || CP_LANG_CONFIG["en-IN"];
       quickAskAI(conf.dosageQuery);
@@ -3323,18 +3352,18 @@
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(t => t.stop());
-        toggleQ-AroviaVoiceRecognition();
+        toggleQAroviaVoiceRecognition();
         return;
       } catch(err) {
         console.warn("Microphone test error:", err);
       }
     }
-    toggleQ-AroviaVoiceRecognition();
+    toggleQAroviaVoiceRecognition();
   }
 
-  async function toggleQ-AroviaVoiceRecognition() {
+  async function toggleQAroviaVoiceRecognition() {
     if (isCpListening) {
-      stopQ-AroviaVoiceRecognition();
+      stopQAroviaVoiceRecognition();
       closeVoiceAssistantOverlay();
       return;
     }
@@ -3413,7 +3442,7 @@
               setVoiceAssistantStatus("Thinking & sending to Q-Arovia AI... 💙");
               setTimeout(() => {
                 closeVoiceAssistantOverlay();
-                sendQ-AroviaMessage();
+                sendQAroviaMessage();
               }, 250);
             }
           }, 1800);
@@ -3426,7 +3455,7 @@
         if (err === "no-speech") {
           setVoiceAssistantStatus("Listening... speak in your language or tap a topic below.");
         } else if (err === "not-allowed" || err === "service-not-allowed") {
-          stopQ-AroviaVoiceRecognition();
+          stopQAroviaVoiceRecognition();
           closeVoiceAssistantOverlay();
           showMicBlockedModal();
         } else {
@@ -3438,33 +3467,33 @@
         const input = document.getElementById("qaroviaAIInput");
         const val = input ? input.value.trim() : "";
         if (val.length > 1) {
-          stopQ-AroviaVoiceRecognition();
+          stopQAroviaVoiceRecognition();
           setVoiceAssistantStatus("Thinking & sending to Q-Arovia AI... 💙");
           setTimeout(() => {
             closeVoiceAssistantOverlay();
-            sendQ-AroviaMessage();
+            sendQAroviaMessage();
           }, 300);
         } else if (isCpListening) {
           try {
             cpSpeechRecognition.start();
           } catch(e) {
-            stopQ-AroviaVoiceRecognition();
+            stopQAroviaVoiceRecognition();
           }
         } else {
-          stopQ-AroviaVoiceRecognition();
+          stopQAroviaVoiceRecognition();
         }
       };
 
       cpSpeechRecognition.start();
     } catch(e) {
       console.warn("Speech recognition initialization failed:", e);
-      stopQ-AroviaVoiceRecognition();
+      stopQAroviaVoiceRecognition();
       closeVoiceAssistantOverlay();
       showMicBlockedModal();
     }
   }
 
-  function stopQ-AroviaVoiceRecognition() {
+  function stopQAroviaVoiceRecognition() {
     isCpListening = false;
     const micBtn = document.getElementById("qaroviaAIMicBtn");
     if (micBtn) micBtn.classList.remove("cp-mic-active");
@@ -3476,7 +3505,7 @@
   }
 
   // 1. OPEN / CLOSE Q-AROVIA AI
-  function toggleQ-AroviaAIChat(e) {
+  function toggleQAroviaAIChat(e) {
     if (e && e.stopPropagation) e.stopPropagation();
     const now = Date.now();
     if (now - lastAiToggleTimestamp < 250) return;
@@ -3491,7 +3520,7 @@
     if (isCurrentlyHidden) {
       // Auto-detect Indian language on opening Q-Arovia AI
       const savedLang = localStorage.getItem("qarovia_lang") || "auto";
-      changeQ-AroviaLanguage(savedLang);
+      changeQAroviaLanguage(savedLang);
       chat.style.display = "flex";
       chat.hidden = false;
       const input = document.getElementById("qaroviaAIInput");
@@ -3499,23 +3528,23 @@
     } else {
       chat.style.display = "none";
       chat.hidden = true;
-      stopQ-AroviaVoiceRecognition();
-      stopQ-AroviaSpeech();
+      stopQAroviaVoiceRecognition();
+      stopQAroviaSpeech();
     }
   }
 
-  function closeQ-AroviaAIChat(e) {
+  function closeQAroviaAIChat(e) {
     if (e && e.stopPropagation) e.stopPropagation();
     const chat = document.getElementById("qaroviaAIChat");
     if (chat) {
       chat.style.display = "none";
       chat.hidden = true;
-      stopQ-AroviaVoiceRecognition();
-      stopQ-AroviaSpeech();
+      stopQAroviaVoiceRecognition();
+      stopQAroviaSpeech();
     }
   }
 
-  function toggleQ-AroviaVoiceOutput() {
+  function toggleQAroviaVoiceOutput() {
     primeSpeechSynthesis();
     autoVoiceOutput = !autoVoiceOutput;
     const label = document.getElementById("qaroviaVoiceLabel");
@@ -3528,7 +3557,7 @@
       btn.style.borderColor = autoVoiceOutput ? "#86efac" : "rgba(255, 255, 255, 0.4)";
     }
     if (!autoVoiceOutput) {
-      stopQ-AroviaSpeech();
+      stopQAroviaSpeech();
     }
   }
 
@@ -3546,7 +3575,7 @@
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && cameraModal && video) {
       try {
-        await startQ-AroviaCameraInternal();
+        await startQAroviaCameraInternal();
       } catch (e) {
         console.warn("Live camera init error, falling back to device camera:", e);
         triggerNativeCameraFallback();
@@ -3557,7 +3586,7 @@
   }
 
   function triggerNativeCameraFallback() {
-    closeQ-AroviaCameraModal();
+    closeQAroviaCameraModal();
     const cameraInput = document.getElementById("qaroviaAICameraInput");
     if (cameraInput) {
       cameraInput.click();
@@ -3566,7 +3595,7 @@
     }
   }
 
-  async function startQ-AroviaCameraInternal() {
+  async function startQAroviaCameraInternal() {
     const cameraModal = document.getElementById("qaroviaAICameraModal");
     const video = document.getElementById("qaroviaAIVideo");
     const statusBox = document.getElementById("qaroviaAICamStatus");
@@ -3611,12 +3640,12 @@
     }
   }
 
-  function switchQ-AroviaCameraFacing() {
+  function switchQAroviaCameraFacing() {
     cpCameraFacing = (cpCameraFacing === "environment") ? "user" : "environment";
-    startQ-AroviaCameraInternal();
+    startQAroviaCameraInternal();
   }
 
-  function captureQ-AroviaPrescriptionSnapshot() {
+  function captureQAroviaPrescriptionSnapshot() {
     const video = document.getElementById("qaroviaAIVideo");
     const canvas = document.getElementById("qaroviaAICanvas");
     if (!video || !canvas) {
@@ -3640,12 +3669,12 @@
         return;
       }
       const file = new File([blob], "prescription_camera_scan.jpg", { type: "image/jpeg" });
-      closeQ-AroviaCameraModal();
+      closeQAroviaCameraModal();
       handlePrescriptionFileSelected(file);
     }, "image/jpeg", 0.92);
   }
 
-  function closeQ-AroviaCameraModal() {
+  function closeQAroviaCameraModal() {
     const cameraModal = document.getElementById("qaroviaAICameraModal");
     if (cameraModal) cameraModal.style.display = "none";
     if (cpCameraStream) {
@@ -3706,7 +3735,7 @@
   }
 
   // 5. SMART MULTILINGUAL CLIENT-SIDE MEDICAL TRIAGE (< 1s LATENCY)
-  function getInstantClientQ-AroviaReply(userText, langCode) {
+  function getInstantClientQAroviaReply(userText, langCode) {
     const q = (userText || "").toLowerCase().trim();
     const lang = langCode || detectTextLanguage(userText);
 
@@ -3892,7 +3921,7 @@
   // 6. CHAT MESSAGE RENDERING WITH AUDIO BUTTON
   const qaroviaAIMessages = document.getElementById("qaroviaAIMessages");
 
-  function addQ-AroviaMessage(text, type) {
+  function addQAroviaMessage(text, type) {
     if (!qaroviaAIMessages) return;
     const message = document.createElement("div");
     message.className = (type === "user") ? "qarovia-ai-message user" : "qarovia-ai-message";
@@ -3922,7 +3951,7 @@
   }
 
   // 7. SEND Q-AROVIA MESSAGE WITH FAST 4.2s TIMEOUT GUARANTEE & LANGUAGE SUPPORT
-  async function sendQ-AroviaMessage() {
+  async function sendQAroviaMessage() {
     primeSpeechSynthesis();
 
     const input = document.getElementById("qaroviaAIInput");
@@ -3931,11 +3960,11 @@
     const text = input.value.trim();
     if (!text) return;
 
-    addQ-AroviaMessage(text, "user");
+    addQAroviaMessage(text, "user");
     input.value = "";
 
     // Show temporary thinking indicator
-    addQ-AroviaMessage("Thinking... 💙", "ai");
+    addQAroviaMessage("Thinking... 💙", "ai");
 
     const token = localStorage.getItem("patientToken") || localStorage.getItem("token") || "";
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
@@ -3969,7 +3998,7 @@
 
       if (response.ok) {
         const data = await response.json();
-        replyText = data.reply || getInstantClientQ-AroviaReply(text, detectedLang);
+        replyText = data.reply || getInstantClientQAroviaReply(text, detectedLang);
         if (data.detected_language) {
           detectedLang = data.detected_language;
           currentDetectedLang = data.detected_language;
@@ -3983,13 +4012,13 @@
           }
         }
       } else {
-        replyText = getInstantClientQ-AroviaReply(text, detectedLang);
+        replyText = getInstantClientQAroviaReply(text, detectedLang);
       }
     } catch (err) {
       clearTimeout(timeoutId);
       console.warn("Q-Arovia AI network fetch note (using instant clinical triage):", err.message);
       removeThinkingMessage();
-      replyText = getInstantClientQ-AroviaReply(text, detectedLang);
+      replyText = getInstantClientQAroviaReply(text, detectedLang);
     }
 
     // Save turn into conversation history
@@ -3999,7 +4028,7 @@
       qaroviaConversationHistory = qaroviaConversationHistory.slice(-12);
     }
 
-    addQ-AroviaMessage(replyText, "ai");
+    addQAroviaMessage(replyText, "ai");
 
     // Speak aloud in the automatically detected language
     if (autoVoiceOutput) {
@@ -4227,7 +4256,7 @@
     const input = document.getElementById("qaroviaAIInput");
     if (input) {
       input.value = text;
-      sendQ-AroviaMessage();
+      sendQAroviaMessage();
     }
   }
 
@@ -4252,14 +4281,14 @@
   }
 
   if (qaroviaAISend) {
-    qaroviaAISend.addEventListener("click", sendQ-AroviaMessage);
+    qaroviaAISend.addEventListener("click", sendQAroviaMessage);
   }
 
   if (qaroviaAIInput) {
     qaroviaAIInput.addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
         event.preventDefault();
-        sendQ-AroviaMessage();
+        sendQAroviaMessage();
       }
     });
   }
@@ -4267,7 +4296,7 @@
   // Set initial language from saved preference (default: Auto Detect Indian Language)
   setTimeout(() => {
     const initLang = localStorage.getItem("qarovia_lang") || "auto";
-    changeQ-AroviaLanguage(initLang);
+    changeQAroviaLanguage(initLang);
   }, 100);
 
   // Footer year
@@ -4654,8 +4683,8 @@ function escapeHtml(str) {
   try {
     if (window.location.search.includes("ai=open") || window.location.hash.includes("ai")) {
       setTimeout(function() {
-        if (typeof toggleQ-AroviaAIChat === "function") {
-          toggleQ-AroviaAIChat();
+        if (typeof toggleQAroviaAIChat === "function") {
+          toggleQAroviaAIChat();
         }
       }, 350);
     }
@@ -4664,37 +4693,49 @@ function escapeHtml(str) {
 <script>
   // =====================================================
   // Q-AROVIA AI CINEMATIC SCROLL MOTION
-  // Scroll Down: slowly remove name, showing only circle logo
-  // Scroll Up: slowly slowly expand full name with cinematic motion
+  // Scroll Down: slowly remove name, showing only circular logo
+  // Scroll Up: slowly expand full name with cinematic motion
   // =====================================================
-  (function initQ-AroviaAIScrollMotion() {
-    let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-    let scrollTimer = null;
+  (function initQAroviaAIScrollMotion() {
+    let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    let ticking = false;
     const btn = document.getElementById("qaroviaAIButton");
     if (!btn) return;
 
-    window.addEventListener("scroll", function() {
-      const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-      const diff = currentScrollY - lastScrollY;
+    function updateScrollMotion() {
+      const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      const delta = currentScrollY - lastScrollY;
 
-      // Scroll DOWN: slowly remove name, show only circular logo
-      if (diff > 5 && currentScrollY > 50) {
+      // When near the top of the dashboard: always expand to show full name
+      if (currentScrollY <= 25) {
+        btn.classList.remove("ai-btn-collapsed");
+      }
+      // Scrolling DOWN: slowly remove name and morph into circular logo
+      else if (delta > 3 && currentScrollY > 30) {
         btn.classList.add("ai-btn-collapsed");
       }
-      // Scroll UP or near top: slowly slowly full name with cinematic motion
-      else if (diff < -5 || currentScrollY <= 30) {
+      // Scrolling UP: slowly expand to show full name with cinematic motion
+      else if (delta < -3) {
         btn.classList.remove("ai-btn-collapsed");
       }
 
-      lastScrollY = currentScrollY;
+      lastScrollY = currentScrollY <= 0 ? 0 : currentScrollY;
+      ticking = false;
+    }
 
-      clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(function() {
-        if ((window.pageYOffset || document.documentElement.scrollTop || 0) <= 30) {
-          btn.classList.remove("ai-btn-collapsed");
-        }
-      }, 1200);
-    }, { passive: true });
+    function onScroll() {
+      if (!ticking) {
+        window.requestAnimationFrame(updateScrollMotion);
+        ticking = true;
+      }
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("touchmove", onScroll, { passive: true });
+
+    // Initial check on load
+    updateScrollMotion();
   })();
 
   // =====================================================
@@ -4729,8 +4770,8 @@ function escapeHtml(str) {
               badge.textContent = "1";
               badge.style.display = "flex";
             }
-            if (typeof showQ-AroviaToast === "function") {
-              showQ-AroviaToast(`💬 Reply from ${rep.hospital_name || 'Hospital'}: ${(rep.message || '').substring(0, 45)}...`, "info");
+            if (typeof showQAroviaToast === "function") {
+              showQAroviaToast(`💬 Reply from ${rep.hospital_name || 'Hospital'}: ${(rep.message || '').substring(0, 45)}...`, "info");
             }
           }
         }
@@ -4774,7 +4815,7 @@ window.handlePatientLogout = handlePatientLogout;
 
 let pendingPermissionResolver = null;
 
-function showQ-AroviaPermissionDialog(type = 'camera') {
+function showQAroviaPermissionDialog(type = 'camera') {
     const dialog = document.getElementById("qaroviaPermissionDialog");
     const icon = document.getElementById("cpPermIcon");
     const title = document.getElementById("cpPermTitle");
@@ -4795,9 +4836,9 @@ function showQ-AroviaPermissionDialog(type = 'camera') {
         pendingPermissionResolver = resolve;
     });
 }
-window.showQ-AroviaPermissionDialog = showQ-AroviaPermissionDialog;
+window.showQAroviaPermissionDialog = showQAroviaPermissionDialog;
 
-function handleQ-AroviaPermChoice(choice) {
+function handleQAroviaPermChoice(choice) {
     const dialog = document.getElementById("qaroviaPermissionDialog");
     if (dialog) dialog.style.display = "none";
     if (choice === 'always' || choice === 'once') {
@@ -4809,7 +4850,7 @@ function handleQ-AroviaPermChoice(choice) {
     }
     pendingPermissionResolver = null;
 }
-window.handleQ-AroviaPermChoice = handleQ-AroviaPermChoice;
+window.handleQAroviaPermChoice = handleQAroviaPermChoice;
 
 </script>
 </body>
