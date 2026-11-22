@@ -384,7 +384,7 @@
                         localStorage.setItem("hospital_id", String(urlHospitalId));
                         localStorage.setItem("hospitalId", String(urlHospitalId));
                         localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
-                        localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
+                        localStorage.setItem("selectedHospitalTokenFee", "0");
                         renderHospitalContent(hospitalData);
                         return;
                     }
@@ -521,12 +521,6 @@
                     );
                 }
 
-                addDetail(
-                    hospitalContainer,
-                    "Token Fee",
-                    "₹" + Number(hospitalData.token_fee ?? hospitalData.tokenFee ?? 0)
-                );
-
                 if (hospitalData.operating_hours_12h || (hospitalData.opening_time && hospitalData.closing_time)) {
                     addDetail(
                         hospitalContainer,
@@ -615,7 +609,7 @@
                     localStorage.setItem("hospitalId", hId);
                     localStorage.setItem("selectedHospitalId", hId);
                     localStorage.setItem("selectedHospital", JSON.stringify(hospitalData));
-                    localStorage.setItem("selectedHospitalTokenFee", String(hospitalData.token_fee || hospitalData.tokenFee || 0));
+                    localStorage.setItem("selectedHospitalTokenFee", "0");
 
                     window.location.href = "./doctor.html?id=" + encodeURIComponent(hId);
                 };
