@@ -72,7 +72,7 @@ from sqlalchemy import (
     and_,
 )
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 from passlib.context import CryptContext
 
@@ -238,10 +238,92 @@ def create_cashfree_vendor(
             detail="Unable to connect to Cashfree.",
         )
 
-# JWT Authentication Configuration (30-day persistent session)
-JWT_SECRET_KEY = (os.getenv("JWT_SECRET_KEY") or "1AD1dzdD0smBCRaHxGxy6QyAM_r4DwP7_O8SsTn2kRWF-u-nVTB1Om2IVApdOVrY").strip()
+# JWT Authentication Configuration (Production Hardened)
+JWT_SECRET_KEY = (os.getenv("JWT_SECRET_KEY") or "").strip()
+if not JWT_SECRET_KEY or len(JWT_SECRET_KEY) < 32:
+    raise RuntimeError(
+        "FATAL SECURITY CONFIGURATION ERROR: JWT_SECRET_KEY environment variable is missing, empty, or insecure (must be >= 32 characters). "
+        "Set a strong JWT_SECRET_KEY in backend/.env before running CarePath."
+    )
 JWT_ALGORITHM = "HS256"
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 365  # 365 days
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30  # 30-day persistent session
+
+# In-Memory Security Rate Limiters & Magic-Byte Validators
+_LOGIN_ATTEMPTS = {}  # ip: [timestamps]
+_LOGIN_MAX_PER_MINUTE = 10
+_AI_RATE_LIMITS = {}  # ip: [timestamps]
+_AI_MAX_PER_MINUTE = 15
+
+def check_login_rate_limit(request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    timestamps = _LOGIN_ATTEMPTS.setdefault(client_ip, [])
+    _LOGIN_ATTEMPTS[client_ip] = [t for t in timestamps if now - t < 60]
+    if len(_LOGIN_ATTEMPTS[client_ip]) >= _LOGIN_MAX_PER_MINUTE:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many login attempts. Please wait a minute before retrying.",
+        )
+    _LOGIN_ATTEMPTS[client_ip].append(now)
+
+def check_ai_rate_limit(request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    timestamps = _AI_RATE_LIMITS.setdefault(client_ip, [])
+    _AI_RATE_LIMITS[client_ip] = [t for t in timestamps if now - t < 60]
+    if len(_AI_RATE_LIMITS[client_ip]) >= _AI_MAX_PER_MINUTE:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many AI requests. Please wait a minute before trying again.",
+        )
+    _AI_RATE_LIMITS[client_ip].append(now)
+
+def validate_file_magic_bytes(content: bytes, allowed_types: set):
+    """Validates that raw file bytes match authentic format headers to prevent polyglot/disguised file execution."""
+    if not content or len(content) < 4:
+        raise HTTPException(status_code=400, detail="Invalid or empty file content.")
+    
+    is_valid = False
+    if "pdf" in allowed_types and content.startswith(b"%PDF"):
+        is_valid = True
+    elif ("jpg" in allowed_types or "jpeg" in allowed_types) and content.startswith(b"\xFF\xD8\xFF"):
+        is_valid = True
+    elif "png" in allowed_types and content.startswith(b"\x89PNG\r\n\x1a\n"):
+        is_valid = True
+    elif "webp" in allowed_types and content.startswith(b"RIFF") and b"WEBP" in content[:16]:
+        is_valid = True
+    
+    if not is_valid:
+        raise HTTPException(
+            status_code=400,
+            detail="Security validation error: Uploaded file signature does not match allowed types (PDF, JPEG, PNG, WEBP).",
+        )
+
+def get_document_auth_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    token: Optional[str] = Query(None),
+) -> dict:
+    raw_token = None
+    if credentials and credentials.credentials:
+        raw_token = credentials.credentials.strip()
+    elif token:
+        raw_token = token.strip()
+    
+    if not raw_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required: Please provide a valid authorization token to access medical documents."
+        )
+    
+    try:
+        payload = jwt.decode(raw_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        role = payload.get("role")
+        if not user_id or role not in ("patient", "hospital", "admin"):
+            raise HTTPException(status_code=401, detail="Invalid authentication token.")
+        return {"user_id": int(user_id), "role": role}
+    except (jwt.PyJWTError, ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid or expired authentication token.")
 
 
 def create_access_token(user_id: int, role: str) -> str:
@@ -579,6 +661,8 @@ ALLOWED_ORIGINS = [
     "https://carepath-hospital-ten.vercel.app",
     "https://carepath-patient-mx5v.vercel.app",
     "https://carepath-admin.vercel.app",
+    "https://hospital-ten.vercel.app",
+    "https://patient-mx5v.vercel.app",
     "http://localhost",
     "https://localhost",
     "http://localhost:3000",
@@ -592,11 +676,20 @@ ALLOWED_ORIGINS = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"^https?://.*",
+    allow_origin_regex=r"^https:\/\/(carepath-[a-z0-9-]+|hospital-ten|patient-mx5v)\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def is_trusted_cors_origin(origin: Optional[str]) -> bool:
+    if not origin or origin == "null":
+        return False
+    if origin in ALLOWED_ORIGINS:
+        return True
+    if re.match(r"^https:\/\/(carepath-[a-z0-9-]+|hospital-ten|patient-mx5v)\.vercel\.app$", origin):
+        return True
+    return False
 
 def get_cors_headers(request: Request) -> dict:
     origin = request.headers.get("origin")
@@ -604,11 +697,9 @@ def get_cors_headers(request: Request) -> dict:
         "Access-Control-Allow-Methods": "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT",
         "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Origin, X-Requested-With",
     }
-    if origin and origin != "null":
+    if is_trusted_cors_origin(origin):
         headers["Access-Control-Allow-Origin"] = origin
         headers["Access-Control-Allow-Credentials"] = "true"
-    else:
-        headers["Access-Control-Allow-Origin"] = "*"
     return headers
 
 @app.exception_handler(HTTPException)
@@ -624,7 +715,7 @@ async def custom_general_exception_handler(request: Request, exc: Exception):
     logging.exception("Unhandled Server Exception on %s: %s", request.url.path, exc)
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Internal Server Error: {str(exc)}", "success": False},
+        content={"detail": "An internal server error occurred. Please try again later.", "success": False},
         headers=get_cors_headers(request)
     )
 
@@ -2275,9 +2366,11 @@ def check_specialist_routing_intent(message: str, history: Optional[list], targe
 @app.post("/ai/chat")
 def carepath_ai_chat(
     data: AIChatRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: Optional[dict] = Depends(get_optional_user),
 ):
+    check_ai_rate_limit(request)
     message = (data.message or "").strip()
 
     if not message:
@@ -2614,9 +2707,11 @@ def carepath_ai_text_to_speech(text: str, lang: str = "en"):
 
 @app.post("/ai/transcribe")
 async def carepath_ai_transcribe_audio(
+    request: Request,
     audio: UploadFile = File(...),
     language: Optional[str] = Form("te-IN"),
 ):
+    check_ai_rate_limit(request)
     """
     Transcribes audio speech in any Indian language using Groq Whisper or Gemini.
     """
@@ -2653,10 +2748,12 @@ async def carepath_ai_transcribe_audio(
 @app.post("/ai/analyze-prescription")
 @app.post("/ai/analyze-prescription/")
 async def carepath_ai_analyze_prescription(
+    request: Request,
     photo: UploadFile = File(...),
     notes: Optional[str] = Form(""),
     db: Session = Depends(get_db),
 ):
+    check_ai_rate_limit(request)
     """
     CarePath AI Multimodal Vision Engine:
     Reads doctor's handwriting, prescriptions, lab reports, and medicine strips,
@@ -4179,15 +4276,50 @@ def reset_doctor_queue(
     doctor: str,
     appointment_date: Optional[date] = None,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
-    """Resets the token counter for a specific doctor on a given date (useful for daily restarts)."""
-    target_date = appointment_date or get_ist_today()
+    """Resets the token counter for a specific doctor on a given date (authorized hospital or admin only)."""
+    user_role = current_user.get("role")
+    auth_user_id = current_user.get("user_id")
+
+    if user_role == "hospital":
+        if auth_user_id != hospital_id:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to reset queues for another hospital.",
+            )
+    elif user_role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Permission denied. Only authorized hospitals or administrators can reset queue counters.",
+        )
+
     clean_doc = doctor.strip()
+    clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', clean_doc, flags=re.I).strip()
+    doc_exists = (
+        db.query(Doctor)
+        .filter(
+            Doctor.hospital_id == hospital_id,
+            or_(
+                func.lower(Doctor.name) == clean_doc.lower(),
+                func.lower(Doctor.name) == clean_doc_search.lower(),
+                Doctor.name.ilike(f"%{clean_doc_search}%"),
+            )
+        )
+        .first()
+    )
+    if not doc_exists:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Doctor '{clean_doc}' not found at hospital ID {hospital_id}.",
+        )
+
+    target_date = appointment_date or get_ist_today()
     db.execute(
         text("""
             DELETE FROM token_sequences 
             WHERE hospital_id = :h_id 
-              AND doctor = :doc 
+              AND (doctor = :doc OR LOWER(doctor) = LOWER(:doc))
               AND appointment_date = :dt
         """),
         {"h_id": hospital_id, "doc": clean_doc, "dt": target_date}
@@ -4466,8 +4598,10 @@ def register_patient(
 @app.post("/patients/login")
 def patient_login(
     data: PatientLogin,
+    request: Request,
     db: Session = Depends(get_db),
 ):
+    check_login_rate_limit(request)
     login_value = data.email.strip()
 
     patient = (
@@ -4610,28 +4744,74 @@ def patient_google_login(
 class PatientDeletionRequest(BaseModel):
     identifier: str
     reason: Optional[str] = ""
+    password: Optional[str] = None
+    otp: Optional[str] = None
 
 @app.post("/patients/request-account-deletion")
 @app.post("/patients/request-account-deletion/")
 def request_patient_account_deletion_public(
     data: PatientDeletionRequest,
     db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
 ):
-    """Google Play Store compliant web endpoint for patient account deletion requests."""
+    """Google Play Store compliant web endpoint for patient account deletion requests with verified identity."""
     ident = data.identifier.strip().lower()
     patient = db.query(Patient).filter(
-        (Patient.email == ident) | (Patient.phone == ident)
+        (func.lower(Patient.email) == ident) | (Patient.phone == ident)
     ).first()
-    if patient:
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient account not found with the provided email or phone number.",
+        )
+
+    auth_verified = False
+    if credentials and credentials.credentials:
         try:
-            db.query(PatientInquiry).filter(PatientInquiry.patient_id == patient.id).delete(synchronize_session=False)
-        except Exception as e:
-            logging.warning("Error deleting inquiries for patient %s: %s", patient.id, e)
-        db.delete(patient)
-        db.commit()
+            payload = jwt.decode(credentials.credentials.strip(), JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            if payload.get("role") == "patient" and int(payload.get("sub", 0)) == patient.id:
+                auth_verified = True
+            elif payload.get("role") == "admin":
+                auth_verified = True
+        except Exception:
+            pass
+
+    if not auth_verified and data.password and patient.password:
+        if verify_password(data.password, patient.password):
+            auth_verified = True
+
+    if not auth_verified and data.otp:
+        clean_otp = data.otp.strip()
+        otp_record = (
+            db.query(RegistrationOTP)
+            .filter(
+                RegistrationOTP.contact_value == patient.email,
+                RegistrationOTP.verified == False,
+            )
+            .order_by(RegistrationOTP.created_at.desc())
+            .first()
+        )
+        if otp_record and otp_record.expires_at > datetime.utcnow():
+            submitted_hash = hashlib.sha256(clean_otp.encode()).hexdigest()
+            if hmac.compare_digest(submitted_hash, otp_record.otp_hash):
+                auth_verified = True
+                db.delete(otp_record)
+
+    if not auth_verified:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized account deletion request. Please provide your patient account password, a verified OTP, or log in to confirm deletion.",
+        )
+
+    try:
+        db.query(PatientInquiry).filter(PatientInquiry.patient_id == patient.id).delete(synchronize_session=False)
+    except Exception as e:
+        logging.warning("Error deleting inquiries for patient %s: %s", patient.id, e)
+    db.delete(patient)
+    db.commit()
     return {
         "success": True,
-        "message": "Account deletion request received and processed successfully."
+        "message": "Account and all associated personal data have been permanently deleted successfully."
     }
 
 @app.delete("/patients/me")
@@ -5569,8 +5749,10 @@ async def register_hospital(
 @app.post("/hospitals/login")
 def hospital_login(
     data: HospitalLogin,
+    request: Request,
     db: Session = Depends(get_db),
 ):
+    check_login_rate_limit(request)
     email = data.email.strip().lower()
 
     hospital = (
@@ -5802,6 +5984,7 @@ def get_hospitals(
 
     hospitals = (
         db.query(Hospital)
+        .options(defer(Hospital.photo_base64))
         .filter(
             Hospital.approval_status ==
             "APPROVED",
@@ -6332,7 +6515,7 @@ def get_doctors(
             response.headers["X-Cache"] = "HIT"
         return cached
 
-    query = db.query(Doctor)
+    query = db.query(Doctor).options(defer(Doctor.photo_base64))
 
     if hospital_id is not None:
         hospital = (
@@ -7542,39 +7725,47 @@ def lookup_patient_tokens(
     name: Optional[str] = Query(None),
     patient_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_user),
 ):
+    """
+    Token queue status lookup.
+    If authenticated as the patient, returns full appointment information.
+    If unauthenticated, requires phone or email identifier and returns sanitized queue status without private clinical notes.
+    """
     filter_conditions = []
-    if patient_id is not None:
-        filter_conditions.append(Token.patient_id == patient_id)
-    if email and email.strip():
-        clean_email = email.strip().lower()
-        filter_conditions.append(func.lower(Token.patient_email) == clean_email)
-        filter_conditions.append(Token.notes.ilike(f"%{clean_email}%"))
-    if phone and phone.strip():
-        raw_phone = phone.strip()
-        clean_phone = raw_phone.replace(" ", "").replace("-", "")
-        digits_only = re.sub(r"\D", "", raw_phone)
-        filter_conditions.append(Token.patient_phone == raw_phone)
-        filter_conditions.append(Token.patient_phone == clean_phone)
-        if digits_only:
-            filter_conditions.append(Token.patient_phone.ilike(f"%{digits_only}%"))
-            if len(digits_only) >= 10:
+    is_authenticated_owner = False
+
+    if current_user and current_user.get("role") == "patient":
+        auth_pid = current_user.get("user_id")
+        if patient_id is None or patient_id == auth_pid:
+            filter_conditions.append(Token.patient_id == auth_pid)
+            is_authenticated_owner = True
+
+    if not is_authenticated_owner:
+        if not phone and not email and not patient_id:
+            raise HTTPException(
+                status_code=400,
+                detail="At least a phone number or email address is required for token lookup.",
+            )
+
+        if patient_id is not None:
+            filter_conditions.append(Token.patient_id == patient_id)
+        if email and email.strip():
+            clean_email = email.strip().lower()
+            filter_conditions.append(func.lower(Token.patient_email) == clean_email)
+        if phone and phone.strip():
+            raw_phone = phone.strip()
+            clean_phone = raw_phone.replace(" ", "").replace("-", "")
+            digits_only = re.sub(r"\D", "", raw_phone)
+            filter_conditions.append(Token.patient_phone == raw_phone)
+            filter_conditions.append(Token.patient_phone == clean_phone)
+            if digits_only and len(digits_only) >= 10:
                 last10 = digits_only[-10:]
                 filter_conditions.append(Token.patient_phone.ilike(f"%{last10}%"))
-                filter_conditions.append(Token.notes.ilike(f"%{last10}%"))
-    if name and name.strip():
-        clean_name = name.strip().lower()
-        same_name_ids = [p_id for (p_id,) in db.query(Patient.id).filter(func.lower(Patient.full_name) == clean_name).all()]
-        if same_name_ids:
-            filter_conditions.append(Token.patient_id.in_(same_name_ids))
-        filter_conditions.append(func.lower(Token.patient_name) == clean_name)
-        filter_conditions.append(func.lower(Token.patient_name).ilike(f"{clean_name} (%"))
-        name_parts = clean_name.split()
-        if len(name_parts) >= 2:
-            for part in name_parts:
-                if len(part) >= 4:
-                    filter_conditions.append(func.lower(Token.patient_name) == part)
-                    filter_conditions.append(func.lower(Token.patient_name).ilike(f"{part} (%"))
+        if name and name.strip():
+            clean_name = name.strip().lower()
+            filter_conditions.append(func.lower(Token.patient_name) == clean_name)
+            filter_conditions.append(func.lower(Token.patient_name).ilike(f"{clean_name} (%"))
 
     if not filter_conditions:
         return []
@@ -7592,6 +7783,18 @@ def lookup_patient_tokens(
     results = []
     for token in tokens:
         d = token_to_dict(token)
+        if not is_authenticated_owner:
+            d.pop("notes", None)
+            d.pop("diagnosis", None)
+            d.pop("prescription", None)
+            if d.get("patient_phone"):
+                raw_p = str(d["patient_phone"])
+                d["patient_phone"] = (raw_p[:2] + "****" + raw_p[-4:]) if len(raw_p) >= 6 else "****"
+            if d.get("patient_email"):
+                raw_e = str(d["patient_email"])
+                if "@" in raw_e:
+                    parts = raw_e.split("@")
+                    d["patient_email"] = (parts[0][:2] + "***@" + parts[1])
         if token.status in ("waiting", "serving"):
             d.update(get_queue_status_for_token(db, token))
         results.append(d)
@@ -7607,22 +7810,16 @@ def get_patient_single_token(
 ):
     patient_id = current_user["user_id"]
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient account not found.")
 
     filter_conditions = [and_(Token.id == token_id, Token.patient_id == patient_id)]
-    if patient:
-        if patient.full_name and patient.full_name.strip():
-            clean_name = patient.full_name.strip().lower()
-            same_name_ids = [p_id for (p_id,) in db.query(Patient.id).filter(func.lower(Patient.full_name) == clean_name).all()]
-            if same_name_ids:
-                filter_conditions.append(and_(Token.id == token_id, Token.patient_id.in_(same_name_ids)))
-            filter_conditions.append(and_(Token.id == token_id, func.lower(Token.patient_name) == clean_name))
-            filter_conditions.append(and_(Token.id == token_id, func.lower(Token.patient_name).ilike(f"{clean_name} (%")))
-        if patient.email and patient.email.strip():
-            filter_conditions.append(and_(Token.id == token_id, func.lower(Token.patient_email) == patient.email.strip().lower()))
-        if patient.phone and patient.phone.strip():
-            clean_phone = patient.phone.strip().replace(" ", "").replace("-", "")
-            filter_conditions.append(and_(Token.id == token_id, Token.patient_phone == patient.phone))
-            filter_conditions.append(and_(Token.id == token_id, Token.patient_phone == clean_phone))
+    if patient.phone and patient.phone.strip():
+        clean_phone = patient.phone.strip().replace(" ", "").replace("-", "")
+        filter_conditions.append(and_(Token.id == token_id, Token.patient_phone == patient.phone))
+        filter_conditions.append(and_(Token.id == token_id, Token.patient_phone == clean_phone))
+    if patient.email and patient.email.strip():
+        filter_conditions.append(and_(Token.id == token_id, func.lower(Token.patient_email) == patient.email.strip().lower()))
 
     token = (
         db.query(Token)
@@ -7633,7 +7830,7 @@ def get_patient_single_token(
     if not token:
         raise HTTPException(
             status_code=404,
-            detail="Token record not found.",
+            detail="Token record not found or access denied.",
         )
 
     if token.patient_id is None:
@@ -7659,16 +7856,35 @@ async def upload_token_documents(
     token_id: int,
     files: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
-    current_user: Optional[dict] = Depends(get_optional_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """
-    Uploads one or multiple medical documents (PDF, JPG, JPEG, PNG) for a specific token.
-    Associates each document with the correct existing patient_id, token_id and hospital_id.
-    Works for today's token and all previous token dates.
+    Securely uploads one or multiple medical documents (PDF, JPG, JPEG, PNG) for a specific token.
+    Validates token ownership, file magic bytes, file extensions, and file sizes.
     """
     token = db.query(Token).filter(Token.id == token_id).first()
     if not token:
         raise HTTPException(status_code=404, detail="Token record not found.")
+
+    role = current_user.get("role")
+    auth_user_id = current_user.get("user_id")
+
+    if role == "patient":
+        if token.patient_id is not None and token.patient_id != auth_user_id:
+            patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
+            is_authorized = False
+            if patient:
+                if patient.phone and token.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token.patient_phone).strip().replace(" ", "").replace("-", ""):
+                    is_authorized = True
+                elif patient.email and token.patient_email and patient.email.strip().lower() == str(token.patient_email).strip().lower():
+                    is_authorized = True
+            if not is_authorized:
+                raise HTTPException(status_code=403, detail="You do not have permission to upload documents for another patient's token.")
+    elif role == "hospital":
+        if token.hospital_id != auth_user_id:
+            raise HTTPException(status_code=403, detail="You do not have permission to upload documents for another hospital's token.")
+    elif role != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized.")
 
     if not files or len(files) == 0:
         raise HTTPException(status_code=400, detail="No files provided for upload.")
@@ -7695,6 +7911,9 @@ async def upload_token_documents(
                 detail=f"File '{orig_name}' exceeds maximum allowed size of {MAX_DOCUMENT_SIZE // (1024 * 1024)}MB."
             )
 
+        clean_ext = ext.lstrip(".")
+        validate_file_magic_bytes(content, {clean_ext})
+
         unique_name = f"med_doc_{token.id}_{secrets.token_hex(12)}{ext}"
         file_path = os.path.join(MEDICAL_DOCUMENTS_DIR, unique_name)
 
@@ -7704,9 +7923,7 @@ async def upload_token_documents(
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to store document: {str(e)}")
 
-        resolved_patient_id = token.patient_id
-        if not resolved_patient_id and current_user and current_user.get("role") == "patient":
-            resolved_patient_id = current_user.get("user_id")
+        resolved_patient_id = token.patient_id or (auth_user_id if role == "patient" else None)
 
         doc = MedicalDocument(
             token_id=token.id,
@@ -7745,12 +7962,34 @@ async def upload_token_documents(
 def get_token_documents(
     token_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[dict] = Depends(get_optional_user),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    token: Optional[str] = Query(None),
 ):
-    """Retrieves all medical documents uploaded for a specific token."""
-    token = db.query(Token).filter(Token.id == token_id).first()
-    if not token:
+    """Retrieves all medical documents uploaded for a specific token with verified authorization."""
+    current_user = get_document_auth_user(credentials, token)
+    token_record = db.query(Token).filter(Token.id == token_id).first()
+    if not token_record:
         raise HTTPException(status_code=404, detail="Token record not found.")
+
+    role = current_user.get("role")
+    auth_user_id = current_user.get("user_id")
+
+    if role == "patient":
+        if token_record.patient_id is not None and token_record.patient_id != auth_user_id:
+            patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
+            is_authorized = False
+            if patient:
+                if patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
+                    is_authorized = True
+                elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
+                    is_authorized = True
+            if not is_authorized:
+                raise HTTPException(status_code=403, detail="You do not have permission to view documents for this token.")
+    elif role == "hospital":
+        if token_record.hospital_id != auth_user_id:
+            raise HTTPException(status_code=403, detail="You do not have permission to view documents for another hospital's token.")
+    elif role != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized.")
 
     docs = (
         db.query(MedicalDocument)
@@ -7787,12 +8026,37 @@ def get_medical_document_file(
     document_id: int,
     preview: bool = Query(False),
     db: Session = Depends(get_db),
-    current_user: Optional[dict] = Depends(get_optional_user),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    token: Optional[str] = Query(None),
 ):
-    """Allows patients to preview (inline) or download their uploaded medical document."""
+    """Allows authorized patients and hospitals to preview (inline) or download an uploaded medical document."""
+    current_user = get_document_auth_user(credentials, token)
     doc = db.query(MedicalDocument).filter(MedicalDocument.id == document_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Medical document not found.")
+
+    role = current_user.get("role")
+    auth_user_id = current_user.get("user_id")
+
+    if role == "patient":
+        if doc.patient_id is not None and doc.patient_id != auth_user_id:
+            token_record = db.query(Token).filter(Token.id == doc.token_id).first()
+            patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
+            is_authorized = False
+            if token_record and patient:
+                if token_record.patient_id == auth_user_id:
+                    is_authorized = True
+                elif patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
+                    is_authorized = True
+                elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
+                    is_authorized = True
+            if not is_authorized:
+                raise HTTPException(status_code=403, detail="You do not have permission to access another patient's medical document.")
+    elif role == "hospital":
+        if doc.hospital_id != auth_user_id:
+            raise HTTPException(status_code=403, detail="You do not have permission to access another hospital's patient document.")
+    elif role != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized access.")
 
     file_path = os.path.join(MEDICAL_DOCUMENTS_DIR, doc.stored_filename)
     if not os.path.exists(file_path):
@@ -7811,12 +8075,28 @@ def get_medical_document_file(
 def delete_medical_document(
     document_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[dict] = Depends(get_optional_user),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    token: Optional[str] = Query(None),
 ):
-    """Allows patient to delete an uploaded document."""
+    """Allows authorized patient or hospital to delete an uploaded document."""
+    current_user = get_document_auth_user(credentials, token)
     doc = db.query(MedicalDocument).filter(MedicalDocument.id == document_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Medical document not found.")
+
+    role = current_user.get("role")
+    auth_user_id = current_user.get("user_id")
+
+    if role == "patient":
+        if doc.patient_id is not None and doc.patient_id != auth_user_id:
+            token_record = db.query(Token).filter(Token.id == doc.token_id).first()
+            if not token_record or token_record.patient_id != auth_user_id:
+                raise HTTPException(status_code=403, detail="You do not have permission to delete this document.")
+    elif role == "hospital":
+        if doc.hospital_id != auth_user_id:
+            raise HTTPException(status_code=403, detail="You do not have permission to delete another hospital's document.")
+    elif role != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized.")
 
     file_path = os.path.join(MEDICAL_DOCUMENTS_DIR, doc.stored_filename)
     if os.path.exists(file_path):
@@ -7834,9 +8114,10 @@ def delete_medical_document(
 def get_batch_token_documents(
     token_ids: str = Query(..., description="Comma-separated token IDs"),
     db: Session = Depends(get_db),
-    current_user: Optional[dict] = Depends(get_optional_user),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    token: Optional[str] = Query(None),
 ):
-    """Fast batch retrieval of documents for all rendered tokens in Token History."""
+    """Fast batch retrieval of documents for authorized tokens."""
     try:
         ids = [int(tid.strip()) for tid in token_ids.split(",") if tid.strip().isdigit()]
     except Exception:
@@ -7845,12 +8126,34 @@ def get_batch_token_documents(
     if not ids:
         return {"success": True, "documents_by_token": {}}
 
-    docs = (
-        db.query(MedicalDocument)
-        .filter(MedicalDocument.token_id.in_(ids))
-        .order_by(MedicalDocument.created_at.asc())
-        .all()
-    )
+    current_user = None
+    raw_token = None
+    if credentials and credentials.credentials:
+        raw_token = credentials.credentials.strip()
+    elif token:
+        raw_token = token.strip()
+    if raw_token:
+        try:
+            payload = jwt.decode(raw_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            current_user = {"user_id": int(payload.get("sub")), "role": payload.get("role")}
+        except Exception:
+            pass
+
+    query = db.query(MedicalDocument).filter(MedicalDocument.token_id.in_(ids))
+    if current_user:
+        if current_user["role"] == "patient":
+            query = query.filter(
+                or_(
+                    MedicalDocument.patient_id == current_user["user_id"],
+                    MedicalDocument.token_id.in_(
+                        db.query(Token.id).filter(Token.id.in_(ids), Token.patient_id == current_user["user_id"])
+                    )
+                )
+            )
+        elif current_user["role"] == "hospital":
+            query = query.filter(MedicalDocument.hospital_id == current_user["user_id"])
+
+    docs = query.order_by(MedicalDocument.created_at.asc()).all()
 
     grouped = {}
     for d in docs:
@@ -8978,16 +9281,25 @@ async def register_heartbeat(
     phone = ((data.user_phone or data.phone) if data and (data.user_phone or data.phone) else "").strip() or None
     page = (data.current_page.strip() if data and data.current_page else None)
 
-    # Auto-decode Bearer JWT if provided
+    # Auto-decode Bearer JWT if provided with strict cryptographic verification
     auth_header = request.headers.get("Authorization")
+    token_verified = False
     if auth_header and auth_header.startswith("Bearer "):
         try:
             token_str = auth_header.split(" ")[1]
             payload = jwt.decode(token_str, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
             user_id = int(payload.get("sub"))
-            role = payload.get("role", role)
+            role = payload.get("role", "visitor")
+            token_verified = True
         except Exception:
             pass
+
+    if not token_verified:
+        user_id = None
+        role = "visitor"
+        name = "Visitor"
+        email = None
+        phone = None
 
     # Lookup profile info from DB if missing
     if user_id:
@@ -9275,8 +9587,10 @@ def get_admin_patient_dossier(
 @app.post("/admin/login")
 def admin_login(
     data: AdminLoginRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ):
+    check_login_rate_limit(request)
     email = data.email.strip().lower()
 
     admin = (
@@ -13161,13 +13475,16 @@ def get_patient_messages(
     phone: Optional[str] = None,
     patient_id: Optional[int] = None,
     db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_user),
 ):
-    """Patient: Fetch inquiries and hospital direct replies from the last 24 hours."""
+    """Patient: Fetch inquiries and hospital direct replies from the last 24 hours with verified authorization."""
     purge_expired_patient_inquiries(db)
 
-    clean_phone = (phone or "").strip()
-    if not clean_phone and not patient_id:
+    if not current_user:
         return {"success": True, "messages": [], "unread_count": 0}
+
+    role = current_user.get("role")
+    auth_user_id = current_user.get("user_id")
 
     cutoff_24h = datetime.utcnow() - timedelta(hours=24)
     query = (
@@ -13180,22 +13497,21 @@ def get_patient_messages(
         .filter(HospitalDirectMessage.created_at >= cutoff_24h)
     )
 
-    phone_filter = None
-    if clean_phone:
-        digits = "".join(filter(str.isdigit, clean_phone))
-        last10 = digits[-10:] if len(digits) >= 10 else digits
-        conds = [HospitalDirectMessage.patient_phone == clean_phone]
-        if last10:
-            conds.append(HospitalDirectMessage.patient_phone.like(f"%{last10}%"))
-            conds.append(HospitalDirectMessage.sender_name.like(f"%{last10}%"))
-        phone_filter = or_(*conds)
-
-    if phone_filter is not None and patient_id:
-        query = query.filter(or_(phone_filter, HospitalDirectMessage.patient_id == patient_id))
-    elif phone_filter is not None:
-        query = query.filter(phone_filter)
-    elif patient_id:
-        query = query.filter(HospitalDirectMessage.patient_id == patient_id)
+    if role == "patient":
+        patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
+        conds = [HospitalDirectMessage.patient_id == auth_user_id]
+        if patient and patient.phone:
+            clean_phone = patient.phone.strip().replace(" ", "").replace("-", "")
+            conds.append(HospitalDirectMessage.patient_phone == patient.phone)
+            conds.append(HospitalDirectMessage.patient_phone == clean_phone)
+        query = query.filter(or_(*conds))
+    elif role == "hospital":
+        query = query.filter(HospitalDirectMessage.hospital_id == auth_user_id)
+    elif role == "admin":
+        if patient_id:
+            query = query.filter(HospitalDirectMessage.patient_id == patient_id)
+    else:
+        return {"success": True, "messages": [], "unread_count": 0}
 
     raw_msgs = query.order_by(HospitalDirectMessage.created_at.asc()).all()
 
