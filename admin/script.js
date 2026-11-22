@@ -134,7 +134,7 @@ window.requireAdminLogin = requireAdminLogin;
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("CarePath Admin started.");
+    console.log("Q-Arovia Admin started.");
 
     const path = window.location.pathname.toLowerCase();
 
@@ -329,7 +329,7 @@ async function adminLogin() {
 
         showLoginMessage(
             error.message ||
-            "Cannot connect to CarePath backend. Please verify your internet connection or server status.",
+            "Cannot connect to Q-Arovia backend. Please verify your internet connection or server status.",
             "error"
         );
     } finally {
@@ -447,7 +447,7 @@ async function handleGoogleLogin(response) {
 
         showLoginMessage(
             error.message ||
-            "Cannot connect to CarePath backend.",
+            "Cannot connect to Q-Arovia backend.",
             "error"
         );
     }
@@ -2364,7 +2364,7 @@ function exportTokensCSV() {
     const uri = encodeURI(csv);
     const link = document.createElement("a");
     link.href = uri;
-    link.download = `CarePath_Tokens_Master_${Date.now()}.csv`;
+    link.download = `Q-Arovia_Tokens_Master_${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -2913,7 +2913,7 @@ function setupHospitalDirectCommunication(hospital, hospitalId) {
     if (btnWhatsApp) {
         if (cleanPhone) {
             const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-            btnWhatsApp.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${hospital.name || "Hospital"}, this is CarePath Platform Admin.`)}`;
+            btnWhatsApp.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${hospital.name || "Hospital"}, this is Q-Arovia Platform Admin.`)}`;
             btnWhatsApp.style.display = "inline-flex";
         } else {
             btnWhatsApp.style.display = "none";
@@ -3178,7 +3178,7 @@ async function openDirectCommModal(hospitalId, hospitalName = "", hospitalPhone 
     if (btnWhatsApp) {
         if (cleanPhone) {
             const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-            btnWhatsApp.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${hospitalName || "Hospital"}, this is CarePath Platform Admin.`)}`;
+            btnWhatsApp.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${hospitalName || "Hospital"}, this is Q-Arovia Platform Admin.`)}`;
             btnWhatsApp.style.display = "inline-flex";
         } else {
             btnWhatsApp.style.display = "none";
@@ -3600,7 +3600,7 @@ async function submitCommissionUpdate() {
         `CONFIRM COMMISSION CHANGE:\n\n` +
         `Current Rate: ${currentCommissionRate.toFixed(2)}%\n` +
         `New Rate: ${numVal.toFixed(2)}%\n\n` +
-        `Are you sure you want to update the CarePath platform commission percentage?\n` +
+        `Are you sure you want to update the Q-Arovia platform commission percentage?\n` +
         `This rate will apply to all subsequent eligible paid OPD bookings. Historical transactions remain protected.`
     );
 
@@ -4228,7 +4228,7 @@ function exportAdminCollectionCSV() {
     const uri = encodeURI(csv);
     const link = document.createElement("a");
     link.href = uri;
-    link.download = `CarePath_Platform_Collection_${isDaily ? 'Daily' : 'Monthly'}_${Date.now()}.csv`;
+    link.download = `Q-Arovia_Platform_Collection_${isDaily ? 'Daily' : 'Monthly'}_${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -4678,7 +4678,7 @@ function exportPatientsCSV() {
     const uri = encodeURI(csv);
     const link = document.createElement("a");
     link.href = uri;
-    link.download = `CarePath_Patient_Directory_${Date.now()}.csv`;
+    link.download = `Q-Arovia_Patient_Directory_${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

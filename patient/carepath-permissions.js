@@ -1,5 +1,5 @@
 /**
- * CarePath Unified Permissions & Notifications Engine
+ * Q-Arovia Unified Permissions & Notifications Engine
  * Handles Google Chrome / Web site permissions for:
  *  - Native Browser Push / Screen & Sound Notifications
  *  - Camera Access & Live Prescription Scanner
@@ -58,7 +58,7 @@
   }
 
   // ----------------------------------------------------
-  // CarePath Native Notification Engine
+  // Q-Arovia Native Notification Engine
   // ----------------------------------------------------
   const CarePathNotifications = {
     isSupported() {
@@ -86,7 +86,7 @@
           playAlertChime('success');
 
           // Send immediate welcome test notification
-          this.send('🔔 CarePath Live Alerts Active', {
+          this.send('🔔 Q-Arovia Live Alerts Active', {
             body: 'You will receive instant alerts when your doctor calls your token or hospital replies.',
             tag: 'carepath-welcome',
           });
@@ -293,9 +293,9 @@
   };
 
   // ----------------------------------------------------
-  // CarePath Camera & Upload Engine
+  // Q-Arovia Camera & Upload Engine
   // ----------------------------------------------------
-  const CarePathCamera = {
+  const Q-AroviaCamera = {
     async requestCameraStream(facingMode = 'environment') {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Camera streaming is not supported in this browser.');
@@ -324,7 +324,7 @@
 
 
   // ----------------------------------------------------
-  // CarePath Geolocation & Nearby Engine
+  // Q-Arovia Geolocation & Nearby Engine
   // ----------------------------------------------------
   const CarePathLocationEngine = {
     CITY_COORDINATES: {
@@ -449,7 +449,7 @@
           if (typeof onSuccess === 'function') onSuccess(result);
         },
         (err) => {
-          console.warn('CarePath Location Request:', err.message);
+          console.warn('Q-Arovia Location Request:', err.message);
           if (typeof onError === 'function') onError(err);
         },
         geoOptions
@@ -494,8 +494,8 @@
     initNotificationBanner: (cId) => CarePathNotifications.initBanner(cId),
     dismissBanner: () => CarePathNotifications.dismissBanner(),
     showBlockedModal: (type) => CarePathNotifications.showBlockedModal(type),
-    requestCameraStream: (facing) => CarePathCamera.requestCameraStream(facing),
-    triggerFileInput: (id) => CarePathCamera.triggerFileInput(id),
+    requestCameraStream: (facing) => Q-AroviaCamera.requestCameraStream(facing),
+    triggerFileInput: (id) => Q-AroviaCamera.triggerFileInput(id),
     playChime: (type) => playAlertChime(type),
     getStatus: () => CarePathNotifications.getStatus(),
   };

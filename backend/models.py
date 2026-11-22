@@ -236,7 +236,7 @@ class Token(Base):
     appointment_date = Column(Date, nullable=False, index=True)
 
     # Platform
-    platform = Column(String(100), default="CarePath")
+    platform = Column(String(100), default="Q-Arovia")
 
     booking_type = Column(
         String(20),
@@ -316,7 +316,7 @@ class PlatformContact(Base):
     __tablename__ = "platform_contacts"
 
     id = Column(Integer, primary_key=True, index=True)
-    business_name = Column(String(255), default="CarePath Healthcare Technologies")
+    business_name = Column(String(255), default="Q-Arovia Healthcare Technologies")
     support_email = Column(String(255), default="mangarajesh58@gmail.com")
     support_phone = Column(String(50), default="+91 98765 43210")
     operating_address = Column(Text, default="Bhubaneswar / Cuttack, Odisha, India - 751024")

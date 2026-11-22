@@ -1,5 +1,5 @@
 /* =========================================================
-   CarePath - Patient Dashboard
+   Q-Arovia - Patient Dashboard
    ========================================================= */
 
 const API = "https://carepath-3q9q.onrender.com";
@@ -88,7 +88,7 @@ function getErrorMessage(data, fallback) {
 
 
 document.addEventListener("DOMContentLoaded", async function () {
-    console.log("CarePath patient dashboard loaded.");
+    console.log("Q-Arovia patient dashboard loaded.");
 
     loadPatientName();
     setupEvents();
@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (!hospitalName || !department || !doctorName || !patientName) {
         console.error("Saved booking details are missing.");
         showMessage(
-            "Booking details are missing. Please contact CarePath support before retrying.",
+            "Booking details are missing. Please contact Q-Arovia support before retrying.",
             "error"
         );
         return;
@@ -147,7 +147,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     } catch (error) {
         console.error("Cashfree return handling failed:", error);
         showMessage(
-            error.message || "Payment verification failed. Please contact CarePath support.",
+            error.message || "Payment verification failed. Please contact Q-Arovia support.",
             "error"
         );
     }

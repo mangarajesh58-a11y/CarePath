@@ -24,7 +24,7 @@
       } catch (e) {}
     })();
   </script>
-  <title>CarePath - My Booked Tokens</title>
+  <title>Q-Arovia - My Booked Tokens</title>
   <link rel="stylesheet" href="./style.css">
   <style>
     * { box-sizing: border-box; }
@@ -955,7 +955,7 @@
                 patient_name: actualPatient,
                 doctor: details.doctor || tk.doctor || "Consultant",
                 department: details.department || tk.department || "General",
-                hospital: details.hospital || tk.hospital || "CarePath Hospital",
+                hospital: details.hospital || tk.hospital || "Q-Arovia Hospital",
                 appointment_date: details.appointmentDate || tk.appointment_date || new Date().toISOString().split("T")[0],
                 status: tk.status || "waiting",
                 doctor_room_number: roomVal,
@@ -984,7 +984,7 @@
             patient_name: localStorage.getItem("patientName") || patientName,
             doctor: localStorage.getItem("tokenDoctor") || localStorage.getItem("doctor") || "Consultant",
             department: localStorage.getItem("tokenDepartment") || localStorage.getItem("department") || "General",
-            hospital: localStorage.getItem("tokenHospital") || localStorage.getItem("hospital") || "CarePath Hospital",
+            hospital: localStorage.getItem("tokenHospital") || localStorage.getItem("hospital") || "Q-Arovia Hospital",
             appointment_date: localStorage.getItem("selectedAppointmentDate") || localStorage.getItem("appointmentDate") || new Date().toISOString().split("T")[0],
             status: localStorage.getItem("tokenStatus") || "waiting",
             doctor_room_number: localStorage.getItem("tokenRoom") || "Consultation Room",
@@ -1405,8 +1405,8 @@
       modalContent.innerHTML = `
         <div style="text-align: center; margin-bottom: 20px;">
           <h2 style="margin: 0; color: #0284c7; font-size: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <img src="carepath-ai-small.png" alt="CarePath Logo" style="width: 26px; height: 26px; border-radius: 6px; object-fit: cover;" />
-            CarePath Appointment Receipt
+            <img src="carepath-ai-small.png" alt="Q-Arovia Logo" style="width: 26px; height: 26px; border-radius: 6px; object-fit: cover;" />
+            Q-Arovia Appointment Receipt
           </h2>
           <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">Official Appointment & Token Confirmation</p>
         </div>
@@ -1512,7 +1512,7 @@
         <div class="receipt-header" style="background: linear-gradient(135deg, #16a34a, #15803d);">
           <button class="close-btn" onclick="closePatientRxModal()">&times;</button>
           <h2>Medical Prescription</h2>
-          <p id="rxModalHospital">CarePath Healthcare Network</p>
+          <p id="rxModalHospital">Q-Arovia Healthcare Network</p>
         </div>
         <div class="receipt-body" id="rxModalBody" style="padding:24px;">
           <!-- Rx Content filled by JS -->
@@ -1532,7 +1532,7 @@
     function openPatientRxModal(tokenId) {
       const token = allTokens.find(t => String(t.id) === String(tokenId));
       if (!token) return;
-      document.getElementById("rxModalHospital").textContent = token.hospital || "CarePath Healthcare";
+      document.getElementById("rxModalHospital").textContent = token.hospital || "Q-Arovia Healthcare";
       document.getElementById("rxModalBody").innerHTML = `
         <div style="border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between; font-size: 14px;">
@@ -1692,7 +1692,7 @@
         document.getElementById("calledModalTokenNum").textContent = `#${t.token_number}`;
         document.getElementById("calledModalDoctor").textContent = t.doctor || "Doctor";
         document.getElementById("calledModalRoom").textContent = rawRoom;
-        document.getElementById("calledModalHospital").textContent = t.hospital || "CarePath Hospital";
+        document.getElementById("calledModalHospital").textContent = t.hospital || "Q-Arovia Hospital";
         modal.style.display = "flex";
       }
     }
@@ -1708,12 +1708,12 @@
       if (!t) return;
 
       const rawRoom = t.doctor_room_number || t.room_number ? (String(t.doctor_room_number || t.room_number).startsWith('Room') ? (t.doctor_room_number || t.room_number) : 'Room ' + (t.doctor_room_number || t.room_number)) : 'OPD Consultation Room';
-      const hospName = t.hospital || 'CarePath Hospital';
+      const hospName = t.hospital || 'Q-Arovia Hospital';
       const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospName)}`;
       const liveQueueUrl = `https://carepath-patient-mx5v.vercel.app/my-tokens.html`;
 
       const msg = 
-`🏥 *CarePath - OPD Token Confirmation*
+`🏥 *Q-Arovia - OPD Token Confirmation*
 
 🎟️ *Token Number:* #${t.token_number}
 👤 *Patient Name:* ${t.patient_name || patientName}

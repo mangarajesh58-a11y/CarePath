@@ -1,6 +1,6 @@
 {
-  "name": "CarePath - OPD Queue & Appointments",
-  "short_name": "CarePath",
+  "name": "Q-Arovia - OPD Queue & Appointments",
+  "short_name": "Q-Arovia",
   "description": "Smart hospital OPD queue token booking and live wait time tracking",
   "start_url": "index.html",
   "display": "standalone",

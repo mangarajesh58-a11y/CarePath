@@ -1,6 +1,6 @@
 
 /* ============================================================
-   CarePath Patient Dashboard
+   Q-Arovia Patient Dashboard
    Hospital listing, search, filters, recent hospitals
    ============================================================ */
 
@@ -194,7 +194,7 @@
     row.innerHTML = docs.map(function (doc) {
       const photo = CarePathDoctorPhotos.resolvePhotoSrc(doc);
 
-      const hospName = doc.hospital_name || "CarePath Partner Hospital";
+      const hospName = doc.hospital_name || "Q-Arovia Partner Hospital";
       const distBadge = doc.distance_text
         ? '<span class="doc-card-dist">📍 ' + escapeHtml(doc.distance_text) + '</span>'
         : '';
@@ -237,7 +237,7 @@
         }
       }
     } catch (e) {
-      console.warn("CarePath: Live doctors fetch skipped:", e);
+      console.warn("Q-Arovia: Live doctors fetch skipped:", e);
     }
   }
 
@@ -452,7 +452,7 @@
           }
         },
         function (err) {
-          console.info("CarePath Location auto-detect:", err ? err.message : "denied");
+          console.info("Q-Arovia Location auto-detect:", err ? err.message : "denied");
         }
       );
     }
@@ -479,14 +479,14 @@
     const count = byId("hospitalCount");
 
     if (!container) {
-      console.error('CarePath: Missing element id="hospitalCards".');
+      console.error('Q-Arovia: Missing element id="hospitalCards".');
       return;
     }
 
     container.innerHTML =
       '<div class="loading-card">' +
       '<span class="spinner"></span>' +
-      '<span>Loading hospitals from CarePath...</span>' +
+      '<span>Loading hospitals from Q-Arovia...</span>' +
       "</div>";
 
     if (empty) empty.hidden = true;
@@ -527,7 +527,7 @@
       }
 
       console.log(
-        "CarePath: Hospital records received:",
+        "Q-Arovia: Hospital records received:",
         hospitalRecords.length
       );
 
@@ -536,9 +536,9 @@
       fetchActiveAds();
     } catch (error) {
       if (error.name === "AbortError") {
-        console.error("CarePath: Hospital request timed out or was cancelled.");
+        console.error("Q-Arovia: Hospital request timed out or was cancelled.");
       } else {
-        console.error("CarePath hospital loading error:", error);
+        console.error("Q-Arovia hospital loading error:", error);
       }
 
       container.replaceChildren();
@@ -657,13 +657,13 @@
       const data = await response.json();
       if (Array.isArray(data)) {
         activeSponsoredAds = data;
-        console.log("CarePath: Active rotating sponsored ads:", activeSponsoredAds.length);
+        console.log("Q-Arovia: Active rotating sponsored ads:", activeSponsoredAds.length);
         if (hospitalRecords && hospitalRecords.length > 0) {
           renderHospitalCards();
         }
       }
     } catch (err) {
-      console.warn("CarePath: Sponsored ads fetch skipped:", err);
+      console.warn("Q-Arovia: Sponsored ads fetch skipped:", err);
     }
   }
 
@@ -842,7 +842,7 @@
         const waNum = cleanPhone.length === 10 ? ("91" + cleanPhone) : cleanPhone;
         const waLink = document.createElement("a");
         waLink.className = "card-wa-btn";
-        waLink.href = "https://wa.me/" + waNum + "?text=" + encodeURIComponent("Hello " + (hospitalName(hospital) || "Hospital") + ", I have an inquiry about appointments on CarePath.");
+        waLink.href = "https://wa.me/" + waNum + "?text=" + encodeURIComponent("Hello " + (hospitalName(hospital) || "Hospital") + ", I have an inquiry about appointments on Q-Arovia.");
         waLink.target = "_blank";
         waLink.rel = "noopener noreferrer";
         waLink.title = "Chat on WhatsApp";
@@ -932,12 +932,12 @@
       video.poster = finalPoster;
 
       video.onerror = function () {
-        console.warn("CarePath video ad playback error on:", rawVideoUrl);
+        console.warn("Q-Arovia video ad playback error on:", rawVideoUrl);
         cover.classList.remove("sponsored-video-cover");
         cover.innerHTML = "";
         const fallbackImg = makeElement("img", "hospital-photo sponsored-photo");
         fallbackImg.src = finalPoster;
-        fallbackImg.alt = (ad.title || ad.hospital_name || "CarePath") + " sponsored";
+        fallbackImg.alt = (ad.title || ad.hospital_name || "Q-Arovia") + " sponsored";
         fallbackImg.loading = "lazy";
         cover.appendChild(fallbackImg);
         cover.appendChild(makeElement("span", "hospital-photo-shade"));
@@ -995,7 +995,7 @@
       }
 
       photo.src = finalSrc;
-      photo.alt = (ad.title || ad.hospital_name || "CarePath") + " sponsored banner";
+      photo.alt = (ad.title || ad.hospital_name || "Q-Arovia") + " sponsored banner";
       photo.loading = "lazy";
       photo.onerror = function () {
         photo.onerror = null;
@@ -1105,7 +1105,7 @@
         <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 8px 0 6px; line-height: 1.35;">${escapeHtml(ad.title || "Featured Healthcare Offer")}</h2>
         
         <div style="display: flex; align-items: center; gap: 8px; color: #0284c7; font-weight: 700; font-size: 13.5px; margin-bottom: 14px;">
-          <span>🏥 ${escapeHtml(ad.hospital_name || "CarePath Hospital")}</span>
+          <span>🏥 ${escapeHtml(ad.hospital_name || "Q-Arovia Hospital")}</span>
           ${ad.hospital_city ? `<span style="color: #64748b; font-weight: 500;">• 📍 ${escapeHtml(ad.hospital_city)}</span>` : ""}
         </div>
 
@@ -1118,7 +1118,7 @@
           <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 12.5px; color: #0369a1; line-height: 1.45;">
             <div style="font-weight: 700; margin-bottom: 2px;">🌐 Advertiser Reference / Information URL:</div>
             <div style="word-break: break-all; color: #0284c7; font-family: monospace; font-size: 12px;">${escapeHtml(ad.target_link)}</div>
-            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">For your privacy and security, CarePath keeps you safely inside the application.</div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">For your privacy and security, Q-Arovia keeps you safely inside the application.</div>
           </div>
         ` : ""}
 
@@ -1187,7 +1187,7 @@
 
     if (!section || !container) {
       console.warn(
-        'CarePath: Check that your HTML contains "recentSection" and "recentHospitals".'
+        'Q-Arovia: Check that your HTML contains "recentSection" and "recentHospitals".'
       );
       return;
     }

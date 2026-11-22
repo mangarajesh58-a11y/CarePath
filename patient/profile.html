@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#2563eb">
   <meta name="color-scheme" content="light dark">
 
-  <title>CarePath - Patient Profile & Preferences</title>
+  <title>Q-Arovia - Patient Profile & Preferences</title>
 
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="carepath-ai-small.png">
@@ -41,7 +41,7 @@
   async function triggerInAppAccountDeletion() {
     const confirmed = confirm(
       "⚠️ WARNING: Permanent Account Deletion\n\n" +
-      "Are you sure you want to permanently delete your CarePath account?\n\n" +
+      "Are you sure you want to permanently delete your Q-Arovia account?\n\n" +
       "• Your profile, email, and phone number will be erased.\n" +
       "• Uploaded prescription scans and doctor inquiry messages will be deleted.\n\n" +
       "This action cannot be undone. Click OK to proceed."
@@ -884,7 +884,7 @@
     <div id="guestState" class="guest-card" style="display: none;">
       <div class="guest-icon">🔒</div>
       <h2>Patient Sign In Required</h2>
-      <p>Sign in to view and edit your profile, track booked OPD tokens in real-time, and access CarePath AI.</p>
+      <p>Sign in to view and edit your profile, track booked OPD tokens in real-time, and access Q-Arovia AI.</p>
       <a href="index.html" class="btn-login-cta">
         <span>🔑 Sign In to Continue</span>
       </a>
@@ -1437,7 +1437,7 @@
        LOGOUT
     ===================================================== */
     function handleLogout() {
-      if (confirm("Are you sure you want to sign out of CarePath?")) {
+      if (confirm("Are you sure you want to sign out of Q-Arovia?")) {
         localStorage.removeItem("patientToken");
         localStorage.removeItem("patient_token");
         localStorage.removeItem("patientName");

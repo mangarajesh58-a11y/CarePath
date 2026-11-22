@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#071329">
   <meta name="color-scheme" content="dark">
-  <title>CarePath - Available Doctors & OPD Specialists</title>
+  <title>Q-Arovia - Available Doctors & OPD Specialists</title>
 
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1272,7 +1272,7 @@
       } catch (e) {}
     } else {
       // User clicked 'Doctors' from dashboard or nav dock:
-      // Show ALL doctors in our CarePath!
+      // Show ALL doctors in our Q-Arovia!
       activeHospitalId = null;
       activeHospitalName = null;
       try {
@@ -1410,7 +1410,7 @@
         const match = PRESEED_HOSPITALS.find(h => String(h.id) === String(activeHospitalId));
         if (match) activeHospitalName = match.name;
         if (heroTitle) heroTitle.innerHTML = `🏥 ${activeHospitalName || "Hospital"} Specialists`;
-        if (sub) sub.innerHTML = `Showing verified specialists exclusively at <strong>${activeHospitalName || "selected hospital"}</strong> • <a href="doctor.html" style="color: #38bdf8; text-decoration: underline; font-weight: 700;">Show All CarePath Doctors</a>`;
+        if (sub) sub.innerHTML = `Showing verified specialists exclusively at <strong>${activeHospitalName || "selected hospital"}</strong> • <a href="doctor.html" style="color: #38bdf8; text-decoration: underline; font-weight: 700;">Show All Q-Arovia Doctors</a>`;
       } else {
         if (heroTitle) heroTitle.textContent = "Find Your Specialist";
         if (sub) sub.textContent = "Book confirmed OPD token with verified specialists across all hospitals";
@@ -1603,7 +1603,7 @@
         const isAvail = doc.is_available !== false;
         const hours = doc.consultation_hours_12h || (doc.start_time && doc.end_time ? `${doc.start_time} - ${doc.end_time}` : "9:00 AM - 4:00 PM");
         const room = doc.room_number ? doc.room_number : "OPD Room 1";
-        const hospName = doc.hospital_name || "CarePath Partner Hospital";
+        const hospName = doc.hospital_name || "Q-Arovia Partner Hospital";
         const photoSrc = CarePathDoctorPhotos.resolvePhotoSrc(doc);
         const rating = doc.rating || 4.9;
         const exp = doc.experience ? (doc.experience.includes("year") ? doc.experience : doc.experience + " Yrs") : "8+ Yrs Exp";
@@ -1716,7 +1716,7 @@
       if (!doctor) return;
 
       const targetHospId = doctor.hospital_id || activeHospitalId || 15;
-      const targetHospName = doctor.hospital_name || activeHospitalName || "CarePath Partner Hospital";
+      const targetHospName = doctor.hospital_name || activeHospitalName || "Q-Arovia Partner Hospital";
 
       localStorage.setItem("hospital_id", String(targetHospId));
       localStorage.setItem("hospitalId", String(targetHospId));

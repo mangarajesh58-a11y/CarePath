@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#071329">
-    <title>CarePath - Book Appointment</title>
+    <title>Q-Arovia - Book Appointment</title>
 
     <style>
         * { box-sizing: border-box; }
@@ -265,7 +265,7 @@
       ←
     </button>
     <div style="display: flex; align-items: center; gap: 8px;">
-      <h1 style="margin: 0; font-size: 16px; color: #0f172a; font-weight: 800;">CarePath</h1>
+      <h1 style="margin: 0; font-size: 16px; color: #0f172a; font-weight: 800;">Q-Arovia</h1>
       <span style="font-size: 12px; color: #64748b; font-weight: 600;">Confirm Appointment</span>
     </div>
   </div>
@@ -306,7 +306,7 @@
 
 <main class="container">
     <section id="bookingSection">
-        <h1>🏥 CarePath</h1>
+        <h1>🏥 Q-Arovia</h1>
         <p class="subtitle">Confirm your hospital appointment</p>
 
         <div class="card">
@@ -448,7 +448,7 @@
                 <span class="value" id="tokenFee">₹0.00</span>
             </div>
             <div class="row">
-                <span class="label">CarePath platform fee</span>
+                <span class="label">Q-Arovia platform fee</span>
                 <span class="value" id="platformFee">₹10.00</span>
             </div>
             <div class="row total">
@@ -470,14 +470,14 @@
             <a href="privacy.html" target="_blank" style="color: #64748b; text-decoration: none;">Privacy Policy</a> &bull;
             <a href="refund.html" target="_blank" style="color: #64748b; text-decoration: none;">Refund Policy</a> &bull;
             <a href="contact.html" target="_blank" style="color: #64748b; text-decoration: none;">Contact Us</a>
-            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">&copy; 2026 CarePath Healthcare Technologies. All payments secured.</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">&copy; 2026 Q-Arovia Healthcare Technologies. All payments secured.</div>
         </div>
     </section>
 
     <section id="receiptSection">
         <h1 style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <img src="carepath-ai-small.png" alt="CarePath Logo" style="width: 38px; height: 38px; border-radius: 9px; object-fit: cover;" />
-            <span>CarePath</span>
+            <img src="carepath-ai-small.png" alt="Q-Arovia Logo" style="width: 38px; height: 38px; border-radius: 9px; object-fit: cover;" />
+            <span>Q-Arovia</span>
         </h1>
         <p class="subtitle">Appointment confirmation</p>
 
@@ -497,11 +497,11 @@
 
         <div class="receipt">
             <h2>Payment Receipt</h2>
-            <p class="subtitle">CarePath - Hospital Token Booking</p>
+            <p class="subtitle">Q-Arovia - Hospital Token Booking</p>
 
             <div class="row"><span class="label">Booking ID (Token ID)</span><span class="value" id="receiptTokenId" style="font-weight: 700; color: #0284c7;">—</span></div>
             <div class="row"><span class="label">Payment Reference</span><span class="value" id="receiptPaymentId">—</span></div>
-            <div class="row"><span class="label">Payment Status</span><span class="value" id="receiptPaymentStatus" style="color: #16a34a; font-weight: 800;">Paid • Verified by CarePath</span></div>
+            <div class="row"><span class="label">Payment Status</span><span class="value" id="receiptPaymentStatus" style="color: #16a34a; font-weight: 800;">Paid • Verified by Q-Arovia</span></div>
             <div class="row"><span class="label">Patient Name</span><span class="value" id="receiptPatient" style="font-weight: 700;">—</span></div>
             <div class="row"><span class="label">Hospital Name</span><span class="value" id="receiptHospital">—</span></div>
             <div class="row"><span class="label">Doctor Name</span><span class="value" id="receiptDoctor">—</span></div>
@@ -535,7 +535,7 @@ function shareTokenSlipWhatsApp() {
     const patientName = (details && details.token && details.token.patient_name) || byId("receiptPatient").textContent || stored("patientName") || "Patient";
     const receiptEmail = (details && details.token && details.token.patient_email) || (byId("receiptEmailDisplay") && byId("receiptEmailDisplay").textContent) || "";
     const doctor = (details && details.doctor) || byId("resultDoctor").textContent || "Consultant";
-    const hospital = (details && details.hospital) || byId("resultHospital").textContent || "CarePath Hospital";
+    const hospital = (details && details.hospital) || byId("resultHospital").textContent || "Q-Arovia Hospital";
     const apptDate = byId("resultDate").textContent || "—";
     const estTime = byId("resultEstimatedTime").textContent || "Check live queue";
     const rawRoom = (details && details.token && (details.token.doctor_room_number || details.token.room_number)) || stored("selectedDoctorRoomNumber") || "OPD Consultation Room";
@@ -544,7 +544,7 @@ function shareTokenSlipWhatsApp() {
     const liveQueueUrl = `https://carepath-patient-mx5v.vercel.app/my-tokens.html`;
 
     const msg =
-`🏥 *CarePath - OPD Token Confirmation*
+`🏥 *Q-Arovia - OPD Token Confirmation*
 
 🎟️ *Token Number:* #${tokenNum}
 👤 *Patient Name:* ${patientName}
@@ -1191,7 +1191,7 @@ async function verifyPaymentAndCreateToken(orderId) {
 
     byId("bookingSection").style.display = "block";
     byId("payButton").disabled = true;
-    showMessage("Verifying payment with CarePath...", "info");
+    showMessage("Verifying payment with Q-Arovia...", "info");
 
     try {
         const appointmentDate = stored("selectedAppointmentDate", "appointmentDate");
@@ -1314,7 +1314,7 @@ function showReceipt(details) {
     byId("receiptSection").style.display = "block";
 
     byId("tokenNumber").textContent = String(token.token_number);
-    byId("resultPayment").textContent = "Paid • Verified by CarePath";
+    byId("resultPayment").textContent = "Paid • Verified by Q-Arovia";
     byId("resultStatus").textContent = token.status || "waiting";
     byId("resultDate").textContent = formatDatePretty(appointmentDate);
     byId("resultHospital").textContent = hospital;
@@ -1333,9 +1333,9 @@ function showReceipt(details) {
     const receiptEmail = (token && token.patient_email) || (bData && bData.patient_email) || stored("patientEmail", "patient_email", "email") || "—";
 
     byId("receiptPatient").textContent = actualPatient;
-    if (byId("receiptHospital")) byId("receiptHospital").textContent = hospital || "CarePath Hospital";
+    if (byId("receiptHospital")) byId("receiptHospital").textContent = hospital || "Q-Arovia Hospital";
     if (byId("receiptDoctor")) byId("receiptDoctor").textContent = (doctor.startsWith("Dr.") ? doctor : ("Dr. " + doctor));
-    if (byId("receiptPaymentStatus")) byId("receiptPaymentStatus").textContent = "Paid • Verified by CarePath";
+    if (byId("receiptPaymentStatus")) byId("receiptPaymentStatus").textContent = "Paid • Verified by Q-Arovia";
     
     const formattedBookingTime = (token && token.created_at)
         ? new Date(token.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })

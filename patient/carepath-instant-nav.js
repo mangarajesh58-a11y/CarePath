@@ -1,5 +1,5 @@
 /**
- * CarePath Instant Navigation Engine
+ * Q-Arovia Instant Navigation Engine
  * Intent-driven, lightweight preloading with Speculation Rules and touch/hover prefetching.
  */
 (function () {

@@ -1,5 +1,5 @@
 """
-CarePath Platform Commission Validation & Rounding Rules Test Suite
+Q-Arovia Platform Commission Validation & Rounding Rules Test Suite
 Automated verification of Rules 1 through 7.
 """
 
@@ -25,7 +25,7 @@ from main import (
 )
 
 
-class CarePathCommissionRulesTests(unittest.TestCase):
+class QAroviaCommissionRulesTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.client = TestClient(app, raise_server_exceptions=False)
@@ -130,7 +130,7 @@ class CarePathCommissionRulesTests(unittest.TestCase):
     # RULE 2: ADMIN VALIDATION & AUTHORIZATION AUDIT
     # -------------------------------------------------------------
     def test_05_admin_can_read_commission_settings(self):
-        """Only CarePath admin can read commission settings."""
+        """Only Q-Arovia admin can read commission settings."""
         # Unauthenticated request rejected
         resp_unauth = self.client.get("/admin/commission")
         self.assertEqual(resp_unauth.status_code, 401)

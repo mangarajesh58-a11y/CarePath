@@ -1,6 +1,6 @@
 {
-  "name": "CarePath Hospital - Clinic & OPD Queue Management",
-  "short_name": "CarePath Hospital",
+  "name": "Q-Arovia Hospital - Clinic & OPD Queue Management",
+  "short_name": "Q-Arovia Hospital",
   "description": "Hospital OPD queue management, digital doctor prescriptions, and waiting room TV display",
   "start_url": "dashboard.html",
   "display": "standalone",

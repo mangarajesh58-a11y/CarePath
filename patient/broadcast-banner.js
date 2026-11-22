@@ -1,5 +1,5 @@
 /**
- * CarePath System Emergency Broadcast Banner Client
+ * Q-Arovia System Emergency Broadcast Banner Client
  * Automatically fetches and renders active emergency alerts and announcements
  */
 (function () {

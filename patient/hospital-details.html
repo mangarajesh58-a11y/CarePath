@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#071329">
-    <title>Hospital Details - CarePath</title>
+    <title>Hospital Details - Q-Arovia</title>
     <link rel="stylesheet" href="./style.css">
 
     <style>
@@ -179,7 +179,7 @@
                 <div class="brand">
                     <span class="brand-icon" aria-hidden="true">✚</span>
                     <div>
-                        <h1 style="margin: 0; font-size: 16px;">CarePath</h1>
+                        <h1 style="margin: 0; font-size: 16px;">Q-Arovia</h1>
                         <p style="margin: 0; font-size: 11px; opacity: 0.8;">Hospital Details</p>
                     </div>
                 </div>
@@ -584,7 +584,7 @@
                             </a>
                         ` : ''}
                         ${cleanPhone ? `
-                            <a href="https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hospName}, I have an inquiry from CarePath regarding doctor appointments and OPD.`)}" target="_blank" rel="noopener noreferrer" style="background: #25D366; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,211,102,0.3);">
+                            <a href="https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hospName}, I have an inquiry from Q-Arovia regarding doctor appointments and OPD.`)}" target="_blank" rel="noopener noreferrer" style="background: #25D366; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,211,102,0.3);">
                                 🟢 Chat on WhatsApp
                             </a>
                             <a href="tel:${cleanPhone}" style="background: #0284c7; color: white; text-decoration: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(2,132,199,0.3);">
@@ -645,7 +645,7 @@
             const waBtn = document.getElementById("inquiryModalWhatsAppBtn");
             if (waBtn) {
                 if (cleanPhone) {
-                    waBtn.href = `https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hosp.name || "Hospital"}, I have an inquiry from CarePath.`)}`;
+                    waBtn.href = `https://wa.me/${waNum}?text=${encodeURIComponent(`Hello ${hosp.name || "Hospital"}, I have an inquiry from Q-Arovia.`)}`;
                     waBtn.style.display = "inline-flex";
                 } else {
                     waBtn.style.display = "none";

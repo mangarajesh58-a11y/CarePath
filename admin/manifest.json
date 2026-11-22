@@ -1,4 +1,12 @@
 {
+  "name": "Q-Arovia Admin - Central Command Console",
+  "short_name": "Q-Arovia Admin",
+  "description": "Administrative command center and financial ledger for Q-Arovia",
+  "start_url": "dashboard.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0284c7",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "../icons/icon-48.webp",
