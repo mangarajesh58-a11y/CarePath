@@ -11,6 +11,7 @@ from sqlalchemy import (
     DateTime,
     UniqueConstraint,
     Numeric,
+    Index,
 )
 
 from database import Base
@@ -214,6 +215,12 @@ class DoctorScheduleException(Base):
 
 class Token(Base):
     __tablename__ = "tokens"
+
+    __table_args__ = (
+        Index("idx_tokens_hosp_date_status", "hospital_id", "appointment_date", "status"),
+        Index("idx_tokens_hosp_date_doctor", "hospital_id", "appointment_date", "doctor_id"),
+        Index("idx_tokens_patient_status", "patient_id", "status"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     patient_id = Column(Integer, nullable=True, index=True)

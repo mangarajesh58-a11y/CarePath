@@ -1371,6 +1371,11 @@
                 ✓ Payment Confirmed
               </span>
               <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                ${t.status === "waiting" ? `
+                  <button class="btn-receipt" onclick="promptCancelAppointment(${t.id}, '${t.token_number || ''}', '${escapeHtml(t.doctor || 'Doctor')}')" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; display: inline-flex; align-items: center; gap: 4px; font-weight: 700;">
+                    ✖ Cancel
+                  </button>
+                ` : ""}
                 <button class="btn-receipt" onclick="openDocUploadModal(${t.id}, '${escapeHtml(t.patient_id || '')}', '${escapeHtml(t.hospital_id || '')}', '${t.token_number}', '${escapeHtml(t.patient_name || 'Patient')}')" style="background: #4f46e5; color: white; display: inline-flex; align-items: center; gap: 4px; border: none; cursor: pointer;">
                   📎 Upload Documents
                 </button>
@@ -1396,6 +1401,34 @@
 
       container.innerHTML = html;
       loadDocumentsForTokens(tokens);
+    }
+
+    async function promptCancelAppointment(tokenId, tokenNum, doctorName) {
+      const confirmCancel = confirm(
+        `Are you sure you want to cancel Token #${tokenNum} (Dr. ${doctorName})?\n\n` +
+        `• Cancellation is permitted up to 2 hours before the scheduled consultation window.\n` +
+        `• If paid online, a full 100% refund will be processed to your original payment method.`
+      );
+      if (!confirmCancel) return;
+
+      try {
+        const token = localStorage.getItem("token") || localStorage.getItem("patient_token");
+        const res = await fetch(`${API_URL}/patient/tokens/${tokenId}/cancel`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || data.message || "Failed to cancel appointment.");
+        }
+        alert(data.message || "Appointment has been cancelled successfully.");
+        await fetchTokens();
+      } catch (err) {
+        alert(err.message || "Unable to cancel appointment.");
+      }
     }
 
     function openReceiptModal(tokenId) {

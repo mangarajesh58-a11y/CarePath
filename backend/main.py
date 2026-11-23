@@ -72,6 +72,7 @@ from sqlalchemy import (
     func,
     or_,
     and_,
+    case,
 )
 
 from sqlalchemy.orm import Session, defer
@@ -3047,10 +3048,10 @@ def request_registration_otp(
         except Exception as exc:
             import logging
             logging.error("Registration OTP email sending failed to %s: %s", email, exc)
-            logging.info("Registration OTP for %s is: %s", email, otp)
+            logging.info("Registration OTP generated successfully for %s", email)
             raise HTTPException(
                 status_code=500,
-                detail=f"Unable to send verification email: {exc}. Please check your email address or contact support.",
+                detail="Unable to send verification email. Please verify your email address or try again later.",
             )
 
         return {
@@ -3066,7 +3067,7 @@ def request_registration_otp(
         db.rollback()
         raise HTTPException(
             status_code=500,
-            detail=f"Unable to send OTP: {exc}. Check your email configuration.",
+            detail="Unable to send verification code. Please try again later.",
         )
 
 @app.post("/registration/verify-otp")
@@ -3238,10 +3239,10 @@ def request_forgot_password_otp(
         except Exception as exc:
             import logging
             logging.error("Password reset OTP email sending failed to %s: %s", email, exc)
-            logging.info("Reset OTP for %s is: %s", email, otp)
+            logging.info("Password reset OTP generated successfully for %s", email)
             raise HTTPException(
                 status_code=500,
-                detail=f"Unable to send password reset email: {exc}. Please verify server email configuration.",
+                detail="Unable to send password reset email. Please try again later.",
             )
 
         return {
@@ -3257,7 +3258,7 @@ def request_forgot_password_otp(
         db.rollback()
         raise HTTPException(
             status_code=500,
-            detail=f"Unable to send OTP: {exc}. Please verify your email configuration.",
+            detail="Unable to process password reset request. Please try again later.",
         )
 
 
@@ -4315,39 +4316,84 @@ def get_next_available_token(
             "estimated_wait_minutes": int(waiting_cnt * 5),
         }
     else:
-        # ALL DOCTORS OVERVIEW
+        # ALL DOCTORS OVERVIEW - Bulk Aggregated Queries (O(1) database roundtrips, eliminating N+1 query storms)
         doctors = db.query(Doctor).filter(Doctor.hospital_id == hospital_id).all()
+
+        # 1. Bulk aggregate max token and waiting counts from tokens
+        tokens_agg = db.query(
+            Token.doctor_id,
+            func.lower(Token.doctor).label("doc_name_lower"),
+            func.max(Token.token_number).label("max_token"),
+            func.count(case((Token.status == "waiting", 1))).label("waiting_count"),
+        ).filter(
+            Token.hospital_id == hospital_id,
+            Token.appointment_date == target_date,
+            Token.status != "cancelled"
+        ).group_by(Token.doctor_id, func.lower(Token.doctor)).all()
+
+        max_token_map = {}
+        waiting_map = {}
+        for row in tokens_agg:
+            if row.doctor_id:
+                max_token_map[f"id_{row.doctor_id}"] = row.max_token or 0
+                waiting_map[f"id_{row.doctor_id}"] = row.waiting_count or 0
+            if row.doc_name_lower:
+                max_token_map[f"name_{row.doc_name_lower}"] = row.max_token or 0
+                waiting_map[f"name_{row.doc_name_lower}"] = row.waiting_count or 0
+
+        # 2. Bulk aggregate from token_sequences
+        seq_agg = db.execute(text("""
+            SELECT doctor_id, LOWER(doctor) as doc_name_lower, MAX(last_token_number) as max_seq
+            FROM token_sequences
+            WHERE hospital_id = :h_id AND appointment_date = :dt
+            GROUP BY doctor_id, LOWER(doctor)
+        """), {"h_id": hospital_id, "dt": target_date}).fetchall()
+
+        seq_map = {}
+        for s_row in seq_agg:
+            d_id = s_row[0]
+            d_name = s_row[1]
+            m_seq = s_row[2] or 0
+            if d_id:
+                seq_map[f"id_{d_id}"] = m_seq
+            if d_name:
+                seq_map[f"name_{d_name}"] = m_seq
+
+        # 3. Bulk fetch currently serving tokens
+        serving_agg = db.query(
+            Token.doctor_id,
+            func.lower(Token.doctor).label("doc_name_lower"),
+            Token.token_number
+        ).filter(
+            Token.hospital_id == hospital_id,
+            Token.appointment_date == target_date,
+            Token.status == "serving"
+        ).order_by(Token.called_at.desc(), Token.id.desc()).all()
+
+        serving_map = {}
+        for srv in serving_agg:
+            key_id = f"id_{srv.doctor_id}" if srv.doctor_id else None
+            key_name = f"name_{srv.doc_name_lower}" if srv.doc_name_lower else None
+            if key_id and key_id not in serving_map:
+                serving_map[key_id] = srv.token_number
+            if key_name and key_name not in serving_map:
+                serving_map[key_name] = srv.token_number
+
         doc_queues = []
         total_waiting = 0
         serving_tokens_list = []
+
         for d in doctors:
-            m_tok = db.query(func.max(Token.token_number)).filter(
-                Token.hospital_id == hospital_id,
-                Token.appointment_date == target_date,
-                or_(Token.doctor_id == d.id, func.lower(Token.doctor) == d.name.lower())
-            ).scalar() or 0
-            s_tok = db.execute(text("""
-                SELECT MAX(last_token_number) FROM token_sequences
-                WHERE hospital_id = :h_id AND appointment_date = :dt
-                  AND (doctor_id = :d_id OR LOWER(doctor) = LOWER(:d_name))
-            """), {"h_id": hospital_id, "d_id": d.id, "d_name": d.name, "dt": target_date}).scalar() or 0
+            d_name_l = d.name.lower().strip()
+            m_tok = max(max_token_map.get(f"id_{d.id}", 0), max_token_map.get(f"name_{d_name_l}", 0))
+            s_tok = max(seq_map.get(f"id_{d.id}", 0), seq_map.get(f"name_{d_name_l}", 0))
             n_tok = max(int(m_tok), int(s_tok)) + 1
 
-            srv = db.query(Token.token_number).filter(
-                Token.hospital_id == hospital_id,
-                Token.appointment_date == target_date,
-                Token.status == "serving",
-                or_(Token.doctor_id == d.id, func.lower(Token.doctor) == d.name.lower())
-            ).order_by(Token.called_at.desc(), Token.id.desc()).first()
-            if srv:
-                serving_tokens_list.append(f"#{srv[0]} (Dr. {d.name})")
+            srv_tok = serving_map.get(f"id_{d.id}") or serving_map.get(f"name_{d_name_l}")
+            if srv_tok:
+                serving_tokens_list.append(f"#{srv_tok} (Dr. {d.name})")
 
-            w_cnt = db.query(func.count(Token.id)).filter(
-                Token.hospital_id == hospital_id,
-                Token.appointment_date == target_date,
-                Token.status == "waiting",
-                or_(Token.doctor_id == d.id, func.lower(Token.doctor) == d.name.lower())
-            ).scalar() or 0
+            w_cnt = max(waiting_map.get(f"id_{d.id}", 0), waiting_map.get(f"name_{d_name_l}", 0))
             total_waiting += w_cnt
 
             doc_queues.append({
@@ -4355,7 +4401,7 @@ def get_next_available_token(
                 "doctor_name": d.name,
                 "department": d.department,
                 "next_token_number": n_tok,
-                "serving_token": srv[0] if srv else None,
+                "serving_token": srv_tok,
                 "waiting_count": w_cnt,
             })
 
@@ -4420,6 +4466,20 @@ def reset_doctor_queue(
         )
 
     target_date = appointment_date or get_ist_today()
+
+    active_tokens = db.query(func.count(Token.id)).filter(
+        Token.hospital_id == hospital_id,
+        or_(Token.doctor_id == doc_exists.id, func.lower(Token.doctor) == clean_doc.lower()),
+        Token.appointment_date == target_date,
+        Token.status.in_(["waiting", "serving"])
+    ).scalar() or 0
+
+    if active_tokens > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot reset token sequence while {active_tokens} active consultation tokens exist for Dr. {clean_doc} on {target_date}. Please complete or cancel active tokens first."
+        )
+
     db.execute(
         text("""
             DELETE FROM token_sequences 
@@ -7224,6 +7284,497 @@ def create_cashfree_order(
             status_code=502,
             detail="Unable to connect to Cashfree payment gateway.",
         )
+
+
+# ============================================================
+# CASHFREE REFUND ENGINE (QBUG-005)
+# ============================================================
+
+def execute_cashfree_refund(db: Session, token: Token, reason: str) -> dict:
+    """
+    Executes an actual server-to-server refund request via Cashfree Payments API v2023-08-01.
+    Updates Token payment_status to 'refunded', 'refund_pending', or 'refund_failed'.
+    Idempotent: will not issue duplicate refunds if already marked refunded.
+    """
+    if not token:
+        return {"success": False, "error": "Token not found"}
+
+    if token.payment_status in ("refunded", "refund_processed"):
+        return {"success": True, "message": "Already refunded", "status": token.payment_status}
+
+    # Free or walk-in consultation without cashfree order
+    if not token.cashfree_order_id or (token.total_amount or 0) <= 0:
+        token.payment_status = "refunded"
+        token.notes = (token.notes or "") + f" [Refund recorded: Free/Counter consultation, Reason: {reason}]"
+        db.commit()
+        return {"success": True, "status": "refunded", "mode": "counter_free"}
+
+    if not CASHFREE_CLIENT_ID or not CASHFREE_CLIENT_SECRET:
+        logging.error("Cashfree credentials missing for refund execution.")
+        token.payment_status = "refund_pending"
+        token.notes = (token.notes or "") + f" [Refund pending: Gateway credentials unconfigured on server. Reason: {reason}]"
+        db.commit()
+        return {"success": False, "error": "Gateway credentials missing"}
+
+    refund_id = f"ref_{token.id}_{secrets.token_hex(4)}"
+    refund_amount = float(token.total_amount or 0)
+
+    headers = {
+        "x-client-id": CASHFREE_CLIENT_ID,
+        "x-client-secret": CASHFREE_CLIENT_SECRET,
+        "x-api-version": CASHFREE_API_VERSION,
+        "Content-Type": "application/json",
+        "x-idempotency-key": str(uuid.uuid4()),
+    }
+
+    payload = {
+        "refund_amount": refund_amount,
+        "refund_id": refund_id,
+        "refund_note": f"Q-Arovia: {reason[:80]}",
+        "refund_speed": "STANDARD"
+    }
+
+    try:
+        url = f"{CASHFREE_BASE_URL}/orders/{token.cashfree_order_id}/refunds"
+        resp = requests.post(url, headers=headers, json=payload, timeout=20)
+        
+        if resp.status_code in (200, 201):
+            data = resp.json()
+            cf_refund_status = str(data.get("refund_status", "PENDING")).upper()
+            cf_refund_id = data.get("cf_refund_id") or refund_id
+            
+            if cf_refund_status == "SUCCESS":
+                token.payment_status = "refunded"
+            else:
+                token.payment_status = "refund_pending"
+                
+            token.notes = (token.notes or "") + f" [Cashfree Refund: {cf_refund_status}, ID: {cf_refund_id}, Reason: {reason}]"
+            db.commit()
+            return {"success": True, "status": token.payment_status, "cf_refund_id": cf_refund_id, "data": data}
+        else:
+            logging.error("Cashfree refund API failed: %s %s", resp.status_code, resp.text)
+            token.payment_status = "refund_failed"
+            token.notes = (token.notes or "") + f" [Cashfree Refund Failed: {resp.status_code} - {resp.text[:120]}]"
+            db.commit()
+            return {"success": False, "status": "refund_failed", "error": resp.text}
+    except Exception as e:
+        logging.error("Cashfree refund exception: %s", e)
+        token.payment_status = "refund_pending"
+        token.notes = (token.notes or "") + f" [Cashfree Refund Network Error: {str(e)[:100]}]"
+        db.commit()
+        return {"success": False, "status": "refund_pending", "error": str(e)}
+
+
+# ============================================================
+# CASHFREE WEBHOOK LISTENER (QBUG-004)
+# ============================================================
+
+def verify_cashfree_webhook_signature(raw_body: bytes, timestamp: str, signature: str) -> bool:
+    """
+    Verifies Cashfree webhook signature using HMAC-SHA256 according to Cashfree v2023-08-01 documentation.
+    Signature = Base64(HMAC-SHA256(timestamp + raw_body, CASHFREE_CLIENT_SECRET))
+    """
+    if not CASHFREE_CLIENT_SECRET or not timestamp or not signature:
+        return False
+    try:
+        data_to_sign = timestamp.encode("utf-8") + raw_body
+        expected_sig_bytes = hmac.new(
+            CASHFREE_CLIENT_SECRET.encode("utf-8"),
+            data_to_sign,
+            hashlib.sha256
+        ).digest()
+        expected_sig = base64.b64encode(expected_sig_bytes).decode("utf-8")
+        return hmac.compare_digest(expected_sig, signature)
+    except Exception as e:
+        logging.warning("Error verifying Cashfree webhook signature: %s", e)
+        return False
+
+
+@app.post("/payments/cashfree-webhook")
+async def cashfree_payment_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Asynchronous Server-to-Server Cashfree Webhook Listener.
+    Idempotently processes PAYMENT_SUCCESS_WEBHOOK, ORDER_PAID, and REFUND events.
+    Recovers bookings even if patient device disconnects right after payment.
+    """
+    raw_body = await request.body()
+    signature = request.headers.get("x-webhook-signature") or request.headers.get("X-Webhook-Signature") or ""
+    timestamp = request.headers.get("x-webhook-timestamp") or request.headers.get("X-Webhook-Timestamp") or ""
+
+    if CASHFREE_CLIENT_SECRET and signature and timestamp:
+        if not verify_cashfree_webhook_signature(raw_body, timestamp, signature):
+            logging.warning("Invalid Cashfree webhook signature rejected.")
+            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+
+    try:
+        payload = json.loads(raw_body.decode("utf-8"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    event_type = payload.get("type") or payload.get("event") or ""
+    data = payload.get("data") or {}
+    order_data = data.get("order") or {}
+    payment_data = data.get("payment") or {}
+    refund_data = data.get("refund") or {}
+
+    order_id = order_data.get("order_id") or payload.get("order_id") or ""
+    if not order_id and "order" in data and isinstance(data["order"], dict):
+        order_id = data["order"].get("order_id", "")
+
+    logging.info("Cashfree webhook received: event=%s, order_id=%s", event_type, order_id)
+
+    # 1. Handle Refund Events
+    if "REFUND" in event_type.upper():
+        cf_refund_id = refund_data.get("cf_refund_id")
+        refund_status = str(refund_data.get("refund_status", "")).upper()
+        if order_id:
+            token = db.query(Token).filter(Token.cashfree_order_id == order_id).first()
+            if token:
+                if refund_status == "SUCCESS":
+                    token.payment_status = "refunded"
+                elif refund_status == "FAILED":
+                    token.payment_status = "refund_failed"
+                token.notes = (token.notes or "") + f" [Webhook Refund: {refund_status}, ID: {cf_refund_id or 'N/A'}]"
+                db.commit()
+        return {"status": "success", "event": event_type, "order_id": order_id}
+
+    # 2. Handle Payment Success / Order Paid Events
+    is_paid_event = any(term in event_type.upper() for term in ("PAYMENT_SUCCESS", "ORDER_PAID", "SUCCESS"))
+    if not is_paid_event:
+        return {"status": "acknowledged", "event": event_type}
+
+    if not order_id:
+        return {"status": "ignored", "reason": "No order_id in webhook payload"}
+
+    # Idempotency check: if token already allocated for this order_id, return 200 OK
+    existing_token = db.query(Token).filter(Token.cashfree_order_id == order_id).first()
+    if existing_token:
+        logging.info("Token already exists for order_id %s (Token #%s). Idempotent return.", order_id, existing_token.token_number)
+        return {"status": "idempotent_ok", "token_id": existing_token.id, "token_number": existing_token.token_number}
+
+    headers = {
+        "x-client-id": CASHFREE_CLIENT_ID,
+        "x-client-secret": CASHFREE_CLIENT_SECRET,
+        "x-api-version": CASHFREE_API_VERSION,
+        "Content-Type": "application/json",
+    }
+    
+    try:
+        cf_resp = requests.get(f"{CASHFREE_BASE_URL}/orders/{order_id}", headers=headers, timeout=15)
+        if cf_resp.status_code != 200:
+            logging.warning("Could not fetch order %s from Cashfree API: %s", order_id, cf_resp.text)
+            return {"status": "retry_later"}
+        cf_order = cf_resp.json()
+        if cf_order.get("order_status") != "PAID":
+            logging.warning("Cashfree order %s status is %s (not PAID).", order_id, cf_order.get("order_status"))
+            return {"status": "order_not_paid"}
+    except Exception as e:
+        logging.error("Error communicating with Cashfree API for order %s: %s", order_id, e)
+        return {"status": "gateway_error"}
+
+    customer_details = cf_order.get("customer_details") or {}
+    order_tags = cf_order.get("order_tags") or {}
+    customer_id = customer_details.get("customer_id")
+
+    patient = None
+    if customer_id and str(customer_id).isdigit():
+        patient = db.query(Patient).filter(Patient.id == int(customer_id)).first()
+
+    hospital_id = order_tags.get("hospital_id")
+    hospital = None
+    if hospital_id and str(hospital_id).isdigit():
+        hospital = db.query(Hospital).filter(Hospital.id == int(hospital_id)).first()
+
+    doctor_id = order_tags.get("doctor_id")
+    doctor = None
+    if doctor_id and str(doctor_id).isdigit():
+        doctor = db.query(Doctor).filter(Doctor.id == int(doctor_id)).first()
+
+    if not patient or not hospital or not doctor:
+        logging.error("Webhook could not resolve patient (%s), hospital (%s), or doctor (%s) for order %s", customer_id, hospital_id, doctor_id, order_id)
+        return {"status": "resolution_failed", "order_id": order_id}
+
+    target_date = get_ist_today()
+    token_fee = int(order_tags.get("token_fee", 0))
+    platform_fee = int(order_tags.get("platform_fee", 10))
+    total_amount = int(order_tags.get("total_amount", token_fee + platform_fee))
+
+    allocated_num = allocate_token_number(db, hospital.id, doctor.name, target_date, doctor.id)
+
+    comm_pct = get_current_commission_percentage(db)
+    comm_amount, hosp_amount = calculate_commission(Decimal(str(token_fee)), comm_pct)
+
+    cf_payment_id = payment_data.get("cf_payment_id") or f"cf_wh_{secrets.token_hex(6)}"
+
+    new_token = Token(
+        patient_id=patient.id,
+        patient_name=patient.full_name or "Patient",
+        patient_email=patient.email,
+        patient_phone=patient.phone or customer_details.get("customer_phone"),
+        booking_for="self",
+        patient_age=patient.age,
+        patient_gender=patient.gender,
+        hospital=hospital.name,
+        hospital_id=hospital.id,
+        doctor=doctor.name,
+        doctor_id=doctor.id,
+        department=doctor.department,
+        room_number=doctor.room_number,
+        token_number=allocated_num,
+        appointment_date=target_date,
+        token_fee=token_fee,
+        platform_fee=platform_fee,
+        total_amount=total_amount,
+        payment_status="paid",
+        commission_percentage=comm_pct,
+        commission_amount=comm_amount,
+        hospital_amount=hosp_amount,
+        cashfree_order_id=order_id,
+        cashfree_payment_id=str(cf_payment_id),
+        status="waiting",
+        created_at=datetime.utcnow()
+    )
+    db.add(new_token)
+    db.commit()
+    db.refresh(new_token)
+
+    logging.info("Webhook successfully created Token #%s (ID: %s) for order %s", allocated_num, new_token.id, order_id)
+
+    try:
+        broadcast_now(ws_manager.broadcast_token_event(
+            event_type="token_created",
+            token_data={
+                "id": new_token.id,
+                "token_number": new_token.token_number,
+                "status": new_token.status,
+                "patient_name": new_token.patient_name,
+                "doctor": new_token.doctor,
+                "department": new_token.department,
+            },
+            hospital_id=hospital.id,
+            patient_phone=new_token.patient_phone,
+        ))
+    except Exception as ws_err:
+        logging.warning("Webhook WS broadcast error: %s", ws_err)
+
+    return {"status": "success", "token_id": new_token.id, "token_number": new_token.token_number}
+
+
+# ============================================================
+# PATIENT APPOINTMENT CANCELLATION (QBUG-008)
+# ============================================================
+
+@app.post("/patient/tokens/{token_id}/cancel")
+def cancel_patient_token(
+    token_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("patient")),
+):
+    """
+    Allows a patient to cancel their upcoming appointment up to 2 hours before scheduled time.
+    Triggers automated Cashfree refund if consultation was paid.
+    Releases queue slot and broadcasts live update.
+    """
+    patient_id = current_user.get("user_id")
+    token = db.query(Token).filter(Token.id == token_id).first()
+    if not token:
+        raise HTTPException(status_code=404, detail="Appointment token not found.")
+
+    if token.patient_id != patient_id:
+        patient = db.query(Patient).filter(Patient.id == patient_id).first()
+        is_match = False
+        if patient and patient.phone and token.patient_phone:
+            if clean_phone(patient.phone) == clean_phone(token.patient_phone):
+                is_match = True
+        if not is_match:
+            raise HTTPException(status_code=403, detail="You do not have permission to cancel this appointment.")
+
+    if token.status == "cancelled":
+        return {"success": True, "message": "This appointment has already been cancelled.", "status": "cancelled"}
+
+    if token.status in ("serving", "completed"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot cancel appointment because it is already {token.status}."
+        )
+
+    # 2-Hour Cancellation Window Check
+    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    appt_date = token.appointment_date
+    if isinstance(appt_date, str):
+        try:
+            appt_date = datetime.strptime(appt_date, "%Y-%m-%d").date()
+        except Exception:
+            pass
+
+    doctor = db.query(Doctor).filter(Doctor.id == token.doctor_id).first() if token.doctor_id else None
+    start_time_str = (doctor.start_time if doctor and doctor.start_time else "09:00").strip()
+    try:
+        sh, sm = map(int, start_time_str.split(":")[:2])
+    except Exception:
+        sh, sm = 9, 0
+
+    appt_start_dt = datetime(appt_date.year, appt_date.month, appt_date.day, sh, sm)
+    diff = (appt_start_dt - ist_now).total_seconds()
+
+    if diff < 7200: # Less than 2 hours (7200 seconds)
+        raise HTTPException(
+            status_code=400,
+            detail="Appointments can only be cancelled up to 2 hours before the scheduled consultation window."
+        )
+
+    token.status = "cancelled"
+
+    refund_result = None
+    if token.cashfree_order_id and (token.total_amount or 0) > 0:
+        refund_result = execute_cashfree_refund(db, token, "Cancelled by patient > 2h before consultation")
+    else:
+        token.payment_status = "cancelled"
+        db.commit()
+
+    try:
+        broadcast_now(ws_manager.broadcast_token_event(
+            event_type="token_cancelled",
+            token_data={
+                "id": token.id,
+                "token_number": token.token_number,
+                "status": "cancelled",
+                "patient_name": token.patient_name,
+                "doctor": token.doctor,
+                "department": token.department,
+            },
+            hospital_id=token.hospital_id,
+            patient_phone=token.patient_phone,
+        ))
+    except Exception as ws_err:
+        logging.warning("Cancellation WS broadcast error: %s", ws_err)
+
+    return {
+        "success": True,
+        "message": "Appointment cancelled successfully.",
+        "token_id": token.id,
+        "status": "cancelled",
+        "refund": refund_result
+    }
+
+
+# ============================================================
+# FREE CONSULTATION BOOKING (QBUG-009)
+# ============================================================
+
+class FreeTokenRequest(BaseModel):
+    hospital: str
+    department: str
+    doctor: str
+    appointment_date: Optional[str] = None
+    booking_for: Optional[str] = "self"
+
+@app.post("/tokens/free")
+def create_free_token(
+    data: FreeTokenRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("patient")),
+):
+    """
+    Creates an appointment token for a consultation where doctor_token_fee is 0 and platform_fee is 0.
+    Bypasses Cashfree gateway order creation securely, preventing 400 errors for free OPD clinics.
+    """
+    patient = db.query(Patient).filter(Patient.id == current_user["user_id"]).first()
+    if not patient:
+        raise HTTPException(status_code=401, detail="Patient account not found.")
+
+    hospital = find_published_hospital(db, data.hospital.strip())
+    clean_doc_search = re.sub(r'^(dr\.|dr|mr\.|mr)\s*', '', data.doctor.strip(), flags=re.I).strip()
+    doctor = (
+        db.query(Doctor)
+        .filter(
+            Doctor.hospital_id == hospital.id,
+            func.lower(Doctor.department) == data.department.strip().lower(),
+            or_(
+                func.lower(Doctor.name) == data.doctor.strip().lower(),
+                func.lower(Doctor.name) == clean_doc_search.lower(),
+                Doctor.name.ilike(f"%{clean_doc_search}%"),
+            )
+        )
+        .first()
+    )
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found.")
+
+    doc_fee = getattr(doctor, "token_fee", 0) or 0
+    if doc_fee > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dr. {doctor.name} consultation fee is ₹{doc_fee}. Please use standard booking flow."
+        )
+
+    ist_today = get_ist_today()
+    target_date = ist_today
+    if data.appointment_date:
+        try:
+            target_date = datetime.strptime(data.appointment_date, "%Y-%m-%d").date()
+        except Exception:
+            pass
+
+    if target_date < ist_today:
+        raise HTTPException(status_code=400, detail="Cannot book appointment for past date.")
+
+    allocated_num = allocate_token_number(db, hospital.id, doctor.name, target_date, doctor.id)
+
+    new_token = Token(
+        patient_id=patient.id,
+        patient_name=patient.full_name or "Patient",
+        patient_email=patient.email,
+        patient_phone=patient.phone,
+        booking_for=data.booking_for or "self",
+        patient_age=patient.age,
+        patient_gender=patient.gender,
+        hospital=hospital.name,
+        hospital_id=hospital.id,
+        doctor=doctor.name,
+        doctor_id=doctor.id,
+        department=doctor.department,
+        room_number=doctor.room_number,
+        token_number=allocated_num,
+        appointment_date=target_date,
+        token_fee=0,
+        platform_fee=0,
+        total_amount=0,
+        payment_status="not_required",
+        status="waiting",
+        booking_type="ONLINE",
+        created_at=datetime.utcnow()
+    )
+    db.add(new_token)
+    db.commit()
+    db.refresh(new_token)
+
+    try:
+        broadcast_now(ws_manager.broadcast_token_event(
+            event_type="token_created",
+            token_data={
+                "id": new_token.id,
+                "token_number": new_token.token_number,
+                "status": "waiting",
+                "patient_name": new_token.patient_name,
+                "doctor": new_token.doctor,
+                "department": new_token.department,
+            },
+            hospital_id=hospital.id,
+            patient_phone=new_token.patient_phone,
+        ))
+    except Exception as ws_err:
+        logging.warning("Free token WS broadcast error: %s", ws_err)
+
+    return {
+        "success": True,
+        "message": f"Free consultation token #{allocated_num} confirmed!",
+        "token": token_to_dict(new_token)
+    }
 # ============================================================
 # RAZORPAY SIGNATURE
 # ============================================================
@@ -8132,16 +8683,18 @@ def get_token_documents(
     auth_user_id = current_user.get("user_id")
 
     if role == "patient":
-        if token_record.patient_id is not None and token_record.patient_id != auth_user_id:
+        is_authorized = False
+        if token_record.patient_id == auth_user_id:
+            is_authorized = True
+        else:
             patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
-            is_authorized = False
             if patient:
                 if patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
                     is_authorized = True
                 elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
                     is_authorized = True
-            if not is_authorized:
-                raise HTTPException(status_code=403, detail="You do not have permission to view documents for this token.")
+        if not is_authorized:
+            raise HTTPException(status_code=403, detail="You do not have permission to view documents for this token.")
     elif role == "hospital":
         if token_record.hospital_id != auth_user_id:
             raise HTTPException(status_code=403, detail="You do not have permission to view documents for another hospital's token.")
@@ -8196,10 +8749,12 @@ def get_medical_document_file(
     auth_user_id = current_user.get("user_id")
 
     if role == "patient":
-        if doc.patient_id is not None and doc.patient_id != auth_user_id:
+        is_authorized = False
+        if doc.patient_id is not None and doc.patient_id == auth_user_id:
+            is_authorized = True
+        else:
             token_record = db.query(Token).filter(Token.id == doc.token_id).first()
             patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
-            is_authorized = False
             if token_record and patient:
                 if token_record.patient_id == auth_user_id:
                     is_authorized = True
@@ -8207,16 +8762,17 @@ def get_medical_document_file(
                     is_authorized = True
                 elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
                     is_authorized = True
-            if not is_authorized:
-                raise HTTPException(status_code=403, detail="You do not have permission to access another patient's medical document.")
+        if not is_authorized:
+            raise HTTPException(status_code=403, detail="You do not have permission to access another patient's medical document.")
     elif role == "hospital":
         if doc.hospital_id != auth_user_id:
             raise HTTPException(status_code=403, detail="You do not have permission to access another hospital's patient document.")
     elif role != "admin":
         raise HTTPException(status_code=403, detail="Unauthorized access.")
 
-    file_path = os.path.join(MEDICAL_DOCUMENTS_DIR, doc.stored_filename)
-    if not os.path.exists(file_path):
+    safe_filename = os.path.basename(doc.stored_filename)
+    file_path = os.path.abspath(os.path.join(MEDICAL_DOCUMENTS_DIR, safe_filename))
+    if not file_path.startswith(os.path.abspath(MEDICAL_DOCUMENTS_DIR)) or not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Physical document file missing from storage.")
 
     disposition = "inline" if preview else "attachment"
@@ -8245,18 +8801,30 @@ def delete_medical_document(
     auth_user_id = current_user.get("user_id")
 
     if role == "patient":
-        if doc.patient_id is not None and doc.patient_id != auth_user_id:
+        is_authorized = False
+        if doc.patient_id is not None and doc.patient_id == auth_user_id:
+            is_authorized = True
+        else:
             token_record = db.query(Token).filter(Token.id == doc.token_id).first()
-            if not token_record or token_record.patient_id != auth_user_id:
-                raise HTTPException(status_code=403, detail="You do not have permission to delete this document.")
+            patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
+            if token_record and patient:
+                if token_record.patient_id == auth_user_id:
+                    is_authorized = True
+                elif patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
+                    is_authorized = True
+                elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
+                    is_authorized = True
+        if not is_authorized:
+            raise HTTPException(status_code=403, detail="You do not have permission to delete this document.")
     elif role == "hospital":
         if doc.hospital_id != auth_user_id:
             raise HTTPException(status_code=403, detail="You do not have permission to delete another hospital's document.")
     elif role != "admin":
         raise HTTPException(status_code=403, detail="Unauthorized.")
 
-    file_path = os.path.join(MEDICAL_DOCUMENTS_DIR, doc.stored_filename)
-    if os.path.exists(file_path):
+    safe_filename = os.path.basename(doc.stored_filename)
+    file_path = os.path.abspath(os.path.join(MEDICAL_DOCUMENTS_DIR, safe_filename))
+    if file_path.startswith(os.path.abspath(MEDICAL_DOCUMENTS_DIR)) and os.path.exists(file_path):
         try:
             os.remove(file_path)
         except Exception as e:
@@ -12054,8 +12622,7 @@ def schedule_hospital_closure(
     refund_count = 0
     for t in affected_tokens:
         t.status = "cancelled"
-        t.payment_status = "refunded"
-        t.notes = f"Hospital closed on {closure_dt} ({reason}). 100% Refund of ₹{t.total_amount:.2f} processed to patient account."
+        execute_cashfree_refund(db, t, f"Hospital closed on {closure_dt} ({reason})")
         refund_count += 1
         try:
             if t.patient_id:
@@ -12210,8 +12777,7 @@ def mark_doctor_on_leave(
     refund_count = 0
     for t in affected_tokens:
         t.status = "cancelled"
-        t.payment_status = "refunded"
-        t.notes = f"Doctor on leave ({reason}). 100% Refund (₹{t.total_amount:.2f}) processed to patient account."
+        execute_cashfree_refund(db, t, f"Doctor on leave on {leave_dt} ({reason})")
         refund_count += 1
         try:
             if t.patient_id:
@@ -13191,29 +13757,42 @@ async def websocket_messages_endpoint(
     hospital_id: Optional[int] = Query(None),
 ):
     """
-    Q-Arovia Real-Time Multi-Party WebSocket Channel
-    Connects Patients, Hospitals, and Admins for instant, zero-delay messaging.
+    Q-Arovia Real-Time Multi-Party WebSocket Channel (QBUG-006 Hardened)
+    Connects Authenticated Patients, Hospitals, and Admins for instant, zero-delay messaging.
+    Enforces JWT verification on private channels to eliminate phone impersonation.
     """
-    authenticated_role = role or "patient"
+    authenticated_role = None
     user_id = None
-    clean_phone = phone
+    clean_phone = None
 
-    if token:
-        try:
-            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-            user_id = payload.get("sub")
-            if user_id is not None and str(user_id).isdigit():
-                user_id = int(user_id)
-            authenticated_role = payload.get("role", authenticated_role)
-            if authenticated_role == "hospital" and not hospital_id:
-                hospital_id = user_id
-        except Exception as e:
-            logging.warning("WebSocket JWT verification rejected: %s", e)
-            await websocket.close(code=4001, reason="Invalid authentication token")
+    db_session = SessionLocal()
+    try:
+        if token:
+            try:
+                payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+                user_id = payload.get("sub")
+                if user_id is not None and str(user_id).isdigit():
+                    user_id = int(user_id)
+                authenticated_role = payload.get("role", "patient")
+
+                if authenticated_role == "hospital":
+                    hospital_id = user_id
+                elif authenticated_role == "patient" and user_id:
+                    pat = db_session.query(Patient).filter(Patient.id == user_id).first()
+                    if pat and pat.phone:
+                        clean_phone = pat.phone.strip().replace(" ", "").replace("-", "")
+            except Exception as e:
+                logging.warning("WebSocket JWT verification rejected: %s", e)
+                await websocket.close(code=4001, reason="Invalid authentication token")
+                return
+        elif role == "public_display":
+            authenticated_role = "visitor"
+            clean_phone = None
+        else:
+            await websocket.close(code=4001, reason="Authentication token required for private notifications")
             return
-    elif role in ("admin", "hospital"):
-        await websocket.close(code=4003, reason="Authentication token required for privileged roles")
-        return
+    finally:
+        db_session.close()
 
     client_info = {
         "role": authenticated_role,
@@ -14342,10 +14921,8 @@ def retry_refund_endpoint(
     if not token:
         raise HTTPException(status_code=404, detail="Token not found")
 
-    token.payment_status = "refunded"
     token.status = "cancelled"
-    token.notes = (token.notes or "") + " [Refund processed and verified by Q-Arovia Admin]"
-    db.commit()
+    refund_res = execute_cashfree_refund(db, token, "Admin manual retry refund")
     db.refresh(token)
 
     log_admin_action(
