@@ -389,6 +389,59 @@ def get_optional_user(
     return None
 
 
+def get_optional_auth_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = None,
+    token: Optional[str] = None
+) -> Optional[dict]:
+    """Resolves optional user from Bearer header credentials or token query param."""
+    raw_token = None
+    if credentials and getattr(credentials, "credentials", None):
+        raw_token = credentials.credentials.strip()
+    elif token:
+        raw_token = token.strip()
+    if not raw_token or not JWT_SECRET_KEY:
+        return None
+    try:
+        payload = jwt.decode(raw_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        role = payload.get("role")
+        if user_id and role in ("patient", "hospital", "admin"):
+            return {
+                "user_id": int(user_id),
+                "role": role,
+                "email": payload.get("email"),
+                "name": payload.get("name"),
+            }
+    except Exception:
+        pass
+    return None
+
+
+def normalize_phone_last10(phone: Optional[str]) -> str:
+    """Normalizes phone string to terminal 10 digits for accurate matching."""
+    if not phone:
+        return ""
+    digits = re.sub(r'\D', '', str(phone))
+    return digits[-10:] if len(digits) >= 10 else digits
+
+
+def mask_patient_name(name: Optional[str]) -> str:
+    """Safely masks patient name for public display screens (e.g. 'Ra**** M****')."""
+    if not name or not str(name).strip():
+        return "Patient"
+    parts = str(name).strip().split()
+    masked_parts = []
+    for part in parts:
+        clean = part.strip()
+        if len(clean) <= 2:
+            masked_parts.append(clean[0] + "*")
+        elif len(clean) <= 4:
+            masked_parts.append(clean[0] + "**" + clean[-1])
+        else:
+            masked_parts.append(clean[:2] + "****" + clean[-1])
+    return " ".join(masked_parts)
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
@@ -7417,10 +7470,34 @@ async def cashfree_payment_webhook(
     signature = request.headers.get("x-webhook-signature") or request.headers.get("X-Webhook-Signature") or ""
     timestamp = request.headers.get("x-webhook-timestamp") or request.headers.get("X-Webhook-Timestamp") or ""
 
-    if CASHFREE_CLIENT_SECRET and signature and timestamp:
-        if not verify_cashfree_webhook_signature(raw_body, timestamp, signature):
-            logging.warning("Invalid Cashfree webhook signature rejected.")
-            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+    # Strictly enforce mandatory Cashfree signature and timestamp headers (QA-SEC-004)
+    if not signature or not timestamp:
+        logging.warning("Cashfree webhook rejected: Missing signature or timestamp header.")
+        raise HTTPException(
+            status_code=401,
+            detail="Cashfree webhook authentication required: x-webhook-signature and x-webhook-timestamp headers are mandatory."
+        )
+
+    # Replay protection: Verify timestamp freshness within 300 seconds (5 minutes)
+    try:
+        ts_val = float(timestamp)
+        if ts_val > 1e11:  # Milliseconds
+            ts_val /= 1000.0
+        if abs(time.time() - ts_val) > 300:
+            logging.warning("Cashfree webhook timestamp expired or clock skew exceeded: %s vs %s", ts_val, time.time())
+            raise HTTPException(status_code=400, detail="Webhook timestamp expired or clock skew too large.")
+    except (ValueError, TypeError):
+        try:
+            parsed_dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            if abs(time.time() - parsed_dt.timestamp()) > 300:
+                raise HTTPException(status_code=400, detail="Webhook timestamp expired or clock skew too large.")
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid webhook timestamp format.")
+
+    # Cryptographic HMAC-SHA256 signature verification
+    if not verify_cashfree_webhook_signature(raw_body, timestamp, signature):
+        logging.warning("Invalid Cashfree webhook signature rejected.")
+        raise HTTPException(status_code=400, detail="Invalid Cashfree webhook signature.")
 
     try:
         payload = json.loads(raw_body.decode("utf-8"))
@@ -8905,32 +8982,56 @@ def get_batch_token_documents(
     if not ids:
         return {"success": True, "documents_by_token": {}}
 
-    current_user = None
-    raw_token = None
-    if credentials and credentials.credentials:
-        raw_token = credentials.credentials.strip()
-    elif token:
-        raw_token = token.strip()
-    if raw_token:
-        try:
-            payload = jwt.decode(raw_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-            current_user = {"user_id": int(payload.get("sub")), "role": payload.get("role")}
-        except Exception:
-            pass
+    # Strictly enforce mandatory authentication on batch medical documents (QA-SEC-003)
+    current_user = get_document_auth_user(credentials, token)
+    if not current_user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required: Please provide a valid authorization token to access medical documents."
+        )
 
-    query = db.query(MedicalDocument).filter(MedicalDocument.token_id.in_(ids))
-    if current_user:
-        if current_user["role"] == "patient":
-            query = query.filter(
-                or_(
-                    MedicalDocument.patient_id == current_user["user_id"],
-                    MedicalDocument.token_id.in_(
-                        db.query(Token.id).filter(Token.id.in_(ids), Token.patient_id == current_user["user_id"])
-                    )
-                )
+    role = current_user.get("role")
+    auth_user_id = current_user.get("user_id")
+
+    # Determine strictly authorized token IDs for caller
+    authorized_token_ids = set()
+    if role == "patient":
+        patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
+        p_phone = normalize_phone_last10(patient.phone) if patient and patient.phone else None
+        p_email = patient.email.strip().lower() if patient and patient.email else None
+
+        matched_tokens = db.query(Token).filter(Token.id.in_(ids)).all()
+        for t in matched_tokens:
+            if t.patient_id == auth_user_id:
+                authorized_token_ids.add(t.id)
+            elif p_phone and t.patient_phone and normalize_phone_last10(t.patient_phone) == p_phone:
+                authorized_token_ids.add(t.id)
+            elif p_email and t.patient_email and str(t.patient_email).strip().lower() == p_email:
+                authorized_token_ids.add(t.id)
+
+    elif role == "hospital":
+        matched_tokens = db.query(Token).filter(Token.id.in_(ids), Token.hospital_id == auth_user_id).all()
+        authorized_token_ids = {t.id for t in matched_tokens}
+
+    elif role == "admin":
+        authorized_token_ids = set(ids)
+
+    else:
+        raise HTTPException(status_code=403, detail="Unauthorized access to medical documents.")
+
+    if not authorized_token_ids:
+        return {"success": True, "documents_by_token": {}}
+
+    query = db.query(MedicalDocument).filter(MedicalDocument.token_id.in_(authorized_token_ids))
+    if role == "patient":
+        query = query.filter(
+            or_(
+                MedicalDocument.patient_id == auth_user_id,
+                MedicalDocument.token_id.in_(authorized_token_ids)
             )
-        elif current_user["role"] == "hospital":
-            query = query.filter(MedicalDocument.hospital_id == current_user["user_id"])
+        )
+    elif role == "hospital":
+        query = query.filter(MedicalDocument.hospital_id == auth_user_id)
 
     docs = query.order_by(MedicalDocument.created_at.asc()).all()
 
@@ -9681,20 +9782,94 @@ def call_token(
     }
 
 
+def public_queue_token_dict(token: Token) -> dict:
+    """Sanitized public DTO for queue display TV and kiosks - strictly excludes PII and clinical diagnosis."""
+    return {
+        "id": token.id,
+        "token_number": token.token_number,
+        "patient_name": mask_patient_name(token.patient_name),
+        "hospital": token.hospital,
+        "hospital_id": token.hospital_id,
+        "department": token.department,
+        "doctor": token.doctor,
+        "room_number": getattr(token, "room_number", None),
+        "doctor_room_number": getattr(token, "room_number", None),
+        "status": token.status,
+        "appointment_date": (
+            str(token.appointment_date)
+            if getattr(token, "appointment_date", None)
+            else None
+        ),
+        "created_at": (
+            token.created_at.isoformat()
+            if token.created_at
+            else None
+        ),
+        "called_at": (
+            token.called_at.isoformat()
+            if getattr(token, "called_at", None)
+            else None
+        ),
+        "completed_at": (
+            token.completed_at.isoformat()
+            if getattr(token, "completed_at", None)
+            else None
+        ),
+    }
+
+
+def public_token_live_status(token: Token, db: Session) -> dict:
+    """Returns safe, minimal status for live waiting tracking without exposing personal medical records."""
+    d = public_queue_token_dict(token)
+    if token.status in ("waiting", "serving"):
+        d.update(get_queue_status_for_token(db, token))
+    return d
+
+
 @app.get("/tokens/{token_id}/live-status")
 @app.get("/tokens/{token_id}")
 def get_token_live_status(
     token_id: int,
     db: Session = Depends(get_db),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    token: Optional[str] = Query(None),
 ):
-    token = db.query(Token).filter(Token.id == token_id).first()
-    if not token:
+    token_record = db.query(Token).filter(Token.id == token_id).first()
+    if not token_record:
         raise HTTPException(status_code=404, detail="Token not found")
 
-    d = token_to_dict(token)
-    if token.status in ("waiting", "serving"):
-        d.update(get_queue_status_for_token(db, token))
-    return d
+    # Authorize caller for full private medical details
+    is_authorized = False
+    current_user = get_optional_auth_user(credentials, token)
+
+    if current_user:
+        role = current_user.get("role")
+        user_id = current_user.get("user_id")
+        if role == "admin":
+            is_authorized = True
+        elif role == "hospital" and token_record.hospital_id == user_id:
+            is_authorized = True
+        elif role == "patient":
+            if token_record.patient_id == user_id:
+                is_authorized = True
+            else:
+                pat = db.query(Patient).filter(Patient.id == user_id).first()
+                if pat:
+                    p_phone = normalize_phone_last10(pat.phone)
+                    t_phone = normalize_phone_last10(token_record.patient_phone)
+                    if p_phone and t_phone and p_phone == t_phone:
+                        is_authorized = True
+                    elif pat.email and token_record.patient_email and pat.email.strip().lower() == str(token_record.patient_email).strip().lower():
+                        is_authorized = True
+
+    if is_authorized:
+        d = token_to_dict(token_record)
+        if token_record.status in ("waiting", "serving"):
+            d.update(get_queue_status_for_token(db, token_record))
+        return d
+
+    # For unauthenticated or public visitors, return strictly sanitized live queue status (Zero PII/Clinical leak)
+    return public_token_live_status(token_record, db)
 
 
 @app.get("/hospitals/{hospital_id}/live-queue")
@@ -9737,15 +9912,15 @@ def get_hospital_live_queue(
         today_tokens = sorted(today_tokens, key=lambda t: t.token_number)
 
     serving_tokens = sorted(
-        [token_to_dict(t) for t in today_tokens if t.status == "serving"],
+        [public_queue_token_dict(t) for t in today_tokens if t.status == "serving"],
         key=lambda t: (t.get("called_at") or "", t.get("token_number") or 0),
         reverse=True,
     )
     waiting_tokens = [
-        token_to_dict(t) for t in today_tokens if t.status == "waiting"
+        public_queue_token_dict(t) for t in today_tokens if t.status == "waiting"
     ]
     completed_tokens = sorted(
-        [token_to_dict(t) for t in today_tokens if t.status == "completed"],
+        [public_queue_token_dict(t) for t in today_tokens if t.status == "completed"],
         key=lambda t: (t.get("completed_at") or t.get("called_at") or t.get("created_at") or "", t.get("token_number") or 0),
         reverse=True,
     )
