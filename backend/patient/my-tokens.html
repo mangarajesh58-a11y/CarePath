@@ -1191,7 +1191,10 @@
     function updateStats(tokens) {
       const list = Array.isArray(tokens) ? tokens : [];
       const total = list.length;
-      const waiting = list.filter(t => (t.status || "").toLowerCase() === "waiting").length;
+      const waiting = list.filter(t => {
+        const s = (t.status || "").toLowerCase();
+        return s === "waiting" || s === "serving" || s === "active";
+      }).length;
       const completed = list.filter(t => (t.status || "").toLowerCase() === "completed").length;
 
       const totalEl = document.getElementById("totalCount");
@@ -1210,6 +1213,12 @@
 
       if (filter === "all") {
         renderTokens(allTokens);
+      } else if (filter === "waiting") {
+        const filtered = allTokens.filter(t => {
+          const s = (t.status || "").toLowerCase();
+          return s === "waiting" || s === "serving" || s === "active";
+        });
+        renderTokens(filtered);
       } else {
         const filtered = allTokens.filter(t => (t.status || "").toLowerCase() === filter);
         renderTokens(filtered);

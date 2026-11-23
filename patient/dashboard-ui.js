@@ -429,8 +429,9 @@
         return;
     }
 
-    // Load current hospital records from the backend.
+    // Load current hospital records and active ads from the backend in parallel.
     loadHospitalsForCards();
+    fetchActiveAds();
 
     // Auto-detect or restore nearby location
     if (window.QAroviaLocation) {
@@ -650,17 +651,16 @@
   
   async function fetchActiveAds() {
     try {
-      const response = await fetch(API_BASE + "/ads/active", {
-        headers: { Accept: "application/json" }
+      const response = await fetch(API_BASE + "/ads/active?_t=" + Date.now(), {
+        headers: { Accept: "application/json" },
+        cache: "no-store"
       });
       if (!response.ok) return;
       const data = await response.json();
       if (Array.isArray(data)) {
         activeSponsoredAds = data;
         console.log("Q-Arovia: Active rotating sponsored ads:", activeSponsoredAds.length);
-        if (hospitalRecords && hospitalRecords.length > 0) {
-          renderHospitalCards();
-        }
+        renderHospitalCards();
       }
     } catch (err) {
       console.warn("Q-Arovia: Sponsored ads fetch skipped:", err);
@@ -737,26 +737,9 @@
         : "No hospitals match your search. Try another name or city.";
     }
 
-        // Instagram-style randomized ad injection:
-    // Ads appear naturally with guaranteed placement and shuffled non-fixed rotation
+    // Instagram-style randomized ad injection:
+    // Ensures all active sponsored ads are presented cleanly in the feed
     const adInsertIndices = new Set();
-    if (activeSponsoredAds && activeSponsoredAds.length > 0 && items.length > 0) {
-      if (items.length <= 2) {
-        adInsertIndices.add(Math.min(1, items.length - 1));
-      } else {
-        let nextAdPos = Math.min(items.length, Math.floor(Math.random() * 2) + 2); // First ad after 1st or 2nd item
-        while (nextAdPos <= items.length) {
-          adInsertIndices.add(nextAdPos - 1);
-          const randomGap = Math.floor(Math.random() * 3) + 3; // Random gap of 3 to 5 organic hospitals
-          nextAdPos += randomGap;
-        }
-      }
-      if (adInsertIndices.size === 0) {
-        adInsertIndices.add(0);
-      }
-    }
-
-    // Shuffled copy of active sponsored ads (Fisher-Yates) for fresh, non-repetitive order
     const shuffledAds = (activeSponsoredAds || []).slice();
     for (let si = shuffledAds.length - 1; si > 0; si--) {
       const sj = Math.floor(Math.random() * (si + 1));
@@ -765,6 +748,21 @@
       shuffledAds[sj] = st;
     }
     let adCounter = 0;
+
+    if (shuffledAds.length > 0 && items.length > 0) {
+      if (items.length === 1) {
+        adInsertIndices.add(0);
+      } else {
+        let nextAdPos = 1;
+        while (nextAdPos < items.length && adInsertIndices.size < shuffledAds.length) {
+          adInsertIndices.add(nextAdPos);
+          nextAdPos += 2;
+        }
+      }
+      if (adInsertIndices.size === 0) {
+        adInsertIndices.add(0);
+      }
+    }
 
     items.forEach(function (hospital, index) {
       const card = makeElement("article", "hospital-card");
@@ -859,15 +857,29 @@
       container.appendChild(card);
 
       // Inject Instagram-style randomized sponsored ad
-      if (adInsertIndices.has(index) && shuffledAds.length > 0) {
-        const adToRender = shuffledAds[adCounter % shuffledAds.length];
-        adCounter++;
+      if (adInsertIndices.has(index) && adCounter < shuffledAds.length) {
+        const adToRender = shuffledAds[adCounter++];
         const sponsoredCard = makeSponsoredAdCard(adToRender);
         if (sponsoredCard) {
           container.appendChild(sponsoredCard);
         }
       }
     });
+
+    // Ensure all active ads get presented even with few hospital items
+    while (adCounter < shuffledAds.length && adCounter < 4) {
+      const remainingAd = shuffledAds[adCounter++];
+      const card = makeSponsoredAdCard(remainingAd);
+      if (card) container.appendChild(card);
+    }
+
+    // If search had 0 items but ads exist, showcase the ads
+    if (items.length === 0 && shuffledAds.length > 0) {
+      shuffledAds.slice(0, 3).forEach(function (ad) {
+        const card = makeSponsoredAdCard(ad);
+        if (card) container.appendChild(card);
+      });
+    }
   }
 
 
@@ -1034,6 +1046,18 @@
       selectHospital(match || { id: ad.hospital_id, name: ad.hospital_name, city: ad.hospital_city });
     });
     actionRow.appendChild(bookBtn);
+
+    if (ad.target_link && String(ad.target_link).trim()) {
+      const linkBtn = makeElement("a", "sponsored-call-btn", "🌐 Visit");
+      let tLink = String(ad.target_link).trim();
+      if (!tLink.startsWith("http://") && !tLink.startsWith("https://")) {
+        tLink = "https://" + tLink;
+      }
+      linkBtn.href = tLink;
+      linkBtn.target = "_blank";
+      linkBtn.rel = "noopener noreferrer";
+      actionRow.appendChild(linkBtn);
+    }
 
     if (ad.target_phone) {
       const callBtn = makeElement("a", "sponsored-call-btn", "📞 Call");

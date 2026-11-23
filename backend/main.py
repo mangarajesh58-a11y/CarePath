@@ -7189,7 +7189,7 @@ def create_cashfree_order(
         },
         "order_meta": {
             "return_url": (
-                "https://patient-mx5v.vercel.app/"
+                "https://carepath-patient-mx5v.vercel.app/"
                 "token.html?cashfree_order_id={order_id}"
             )
         },
@@ -7268,7 +7268,7 @@ def create_cashfree_order(
             "payment_session_id": order.get("payment_session_id"),
             "amount": int(total_amount * 100),
             "currency": "INR",
-            "token_fee": token_fee,
+            "token_fee": doctor_token_fee,
             "platform_fee": platform_fee,
             "total_amount": total_amount,
             "hospital_id": hospital.id,
@@ -7278,8 +7278,20 @@ def create_cashfree_order(
 
     except HTTPException:
         raise
+    except requests.exceptions.Timeout:
+        logging.error("Cashfree order request timed out.")
+        raise HTTPException(
+            status_code=504,
+            detail="Cashfree Payment Gateway: Request timed out. Please try again.",
+        )
+    except requests.exceptions.RequestException as req_err:
+        logging.error("Cashfree network connection error: %s", str(req_err))
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to connect to Cashfree payment gateway. Please check your network or try again.",
+        )
     except Exception as error:
-        logging.error("Cashfree order error: %s", str(error))
+        logging.error("Cashfree order error: %s", str(error), exc_info=True)
         raise HTTPException(
             status_code=502,
             detail="Unable to connect to Cashfree payment gateway.",
@@ -8430,38 +8442,52 @@ def lookup_patient_tokens(
     """
     filter_conditions = []
     is_authenticated_owner = False
+    auth_pid = None
 
     if current_user and current_user.get("role") == "patient":
         auth_pid = current_user.get("user_id")
         if patient_id is None or patient_id == auth_pid:
             filter_conditions.append(Token.patient_id == auth_pid)
             is_authenticated_owner = True
+            patient = db.query(Patient).filter(Patient.id == auth_pid).first()
+            if patient:
+                if patient.phone:
+                    p_digits = re.sub(r"\D", "", patient.phone)
+                    filter_conditions.append(Token.patient_phone == patient.phone)
+                    if len(p_digits) >= 10:
+                        filter_conditions.append(Token.patient_phone.ilike(f"%{p_digits[-10:]}%"))
+                        filter_conditions.append(Token.notes.ilike(f"%{p_digits[-10:]}%"))
+                if patient.email:
+                    filter_conditions.append(func.lower(Token.patient_email) == patient.email.strip().lower())
+                if patient.full_name:
+                    filter_conditions.append(func.lower(Token.patient_name) == patient.full_name.strip().lower())
 
-    if not is_authenticated_owner:
-        if not phone and not email and not patient_id:
-            raise HTTPException(
-                status_code=400,
-                detail="At least a phone number or email address is required for token lookup.",
-            )
+    if not is_authenticated_owner and not phone and not email and not patient_id:
+        raise HTTPException(
+            status_code=400,
+            detail="At least a phone number or email address is required for token lookup.",
+        )
 
-        if patient_id is not None:
-            filter_conditions.append(Token.patient_id == patient_id)
-        if email and email.strip():
-            clean_email = email.strip().lower()
-            filter_conditions.append(func.lower(Token.patient_email) == clean_email)
-        if phone and phone.strip():
-            raw_phone = phone.strip()
-            clean_phone = raw_phone.replace(" ", "").replace("-", "")
-            digits_only = re.sub(r"\D", "", raw_phone)
-            filter_conditions.append(Token.patient_phone == raw_phone)
-            filter_conditions.append(Token.patient_phone == clean_phone)
-            if digits_only and len(digits_only) >= 10:
-                last10 = digits_only[-10:]
-                filter_conditions.append(Token.patient_phone.ilike(f"%{last10}%"))
-        if name and name.strip():
-            clean_name = name.strip().lower()
-            filter_conditions.append(func.lower(Token.patient_name) == clean_name)
-            filter_conditions.append(func.lower(Token.patient_name).ilike(f"{clean_name} (%"))
+    if patient_id is not None and not is_authenticated_owner:
+        filter_conditions.append(Token.patient_id == patient_id)
+    if email and email.strip():
+        clean_email = email.strip().lower()
+        filter_conditions.append(func.lower(Token.patient_email) == clean_email)
+        filter_conditions.append(Token.notes.ilike(f"%{clean_email}%"))
+    if phone and phone.strip():
+        raw_phone = phone.strip()
+        clean_phone = raw_phone.replace(" ", "").replace("-", "")
+        digits_only = re.sub(r"\D", "", raw_phone)
+        filter_conditions.append(Token.patient_phone == raw_phone)
+        filter_conditions.append(Token.patient_phone == clean_phone)
+        if digits_only and len(digits_only) >= 10:
+            last10 = digits_only[-10:]
+            filter_conditions.append(Token.patient_phone.ilike(f"%{last10}%"))
+            filter_conditions.append(Token.notes.ilike(f"%{last10}%"))
+    if name and name.strip():
+        clean_name = name.strip().lower()
+        filter_conditions.append(func.lower(Token.patient_name) == clean_name)
+        filter_conditions.append(func.lower(Token.patient_name).ilike(f"{clean_name} (%"))
 
     if not filter_conditions:
         return []
@@ -8475,6 +8501,19 @@ def lookup_patient_tokens(
         )
         .all()
     )
+
+    # Auto-link unlinked tokens to authenticated patient
+    if is_authenticated_owner and auth_pid:
+        updated = False
+        for token in tokens:
+            if token.patient_id is None:
+                token.patient_id = auth_pid
+                updated = True
+        if updated:
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
 
     results = []
     for token in tokens:
@@ -9119,12 +9158,23 @@ def create_walk_in_token(
         matching_patient = None
         if phone_val:
             clean_p = phone_val.replace(" ", "").replace("-", "")
+            digits_only = re.sub(r"\D", "", phone_val)
+            last10 = digits_only[-10:] if len(digits_only) >= 10 else digits_only
             p_queries = [Patient.phone == phone_val, Patient.phone == clean_p]
+            if last10:
+                p_queries.append(Patient.phone.ilike(f"%{last10}%"))
             if clean_p.startswith("+91"):
                 p_queries.append(Patient.phone == clean_p[3:])
             elif len(clean_p) == 10:
                 p_queries.append(Patient.phone == f"+91{clean_p}")
             matching_patient = db.query(Patient).filter(or_(*p_queries)).first()
+
+        # If not found by phone, fallback to unique full name match
+        if not matching_patient and patient_name:
+            clean_pname = patient_name.strip().lower()
+            name_matches = db.query(Patient).filter(func.lower(Patient.full_name) == clean_pname).all()
+            if len(name_matches) == 1:
+                matching_patient = name_matches[0]
 
         if getattr(hospital, "is_deleted", False):
             raise HTTPException(
@@ -9140,7 +9190,8 @@ def create_walk_in_token(
         token = Token(
             patient_id=matching_patient.id if matching_patient else None,
             patient_name=patient_name,
-            patient_phone=phone_val,
+            patient_phone=phone_val or (matching_patient.phone if matching_patient else None),
+            patient_email=matching_patient.email if matching_patient else None,
             hospital=hospital.name,
             hospital_id=authenticated_hospital_id,
             department=department,
@@ -13254,47 +13305,69 @@ def get_hospital_ads(
 
 
 @app.get("/ads/active")
-def get_active_ads(db: Session = Depends(get_db)):
+def get_active_ads(response: Response, db: Session = Depends(get_db)):
     """Public endpoint for Patient app: returns currently active sponsored ads rotated dynamically."""
     import random
 
+    # Prevent stale browser & WebView response caching
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+
     now = datetime.utcnow()
-    # Auto-expire past ads
+    # Auto-expire past ads only when expires_at is explicitly set
     db.query(HospitalAdvertisement).filter(
         HospitalAdvertisement.is_active == True,
+        HospitalAdvertisement.expires_at != None,
         HospitalAdvertisement.expires_at <= now,
     ).update({"is_active": False}, synchronize_session=False)
     db.commit()
 
     rows = (
         db.query(HospitalAdvertisement, Hospital)
-        .join(Hospital, Hospital.id == HospitalAdvertisement.hospital_id)
+        .outerjoin(Hospital, Hospital.id == HospitalAdvertisement.hospital_id)
         .filter(
             HospitalAdvertisement.is_active == True,
-            HospitalAdvertisement.payment_status == "paid",
-            HospitalAdvertisement.expires_at > now,
+            or_(
+                HospitalAdvertisement.payment_status.in_(["paid", "active", "success", "confirmed", "completed"]),
+                HospitalAdvertisement.payment_status == None,
+            ),
+            or_(
+                HospitalAdvertisement.expires_at == None,
+                HospitalAdvertisement.expires_at > now,
+            ),
         )
+        .order_by(HospitalAdvertisement.id.desc())
         .all()
     )
 
     ads_list = []
     for ad, hospital in rows:
+        hosp_name = hospital.name if hospital else "Featured Healthcare Partner"
+        hosp_city = (hospital.city or "") if hospital else ""
+        hosp_img = (hospital.image_url or "") if hospital else ""
+        hosp_phone = (hospital.phone or "") if hospital else ""
+        hosp_id = hospital.id if hospital else (ad.hospital_id or 0)
+
+        # Asset fallback: ad image -> base64 -> hospital image
+        ad_img = ad.image_url or getattr(ad, "image_base64", None) or hosp_img or ""
+
         ads_list.append({
             "id": ad.id,
-            "hospital_id": hospital.id,
-            "hospital_name": hospital.name,
-            "hospital_city": hospital.city or "",
-            "hospital_image": hospital.image_url or "",
+            "hospital_id": hosp_id,
+            "hospital_name": hosp_name,
+            "hospital_city": hosp_city,
+            "hospital_image": hosp_img,
             "title": ad.title,
             "description": ad.description or "",
             "ad_type": getattr(ad, "ad_type", "banner") or "banner",
-            "image_url": ad.image_url or hospital.image_url or "",
+            "image_url": ad_img,
             "video_url": ad.video_url or "",
-            "target_phone": ad.target_phone or hospital.phone or "",
+            "target_phone": ad.target_phone or hosp_phone,
             "target_link": ad.target_link or "",
             "fee_charged": float(ad.fee_charged or ad.amount_paid or 0),
-            "days_remaining": max(0, (ad.expires_at - now).days) if ad.expires_at else 0,
-            "expires_at": ad.expires_at.strftime("%b %d, %Y") if ad.expires_at else "",
+            "days_remaining": max(0, (ad.expires_at - now).days) if ad.expires_at else 30,
+            "expires_at": ad.expires_at.strftime("%b %d, %Y") if ad.expires_at else "Active",
             "activated_at": ad.activated_at.strftime("%b %d, %Y") if ad.activated_at else "",
         })
 
