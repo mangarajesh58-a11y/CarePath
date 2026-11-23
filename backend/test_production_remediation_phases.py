@@ -5,6 +5,7 @@ Automated verification of QBUG-001 through QBUG-015 fixes.
 
 import os
 import sys
+import time
 import json
 import base64
 import hmac
@@ -143,7 +144,19 @@ class QAroviaProductionRemediationTests(unittest.TestCase):
                 "order": {"order_id": test_order_id}
             }
         }
-        res = self.client.post("/payments/cashfree-webhook", json=payload)
+        now_ts = str(int(time.time()))
+        body_bytes = json.dumps(payload).encode("utf-8")
+        sig_data = now_ts.encode("utf-8") + body_bytes
+        computed_sig = base64.b64encode(
+            hmac.new(CASHFREE_CLIENT_SECRET.encode("utf-8"), sig_data, hashlib.sha256).digest()
+        ).decode("utf-8") if CASHFREE_CLIENT_SECRET else "dummy"
+
+        headers = {
+            "x-webhook-signature": computed_sig,
+            "x-webhook-timestamp": now_ts,
+            "Content-Type": "application/json",
+        }
+        res = self.client.post("/payments/cashfree-webhook", data=body_bytes, headers=headers)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json().get("status"), "idempotent_ok")
 

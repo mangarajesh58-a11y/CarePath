@@ -512,8 +512,8 @@ def get_optional_user(
 
 
 def get_optional_auth_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = None,
-    token: Optional[str] = None
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    token: Optional[str] = Query(None),
 ) -> Optional[dict]:
     """Resolves optional user from Bearer header credentials or token query param."""
     raw_token = None
@@ -3575,16 +3575,23 @@ class LogoutRequest(BaseModel):
 
 
 @app.post("/auth/refresh")
-def refresh_session_token(
+async def refresh_session_token(
+    request: Request,
     data: Optional[RefreshTokenRequest] = None,
-    request: Request = None,
     db: Session = Depends(get_db),
 ):
     """Rotates refresh token and issues a new access token (QA-AUTH-001)."""
     token = None
     if data and data.refresh_token:
         token = data.refresh_token.strip()
-    elif request:
+    if not token:
+        try:
+            body = await request.json()
+            if isinstance(body, dict) and body.get("refresh_token"):
+                token = str(body["refresh_token"]).strip()
+        except Exception:
+            pass
+    if not token and request.cookies.get("refresh_token"):
         token = request.cookies.get("refresh_token")
 
     if not token:
@@ -3611,9 +3618,9 @@ def refresh_session_token(
 
 
 @app.post("/auth/logout")
-def logout_user(
+async def logout_user(
+    request: Request,
     data: Optional[LogoutRequest] = None,
-    request: Request = None,
     db: Session = Depends(get_db),
     current_user: Optional[dict] = Depends(get_optional_auth_user),
 ):
@@ -3621,7 +3628,14 @@ def logout_user(
     token = None
     if data and data.refresh_token:
         token = data.refresh_token.strip()
-    elif request:
+    if not token:
+        try:
+            body = await request.json()
+            if isinstance(body, dict) and body.get("refresh_token"):
+                token = str(body["refresh_token"]).strip()
+        except Exception:
+            pass
+    if not token and request.cookies.get("refresh_token"):
         token = request.cookies.get("refresh_token")
 
     if token:
