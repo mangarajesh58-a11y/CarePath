@@ -3369,83 +3369,56 @@ function renderPrintableOpdSlip(token) {
         return;
     }
 
-    printWin.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <title>OPD Token Slip #${escapeHtml(String(token.token_number || ''))}</title>
-            <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-                    margin: 0;
-                    padding: 20px 16px;
-                    color: #0f172a;
-                    text-align: center;
-                    width: 290px;
-                    margin: 0 auto;
-                }
-                .h-title { font-size: 16px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; }
-                .h-sub { font-size: 11px; color: #64748b; margin-bottom: 12px; letter-spacing: 0.5px; }
-                .divider { border-top: 1.5px dashed #cbd5e1; margin: 12px 0; }
-                .token-box {
-                    border: 2px solid #0f172a;
-                    border-radius: 12px;
-                    padding: 12px 8px;
-                    margin: 10px 0;
-                    background: #f8fafc;
-                }
-                .token-num { font-size: 52px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
-                .token-tag { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin-top: 4px; }
-                .info-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; text-align: left; }
-                .info-label { color: #64748b; font-weight: 600; }
-                .info-val { font-weight: 800; color: #0f172a; text-align: right; max-width: 60%; }
-                .slip-footer { font-size: 10.5px; color: #64748b; margin-top: 14px; line-height: 1.4; }
-                @media print {
-                    body { width: 100%; padding: 0; }
-                    .no-print { display: none; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="h-title">${escapeHtml(hospName)}</div>
-            <div class="h-sub">OPD CONSULTATION TOKEN SLIP</div>
-            <div class="token-box">
-                <div class="token-num">#${escapeHtml(String(token.token_number || ''))}</div>
-                <div class="token-tag">${isWalkIn ? 'Offline Walk-in Token' : 'Online Booked Token'}</div>
-            </div>
-            <div class="divider"></div>
-            <div class="info-row">
-                <span class="info-label">Patient:</span>
-                <span class="info-val">${escapeHtml(token.patient_name || 'Patient')}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Doctor:</span>
-                <span class="info-val">Dr. ${escapeHtml(token.doctor || 'OPD')}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Department:</span>
-                <span class="info-val">${escapeHtml(token.department || 'General')}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Appt Date:</span>
-                <span class="info-val">${escapeHtml(apptDate)}</span>
-            </div>
-            <div class="divider"></div>
-            <div class="slip-footer">
-                Please wait for your token number to appear on the OPD display screen.<br>
-                <em>Q-Arovia Healthcare Network</em>
-            </div>
-            <script>
-                window.onload = function() {
-                    window.print();
-                    setTimeout(function() { window.close(); }, 700);
-                };
-            <\/script>
-        </body>
-        </html>
-    `);
+    const slipHtml = [
+        '<!DOCTYPE html>',
+        '<' + 'html>',
+        '<' + 'head>',
+        '<meta charset="utf-8">',
+        '<' + 'title>OPD Token Slip #' + escapeHtml(String(token.token_number || '')) + '<' + '/title>',
+        '<' + 'style>',
+        'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 20px 16px; color: #0f172a; text-align: center; width: 290px; margin: 0 auto; }',
+        '.h-title { font-size: 16px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; }',
+        '.h-sub { font-size: 11px; color: #64748b; margin-bottom: 12px; letter-spacing: 0.5px; }',
+        '.divider { border-top: 1.5px dashed #cbd5e1; margin: 12px 0; }',
+        '.token-box { border: 2px solid #0f172a; border-radius: 12px; padding: 12px 8px; margin: 10px 0; background: #f8fafc; }',
+        '.token-num { font-size: 52px; font-weight: 900; line-height: 1; letter-spacing: -2px; }',
+        '.token-tag { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; margin-top: 4px; }',
+        '.info-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; text-align: left; }',
+        '.info-label { color: #64748b; font-weight: 600; }',
+        '.info-val { font-weight: 800; color: #0f172a; text-align: right; max-width: 60%; }',
+        '.slip-footer { font-size: 10.5px; color: #64748b; margin-top: 14px; line-height: 1.4; }',
+        '@media print { body { width: 100%; padding: 0; } .no-print { display: none; } }',
+        '<' + '/style>',
+        '<' + '/head>',
+        '<' + 'body>',
+        '<div class="h-title">' + escapeHtml(hospName) + '</div>',
+        '<div class="h-sub">OPD CONSULTATION TOKEN SLIP</div>',
+        '<div class="token-box">',
+        '    <div class="token-num">#' + escapeHtml(String(token.token_number || '')) + '</div>',
+        '    <div class="token-tag">' + (isWalkIn ? 'Offline Walk-in Token' : 'Online Booked Token') + '</div>',
+        '</div>',
+        '<div class="divider"></div>',
+        '<div class="info-row"><span class="info-label">Patient:</span><span class="info-val">' + escapeHtml(token.patient_name || 'Patient') + '</span></div>',
+        '<div class="info-row"><span class="info-label">Doctor:</span><span class="info-val">Dr. ' + escapeHtml(token.doctor || 'OPD') + '</span></div>',
+        '<div class="info-row"><span class="info-label">Department:</span><span class="info-val">' + escapeHtml(token.department || 'General') + '</span></div>',
+        '<div class="info-row"><span class="info-label">Appt Date:</span><span class="info-val">' + escapeHtml(apptDate) + '</span></div>',
+        '<div class="divider"></div>',
+        '<div class="slip-footer">Please wait for your token number to appear on the OPD display screen.<br><em>Q-Arovia Healthcare Network</em></div>',
+        '<' + '/body>',
+        '<' + '/html>'
+    ].join('
+');
+
+    printWin.document.open();
+    printWin.document.write(slipHtml);
     printWin.document.close();
+    printWin.focus();
+    setTimeout(() => {
+        try {
+            printWin.print();
+            setTimeout(() => { try { printWin.close(); } catch(e){} }, 700);
+        } catch(e) {}
+    }, 300);
 }
 window.renderPrintableOpdSlip = renderPrintableOpdSlip;
 

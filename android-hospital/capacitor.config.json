@@ -1,8 +1,11 @@
 {
-  "appId": "com.carepath.hospital",
+  "appId": "com.qarovia.hospital",
   "appName": "Q-Arovia Hospital",
   "webDir": "www",
   "server": {
-    "cleartext": false
+    "url": "https://carepath-hospital-ten.vercel.app",
+    "cleartext": false,
+    "errorPath": "offline.html",
+    "androidScheme": "https"
   }
 }

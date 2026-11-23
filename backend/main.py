@@ -6746,6 +6746,21 @@ def get_hospital_doctors(
     return result
 
 
+@app.get("/doctors/{doctor_id}")
+def get_doctor_by_id(
+    doctor_id: int,
+    db: Session = Depends(get_db),
+):
+    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+    if not doctor:
+        raise HTTPException(
+            status_code=404,
+            detail="Doctor not found",
+        )
+    hospital = db.query(Hospital).filter(Hospital.id == doctor.hospital_id).first()
+    return doctor_to_dict(doctor, hospital)
+
+
 # ============================================================
 # ADD DOCTOR
 # ============================================================
@@ -7088,11 +7103,10 @@ def create_cashfree_order(
             detail=f"Daily patient booking capacity of {daily_cap} reached for Dr. {doctor.name} on {target_appt_date}. Please choose another date or doctor.",
         )
 
-    doc_fee = getattr(doctor, "token_fee", None)
-    # Hospital token fee removed during session entry (do not charge hospital token fee):
-    token_fee = 0
+    raw_doc_fee = getattr(doctor, "token_fee", None)
+    doctor_token_fee = int(raw_doc_fee) if (raw_doc_fee is not None and raw_doc_fee >= 0) else 0
     platform_fee = get_current_platform_fee(db)
-    total_amount = platform_fee
+    total_amount = doctor_token_fee + platform_fee
 
     if total_amount <= 0:
         raise HTTPException(status_code=400, detail="Invalid payment amount")
@@ -7123,8 +7137,9 @@ def create_cashfree_order(
         "order_tags": {
             "hospital_id": str(hospital.id),
             "doctor_id": str(doctor.id),
-            "token_fee": str(token_fee),
+            "token_fee": str(doctor_token_fee),
             "platform_fee": str(platform_fee),
+            "total_amount": str(total_amount),
         }
     }
 
@@ -7133,11 +7148,11 @@ def create_cashfree_order(
     # - Hospital Share: Token Fee (e.g. ₹200) -> Transferred to Hospital's vendor bank/UPI account
     # - App Developer Share: Platform Convenience Fee (e.g. ₹10) -> Retained in Primary Merchant account
     # ------------------------------------------------------------
-    if hospital.cashfree_vendor_id and token_fee > 0:
+    if hospital.cashfree_vendor_id and doctor_token_fee > 0:
         payload["order_splits"] = [
             {
                 "vendor_id": hospital.cashfree_vendor_id,
-                "amount": float(token_fee),
+                "amount": float(doctor_token_fee),
             }
         ]
 
@@ -7423,11 +7438,10 @@ def create_token(
     canonical_doctor = doctor.name
     canonical_dept = doctor.department
 
-    doc_fee = getattr(doctor, "token_fee", None)
-    # Hospital token fee removed during session entry (do not charge hospital token fee):
-    token_fee = 0
+    raw_doc_fee = getattr(doctor, "token_fee", None)
+    token_fee = int(raw_doc_fee) if (raw_doc_fee is not None and raw_doc_fee >= 0) else 0
     platform_fee = get_current_platform_fee(db)
-    total_amount = platform_fee
+    total_amount = token_fee + platform_fee
 
     try:
         order_amount = float(order.get("order_amount", 0))
@@ -7441,7 +7455,7 @@ def create_token(
         ):
             raise HTTPException(
                 status_code=400,
-                detail="Payment amount or currency mismatch.",
+                detail=f"Payment amount mismatch. Expected ₹{total_amount}, got order ₹{order_amount} and payment ₹{payment_amount}.",
             )
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Invalid Cashfree payment amount.")

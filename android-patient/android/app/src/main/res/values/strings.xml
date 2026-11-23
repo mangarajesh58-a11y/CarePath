@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Q-Arovia</string>
-    <string name="title_activity_main">Q-Arovia</string>
-    <string name="package_name">com.carepath.patient</string>
-    <string name="custom_url_scheme">com.carepath.patient</string>
+    <string name="app_name">Q-Arovia Patient</string>
+    <string name="title_activity_main">Q-Arovia Patient</string>
+    <string name="package_name">com.qarovia.patient</string>
+    <string name="custom_url_scheme">com.qarovia.patient</string>
 </resources>

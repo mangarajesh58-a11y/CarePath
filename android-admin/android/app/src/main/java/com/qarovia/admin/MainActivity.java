@@ -1,20 +1,26 @@
-package com.carepath.patient;
+package com.qarovia.admin;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.app.DownloadManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Message;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -26,10 +32,10 @@ import java.util.List;
 
 public class MainActivity extends BridgeActivity {
 
-    private static final int PERMISSION_REQUEST_CODE = 2001;
-    public static final String NOTIFICATION_CHANNEL_ID = "carepath_alerts_channel";
+    private static final int PERMISSION_REQUEST_CODE = 2003;
+    public static final String NOTIFICATION_CHANNEL_ID = "qarovia_admin_alerts_channel";
 
-    private Dialog googleAuthDialog;
+    private Dialog authPopupDialog;
     private WebView popupWebView;
 
     @Override
@@ -43,8 +49,8 @@ public class MainActivity extends BridgeActivity {
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "CarePath Alerts";
-            String description = "Live OPD queue alerts, token calling announcements, and hospital replies";
+            CharSequence name = "Q-Arovia Admin Alerts";
+            String description = "Critical alerts for hospital verification, approvals, payouts, and platform health";
             int importance = NotificationManager.IMPORTANCE_HIGH;
             NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, name, importance);
             channel.setDescription(description);
@@ -66,12 +72,7 @@ public class MainActivity extends BridgeActivity {
             permissionsNeeded.add(Manifest.permission.CAMERA);
         }
 
-        // 2. Phone Call Permission
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-            permissionsNeeded.add(Manifest.permission.CALL_PHONE);
-        }
-
-        // 3. Gallery / Photos / Media Permissions
+        // 2. Gallery / Photos / Media Permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+ (API 33+)
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
                 permissionsNeeded.add(Manifest.permission.READ_MEDIA_IMAGES);
@@ -90,17 +91,19 @@ public class MainActivity extends BridgeActivity {
             }
         }
 
-        // 4. Microphone for Voice Consultation
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            permissionsNeeded.add(Manifest.permission.RECORD_AUDIO);
-        }
-
-        // 5. Geolocation / Location Permissions for Nearby Hospitals & Doctors
+        // 3. Geolocation Permissions
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             permissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             permissionsNeeded.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+
+        // 4. Notifications for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
         }
 
         if (!permissionsNeeded.isEmpty()) {
@@ -125,20 +128,48 @@ public class MainActivity extends BridgeActivity {
             settings.setSupportMultipleWindows(true);
             settings.setJavaScriptCanOpenWindowsAutomatically(true);
 
-            // Strip embedded webview signature ("; wv" and "Version/4.0") so Google OAuth does not block authentication
             String defaultUa = settings.getUserAgentString();
             if (defaultUa != null) {
                 String cleanUa = defaultUa.replace("; wv", "").replaceAll("Version/[0-9.]+\\s*", "");
                 settings.setUserAgentString(cleanUa);
             }
 
-            // Enable third-party cookies so Google OAuth session state is preserved
             CookieManager cookieManager = CookieManager.getInstance();
             cookieManager.setAcceptCookie(true);
             cookieManager.setAcceptThirdPartyCookies(webView, true);
 
-            // CustomChromeClient extends BridgeWebChromeClient so camera/file chooser still works,
-            // while enabling popup windows (onCreateWindow) for seamless Google Sign-In on mobile devices.
+            // Handle file downloads (audit reports, CSV exports, KYC verification files)
+            webView.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) -> {
+                try {
+                    DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+                    request.setMimeType(mimetype);
+                    String cookies = CookieManager.getInstance().getCookie(url);
+                    if (cookies != null) {
+                        request.addRequestHeader("cookie", cookies);
+                    }
+                    request.addRequestHeader("User-Agent", userAgent);
+                    request.setDescription("Downloading admin report...");
+                    String fileName = URLUtil.guessFileName(url, contentDisposition, mimetype);
+                    request.setTitle(fileName);
+                    request.allowScanningByMediaScanner();
+                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                    request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+
+                    DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                    if (dm != null) {
+                        dm.enqueue(request);
+                        Toast.makeText(getApplicationContext(), "Downloading: " + fileName, Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        startActivity(intent);
+                    } catch (Exception ex) {
+                        Toast.makeText(getApplicationContext(), "Unable to download file.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+
             webView.setWebChromeClient(new CustomChromeClient(getBridge()));
         }
     }
@@ -150,8 +181,8 @@ public class MainActivity extends BridgeActivity {
 
         @Override
         public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-            if (googleAuthDialog != null && googleAuthDialog.isShowing()) {
-                googleAuthDialog.dismiss();
+            if (authPopupDialog != null && authPopupDialog.isShowing()) {
+                authPopupDialog.dismiss();
             }
             if (popupWebView != null) {
                 popupWebView.destroy();
@@ -166,7 +197,6 @@ public class MainActivity extends BridgeActivity {
             popupSettings.setSupportMultipleWindows(true);
             popupSettings.setJavaScriptCanOpenWindowsAutomatically(true);
 
-            // Clean User-Agent on popup as well
             String defaultUa = popupSettings.getUserAgentString();
             if (defaultUa != null) {
                 String cleanUa = defaultUa.replace("; wv", "").replaceAll("Version/[0-9.]+\\s*", "");
@@ -176,13 +206,13 @@ public class MainActivity extends BridgeActivity {
             CookieManager.getInstance().setAcceptCookie(true);
             CookieManager.getInstance().setAcceptThirdPartyCookies(popupWebView, true);
 
-            googleAuthDialog = new Dialog(MainActivity.this, android.R.style.Theme_DeviceDefault_Light_NoActionBar_Fullscreen);
-            googleAuthDialog.setContentView(popupWebView, new ViewGroup.LayoutParams(
+            authPopupDialog = new Dialog(MainActivity.this, android.R.style.Theme_DeviceDefault_Light_NoActionBar_Fullscreen);
+            authPopupDialog.setContentView(popupWebView, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             ));
-            googleAuthDialog.setCancelable(true);
-            googleAuthDialog.setOnCancelListener(d -> {
+            authPopupDialog.setCancelable(true);
+            authPopupDialog.setOnCancelListener(d -> {
                 if (popupWebView != null) {
                     popupWebView.destroy();
                     popupWebView = null;
@@ -192,8 +222,8 @@ public class MainActivity extends BridgeActivity {
             popupWebView.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public void onCloseWindow(WebView window) {
-                    if (googleAuthDialog != null && googleAuthDialog.isShowing()) {
-                        googleAuthDialog.dismiss();
+                    if (authPopupDialog != null && authPopupDialog.isShowing()) {
+                        authPopupDialog.dismiss();
                     }
                     if (popupWebView != null) {
                         popupWebView.destroy();
@@ -205,6 +235,10 @@ public class MainActivity extends BridgeActivity {
             popupWebView.setWebViewClient(new WebViewClient() {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                    String url = request.getUrl().toString();
+                    if (handleExternalSchemes(url)) {
+                        return true;
+                    }
                     return false;
                 }
 
@@ -212,14 +246,14 @@ public class MainActivity extends BridgeActivity {
                 public void onPageFinished(WebView view, String url) {
                     super.onPageFinished(view, url);
                     if (url != null && (url.contains("blank") || url.contains("close") || url.contains("oauth2/close"))) {
-                        if (googleAuthDialog != null && googleAuthDialog.isShowing()) {
-                            googleAuthDialog.dismiss();
+                        if (authPopupDialog != null && authPopupDialog.isShowing()) {
+                            authPopupDialog.dismiss();
                         }
                     }
                 }
             });
 
-            googleAuthDialog.show();
+            authPopupDialog.show();
 
             WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
             transport.setWebView(popupWebView);
@@ -229,8 +263,8 @@ public class MainActivity extends BridgeActivity {
 
         @Override
         public void onCloseWindow(WebView window) {
-            if (googleAuthDialog != null && googleAuthDialog.isShowing()) {
-                googleAuthDialog.dismiss();
+            if (authPopupDialog != null && authPopupDialog.isShowing()) {
+                authPopupDialog.dismiss();
             }
             if (popupWebView != null) {
                 popupWebView.destroy();
@@ -240,6 +274,29 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    private boolean handleExternalSchemes(String url) {
+        if (url == null) return false;
+        try {
+            if (url.startsWith("tel:")) {
+                Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse(url));
+                startActivity(intent);
+                return true;
+            } else if (url.startsWith("mailto:")) {
+                Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse(url));
+                startActivity(intent);
+                return true;
+            } else if (url.startsWith("sms:")) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                startActivity(intent);
+                return true;
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Application not found to handle this action.", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -247,8 +304,8 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onBackPressed() {
-        if (googleAuthDialog != null && googleAuthDialog.isShowing()) {
-            googleAuthDialog.dismiss();
+        if (authPopupDialog != null && authPopupDialog.isShowing()) {
+            authPopupDialog.dismiss();
             if (popupWebView != null) {
                 popupWebView.destroy();
                 popupWebView = null;

@@ -1,8 +1,11 @@
 {
-  "appId": "com.carepath.admin",
+  "appId": "com.qarovia.admin",
   "appName": "Q-Arovia Admin",
   "webDir": "www",
   "server": {
-    "cleartext": false
+    "url": "https://carepath-admin.vercel.app",
+    "cleartext": false,
+    "errorPath": "offline.html",
+    "androidScheme": "https"
   }
 }

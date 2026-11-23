@@ -1722,13 +1722,26 @@
       localStorage.setItem("hospitalId", String(targetHospId));
       localStorage.setItem("selectedHospitalId", String(targetHospId));
       localStorage.setItem("selectedHospitalName", targetHospName);
-      const effectiveFee = doctor.token_fee != null ? doctor.token_fee : 50;
-      localStorage.setItem("selectedHospitalTokenFee", String(effectiveFee));
-      localStorage.setItem("selectedDoctorTokenFee", String(effectiveFee));
+
+      // Dynamic doctor token fee (0 if free, never hardcoded)
+      const rawDocFee = (doctor.token_fee !== undefined && doctor.token_fee !== null) ? Number(doctor.token_fee) : 0;
+      localStorage.setItem("selectedHospitalTokenFee", String(rawDocFee));
+      localStorage.setItem("selectedDoctorTokenFee", String(rawDocFee));
 
       localStorage.setItem("selectedDoctor", doctor.name || "");
       localStorage.setItem("selectedDoctorId", String(doctor.id || ""));
       localStorage.setItem("selectedDoctorPhoto", doctor.image_url || "");
+
+      // Instant 0ms doctor photo resolution and browser preloading
+      const resolvedPhoto = QAroviaDoctorPhotos.resolvePhotoSrc(doctor);
+      if (resolvedPhoto) {
+        localStorage.setItem("selectedDoctorPhotoResolved", resolvedPhoto);
+        try {
+          const preImg = new Image();
+          preImg.src = resolvedPhoto;
+        } catch (e) {}
+      }
+
       localStorage.setItem("selectedDoctorHours", doctor.consultation_hours_12h || "");
       localStorage.setItem("selectedDoctorRoomNumber", doctor.room_number || "");
       localStorage.setItem("selectedDepartment", doctor.department || "");

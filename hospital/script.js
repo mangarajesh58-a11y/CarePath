@@ -14,10 +14,10 @@ function formatTime12Hour(timeStr) {
 // =========================================================
 
 const API =
-    "https://carepath-3q9q.onrender.com";
+    "https://qarovia-3q9q.onrender.com";
 
 const FRONTEND =
-    "https://hospital-ten.vercel.app";
+    "https://carepath-hospital-ten.vercel.app";
 
 
 // =========================================================

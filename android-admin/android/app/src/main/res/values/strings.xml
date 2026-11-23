@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Q-Arovia Admin</string>
     <string name="title_activity_main">Q-Arovia Admin</string>
-    <string name="package_name">com.carepath.admin</string>
-    <string name="custom_url_scheme">com.carepath.admin</string>
+    <string name="package_name">com.qarovia.admin</string>
+    <string name="custom_url_scheme">com.qarovia.admin</string>
 </resources>

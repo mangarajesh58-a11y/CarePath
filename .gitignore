@@ -48,3 +48,6 @@ Thumbs.db
 *.bak
 
 scratch/
+
+*_backup_before_qarovia_rebrand/
+

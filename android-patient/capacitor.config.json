@@ -1,8 +1,11 @@
 {
-  "appId": "com.carepath.patient",
-  "appName": "Q-Arovia",
+  "appId": "com.qarovia.patient",
+  "appName": "Q-Arovia Patient",
   "webDir": "www",
   "server": {
-    "cleartext": false
+    "url": "https://carepath-patient-mx5v.vercel.app",
+    "cleartext": false,
+    "errorPath": "offline.html",
+    "androidScheme": "https"
   }
 }
