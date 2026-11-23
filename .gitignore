@@ -25,6 +25,13 @@ APKs/
 *.apk
 *.aab
 
+# Release Keystores & Credentials
+*.keystore
+*.jks
+**/key.properties
+key.properties
+
+
 
 # iOS
 **/ios/App/build/
