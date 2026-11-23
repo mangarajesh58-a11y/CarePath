@@ -785,18 +785,11 @@
       cover.appendChild(photo);
       cover.appendChild(makeElement("span", "hospital-photo-shade"));
 
-      if (hospital.distance_text) {
-        cover.appendChild(
-          makeElement("span", "hospital-cover-distance", "📍 " + hospital.distance_text)
-        );
-      }
-
       if (isVerified(hospital)) {
         cover.appendChild(
           makeElement("span", "hospital-badge", "✓ VERIFIED")
         );
       }
-
 
       card.appendChild(cover);
 
@@ -806,9 +799,6 @@
       details.appendChild(makeElement("h3", "", hospitalName(hospital)));
 
       const locP = makeElement("p", "hospital-location", "⌖ " + hospitalCity(hospital));
-      if (hospital.distance_text) {
-        locP.appendChild(makeElement("span", "hospital-distance-badge", hospital.distance_text));
-      }
       details.appendChild(locP);
 
       details.appendChild(
