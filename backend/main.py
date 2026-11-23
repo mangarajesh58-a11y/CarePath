@@ -5382,6 +5382,8 @@ def delete_current_patient_account(
 
 @app.get("/patients/me")
 @app.get("/patients/me/")
+@app.get("/patient/profile")
+@app.get("/patients/profile")
 def get_current_patient_profile(
     current_user: dict = Depends(require_role("patient")),
     db: Session = Depends(get_db),
@@ -6752,6 +6754,12 @@ def update_doctor(
     db.commit()
     db.refresh(doctor)
     invalidate_doctor_cache()
+    try:
+        broadcast_now(ws_manager.broadcast_doctor_availability_event(
+            doctor_to_dict(doctor), doctor.hospital_id
+        ))
+    except Exception as ws_err:
+        logging.warning("Doctor update WS broadcast skipped: %s", ws_err)
     return {"success": True, "message": "Doctor updated successfully", "doctor": doctor_to_dict(doctor)}
 
 
@@ -6771,6 +6779,12 @@ def toggle_doctor_availability_endpoint(
     db.commit()
     db.refresh(doctor)
     invalidate_doctor_cache()
+    try:
+        broadcast_now(ws_manager.broadcast_doctor_availability_event(
+            doctor_to_dict(doctor), doctor.hospital_id
+        ))
+    except Exception as ws_err:
+        logging.warning("Doctor toggle availability WS broadcast skipped: %s", ws_err)
     status_label = "On Duty (Available)" if doctor.is_available else "Off Duty (Unavailable)"
     return {
         "success": True,
@@ -7996,6 +8010,17 @@ async def cashfree_payment_webhook(
             hospital_id=hospital.id,
             patient_phone=new_token.patient_phone,
         ))
+        broadcast_now(ws_manager.broadcast_payment_event(
+            event_type="PAYMENT_SUCCESS",
+            payment_data={
+                "order_id": order_id,
+                "payment_id": str(cf_payment_id),
+                "token_id": new_token.id,
+                "amount": float(new_token.total_amount or 0),
+            },
+            hospital_id=hospital.id,
+            patient_phone=new_token.patient_phone,
+        ))
     except Exception as ws_err:
         logging.warning("Webhook WS broadcast error: %s", ws_err)
 
@@ -8088,6 +8113,18 @@ def cancel_patient_token(
             hospital_id=token.hospital_id,
             patient_phone=token.patient_phone,
         ))
+        if refund_result or token.refund_status:
+            broadcast_now(ws_manager.broadcast_payment_event(
+                event_type="REFUND_UPDATED",
+                payment_data={
+                    "token_id": token.id,
+                    "refund_status": token.refund_status,
+                    "refund_amount": float(token.refund_amount or 0),
+                    "cashfree_refund_id": token.cashfree_refund_id,
+                },
+                hospital_id=token.hospital_id,
+                patient_phone=token.patient_phone,
+            ))
     except Exception as ws_err:
         logging.warning("Cancellation WS broadcast error: %s", ws_err)
 
@@ -8575,6 +8612,17 @@ def create_token(
             hospital_id=token.hospital_id,
             patient_phone=token.patient_phone or getattr(patient, "phone", None),
         ))
+        broadcast_now(ws_manager.broadcast_payment_event(
+            event_type="PAYMENT_SUCCESS",
+            payment_data={
+                "order_id": order_id,
+                "payment_id": payment_id,
+                "token_id": token.id,
+                "amount": float(token.total_amount or 0),
+            },
+            hospital_id=token.hospital_id,
+            patient_phone=token.patient_phone or getattr(patient, "phone", None),
+        ))
     except Exception as ws_err:
         logging.warning("Token creation WS broadcast skipped: %s", ws_err)
 
@@ -8755,6 +8803,7 @@ def resend_token_receipt(
 
 @app.get("/patient/tokens")
 @app.get("/patient/token-history")
+@app.get("/patient/my-tokens")
 def get_patient_token_history(
     phone: Optional[str] = Query(None),
     email: Optional[str] = Query(None),
@@ -9494,6 +9543,7 @@ def get_hospital_tokens(
 @app.post("/hospital/walk-in-tokens")
 @app.post("/walk-in-tokens")
 @app.post("/walk-in-token")
+@app.post("/tokens/walk-in")
 def create_walk_in_token(
     data: WalkInTokenRequest,
     db: Session = Depends(get_db),
@@ -11430,6 +11480,13 @@ def reject_hospital_certificate(
     db.commit()
     db.refresh(hospital)
 
+    try:
+        broadcast_now(ws_manager.broadcast_hospital_status_event(
+            hospital.id, hospital.approval_status, bool(hospital.is_published)
+        ))
+    except Exception as ws_err:
+        logging.warning("Hospital reject WS broadcast skipped: %s", ws_err)
+
     log_admin_action(
         db,
         current_user.get("email", "admin"),
@@ -11625,6 +11682,13 @@ def approve_hospital(
     db.commit()
     db.refresh(hospital)
 
+    try:
+        broadcast_now(ws_manager.broadcast_hospital_status_event(
+            hospital.id, hospital.approval_status, bool(hospital.is_published)
+        ))
+    except Exception as ws_err:
+        logging.warning("Hospital approve WS broadcast skipped: %s", ws_err)
+
     return {
         "success": True,
         "message": "Hospital approved successfully",
@@ -11667,6 +11731,13 @@ def reject_hospital(
 
     db.commit()
     db.refresh(hospital)
+
+    try:
+        broadcast_now(ws_manager.broadcast_hospital_status_event(
+            hospital.id, hospital.approval_status, bool(hospital.is_published)
+        ))
+    except Exception as ws_err:
+        logging.warning("Hospital reject WS broadcast skipped: %s", ws_err)
 
     log_admin_action(
         db,
@@ -11737,6 +11808,13 @@ def publish_hospital(
     db.commit()
     db.refresh(hospital)
 
+    try:
+        broadcast_now(ws_manager.broadcast_hospital_status_event(
+            hospital.id, hospital.approval_status, bool(hospital.is_published)
+        ))
+    except Exception as ws_err:
+        logging.warning("Hospital publish WS broadcast skipped: %s", ws_err)
+
     return {
         "success": True,
         "message": "Hospital published to Patient App",
@@ -11772,6 +11850,13 @@ def unpublish_hospital(
 
     db.commit()
     db.refresh(hospital)
+
+    try:
+        broadcast_now(ws_manager.broadcast_hospital_status_event(
+            hospital.id, hospital.approval_status, bool(hospital.is_published)
+        ))
+    except Exception as ws_err:
+        logging.warning("Hospital unpublish WS broadcast skipped: %s", ws_err)
 
     return {
         "success": True,
@@ -14209,8 +14294,13 @@ class ConnectionManager:
                 )
                 db.add(event)
                 db.commit()
+                db.refresh(event)
+                if isinstance(payload, dict):
+                    payload["event_id"] = event.id
+                return event.id
         except Exception as e:
             logging.warning("Failed to persist distributed WS event: %s", e)
+            return None
 
     async def broadcast_to_hospital(self, hospital_id: int, message: dict):
         self.persist_distributed_event("hospital", str(hospital_id), message)
@@ -14249,6 +14339,7 @@ class ConnectionManager:
     async def broadcast_inquiry(self, inquiry_dict: dict):
         payload = {
             "type": "new_patient_inquiry",
+            "event": "NOTIFICATION_CREATED",
             "inquiry": inquiry_dict,
             "timestamp": datetime.utcnow().isoformat(),
         }
@@ -14263,6 +14354,7 @@ class ConnectionManager:
     async def broadcast_reply(self, reply_dict: dict):
         payload = {
             "type": "hospital_inquiry_reply",
+            "event": "NOTIFICATION_CREATED",
             "reply": reply_dict,
             "timestamp": datetime.utcnow().isoformat(),
         }
@@ -14277,6 +14369,7 @@ class ConnectionManager:
     async def broadcast_admin_message(self, message_dict: dict):
         payload = {
             "type": "admin_direct_message",
+            "event": "NOTIFICATION_CREATED",
             "message": message_dict,
             "timestamp": datetime.utcnow().isoformat(),
         }
@@ -14292,8 +14385,26 @@ class ConnectionManager:
         hospital_id: Optional[int] = None,
         patient_phone: Optional[str] = None,
     ):
+        event_name_map = {
+            "created": "TOKEN_BOOKED",
+            "token_created": "TOKEN_BOOKED",
+            "token_booked": "TOKEN_BOOKED",
+            "walk_in_created": "TOKEN_BOOKED",
+            "number_updated": "TOKEN_UPDATED",
+            "reassigned": "TOKEN_UPDATED",
+            "cancelled": "TOKEN_CANCELLED",
+            "token_cancelled": "TOKEN_CANCELLED",
+            "called": "CONSULTATION_STARTED",
+            "token_called": "CONSULTATION_STARTED",
+            "completed": "CONSULTATION_COMPLETED",
+            "token_completed": "CONSULTATION_COMPLETED",
+            "skipped": "TOKEN_UPDATED",
+            "token_skipped": "TOKEN_UPDATED",
+        }
+        event_name = event_name_map.get(event_type, "TOKEN_UPDATED")
         payload = {
             "type": "token_update",
+            "event": event_name,
             "action": event_type,
             "token": token_data,
             "hospital_id": hospital_id,
@@ -14315,8 +14426,17 @@ class ConnectionManager:
         documents: Optional[list] = None,
         document_id: Optional[int] = None,
     ):
+        event_name_map = {
+            "uploaded": "MEDICAL_DOCUMENT_UPLOADED",
+            "document_uploaded": "MEDICAL_DOCUMENT_UPLOADED",
+            "batch_uploaded": "MEDICAL_DOCUMENT_UPLOADED",
+            "deleted": "MEDICAL_DOCUMENT_DELETED",
+            "document_deleted": "MEDICAL_DOCUMENT_DELETED",
+        }
+        event_name = event_name_map.get(event_type, "MEDICAL_DOCUMENT_UPLOADED")
         payload = {
             "type": "document_update",
+            "event": event_name,
             "action": event_type,
             "token_id": token_id,
             "documents": documents or [],
@@ -14331,9 +14451,70 @@ class ConnectionManager:
             await self.broadcast_to_patient(patient_phone, payload)
         await self.broadcast_to_admins(payload)
 
+    async def broadcast_doctor_availability_event(
+        self,
+        doctor_dict: dict,
+        hospital_id: int,
+    ):
+        payload = {
+            "type": "doctor_availability_update",
+            "event": "DOCTOR_AVAILABILITY_UPDATED",
+            "action": "availability_changed",
+            "doctor": doctor_dict,
+            "hospital_id": hospital_id,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        await self.broadcast_to_hospital(hospital_id, payload)
+        for ws in list(self.active_connections):
+            try:
+                await ws.send_json(payload)
+            except Exception:
+                pass
+        await self.broadcast_to_admins(payload)
+
+    async def broadcast_payment_event(
+        self,
+        event_type: str,
+        payment_data: dict,
+        hospital_id: Optional[int] = None,
+        patient_phone: Optional[str] = None,
+    ):
+        payload = {
+            "type": "payment_update",
+            "event": event_type,
+            "action": event_type.lower(),
+            "payment": payment_data,
+            "hospital_id": hospital_id,
+            "patient_phone": patient_phone,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        if hospital_id:
+            await self.broadcast_to_hospital(hospital_id, payload)
+        if patient_phone:
+            await self.broadcast_to_patient(patient_phone, payload)
+        await self.broadcast_to_admins(payload)
+
+    async def broadcast_hospital_status_event(
+        self,
+        hospital_id: int,
+        status: str,
+        is_published: bool,
+    ):
+        payload = {
+            "type": "hospital_status_update",
+            "event": "HOSPITAL_STATUS_UPDATED",
+            "hospital_id": hospital_id,
+            "status": status,
+            "is_published": is_published,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        await self.broadcast_to_hospital(hospital_id, payload)
+        await self.broadcast_to_admins(payload)
+
     async def broadcast_emergency_announcement(self, broadcast_dict: dict):
         payload = {
             "type": "emergency_broadcast",
+            "event": "NOTIFICATION_CREATED",
             "broadcast": broadcast_dict,
             "timestamp": datetime.utcnow().isoformat(),
         }
