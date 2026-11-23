@@ -793,6 +793,16 @@
 
     <script src="./broadcast-banner.js"></script>
     <script>
+        function escapeHTML(value) {
+            if (value === null || value === undefined) return "";
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
         const API = "https://carepath-3q9q.onrender.com";
         const urlParams = new URLSearchParams(window.location.search);
         const hospitalId = urlParams.get("hospital_id") || urlParams.get("id") || localStorage.getItem("hospital_id") || "15";
@@ -1355,16 +1365,16 @@
                     heroSection.innerHTML = `
                         <div class="hero-serving-card">
                             <div class="serving-label">Now Calling Token</div>
-                            <div class="giant-token-number">#${primary.token_number}</div>
-                            <div class="serving-patient-name">${primary.patient_name || "Patient"}</div>
+                            <div class="giant-token-number">#${escapeHTML(primary.token_number)}</div>
+                            <div class="serving-patient-name">${escapeHTML(primary.patient_name || "Patient")}</div>
                             <div class="serving-meta-wrap">
                                 <div class="meta-pill">
                                     <span>Doctor</span>
-                                    <strong>${primary.doctor || "Consultant"}</strong>
+                                    <strong>${escapeHTML(primary.doctor || "Consultant")}</strong>
                                 </div>
                                 <div class="meta-pill">
                                     <span>Department</span>
-                                    <strong>${primary.department || "General"}</strong>
+                                    <strong>${escapeHTML(primary.department || "General")}</strong>
                                 </div>
                                 <div class="meta-pill">
                                     <span>Status</span>
@@ -1387,9 +1397,9 @@
                         multiSection.style.display = "block";
                         servingGrid.innerHTML = serving.slice(1).map(s => `
                             <div class="serving-sub-card">
-                                <div class="sub-card-token">#${s.token_number}</div>
-                                <div class="sub-card-patient">${s.patient_name || "Patient"}</div>
-                                <div class="sub-card-doc">${s.doctor} • ${s.department}</div>
+                                <div class="sub-card-token">#${escapeHTML(s.token_number)}</div>
+                                <div class="sub-card-patient">${escapeHTML(s.patient_name || "Patient")}</div>
+                                <div class="sub-card-doc">${escapeHTML(s.doctor)} • ${escapeHTML(s.department)}</div>
                             </div>
                         `).join("");
                     } else {
@@ -1415,10 +1425,10 @@
                         prevGrid.innerHTML = previousList.slice(0, 6).map(p => `
                             <div class="prev-patient-card">
                                 <div class="prev-card-left">
-                                    <div class="prev-token-pill">#${p.token_number}</div>
+                                    <div class="prev-token-pill">#${escapeHTML(p.token_number)}</div>
                                     <div class="prev-card-details">
-                                        <div class="prev-patient-name">${p.patient_name || "Patient"}</div>
-                                        <div class="prev-patient-doc">${p.doctor || "Consultant"} • ${p.department || "OPD"}</div>
+                                        <div class="prev-patient-name">${escapeHTML(p.patient_name || "Patient")}</div>
+                                        <div class="prev-patient-doc">${escapeHTML(p.doctor || "Consultant")} • ${escapeHTML(p.department || "OPD")}</div>
                                     </div>
                                 </div>
                                 <div class="prev-status-tag">✓ Done</div>
@@ -1441,10 +1451,10 @@
                     queueList.innerHTML = waiting.map((t, idx) => `
                         <div class="queue-item">
                             <div class="queue-item-left">
-                                <div class="token-circle-badge">#${t.token_number}</div>
+                                <div class="token-circle-badge">#${escapeHTML(t.token_number)}</div>
                                 <div>
-                                    <div class="queue-patient-name">${t.patient_name || "Patient"}</div>
-                                    <div class="queue-patient-doc">${t.doctor || "Doctor"} • ${t.department}</div>
+                                    <div class="queue-patient-name">${escapeHTML(t.patient_name || "Patient")}</div>
+                                    <div class="queue-patient-doc">${escapeHTML(t.doctor || "Doctor")} • ${escapeHTML(t.department)}</div>
                                 </div>
                             </div>
                             <div class="queue-item-right">

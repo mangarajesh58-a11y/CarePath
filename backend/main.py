@@ -1880,19 +1880,71 @@ def run_database_migration():
     try:
         with engine.begin() as connection:
             if engine.dialect.name == "postgresql":
-                connection.execute(
-                    text("""
-                        CREATE TABLE IF NOT EXISTS token_sequences (
-                            id SERIAL PRIMARY KEY,
-                            hospital_id INT NOT NULL,
-                            department VARCHAR(255) NOT NULL,
-                            doctor VARCHAR(255) NOT NULL,
-                            appointment_date DATE NOT NULL,
-                            last_token_number INT NOT NULL DEFAULT 0,
-                            CONSTRAINT uq_token_sequences UNIQUE (hospital_id, department, doctor, appointment_date)
+                # Acquire advisory lock to prevent concurrent worker startup deadlocks (QA-DB-001)
+                advisory_locked = connection.execute(text("SELECT pg_try_advisory_lock(987654321);")).scalar()
+                if not advisory_locked:
+                    return
+                try:
+                    # Check if index already exists to avoid redundant lock contention
+                    idx_exists = connection.execute(text("""
+                        SELECT 1 FROM pg_indexes WHERE indexname = 'uq_tokens_doc_date_num' LIMIT 1;
+                    """)).scalar()
+                    if not idx_exists:
+                        connection.execute(
+                            text("""
+                                CREATE TABLE IF NOT EXISTS token_sequences (
+                                    id SERIAL PRIMARY KEY,
+                                    hospital_id INT NOT NULL,
+                                    department VARCHAR(255) NOT NULL,
+                                    doctor VARCHAR(255) NOT NULL,
+                                    appointment_date DATE NOT NULL,
+                                    last_token_number INT NOT NULL DEFAULT 0,
+                                    CONSTRAINT uq_token_sequences UNIQUE (hospital_id, department, doctor, appointment_date)
+                                )
+                            """)
                         )
-                    """)
-                )
+                        connection.execute(text("ALTER TABLE token_sequences ADD COLUMN IF NOT EXISTS doctor_id INT NULL;"))
+                        connection.execute(text("""
+                            UPDATE token_sequences ts
+                            SET doctor_id = d.id
+                            FROM doctors d
+                            WHERE d.hospital_id = ts.hospital_id
+                              AND ts.doctor_id IS NULL
+                              AND (
+                                  LOWER(d.name) = LOWER(ts.doctor)
+                                  OR LOWER(d.name) = LOWER(regexp_replace(ts.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
+                                  OR LOWER(regexp_replace(d.name, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i')) = LOWER(regexp_replace(ts.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
+                              );
+                        """))
+                        connection.execute(text("""
+                            UPDATE tokens t
+                            SET doctor_id = d.id
+                            FROM doctors d
+                            WHERE d.hospital_id = t.hospital_id
+                              AND t.doctor_id IS NULL
+                              AND (
+                                  LOWER(d.name) = LOWER(t.doctor)
+                                  OR LOWER(d.name) = LOWER(regexp_replace(t.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
+                                  OR LOWER(regexp_replace(d.name, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i')) = LOWER(regexp_replace(t.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
+                              );
+                        """))
+                        connection.execute(text("""
+                            CREATE UNIQUE INDEX IF NOT EXISTS uq_token_sequences_doc_id 
+                            ON token_sequences (hospital_id, doctor_id, appointment_date) 
+                            WHERE doctor_id IS NOT NULL;
+                        """))
+                        connection.execute(text("""
+                            CREATE UNIQUE INDEX IF NOT EXISTS uq_tokens_doc_date_num 
+                            ON tokens (hospital_id, doctor_id, appointment_date, token_number) 
+                            WHERE doctor_id IS NOT NULL;
+                        """))
+                        connection.execute(text("""
+                            CREATE UNIQUE INDEX IF NOT EXISTS uq_tokens_doc_name_date_num 
+                            ON tokens (hospital_id, doctor, appointment_date, token_number) 
+                            WHERE doctor_id IS NULL;
+                        """))
+                finally:
+                    connection.execute(text("SELECT pg_advisory_unlock(987654321);"))
             else:
                 connection.execute(
                     text("""
@@ -1907,47 +1959,6 @@ def run_database_migration():
                         )
                     """)
                 )
-            if engine.dialect.name == "postgresql":
-                connection.execute(text("ALTER TABLE token_sequences ADD COLUMN IF NOT EXISTS doctor_id INT NULL;"))
-                connection.execute(text("""
-                    UPDATE token_sequences ts
-                    SET doctor_id = d.id
-                    FROM doctors d
-                    WHERE d.hospital_id = ts.hospital_id
-                      AND ts.doctor_id IS NULL
-                      AND (
-                          LOWER(d.name) = LOWER(ts.doctor)
-                          OR LOWER(d.name) = LOWER(regexp_replace(ts.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
-                          OR LOWER(regexp_replace(d.name, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i')) = LOWER(regexp_replace(ts.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
-                      );
-                """))
-                connection.execute(text("""
-                    UPDATE tokens t
-                    SET doctor_id = d.id
-                    FROM doctors d
-                    WHERE d.hospital_id = t.hospital_id
-                      AND t.doctor_id IS NULL
-                      AND (
-                          LOWER(d.name) = LOWER(t.doctor)
-                          OR LOWER(d.name) = LOWER(regexp_replace(t.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
-                          OR LOWER(regexp_replace(d.name, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i')) = LOWER(regexp_replace(t.doctor, '^(dr\\.|dr|mr\\.|mr)\\s*', '', 'i'))
-                      );
-                """))
-                connection.execute(text("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS uq_token_sequences_doc_id 
-                    ON token_sequences (hospital_id, doctor_id, appointment_date) 
-                    WHERE doctor_id IS NOT NULL;
-                """))
-                connection.execute(text("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS uq_tokens_doc_date_num 
-                    ON tokens (hospital_id, doctor_id, appointment_date, token_number) 
-                    WHERE doctor_id IS NOT NULL;
-                """))
-                connection.execute(text("""
-                    CREATE UNIQUE INDEX IF NOT EXISTS uq_tokens_doc_name_date_num 
-                    ON tokens (hospital_id, doctor, appointment_date, token_number) 
-                    WHERE doctor_id IS NULL;
-                """))
     except Exception as error:
         print("token_sequences table creation notice:", error)
 
