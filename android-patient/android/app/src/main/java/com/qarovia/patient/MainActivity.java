@@ -27,6 +27,7 @@ import androidx.core.content.ContextCompat;
 import com.getcapacitor.Bridge;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
+import com.getcapacitor.BridgeWebViewClient;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -179,6 +180,32 @@ public class MainActivity extends BridgeActivity {
 
             // Set custom chrome client for OAuth popups and camera / file picker
             webView.setWebChromeClient(new CustomChromeClient(getBridge()));
+
+            // Intercept external schemes (UPI apps, phonepe, gpay, paytm, tel, mailto) on main WebView
+            webView.setWebViewClient(new CustomBridgeWebViewClient(getBridge()));
+        }
+    }
+
+    private class CustomBridgeWebViewClient extends BridgeWebViewClient {
+        public CustomBridgeWebViewClient(Bridge bridge) {
+            super(bridge);
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            String url = request.getUrl().toString();
+            if (handleExternalSchemes(url)) {
+                return true;
+            }
+            return super.shouldOverrideUrlLoading(view, request);
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            if (handleExternalSchemes(url)) {
+                return true;
+            }
+            return super.shouldOverrideUrlLoading(view, url);
         }
     }
 
@@ -297,9 +324,33 @@ public class MainActivity extends BridgeActivity {
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                 startActivity(intent);
                 return true;
-            } else if (url.startsWith("upi://") || url.startsWith("phonepe://") || url.startsWith("paytmmp://") || url.startsWith("tez://")) {
+            } else if (url.startsWith("upi://") || url.startsWith("phonepe://") || url.startsWith("paytmmp://") || url.startsWith("tez://") || url.startsWith("gpay://")) {
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                 startActivity(intent);
+                return true;
+            } else if (url.startsWith("intent://")) {
+                Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                if (intent != null) {
+                    PackageManager pm = getPackageManager();
+                    if (intent.resolveActivity(pm) != null) {
+                        startActivity(intent);
+                        return true;
+                    }
+                    String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                    if (fallbackUrl != null) {
+                        WebView webView = getBridge().getWebView();
+                        if (webView != null) webView.loadUrl(fallbackUrl);
+                        return true;
+                    }
+                    String appPackage = intent.getPackage();
+                    if (appPackage != null) {
+                        try {
+                            Intent marketIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackage));
+                            startActivity(marketIntent);
+                            return true;
+                        } catch (Exception ignored) {}
+                    }
+                }
                 return true;
             }
         } catch (Exception e) {

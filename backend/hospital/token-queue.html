@@ -3382,8 +3382,7 @@ function renderPrintableOpdSlip(token) {
         '<div class="slip-footer">Please wait for your token number to appear on the OPD display screen.<br><em>Q-Arovia Healthcare Network</em></div>',
         '<' + '/body>',
         '<' + '/html>'
-    ].join('
-');
+    ].join('\n');
 
     printWin.document.open();
     printWin.document.write(slipHtml);
