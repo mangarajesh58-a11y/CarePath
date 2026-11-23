@@ -99,6 +99,8 @@ from models import (
     AdminAuditLog,
     UserPresence,
     MedicalDocument,
+    UserSession,
+    DistributedWSEvent,
 )
 from fastapi.responses import FileResponse, Response, JSONResponse
 
@@ -249,7 +251,8 @@ if not JWT_SECRET_KEY or len(JWT_SECRET_KEY) < 32:
         "Set a strong JWT_SECRET_KEY in backend/.env before running Q-Arovia."
     )
 JWT_ALGORITHM = "HS256"
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30  # 30-day persistent session
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "15"))  # 15-minute short-lived access token (QA-AUTH-001)
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))  # 30-day rotatable refresh token
 
 # In-Memory Security Rate Limiters & Magic-Byte Validators
 _LOGIN_ATTEMPTS = {}  # ip: [timestamps]
@@ -361,6 +364,125 @@ def decode_access_token(token: str) -> dict:
         JWT_SECRET_KEY,
         algorithms=[JWT_ALGORITHM],
     )
+
+
+def hash_refresh_token(token: str) -> str:
+    """Computes a SHA-256 digest of raw refresh token for safe database persistence."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def create_user_session(
+    db: Session,
+    user_id: int,
+    role: str,
+    request: Optional[Request] = None,
+) -> tuple[str, str, UserSession]:
+    """Issues a new short-lived access token and rotatable refresh token with session tracking (QA-AUTH-001)."""
+    access_token = create_access_token(user_id=user_id, role=role)
+    raw_refresh_token = secrets.token_urlsafe(48)
+    token_hash = hash_refresh_token(raw_refresh_token)
+
+    client_ip = request.client.host if (request and request.client) else "unknown"
+    device_info = (request.headers.get("user-agent") or "unknown")[:250] if request else "unknown"
+    expires_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
+    session = UserSession(
+        user_id=user_id,
+        role=role,
+        refresh_token_hash=token_hash,
+        device_info=device_info,
+        ip_address=client_ip,
+        is_revoked=False,
+        created_at=datetime.utcnow(),
+        last_active=datetime.utcnow(),
+        expires_at=expires_at,
+    )
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return access_token, raw_refresh_token, session
+
+
+def rotate_user_session(
+    db: Session,
+    raw_refresh_token: str,
+    request: Optional[Request] = None,
+) -> tuple[str, str]:
+    """Validates refresh token, detects token reuse/theft, invalidates current token, and issues fresh pair."""
+    token_hash = hash_refresh_token(raw_refresh_token.strip())
+    session = (
+        db.query(UserSession)
+        .filter(UserSession.refresh_token_hash == token_hash)
+        .first()
+    )
+
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid refresh token.")
+
+    # REUSE DETECTION: If this refresh token was already revoked, someone may have stolen it!
+    if session.is_revoked:
+        db.query(UserSession).filter(
+            UserSession.user_id == session.user_id,
+            UserSession.role == session.role,
+            UserSession.is_revoked == False,
+        ).update({"is_revoked": True})
+        db.commit()
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token reuse detected. All active sessions have been revoked for your security. Please log in again.",
+        )
+
+    if session.expires_at < datetime.utcnow():
+        session.is_revoked = True
+        db.commit()
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token has expired. Please log in again.",
+        )
+
+    # Invalidate current token (one-time use rotation)
+    session.is_revoked = True
+    session.last_active = datetime.utcnow()
+
+    # Issue a fresh pair
+    new_access, new_refresh, new_session = create_user_session(
+        db=db,
+        user_id=session.user_id,
+        role=session.role,
+        request=request,
+    )
+    return new_access, new_refresh
+
+
+def revoke_user_session_by_token(db: Session, raw_refresh_token: str) -> bool:
+    """Marks a single session as revoked using its refresh token."""
+    token_hash = hash_refresh_token(raw_refresh_token.strip())
+    session = (
+        db.query(UserSession)
+        .filter(UserSession.refresh_token_hash == token_hash)
+        .first()
+    )
+    if session:
+        session.is_revoked = True
+        session.last_active = datetime.utcnow()
+        db.commit()
+        return True
+    return False
+
+
+def revoke_all_user_sessions(db: Session, user_id: int, role: str) -> int:
+    """Invalidates all active sessions for a specific user upon logout-all or password change."""
+    count = (
+        db.query(UserSession)
+        .filter(
+            UserSession.user_id == user_id,
+            UserSession.role == role,
+            UserSession.is_revoked == False,
+        )
+        .update({"is_revoked": True})
+    )
+    db.commit()
+    return count
 
 
 def get_optional_user(
@@ -741,6 +863,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_security_headers_middleware(request: Request, call_next):
+    """Applies defensive HTTP security headers to all responses (QA-SEC-005)."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Permissions-Policy"] = "camera=(self), microphone=(self), geolocation=(self)"
+    return response
+
 def is_trusted_cors_origin(origin: Optional[str]) -> bool:
     if not origin or origin == "null":
         return False
@@ -755,6 +889,12 @@ def get_cors_headers(request: Request) -> dict:
     headers = {
         "Access-Control-Allow-Methods": "DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT",
         "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Origin, X-Requested-With",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+        "X-XSS-Protection": "1; mode=block",
+        "Permissions-Policy": "camera=(self), microphone=(self), geolocation=(self)",
     }
     if is_trusted_cors_origin(origin):
         headers["Access-Control-Allow-Origin"] = origin
@@ -3413,10 +3553,152 @@ def reset_password(
     db.delete(otp_record)
     db.commit()
 
+    # Revoke all active sessions for this account upon password change (QA-AUTH-001)
+    revoke_all_user_sessions(db, user_id=user.id, role=role)
+
     return {
         "success": True,
         "message": "Password reset successfully! You can now log in with your new password.",
     }
+
+
+# ============================================================
+# SESSION MANAGEMENT (QA-AUTH-001)
+# ============================================================
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: Optional[str] = None
+
+
+class LogoutRequest(BaseModel):
+    refresh_token: Optional[str] = None
+
+
+@app.post("/auth/refresh")
+def refresh_session_token(
+    data: Optional[RefreshTokenRequest] = None,
+    request: Request = None,
+    db: Session = Depends(get_db),
+):
+    """Rotates refresh token and issues a new access token (QA-AUTH-001)."""
+    token = None
+    if data and data.refresh_token:
+        token = data.refresh_token.strip()
+    elif request:
+        token = request.cookies.get("refresh_token")
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Missing refresh token.")
+
+    new_access, new_refresh = rotate_user_session(db, token, request)
+
+    response = JSONResponse(content={
+        "success": True,
+        "access_token": new_access,
+        "refresh_token": new_refresh,
+        "token_type": "bearer",
+        "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    })
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+    )
+    return response
+
+
+@app.post("/auth/logout")
+def logout_user(
+    data: Optional[LogoutRequest] = None,
+    request: Request = None,
+    db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_auth_user),
+):
+    """Revokes session on logout (QA-AUTH-001)."""
+    token = None
+    if data and data.refresh_token:
+        token = data.refresh_token.strip()
+    elif request:
+        token = request.cookies.get("refresh_token")
+
+    if token:
+        revoke_user_session_by_token(db, token)
+    elif current_user:
+        revoke_all_user_sessions(db, current_user["user_id"], current_user["role"])
+
+    response = JSONResponse(content={"success": True, "message": "Successfully logged out."})
+    response.delete_cookie("refresh_token")
+    return response
+
+
+@app.post("/auth/logout-all")
+def logout_all_sessions(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Revokes all active sessions for the authenticated user across all devices (QA-AUTH-001)."""
+    count = revoke_all_user_sessions(db, current_user["user_id"], current_user["role"])
+    return {"success": True, "message": f"Successfully revoked {count} active sessions."}
+
+
+@app.get("/auth/sessions")
+def list_user_sessions(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Lists all active sessions for the authenticated user (QA-AUTH-001)."""
+    sessions = (
+        db.query(UserSession)
+        .filter(
+            UserSession.user_id == current_user["user_id"],
+            UserSession.role == current_user["role"],
+            UserSession.is_revoked == False,
+            UserSession.expires_at > datetime.utcnow(),
+        )
+        .order_by(UserSession.last_active.desc())
+        .all()
+    )
+
+    return {
+        "success": True,
+        "sessions": [
+            {
+                "id": s.id,
+                "device_info": s.device_info,
+                "ip_address": s.ip_address,
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+                "last_active": s.last_active.isoformat() if s.last_active else None,
+                "expires_at": s.expires_at.isoformat() if s.expires_at else None,
+            }
+            for s in sessions
+        ],
+    }
+
+
+@app.delete("/auth/sessions/{session_id}")
+def revoke_specific_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Revokes a specific session owned by the authenticated user (QA-AUTH-001)."""
+    session = (
+        db.query(UserSession)
+        .filter(
+            UserSession.id == session_id,
+            UserSession.user_id == current_user["user_id"],
+            UserSession.role == current_user["role"],
+        )
+        .first()
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    session.is_revoked = True
+    db.commit()
+    return {"success": True, "message": "Session revoked successfully."}
 
 
 class PatientLogin(BaseModel):
@@ -4690,6 +4972,7 @@ def health():
 @app.post("/patients/register")
 def register_patient(
     data: PatientRegister,
+    request: Request = None,
     db: Session = Depends(get_db),
 ):
     # Get and normalize registration details
@@ -4801,10 +5084,12 @@ def register_patient(
             detail="Patient registration failed. Please try again.",
         )
 
-    # Generate JWT access token for immediate authenticated session
-    access_token = create_access_token(
+    # Generate JWT access token and rotatable refresh session
+    access_token, refresh_token, session = create_user_session(
+        db=db,
         user_id=patient.id,
         role="patient",
+        request=request,
     )
 
     # Return registration response with access token
@@ -4812,7 +5097,9 @@ def register_patient(
         "success": True,
         "message": "Patient registered successfully",
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
+        "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "patient": {
             "id": patient.id,
             "full_name": patient.full_name,
@@ -4859,16 +5146,20 @@ def patient_login(
             detail="Invalid email/phone or password",
         )
 
-    access_token = create_access_token(
+    access_token, refresh_token, session = create_user_session(
+        db=db,
         user_id=patient.id,
         role="patient",
+        request=request,
     )
 
     return {
         "success": True,
         "message": "Patient login successful",
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
+        "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "patient": {
             "id": patient.id,
             "full_name": patient.full_name,
@@ -4884,6 +5175,7 @@ def patient_login(
 @app.post("/patients/google-login")
 def patient_google_login(
     data: GoogleCredentialRequest,
+    request: Request = None,
     db: Session = Depends(get_db),
 ):
 
@@ -4950,14 +5242,20 @@ def patient_google_login(
 
         db.refresh(patient)
 
+    access_token, refresh_token, session = create_user_session(
+        db=db,
+        user_id=patient.id,
+        role="patient",
+        request=request,
+    )
+
     return {
         "success": True,
         "message": "Google login successful",
-        "access_token": create_access_token(
-            patient.id,
-            "patient",
-        ),
+        "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
+        "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "patient": {
             "id": patient.id,
             "full_name": patient.full_name,
@@ -5343,6 +5641,7 @@ def get_authenticated_user_profile(
 @app.post("/auth/google")
 def generic_google_login(
     data: GenericGoogleLoginRequest,
+    request: Request = None,
     db: Session = Depends(get_db),
 ):
     role = data.role.strip().lower()
@@ -5379,9 +5678,11 @@ def generic_google_login(
         db.commit()
         db.refresh(patient)
 
-        access_token = create_access_token(
+        access_token, refresh_token, session = create_user_session(
+            db=db,
             user_id=patient.id,
             role="patient",
+            request=request,
         )
 
         return {
@@ -5389,7 +5690,9 @@ def generic_google_login(
             "role": "patient",
             "message": "Google login successful",
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
+            "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             "patient": {
                 "id": patient.id,
                 "full_name": patient.full_name,
@@ -5424,9 +5727,11 @@ def generic_google_login(
         db.commit()
         db.refresh(hospital)
 
-        access_token = create_access_token(
+        access_token, refresh_token, session = create_user_session(
+            db=db,
             user_id=hospital.id,
             role="hospital",
+            request=request,
         )
 
         return {
@@ -5434,7 +5739,9 @@ def generic_google_login(
             "role": "hospital",
             "message": "Google login successful",
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
+            "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             "hospital": hospital_to_dict(hospital),
         }
 
@@ -5458,9 +5765,11 @@ def generic_google_login(
                 ),
             )
 
-        access_token = create_access_token(
+        access_token, refresh_token, session = create_user_session(
+            db=db,
             user_id=admin.id,
             role="admin",
+            request=request,
         )
 
         return {
@@ -5468,7 +5777,9 @@ def generic_google_login(
             "role": "admin",
             "message": "Google admin login successful",
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
+            "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             "admin": {
                 "id": admin.id,
                 "email": admin.email,
@@ -6005,24 +6316,31 @@ def hospital_login(
             detail="This hospital account has been deleted or deactivated. Please contact Q-Arovia administrator.",
         )
 
-    access_token = create_access_token(
+    access_token, refresh_token, session = create_user_session(
+        db=db,
         user_id=hospital.id,
         role="hospital",
+        request=request,
     )
 
     return {
         "success": True,
         "message": "Hospital login successful",
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
+        "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "hospital": hospital_to_dict(hospital),
-    }# ============================================================
+    }
+
+# ============================================================
 # HOSPITAL GOOGLE LOGIN
 # ============================================================
 
 @app.post("/hospitals/google-login")
 def hospital_google_login(
     data: GoogleCredentialRequest,
+    request: Request = None,
     db: Session = Depends(get_db),
 ):
 
@@ -6064,14 +6382,20 @@ def hospital_google_login(
 
     db.refresh(hospital)
 
+    access_token, refresh_token, session = create_user_session(
+        db=db,
+        user_id=hospital.id,
+        role="hospital",
+        request=request,
+    )
+
     return {
         "success": True,
         "message": "Google login successful",
-        "access_token": create_access_token(
-            hospital.id,
-            "hospital",
-        ),
+        "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
+        "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "hospital": hospital_to_dict(hospital),
     }
 
@@ -10828,16 +11152,20 @@ def admin_login(
             detail="Invalid admin credentials",
         )
 
-    access_token = create_access_token(
+    access_token, refresh_token, session = create_user_session(
+        db=db,
         user_id=admin.id,
         role="admin",
+        request=request,
     )
 
     return {
         "success": True,
         "message": "Admin login successful",
         "access_token": access_token,
+        "refresh_token": refresh_token,
         "token_type": "bearer",
+        "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "admin": {
             "id": admin.id,
             "email": admin.email,
@@ -13855,7 +14183,23 @@ class ConnectionManager:
         except Exception:
             self.disconnect(websocket)
 
+    def persist_distributed_event(self, channel_type: str, target_id: Optional[str], payload: dict):
+        """Persists real-time events to ws_distributed_events table for multi-instance synchronization (QA-ARCH-001)."""
+        try:
+            with SessionLocal() as db:
+                event = DistributedWSEvent(
+                    channel_type=channel_type,
+                    target_id=str(target_id) if target_id is not None else None,
+                    payload=json.dumps(payload),
+                    created_at=datetime.utcnow(),
+                )
+                db.add(event)
+                db.commit()
+        except Exception as e:
+            logging.warning("Failed to persist distributed WS event: %s", e)
+
     async def broadcast_to_hospital(self, hospital_id: int, message: dict):
+        self.persist_distributed_event("hospital", str(hospital_id), message)
         try:
             h_int = int(hospital_id)
             sockets = list(self.hospital_connections.get(h_int, set()))
@@ -13871,6 +14215,7 @@ class ConnectionManager:
         if not phone:
             return
         clean_phone = "".join(filter(str.isdigit, str(phone)))[-10:]
+        self.persist_distributed_event("patient", clean_phone, message)
         sockets = list(self.patient_connections.get(clean_phone, set()))
         for ws in sockets:
             try:
@@ -13879,6 +14224,7 @@ class ConnectionManager:
                 self.disconnect(ws)
 
     async def broadcast_to_admins(self, message: dict):
+        self.persist_distributed_event("admin", None, message)
         sockets = list(self.admin_connections)
         for ws in sockets:
             try:
@@ -14005,6 +14351,47 @@ class ConnectionManager:
         await self.broadcast_to_admins(payload)
 
 ws_manager = ConnectionManager()
+
+
+@app.get("/ws/events/sync")
+def sync_ws_events(
+    channel_type: Optional[str] = Query("all"),
+    target_id: Optional[str] = Query(None),
+    since_id: int = Query(0),
+    limit: int = Query(50),
+    db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_auth_user),
+):
+    """
+    Distributed WebSocket event synchronization endpoint (QA-ARCH-001).
+    Allows reconnected clients or multi-instance workers to catch up on distributed real-time events.
+    """
+    query = db.query(DistributedWSEvent).filter(DistributedWSEvent.id > since_id)
+    if channel_type and channel_type != "all":
+        query = query.filter(DistributedWSEvent.channel_type == channel_type)
+    if target_id:
+        query = query.filter(DistributedWSEvent.target_id == str(target_id))
+
+    events = query.order_by(DistributedWSEvent.id.asc()).limit(min(limit, 100)).all()
+
+    result = []
+    for e in events:
+        try:
+            p = json.loads(e.payload) if e.payload else {}
+        except Exception:
+            p = {"raw": e.payload}
+        result.append({
+            "id": e.id,
+            "channel_type": e.channel_type,
+            "target_id": e.target_id,
+            "payload": p,
+            "created_at": e.created_at.isoformat() if e.created_at else None,
+        })
+    return {
+        "success": True,
+        "events": result,
+        "latest_id": events[-1].id if events else since_id,
+    }
 
 
 @app.websocket("/ws/messages")

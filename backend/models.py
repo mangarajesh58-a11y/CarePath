@@ -462,3 +462,29 @@ class MedicalDocument(Base):
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    role = Column(String(32), nullable=False, index=True)  # patient, hospital, admin
+    refresh_token_hash = Column(String(128), nullable=False, index=True)
+    device_info = Column(String(255), nullable=True)
+    ip_address = Column(String(64), nullable=True)
+    is_revoked = Column(Boolean, default=False, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_active = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False, index=True)
+
+
+class DistributedWSEvent(Base):
+    __tablename__ = "ws_distributed_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    channel_type = Column(String(32), nullable=False, index=True)  # hospital, patient, admin, emergency
+    target_id = Column(String(64), nullable=True, index=True)
+    payload = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+

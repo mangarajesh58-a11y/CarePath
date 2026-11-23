@@ -121,7 +121,10 @@ public class MainActivity extends BridgeActivity {
             WebSettings settings = webView.getSettings();
             settings.setJavaScriptEnabled(true);
             settings.setMediaPlaybackRequiresUserGesture(false);
-            settings.setAllowFileAccess(true);
+            settings.setAllowFileAccess(false);
+            settings.setAllowContentAccess(true);
+            settings.setAllowFileAccessFromFileURLs(false);
+            settings.setAllowUniversalAccessFromFileURLs(false);
             settings.setDomStorageEnabled(true);
             settings.setDatabaseEnabled(true);
             settings.setGeolocationEnabled(true);
@@ -192,6 +195,10 @@ public class MainActivity extends BridgeActivity {
             popupWebView = new WebView(MainActivity.this);
             WebSettings popupSettings = popupWebView.getSettings();
             popupSettings.setJavaScriptEnabled(true);
+            popupSettings.setAllowFileAccess(false);
+            popupSettings.setAllowContentAccess(true);
+            popupSettings.setAllowFileAccessFromFileURLs(false);
+            popupSettings.setAllowUniversalAccessFromFileURLs(false);
             popupSettings.setDomStorageEnabled(true);
             popupSettings.setDatabaseEnabled(true);
             popupSettings.setSupportMultipleWindows(true);
