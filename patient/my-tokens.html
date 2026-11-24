@@ -1441,7 +1441,25 @@
     }
 
     function openReceiptModal(tokenId) {
-      const t = allTokens.find(item => String(item.id) === String(tokenId));
+      let t = allTokens.find(item => String(item.id) === String(tokenId));
+      if (!t) {
+        try {
+          const raw = localStorage.getItem("qarovia_cached_tokens") || "[]";
+          const list = JSON.parse(raw);
+          if (Array.isArray(list)) t = list.find(item => String(item.id) === String(tokenId));
+        } catch(e) {}
+      }
+      if (!t) {
+        try {
+          const lastRaw = localStorage.getItem("lastBookedTokenDetails");
+          if (lastRaw) {
+            const parsed = JSON.parse(lastRaw);
+            if (parsed && parsed.token && String(parsed.token.id) === String(tokenId)) {
+              t = parsed.token;
+            }
+          }
+        } catch(e) {}
+      }
       if (!t) return;
 
       const modalContent = document.getElementById("modalContent");
