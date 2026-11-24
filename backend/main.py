@@ -8052,7 +8052,10 @@ def cancel_patient_token(
     if not token:
         raise HTTPException(status_code=404, detail="Appointment token not found.")
 
-    if token.patient_id != patient_id:
+    if token.patient_id is not None and token.patient_id != patient_id:
+        raise HTTPException(status_code=403, detail="You do not have permission to cancel this appointment.")
+
+    if token.patient_id is None:
         patient = db.query(Patient).filter(Patient.id == patient_id).first()
         is_match = False
         if patient and patient.phone and token.patient_phone:
@@ -8060,6 +8063,8 @@ def cancel_patient_token(
                 is_match = True
         if not is_match:
             raise HTTPException(status_code=403, detail="You do not have permission to cancel this appointment.")
+        # Auto-link unlinked token to this patient
+        token.patient_id = patient_id
 
     if token.status == "cancelled":
         return {"success": True, "message": "This appointment has already been cancelled.", "status": "cancelled"}
@@ -8714,11 +8719,13 @@ def resend_token_receipt(
         raise HTTPException(status_code=404, detail="Token not found.")
     patient = db.query(Patient).filter(Patient.id == current_user["user_id"]).first()
     authorized = (token.patient_id == current_user["user_id"])
-    if not authorized and patient:
+    if not authorized and patient and token.patient_id is None:
         if patient.email and token.patient_email and patient.email.strip().lower() == token.patient_email.strip().lower():
             authorized = True
+            token.patient_id = patient.id
         elif patient.phone and token.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token.patient_phone).strip().replace(" ", "").replace("-", ""):
             authorized = True
+            token.patient_id = patient.id
     if not authorized:
         raise HTTPException(status_code=403, detail="Not authorized to access this token.")
     hospital = db.query(Hospital).filter(Hospital.id == token.hospital_id).first()
@@ -8819,64 +8826,39 @@ def get_patient_token_history(
     patient_id = current_user["user_id"]
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
 
+    # Strict patient database identity isolation:
+    # 1. All tokens directly linked to this authenticated patient
     filter_conditions = [Token.patient_id == patient_id]
 
-    # 1. Accounts belonging to the same user by full name
-    patient_names = set()
-    if patient and patient.full_name and patient.full_name.strip():
-        patient_names.add(patient.full_name.strip())
-    if name and name.strip():
-        patient_names.add(name.strip())
+    # 2. Only unlinked tokens (patient_id is None) that match verified patient phone or email
+    if patient:
+        unlinked_conditions = []
+        if patient.phone and patient.phone.strip():
+            clean_p = patient.phone.strip().replace(" ", "").replace("-", "")
+            p_digits = re.sub(r"\D", "", patient.phone.strip())
+            unlinked_conditions.append(Token.patient_phone == patient.phone.strip())
+            unlinked_conditions.append(Token.patient_phone == clean_p)
+            if len(p_digits) >= 10:
+                unlinked_conditions.append(Token.patient_phone.ilike(f"%{p_digits[-10:]}%"))
+        if patient.email and patient.email.strip():
+            unlinked_conditions.append(func.lower(Token.patient_email) == patient.email.strip().lower())
 
-    for p_name in patient_names:
-        clean_name = p_name.lower()
-        same_name_ids = [p_id for (p_id,) in db.query(Patient.id).filter(func.lower(Patient.full_name) == clean_name).all()]
-        if same_name_ids:
-            filter_conditions.append(Token.patient_id.in_(same_name_ids))
+        if unlinked_conditions:
+            filter_conditions.append(and_(Token.patient_id.is_(None), or_(*unlinked_conditions)))
 
-        filter_conditions.append(func.lower(Token.patient_name) == clean_name)
-        filter_conditions.append(func.lower(Token.patient_name).ilike(f"{clean_name} (%"))
-        name_parts = clean_name.split()
-        if len(name_parts) >= 2:
-            for part in name_parts:
-                if len(part) >= 4:
-                    filter_conditions.append(func.lower(Token.patient_name) == part)
-                    filter_conditions.append(func.lower(Token.patient_name).ilike(f"{part} (%"))
+    tokens_query = db.query(Token).filter(or_(*filter_conditions))
 
-    # 2. Email matching (patient's profile email + optional query param)
-    target_emails = set()
-    if patient and patient.email and patient.email.strip():
-        target_emails.add(patient.email.strip().lower())
-    if email and email.strip():
-        target_emails.add(email.strip().lower())
-
-    for em in target_emails:
-        filter_conditions.append(func.lower(Token.patient_email) == em)
-        filter_conditions.append(Token.notes.ilike(f"%{em}%"))
-
-    # 3. Phone matching (patient's profile phone + optional query param)
-    target_phones = set()
-    if patient and patient.phone and patient.phone.strip():
-        target_phones.add(patient.phone.strip())
+    # Optional narrowing filters supplied by patient (never widens scope)
     if phone and phone.strip():
-        target_phones.add(phone.strip())
-
-    for ph in target_phones:
-        raw_phone = ph.strip()
-        clean_phone = raw_phone.replace(" ", "").replace("-", "")
-        digits_only = re.sub(r"\D", "", raw_phone)
-        filter_conditions.append(Token.patient_phone == raw_phone)
-        filter_conditions.append(Token.patient_phone == clean_phone)
-        if digits_only:
-            filter_conditions.append(Token.patient_phone.ilike(f"%{digits_only}%"))
-            if len(digits_only) >= 10:
-                last10 = digits_only[-10:]
-                filter_conditions.append(Token.patient_phone.ilike(f"%{last10}%"))
-                filter_conditions.append(Token.notes.ilike(f"%{last10}%"))
+        p_clean = phone.strip().replace(" ", "").replace("-", "")
+        tokens_query = tokens_query.filter(or_(Token.patient_phone == phone.strip(), Token.patient_phone == p_clean))
+    if email and email.strip():
+        tokens_query = tokens_query.filter(func.lower(Token.patient_email) == email.strip().lower())
+    if name and name.strip():
+        tokens_query = tokens_query.filter(func.lower(Token.patient_name).ilike(f"%{name.strip().lower()}%"))
 
     tokens = (
-        db.query(Token)
-        .filter(or_(*filter_conditions))
+        tokens_query
         .order_by(
             Token.appointment_date.desc(),
             Token.created_at.desc()
@@ -8943,13 +8925,14 @@ def lookup_patient_tokens(
                 if patient.full_name:
                     filter_conditions.append(func.lower(Token.patient_name) == patient.full_name.strip().lower())
 
-    if not is_authenticated_owner and not phone and not email and not patient_id:
+    if not is_authenticated_owner and not phone and not email:
         raise HTTPException(
             status_code=400,
             detail="At least a phone number or email address is required for token lookup.",
         )
 
-    if patient_id is not None and not is_authenticated_owner:
+    # For unauthenticated lookups, patient_id is strictly ignored to prevent enumeration IDOR
+    if is_authenticated_owner and patient_id is not None:
         filter_conditions.append(Token.patient_id == patient_id)
     if email and email.strip():
         clean_email = email.strip().lower()
@@ -9030,27 +9013,25 @@ def get_patient_single_token(
     if not patient:
         raise HTTPException(status_code=404, detail="Patient account not found.")
 
-    filter_conditions = [and_(Token.id == token_id, Token.patient_id == patient_id)]
-    if patient.phone and patient.phone.strip():
-        clean_phone = patient.phone.strip().replace(" ", "").replace("-", "")
-        filter_conditions.append(and_(Token.id == token_id, Token.patient_phone == patient.phone))
-        filter_conditions.append(and_(Token.id == token_id, Token.patient_phone == clean_phone))
-    if patient.email and patient.email.strip():
-        filter_conditions.append(and_(Token.id == token_id, func.lower(Token.patient_email) == patient.email.strip().lower()))
-
-    token = (
-        db.query(Token)
-        .filter(or_(*filter_conditions))
-        .first()
-    )
-
+    token = db.query(Token).filter(Token.id == token_id).first()
     if not token:
-        raise HTTPException(
-            status_code=404,
-            detail="Token record not found or access denied.",
-        )
+        raise HTTPException(status_code=404, detail="Token record not found.")
+
+    if token.patient_id is not None and token.patient_id != patient_id:
+        raise HTTPException(status_code=403, detail="You do not have permission to view this token.")
 
     if token.patient_id is None:
+        is_match = False
+        if patient.phone and token.patient_phone:
+            clean_p = patient.phone.strip().replace(" ", "").replace("-", "")
+            t_clean = str(token.patient_phone).strip().replace(" ", "").replace("-", "")
+            if clean_p == t_clean or (len(clean_p) >= 10 and clean_p[-10:] == t_clean[-10:]):
+                is_match = True
+        if patient.email and token.patient_email and patient.email.strip().lower() == str(token.patient_email).strip().lower():
+            is_match = True
+        if not is_match:
+            raise HTTPException(status_code=403, detail="You do not have permission to view this token.")
+        # Auto-link unlinked token to this authenticated patient
         token.patient_id = patient_id
         try:
             db.commit()
@@ -9088,6 +9069,8 @@ async def upload_token_documents(
 
     if role == "patient":
         if token.patient_id is not None and token.patient_id != auth_user_id:
+            raise HTTPException(status_code=403, detail="You do not have permission to upload documents for another patient's token.")
+        elif token.patient_id is None:
             patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
             is_authorized = False
             if patient:
@@ -9096,7 +9079,9 @@ async def upload_token_documents(
                 elif patient.email and token.patient_email and patient.email.strip().lower() == str(token.patient_email).strip().lower():
                     is_authorized = True
             if not is_authorized:
-                raise HTTPException(status_code=403, detail="You do not have permission to upload documents for another patient's token.")
+                raise HTTPException(status_code=403, detail="You do not have permission to upload documents for this token.")
+            # Auto-link unlinked token to this patient
+            token.patient_id = auth_user_id
     elif role == "hospital":
         if token.hospital_id != auth_user_id:
             raise HTTPException(status_code=403, detail="You do not have permission to upload documents for another hospital's token.")
@@ -9207,7 +9192,7 @@ def get_token_documents(
         is_authorized = False
         if token_record.patient_id == auth_user_id:
             is_authorized = True
-        else:
+        elif token_record.patient_id is None:
             patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
             if patient:
                 if patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
@@ -9273,16 +9258,17 @@ def get_medical_document_file(
         is_authorized = False
         if doc.patient_id is not None and doc.patient_id == auth_user_id:
             is_authorized = True
-        else:
+        elif doc.patient_id is None:
             token_record = db.query(Token).filter(Token.id == doc.token_id).first()
             patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
             if token_record and patient:
                 if token_record.patient_id == auth_user_id:
                     is_authorized = True
-                elif patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
-                    is_authorized = True
-                elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
-                    is_authorized = True
+                elif token_record.patient_id is None:
+                    if patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
+                        is_authorized = True
+                    elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
+                        is_authorized = True
         if not is_authorized:
             raise HTTPException(status_code=403, detail="You do not have permission to access another patient's medical document.")
     elif role == "hospital":
@@ -9325,16 +9311,17 @@ def delete_medical_document(
         is_authorized = False
         if doc.patient_id is not None and doc.patient_id == auth_user_id:
             is_authorized = True
-        else:
+        elif doc.patient_id is None:
             token_record = db.query(Token).filter(Token.id == doc.token_id).first()
             patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
             if token_record and patient:
                 if token_record.patient_id == auth_user_id:
                     is_authorized = True
-                elif patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
-                    is_authorized = True
-                elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
-                    is_authorized = True
+                elif token_record.patient_id is None:
+                    if patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
+                        is_authorized = True
+                    elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
+                        is_authorized = True
         if not is_authorized:
             raise HTTPException(status_code=403, detail="You do not have permission to delete this document.")
     elif role == "hospital":
@@ -9409,10 +9396,11 @@ def get_batch_token_documents(
         for t in matched_tokens:
             if t.patient_id == auth_user_id:
                 authorized_token_ids.add(t.id)
-            elif p_phone and t.patient_phone and normalize_phone_last10(t.patient_phone) == p_phone:
-                authorized_token_ids.add(t.id)
-            elif p_email and t.patient_email and str(t.patient_email).strip().lower() == p_email:
-                authorized_token_ids.add(t.id)
+            elif t.patient_id is None:
+                if p_phone and t.patient_phone and normalize_phone_last10(t.patient_phone) == p_phone:
+                    authorized_token_ids.add(t.id)
+                elif p_email and t.patient_email and str(t.patient_email).strip().lower() == p_email:
+                    authorized_token_ids.add(t.id)
 
     elif role == "hospital":
         matched_tokens = db.query(Token).filter(Token.id.in_(ids), Token.hospital_id == auth_user_id).all()
@@ -10340,7 +10328,7 @@ def get_token_live_status(
         elif role == "patient":
             if token_record.patient_id == user_id:
                 is_authorized = True
-            else:
+            elif token_record.patient_id is None:
                 pat = db.query(Patient).filter(Patient.id == user_id).first()
                 if pat:
                     p_phone = normalize_phone_last10(pat.phone)
@@ -14754,7 +14742,7 @@ async def websocket_messages_endpoint(
             if msg_type == "patient_inquiry":
                 h_id = data.get("hospital_id") or hospital_id
                 pat_name = (data.get("patient_name") or "Patient").strip()
-                pat_phone = (data.get("patient_phone") or clean_phone or "").strip()
+                pat_phone = clean_phone if (authenticated_role == "patient" and clean_phone) else (data.get("patient_phone") or "").strip()
                 msg_body = (data.get("message") or "").strip()
                 subj = (data.get("subject") or "General Inquiry").strip()
 
@@ -14823,6 +14811,10 @@ async def websocket_messages_endpoint(
                     orig_inq = db_ws.query(HospitalDirectMessage).filter(HospitalDirectMessage.id == inq_id).first()
                     if not orig_inq:
                         await websocket.send_json({"type": "error", "message": "Original inquiry not found."})
+                        continue
+
+                    if authenticated_role == "hospital" and orig_inq.hospital_id != hospital_id:
+                        await websocket.send_json({"type": "error", "message": "You cannot reply to an inquiry directed to another hospital."})
                         continue
 
                     if not target_phone and orig_inq.patient_phone:
@@ -15310,6 +15302,7 @@ def submit_patient_inquiry(
     hospital_id: int,
     data: PatientInquiryRequest,
     db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_user),
 ):
     """Patient: Directly send inquiry to a hospital helpdesk (auto-deleted after 24 hours)."""
     # Clean up expired inquiries first
@@ -15323,8 +15316,19 @@ def submit_patient_inquiry(
     if not message_text:
         raise HTTPException(status_code=400, detail="Inquiry message cannot be empty")
 
+    verified_patient_id = None
+    if current_user and current_user.get("role") == "patient":
+        verified_patient_id = current_user.get("user_id")
+
     patient_name = (data.patient_name or "Q-Arovia Patient").strip()
     clean_phone = (data.patient_phone or "").strip()
+    if verified_patient_id and not clean_phone:
+        pat = db.query(Patient).filter(Patient.id == verified_patient_id).first()
+        if pat and pat.phone:
+            clean_phone = pat.phone.strip()
+        if pat and pat.full_name and not data.patient_name:
+            patient_name = pat.full_name.strip()
+
     sender_info = patient_name
     if clean_phone:
         sender_info += f" ({clean_phone})"
@@ -15336,7 +15340,7 @@ def submit_patient_inquiry(
         sender_role="patient",
         sender_name=sender_info,
         patient_phone=clean_phone if clean_phone else None,
-        patient_id=data.patient_id if hasattr(data, "patient_id") else None,
+        patient_id=verified_patient_id,
         subject=subj,
         message=message_text,
         priority="normal",
@@ -15573,16 +15577,47 @@ def get_patient_messages(
 def patient_mark_messages_read(
     data: PatientMarkReadRequest,
     db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_optional_user),
 ):
-    """Patient: Mark hospital reply messages as read."""
+    """Patient: Mark hospital reply messages as read with ownership validation."""
+    if not data.message_ids and not data.phone:
+        return {"success": True, "message": "No messages specified"}
+
+    # If caller is an authenticated patient, bind to their verified record
+    verified_patient_id = None
+    verified_phone = None
+    if current_user and current_user.get("role") == "patient":
+        verified_patient_id = current_user.get("user_id")
+        pat = db.query(Patient).filter(Patient.id == verified_patient_id).first()
+        if pat and pat.phone:
+            verified_phone = pat.phone.strip()
+
     if data.message_ids:
-        db.query(HospitalDirectMessage).filter(
+        # Marking arbitrary message IDs requires authentication and ownership validation
+        if not current_user or current_user.get("role") != "patient":
+            raise HTTPException(status_code=401, detail="Authentication required to mark specific messages as read.")
+
+        query = db.query(HospitalDirectMessage).filter(
             HospitalDirectMessage.id.in_(data.message_ids),
             HospitalDirectMessage.sender_role == "hospital",
-        ).update({HospitalDirectMessage.is_read: True}, synchronize_session=False)
+        )
+        conds = [HospitalDirectMessage.patient_id == verified_patient_id]
+        if verified_phone:
+            clean_vp = verified_phone.replace(" ", "").replace("-", "")
+            conds.append(HospitalDirectMessage.patient_phone == verified_phone)
+            conds.append(HospitalDirectMessage.patient_phone == clean_vp)
+        query = query.filter(or_(*conds))
+        query.update({HospitalDirectMessage.is_read: True}, synchronize_session=False)
         db.commit()
     elif data.phone:
         clean_phone = data.phone.strip()
+        # If authenticated, ensure patient cannot mark another phone's messages
+        if verified_phone and clean_phone != verified_phone:
+            digits_vp = "".join(filter(str.isdigit, verified_phone))
+            digits_cp = "".join(filter(str.isdigit, clean_phone))
+            if digits_vp[-10:] != digits_cp[-10:]:
+                raise HTTPException(status_code=403, detail="Cannot mark messages for another phone number.")
+
         digits = "".join(filter(str.isdigit, clean_phone))
         last10 = digits[-10:] if len(digits) >= 10 else digits
         query = db.query(HospitalDirectMessage).filter(
@@ -15596,6 +15631,11 @@ def patient_mark_messages_read(
                     HospitalDirectMessage.patient_phone.like(f"%{last10}%"),
                 )
             )
+        if verified_patient_id:
+            query = query.filter(or_(
+                HospitalDirectMessage.patient_id == verified_patient_id,
+                HospitalDirectMessage.patient_id.is_(None)
+            ))
         query.update({HospitalDirectMessage.is_read: True}, synchronize_session=False)
         db.commit()
 
