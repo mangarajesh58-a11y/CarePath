@@ -315,7 +315,7 @@ def get_document_auth_user(
     elif token:
         raw_token = token.strip()
     
-    if not raw_token:
+    if not raw_token or raw_token in ("null", "undefined", ""):
         raise HTTPException(
             status_code=401,
             detail="Authentication required: Please provide a valid authorization token to access medical documents."
@@ -491,6 +491,11 @@ def get_optional_user(
     if not JWT_SECRET_KEY or not credentials or not credentials.credentials:
         return None
     token = credentials.credentials.strip()
+    if token in ("null", "undefined", ""):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required: Please log in."
+        )
     try:
         payload = jwt.decode(
             token,

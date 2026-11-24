@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#071329">
-    <title>CarePath - Patient Registration</title>
+    <title>Q-Arovia - Patient Registration</title>
 
-    <link rel="icon" type="image/png" href="carepath-ai-small.png">
+    <link rel="icon" type="image/png" href="qarovia-ai-small.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
@@ -554,19 +554,19 @@
             }
         }
     </style>
-    <script src="./carepath-instant-nav.js"></script>
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
 
 <body>
 
     <div class="register-container">
 
-        <!-- LEFT SECTION: CAREPATH SHOWCASE -->
+        <!-- LEFT SECTION: Q-AROVIA SHOWCASE -->
         <section class="left-section">
             <div class="left-top">
                 <div class="brand-badge">
-                    <img src="carepath-ai-small.png" alt="CarePath" class="brand-logo-img">
-                    <span>CarePath</span>
+                    <img src="qarovia-ai-small.png" alt="Q-Arovia" class="brand-logo-img">
+                    <span>Q-Arovia</span>
                     <span class="badge-sub">Patient Portal</span>
                 </div>
 
@@ -603,7 +603,7 @@
             </div>
 
             <div class="left-footer">
-                <span>© 2026 CarePath Technologies</span>
+                <span>© 2026 Q-Arovia Technologies</span>
                 
             </div>
         </section>
@@ -758,7 +758,7 @@
             </div>
 
             <div class="legal-notice">
-                By creating an account, you agree to CarePath's
+                By creating an account, you agree to Q-Arovia's
                 <a href="terms.html">Terms of Service</a> & <a href="privacy.html">Privacy Policy</a>.
             </div>
         </section>
@@ -983,6 +983,12 @@
 
                 if (data.access_token) {
                     localStorage.setItem("patientToken", data.access_token);
+                    localStorage.setItem("token", data.access_token);
+                    localStorage.setItem("patient_token", data.access_token);
+                }
+                if (data.refresh_token) {
+                    localStorage.setItem("refreshToken", data.refresh_token);
+                    localStorage.setItem("refresh_token", data.refresh_token);
                 }
                 if (data.patient) {
                     if (data.patient.id) localStorage.setItem("patientId", data.patient.id);
@@ -991,7 +997,7 @@
                     if (data.patient.phone) localStorage.setItem("patientPhone", data.patient.phone);
                 }
 
-                showMessage("Registration successful! Opening CarePath Dashboard...", "success");
+                showMessage("Registration successful! Opening Q-Arovia Dashboard...", "success");
 
                 setTimeout(function() {
                     window.location.href = data.access_token ? "dashboard.html" : "index.html";

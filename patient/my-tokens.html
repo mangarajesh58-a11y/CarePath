@@ -889,6 +889,56 @@
       window.location.href = "index.html";
     }
 
+    function getPatientAuthToken() {
+      const tok = localStorage.getItem("patientToken") ||
+                  localStorage.getItem("patient_token") ||
+                  localStorage.getItem("token") ||
+                  sessionStorage.getItem("patientToken") ||
+                  sessionStorage.getItem("patient_token") ||
+                  sessionStorage.getItem("token") ||
+                  "";
+      if (!tok || tok === "null" || tok === "undefined") return "";
+      return tok.trim();
+    }
+
+    let isRefreshing = false;
+    let refreshPromise = null;
+    async function refreshAuthToken() {
+      if (isRefreshing && refreshPromise) return refreshPromise;
+      const rt = localStorage.getItem("refreshToken") || localStorage.getItem("refresh_token") || "";
+      if (!rt || rt === "null" || rt === "undefined") return false;
+      isRefreshing = true;
+      refreshPromise = (async () => {
+        try {
+          const res = await fetch(`${API_URL}/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: rt })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.access_token) {
+              localStorage.setItem("patientToken", data.access_token);
+              localStorage.setItem("token", data.access_token);
+              localStorage.setItem("patient_token", data.access_token);
+              if (data.refresh_token) {
+                localStorage.setItem("refreshToken", data.refresh_token);
+                localStorage.setItem("refresh_token", data.refresh_token);
+              }
+              return true;
+            }
+          }
+        } catch (e) {
+          console.warn("Session refresh notice:", e);
+        } finally {
+          isRefreshing = false;
+          refreshPromise = null;
+        }
+        return false;
+      })();
+      return refreshPromise;
+    }
+
     function updateWelcomePatient() {
       const welcomeEl = document.getElementById("welcomePatient");
       if (welcomeEl) {
@@ -1059,13 +1109,26 @@
           const qs = queryParams.toString() ? `?${queryParams.toString()}` : "";
           
           try {
-            const authRes = await fetch(`${API_URL}/patient/tokens${qs}`, {
+            let authRes = await fetch(`${API_URL}/patient/tokens${qs}`, {
               method: "GET",
               headers: {
                 "Authorization": `Bearer ${currentToken}`,
                 "Content-Type": "application/json"
               }
             });
+            if (authRes && authRes.status === 401) {
+              const refreshed = await refreshAuthToken();
+              if (refreshed) {
+                const refreshedTok = getPatientAuthToken();
+                authRes = await fetch(`${API_URL}/patient/tokens${qs}`, {
+                  method: "GET",
+                  headers: {
+                    "Authorization": `Bearer ${refreshedTok}`,
+                    "Content-Type": "application/json"
+                  }
+                });
+              }
+            }
             if (authRes && authRes.ok) {
               const data = await authRes.json();
               if (Array.isArray(data) && data.length > 0) {
@@ -1421,20 +1484,42 @@
       if (!confirmCancel) return;
 
       try {
-        const token = localStorage.getItem("token") || localStorage.getItem("patient_token");
-        const res = await fetch(`${API_URL}/patient/tokens/${tokenId}/cancel`, {
+        let activeToken = getPatientAuthToken();
+        let res = await fetch(`${API_URL}/patient/tokens/${tokenId}/cancel`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
+            ...(activeToken ? { "Authorization": `Bearer ${activeToken}` } : {})
           }
         });
+
+        if (res.status === 401) {
+          const refreshed = await refreshAuthToken();
+          if (refreshed) {
+            activeToken = getPatientAuthToken();
+            res = await fetch(`${API_URL}/patient/tokens/${tokenId}/cancel`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(activeToken ? { "Authorization": `Bearer ${activeToken}` } : {})
+              }
+            });
+          }
+        }
+
         const data = await res.json();
         if (!res.ok) {
+          if (res.status === 401) {
+            alert("Your login session has expired. Please log in again to manage your appointments.");
+            window.location.href = "index.html";
+            return;
+          }
           throw new Error(data.detail || data.message || "Failed to cancel appointment.");
         }
         alert(data.message || "Appointment has been cancelled successfully.");
-        await fetchTokens();
+        if (typeof loadTokenHistory === "function") {
+          loadTokenHistory();
+        }
       } catch (err) {
         alert(err.message || "Unable to cancel appointment.");
       }
@@ -1911,7 +1996,23 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
       const validIds = tokensList.map(t => t.id).filter(id => id && !String(id).startsWith("tk_"));
       if (validIds.length === 0) return;
       try {
-        const res = await fetch(`${API_URL}/patient/tokens-documents-batch?token_ids=${validIds.join(",")}`);
+        let tokenJwt = getPatientAuthToken();
+        let res = await fetch(`${API_URL}/patient/tokens-documents-batch?token_ids=${validIds.join(",")}${tokenJwt ? `&token=${encodeURIComponent(tokenJwt)}` : ""}`, {
+          headers: {
+            ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+          }
+        });
+        if (res.status === 401) {
+          const refreshed = await refreshAuthToken();
+          if (refreshed) {
+            tokenJwt = getPatientAuthToken();
+            res = await fetch(`${API_URL}/patient/tokens-documents-batch?token_ids=${validIds.join(",")}${tokenJwt ? `&token=${encodeURIComponent(tokenJwt)}` : ""}`, {
+              headers: {
+                ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+              }
+            });
+          }
+        }
         if (!res.ok) return;
         const data = await res.json();
         if (data && data.documents_by_token) {
@@ -1998,7 +2099,25 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
       listEl.innerHTML = '<div style="color: #64748b; font-size: 12px; text-align: center; padding: 12px;">⏳ Loading documents...</div>';
 
       try {
-        const res = await fetch(`${API_URL}/patient/tokens/${tokenId}/documents`);
+        let tokenJwt = getPatientAuthToken();
+        let res = await fetch(`${API_URL}/patient/tokens/${tokenId}/documents${tokenJwt ? `?token=${encodeURIComponent(tokenJwt)}` : ""}`, {
+          headers: {
+            ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+          }
+        });
+
+        if (res.status === 401) {
+          const refreshed = await refreshAuthToken();
+          if (refreshed) {
+            tokenJwt = getPatientAuthToken();
+            res = await fetch(`${API_URL}/patient/tokens/${tokenId}/documents${tokenJwt ? `?token=${encodeURIComponent(tokenJwt)}` : ""}`, {
+              headers: {
+                ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+              }
+            });
+          }
+        }
+
         if (!res.ok) throw new Error("Could not fetch documents");
         const data = await res.json();
         const docs = data.documents || [];
@@ -2013,6 +2132,7 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
 
         listEl.innerHTML = docs.map(d => {
           const isPdf = (d.file_type || "").includes("pdf") || (d.original_filename || "").toLowerCase().endsWith(".pdf");
+          const dlToken = tokenJwt ? `?token=${encodeURIComponent(tokenJwt)}` : "";
           return `
             <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 10px; gap: 8px;">
               <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
@@ -2028,7 +2148,7 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
                   👁️ Preview
                 </button>
                 <!-- Download: Background #E2E8F0, Text #334155, Border 1px solid #94A3B8 -->
-                <a href="${API_URL}/patient/documents/${d.id}/download" target="_blank" download style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #E2E8F0; color: #334155; border: 1px solid #94A3B8; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
+                <a href="${API_URL}/patient/documents/${d.id}/download${dlToken}" target="_blank" download style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #E2E8F0; color: #334155; border: 1px solid #94A3B8; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
                   ⬇️ Download
                 </a>
                 <!-- Delete: Background #FEE2E2, Icon #B91C1C, Border 1px solid #FCA5A5 -->
@@ -2110,10 +2230,10 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
         formData.append("files", f);
       });
 
-      const tokenJwt = localStorage.getItem("token") || localStorage.getItem("patientToken");
+      let tokenJwt = getPatientAuthToken();
 
       try {
-        const res = await fetch(`${API_URL}/patient/tokens/${currentUploadTokenId}/documents`, {
+        let res = await fetch(`${API_URL}/patient/tokens/${currentUploadTokenId}/documents`, {
           method: "POST",
           headers: {
             ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
@@ -2121,8 +2241,29 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
           body: formData
         });
 
+        if (res.status === 401) {
+          const refreshed = await refreshAuthToken();
+          if (refreshed) {
+            tokenJwt = getPatientAuthToken();
+            res = await fetch(`${API_URL}/patient/tokens/${currentUploadTokenId}/documents`, {
+              method: "POST",
+              headers: {
+                ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+              },
+              body: formData
+            });
+          }
+        }
+
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || data.message || "Failed to upload documents.");
+        if (!res.ok) {
+          if (res.status === 401) {
+            alert("Your login session has expired. Please log in again to upload documents.");
+            window.location.href = "index.html";
+            return;
+          }
+          throw new Error(data.detail || data.message || "Failed to upload documents.");
+        }
 
         stagedFiles = [];
         updateStagedFilesList();
@@ -2140,14 +2281,26 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
 
     async function deleteMedicalDoc(docId) {
       if (!confirm("Are you sure you want to delete this document?")) return;
-      const tokenJwt = localStorage.getItem("token") || localStorage.getItem("patientToken");
+      let tokenJwt = getPatientAuthToken();
       try {
-        const res = await fetch(`${API_URL}/patient/documents/${docId}`, {
+        let res = await fetch(`${API_URL}/patient/documents/${docId}`, {
           method: "DELETE",
           headers: {
             ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
           }
         });
+        if (res.status === 401) {
+          const refreshed = await refreshAuthToken();
+          if (refreshed) {
+            tokenJwt = getPatientAuthToken();
+            res = await fetch(`${API_URL}/patient/documents/${docId}`, {
+              method: "DELETE",
+              headers: {
+                ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+              }
+            });
+          }
+        }
         if (!res.ok) throw new Error("Failed to delete document.");
         if (currentUploadTokenId) {
           await loadModalExistingDocs(currentUploadTokenId);
@@ -2164,8 +2317,10 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
       const downloadBtn = document.getElementById("previewDocDownloadBtn");
 
       if (titleEl) titleEl.textContent = filename || "Document Preview";
-      const docUrl = `${API_URL}/patient/documents/${docId}/preview?preview=true`;
-      const downloadUrl = `${API_URL}/patient/documents/${docId}/download`;
+      const tokenJwt = getPatientAuthToken();
+      const authQ = tokenJwt ? `&token=${encodeURIComponent(tokenJwt)}` : "";
+      const docUrl = `${API_URL}/patient/documents/${docId}/preview?preview=true${authQ}`;
+      const downloadUrl = `${API_URL}/patient/documents/${docId}/download${tokenJwt ? `?token=${encodeURIComponent(tokenJwt)}` : ""}`;
 
       if (downloadBtn) {
         downloadBtn.href = downloadUrl;
