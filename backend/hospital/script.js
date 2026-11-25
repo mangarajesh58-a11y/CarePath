@@ -10,7 +10,7 @@ function formatTime12Hour(timeStr) {
 }
 
 // =========================================================
-// CarePath - HOSPITAL APP SCRIPT
+// Q-Arovia - HOSPITAL APP SCRIPT
 // =========================================================
 
 const API =
@@ -472,7 +472,7 @@ async function checkBackend() {
 
 
         console.log(
-            "CarePath backend is healthy:",
+            "Q-Arovia backend is healthy:",
             data
         );
 

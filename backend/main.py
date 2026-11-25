@@ -339,8 +339,12 @@ def create_access_token(user_id: int, role: str) -> str:
             detail="JWT authentication is not configured."
         )
 
+    expire_minutes = JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+    if role == "patient":
+        expire_minutes = max(expire_minutes, 60 * 24 * 7)  # 7-day session for patients on web/mobile
+
     expire = datetime.utcnow() + timedelta(
-        minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        minutes=expire_minutes
     )
 
     payload = {
@@ -3573,6 +3577,7 @@ def reset_password(
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: Optional[str] = None
+    access_token: Optional[str] = None
 
 
 class LogoutRequest(BaseModel):
@@ -3587,39 +3592,77 @@ async def refresh_session_token(
 ):
     """Rotates refresh token and issues a new access token (QA-AUTH-001)."""
     token = None
-    if data and data.refresh_token:
-        token = data.refresh_token.strip()
-    if not token:
+    access_token_fallback = None
+    if data:
+        if data.refresh_token:
+            token = data.refresh_token.strip()
+        if data.access_token:
+            access_token_fallback = data.access_token.strip()
+    if not token or not access_token_fallback:
         try:
             body = await request.json()
-            if isinstance(body, dict) and body.get("refresh_token"):
-                token = str(body["refresh_token"]).strip()
+            if isinstance(body, dict):
+                if not token and body.get("refresh_token"):
+                    token = str(body["refresh_token"]).strip()
+                if not access_token_fallback and body.get("access_token"):
+                    access_token_fallback = str(body["access_token"]).strip()
         except Exception:
             pass
     if not token and request.cookies.get("refresh_token"):
         token = request.cookies.get("refresh_token")
 
-    if not token:
-        raise HTTPException(status_code=400, detail="Missing refresh token.")
+    if token:
+        try:
+            new_access, new_refresh = rotate_user_session(db, token, request)
+            response = JSONResponse(content={
+                "success": True,
+                "access_token": new_access,
+                "refresh_token": new_refresh,
+                "token_type": "bearer",
+                "expires_in": 7 * 86400,
+            })
+            response.set_cookie(
+                key="refresh_token",
+                value=new_refresh,
+                httponly=True,
+                secure=True,
+                samesite="lax",
+                max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+            )
+            return response
+        except HTTPException:
+            if not access_token_fallback:
+                raise
 
-    new_access, new_refresh = rotate_user_session(db, token, request)
+    # Fallback: if client has a validly signed patient access token (even expired within 30 days)
+    if access_token_fallback:
+        try:
+            unverified = jwt.decode(
+                access_token_fallback,
+                JWT_SECRET_KEY,
+                algorithms=[JWT_ALGORITHM],
+                options={"verify_exp": False}
+            )
+            u_role = unverified.get("role")
+            u_id = unverified.get("sub")
+            exp = unverified.get("exp", 0)
+            now_ts = datetime.utcnow().timestamp()
+            if u_role == "patient" and u_id and (now_ts - exp) < 30 * 86400:
+                p_id = int(u_id)
+                patient = db.query(Patient).filter(Patient.id == p_id).first()
+                if patient:
+                    new_acc, new_ref, _ = create_user_session(db, p_id, "patient", request)
+                    return {
+                        "success": True,
+                        "access_token": new_acc,
+                        "refresh_token": new_ref,
+                        "token_type": "bearer",
+                        "expires_in": 7 * 86400,
+                    }
+        except Exception:
+            pass
 
-    response = JSONResponse(content={
-        "success": True,
-        "access_token": new_access,
-        "refresh_token": new_refresh,
-        "token_type": "bearer",
-        "expires_in": JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    })
-    response.set_cookie(
-        key="refresh_token",
-        value=new_refresh,
-        httponly=True,
-        secure=True,
-        samesite="lax",
-        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400,
-    )
-    return response
+    raise HTTPException(status_code=400, detail="Missing or invalid refresh token.")
 
 
 @app.post("/auth/logout")
