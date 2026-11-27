@@ -11413,20 +11413,23 @@ def get_admin_patient_dossier(
         if not hospital and t.hospital:
             hospital = db.query(Hospital).filter(Hospital.name == t.hospital).first()
 
+        hosp_display = hospital.name if hospital else (t.hospital or "—")
         token_history.append({
             "token_id": t.id,
             "token_number": t.token_number,
             "appointment_date": str(t.appointment_date) if t.appointment_date else "—",
             "status": t.status,
-            "hospital_name": hospital.name if hospital else (t.hospital or "—"),
+            "hospital": hosp_display,
+            "hospital_name": hosp_display,
             "hospital_id": t.hospital_id,
             "hospital_phone": hospital.phone if hospital else "—",
             "hospital_city": hospital.city if hospital else "—",
             "hospital_address": hospital.address if hospital else "—",
             "department": t.department,
             "doctor": t.doctor,
-            "doctor_room_number": t.doctor_room_number or t.room_number or "—",
-            "booking_type": t.booking_type or "ONLINE",
+            "room_number": getattr(t, "room_number", None) or "—",
+            "doctor_room_number": getattr(t, "room_number", None) or "—",
+            "booking_type": getattr(t, "booking_type", None) or "ONLINE",
             "token_fee": float(t.token_fee or 0),
             "platform_fee": float(t.platform_fee or 0),
             "total_amount": float(t.total_amount or 0),

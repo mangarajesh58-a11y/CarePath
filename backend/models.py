@@ -115,6 +115,12 @@ class Hospital(Base):
     deleted_at = Column(DateTime, nullable=True)
     deleted_by = Column(String(255), nullable=True)
 
+    # Account status & closure lifecycle: ACTIVE, DELETION_REQUESTED, SUSPENDED, DEACTIVATED
+    account_status = Column(String(30), default="ACTIVE", nullable=False, index=True)
+    deactivated_at = Column(DateTime, nullable=True)
+    deactivated_by = Column(String(255), nullable=True)
+    closure_reason = Column(Text, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -485,6 +491,23 @@ class DistributedWSEvent(Base):
     target_id = Column(String(64), nullable=True, index=True)
     payload = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+
+class HospitalAccountClosureRequest(Base):
+    __tablename__ = "hospital_account_closure_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hospital_id = Column(Integer, nullable=False, index=True)
+    status = Column(String(30), default="PENDING", nullable=False, index=True)  # PENDING, APPROVED, REJECTED, CANCELLED
+    reason = Column(Text, nullable=False)
+    password_verified = Column(Boolean, default=True, nullable=False)
+    affected_active_tokens = Column(Integer, default=0, nullable=False)
+    admin_id = Column(Integer, nullable=True)
+    admin_remarks = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    reviewed_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+
 
 
 
