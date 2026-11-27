@@ -3,7 +3,7 @@
    ========================================================= */
 
 const API = "https://carepath-3q9q.onrender.com";
-const FRONTEND = "https://patient-mx5v.vercel.app";
+const FRONTEND = "https://carepath-patient-mx5v.vercel.app";
 
 let PLATFORM_FEE = parseInt(localStorage.getItem("qarovia_platform_fee") || "10", 10);
 

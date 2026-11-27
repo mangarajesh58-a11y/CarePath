@@ -342,7 +342,14 @@ def get_document_auth_user(
             exp = unverified.get("exp", 0)
             now_ts = datetime.utcnow().timestamp()
             if u_role == "patient" and u_id and (now_ts - exp) < 30 * 86400:
-                return {"user_id": int(u_id), "role": "patient"}
+                p_id = int(u_id)
+                db_session = SessionLocal()
+                try:
+                    p = db_session.query(Patient).filter(Patient.id == p_id).first()
+                    if p:
+                        return {"user_id": p_id, "role": "patient"}
+                finally:
+                    db_session.close()
         except Exception:
             pass
         raise HTTPException(status_code=401, detail="Invalid or expired authentication token.")
@@ -629,6 +636,34 @@ def get_current_user(
             "role": role,
         }
 
+    except jwt.ExpiredSignatureError:
+        # Patient session self-healing grace period (30 days) for web and mobile apps
+        try:
+            unverified = jwt.decode(
+                token,
+                JWT_SECRET_KEY,
+                algorithms=[JWT_ALGORITHM],
+                options={"verify_exp": False}
+            )
+            u_role = unverified.get("role")
+            u_id = unverified.get("sub")
+            exp = unverified.get("exp", 0)
+            now_ts = datetime.utcnow().timestamp()
+            if u_role == "patient" and u_id and (now_ts - exp) < 30 * 86400:
+                p_id = int(u_id)
+                db_session = SessionLocal()
+                try:
+                    p = db_session.query(Patient).filter(Patient.id == p_id).first()
+                    if p:
+                        return {"user_id": p_id, "role": "patient"}
+                finally:
+                    db_session.close()
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired authentication token."
+        )
     except (jwt.PyJWTError, ValueError, TypeError):
         raise HTTPException(
             status_code=401,
@@ -5051,7 +5086,7 @@ def health():
         "success": True,
 
         "status": "healthy",
-        "deploy_version": "2026-11-06-v3",
+        "deploy_version": "2026-11-27-v2",
     }
 
 

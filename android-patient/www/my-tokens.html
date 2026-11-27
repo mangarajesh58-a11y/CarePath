@@ -1629,6 +1629,9 @@
         // Proactively refresh if token is near-expiry to avoid "Invalid or expired" alert
         let tokenJwt = await ensureFreshToken();
         if (!tokenJwt) {
+          tokenJwt = getPatientAuthToken();
+        }
+        if (!tokenJwt) {
           alert("Your session has expired. Please log in again to send receipts.");
           return;
         }
@@ -1692,10 +1695,11 @@
         const payload = JSON.parse(atob(tok.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
         const expiresIn = (payload.exp || 0) - Math.floor(Date.now() / 1000);
         if (expiresIn < 90) {
-          // Token is about to expire — refresh now before the request
+          // Token is about to expire or expired — refresh now before the request
           const refreshed = await refreshAuthToken();
-          if (!refreshed) return "";
-          tok = getPatientAuthToken();
+          if (refreshed) {
+            tok = getPatientAuthToken() || tok;
+          }
         }
       } catch (e) {
         // Could not decode — still try with existing token; server will 401 if invalid
@@ -1949,7 +1953,7 @@
       const rawRoom = t.doctor_room_number || t.room_number ? (String(t.doctor_room_number || t.room_number).startsWith('Room') ? (t.doctor_room_number || t.room_number) : 'Room ' + (t.doctor_room_number || t.room_number)) : 'OPD Consultation Room';
       const hospName = t.hospital || 'Q-Arovia Hospital';
       const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospName)}`;
-      const liveQueueUrl = `https://patient-mx5v.vercel.app/my-tokens.html`;
+      const liveQueueUrl = `https://carepath-patient-mx5v.vercel.app/my-tokens.html`;
 
       const msg = 
 `🏥 *Q-Arovia - OPD Token Confirmation*
@@ -2062,6 +2066,9 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
         // Proactively refresh if token is near-expiry
         let tokenJwt = await ensureFreshToken();
         if (!tokenJwt) {
+          tokenJwt = getPatientAuthToken();
+        }
+        if (!tokenJwt) {
           // No valid auth — batch doc load silently skipped (not critical path)
           return;
         }
@@ -2168,6 +2175,7 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
 
       try {
         let tokenJwt = await ensureFreshToken();
+        if (!tokenJwt) tokenJwt = getPatientAuthToken();
 
         let res = await fetch(`${API_URL}/patient/tokens/${tokenId}/documents${tokenJwt ? `?token=${encodeURIComponent(tokenJwt)}` : ""}`, {
           headers: {

@@ -544,7 +544,7 @@ function shareTokenSlipWhatsApp() {
     const rawRoom = (details && details.token && (details.token.doctor_room_number || details.token.room_number)) || stored("selectedDoctorRoomNumber") || "OPD Consultation Room";
     const room = rawRoom.startsWith("Room") ? rawRoom : ("Room " + rawRoom);
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital)}`;
-    const liveQueueUrl = `https://patient-mx5v.vercel.app/my-tokens.html`;
+    const liveQueueUrl = `https://carepath-patient-mx5v.vercel.app/my-tokens.html`;
 
     const msg =
 `🏥 *Q-Arovia - OPD Token Confirmation*
