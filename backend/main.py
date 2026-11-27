@@ -36,6 +36,7 @@ load_dotenv(override=False)
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
+import fastapi
 from fastapi import (
     FastAPI,
     Request,
@@ -5135,7 +5136,8 @@ def health():
         "success": True,
 
         "status": "healthy",
-        "deploy_version": "2026-11-27-v2",
+        "deploy_version": "2026-11-28-fastapi-0.165.0",
+        "fastapi_version": fastapi.__version__,
     }
 
 
@@ -11413,23 +11415,20 @@ def get_admin_patient_dossier(
         if not hospital and t.hospital:
             hospital = db.query(Hospital).filter(Hospital.name == t.hospital).first()
 
-        hosp_display = hospital.name if hospital else (t.hospital or "—")
         token_history.append({
             "token_id": t.id,
             "token_number": t.token_number,
             "appointment_date": str(t.appointment_date) if t.appointment_date else "—",
             "status": t.status,
-            "hospital": hosp_display,
-            "hospital_name": hosp_display,
+            "hospital_name": hospital.name if hospital else (t.hospital or "—"),
             "hospital_id": t.hospital_id,
             "hospital_phone": hospital.phone if hospital else "—",
             "hospital_city": hospital.city if hospital else "—",
             "hospital_address": hospital.address if hospital else "—",
             "department": t.department,
             "doctor": t.doctor,
-            "room_number": getattr(t, "room_number", None) or "—",
-            "doctor_room_number": getattr(t, "room_number", None) or "—",
-            "booking_type": getattr(t, "booking_type", None) or "ONLINE",
+            "doctor_room_number": t.doctor_room_number or t.room_number or "—",
+            "booking_type": t.booking_type or "ONLINE",
             "token_fee": float(t.token_fee or 0),
             "platform_fee": float(t.platform_fee or 0),
             "total_amount": float(t.total_amount or 0),
@@ -13315,7 +13314,7 @@ def on_app_startup():
 print()
 print("================================================")
 print("Q-Arovia FastAPI backend loaded")
-print("Version: 11.0.0")
+print(f"Version: 11.1.0 (FastAPI {fastapi.__version__})")
 print(
     f"Razorpay configured: "
     f"{bool(razorpay_client)}"
