@@ -1,18 +1,18 @@
 // =====================================================
-// CAREPATH ADMIN JAVASCRIPT
+// Q-AROVIA ADMIN JAVASCRIPT
 // =====================================================
 
 const REMOTE_API = "https://carepath-3q9q.onrender.com";
 const LOCAL_API = "http://127.0.0.1:8000";
 
 function resolveApiBase() {
-    const saved = localStorage.getItem("carepath_api");
+    const saved = localStorage.getItem("qarovia_api");
     if (saved) return saved.replace(/\/+$/, "");
     return REMOTE_API;
 }
 
 let API = resolveApiBase();
-const FRONTEND = "https://carepath-admin.vercel.app";
+const FRONTEND = "https://qarovia-admin.vercel.app";
 
 // Pre-warm backend immediately on load to reduce Render cold-start lag
 try {
@@ -21,7 +21,7 @@ try {
 
 function switchApi(newUrl) {
     API = newUrl.replace(/\/+$/, "");
-    localStorage.setItem("carepath_api", API);
+    localStorage.setItem("qarovia_api", API);
     alert(`Backend API set to: ${API}\nReloading page...`);
     window.location.reload();
 }
@@ -47,7 +47,7 @@ async function fetchWithRetry(url, options = {}, retries = 1, delayMs = 2500) {
                 const localTest = await fetch(`${LOCAL_API}/health`, { signal: AbortSignal.timeout(1500) });
                 if (localTest.ok) {
                     API = LOCAL_API;
-                    localStorage.setItem("carepath_api", LOCAL_API);
+                    localStorage.setItem("qarovia_api", LOCAL_API);
                     console.log("Auto-switched to active local FastAPI backend:", LOCAL_API);
                     if (typeof url === "string" && url.startsWith(REMOTE_API)) {
                         url = url.replace(REMOTE_API, LOCAL_API);
@@ -134,7 +134,7 @@ window.requireAdminLogin = requireAdminLogin;
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("CarePath Admin started.");
+    console.log("Q-Arovia Admin started.");
 
     const path = window.location.pathname.toLowerCase();
 
@@ -329,7 +329,7 @@ async function adminLogin() {
 
         showLoginMessage(
             error.message ||
-            "Cannot connect to CarePath backend. Please verify your internet connection or server status.",
+            "Cannot connect to Q-Arovia backend. Please verify your internet connection or server status.",
             "error"
         );
     } finally {
@@ -447,7 +447,7 @@ async function handleGoogleLogin(response) {
 
         showLoginMessage(
             error.message ||
-            "Cannot connect to CarePath backend.",
+            "Cannot connect to Q-Arovia backend.",
             "error"
         );
     }
@@ -546,7 +546,7 @@ function goDashboard() {
 
 function hydrateAdminDashboardFromCache() {
     try {
-        const raw = localStorage.getItem("carepath_admin_dash_cache");
+        const raw = localStorage.getItem("qarovia_admin_dash_cache");
         if (raw) {
             const data = JSON.parse(raw);
             if (data.hospitalCount !== undefined && document.getElementById("hospitalCount")) {
@@ -578,7 +578,7 @@ function saveAdminDashboardToCache() {
             totalTokens: document.getElementById("totalTokens")?.textContent,
             savedAt: Date.now()
         };
-        localStorage.setItem("carepath_admin_dash_cache", JSON.stringify(cache));
+        localStorage.setItem("qarovia_admin_dash_cache", JSON.stringify(cache));
     } catch(e) {}
 }
 
@@ -1010,7 +1010,7 @@ async function loadHospitals() {
 
     // 0ms SWR Cache Hydration
     try {
-        const cachedRaw = localStorage.getItem("carepath_cache_admin_hospitals");
+        const cachedRaw = localStorage.getItem("qarovia_cache_admin_hospitals");
         if (cachedRaw) {
             const cached = JSON.parse(cachedRaw);
             if (Array.isArray(cached) && cached.length > 0) {
@@ -1043,7 +1043,7 @@ async function loadHospitals() {
         const hospitals = Array.isArray(data) ? data : data.hospitals || [];
         window.allLoadedHospitals = hospitals;
         try {
-            localStorage.setItem("carepath_cache_admin_hospitals", JSON.stringify(hospitals));
+            localStorage.setItem("qarovia_cache_admin_hospitals", JSON.stringify(hospitals));
         } catch (e) {}
         renderHospitalsTable(hospitals);
     } catch (error) {
@@ -2187,7 +2187,7 @@ async function loadTokens() {
 
     // 0ms SWR Cache Hydration
     try {
-        const cachedRaw = localStorage.getItem("carepath_cache_admin_tokens");
+        const cachedRaw = localStorage.getItem("qarovia_cache_admin_tokens");
         if (cachedRaw) {
             const cached = JSON.parse(cachedRaw);
             if (Array.isArray(cached) && cached.length > 0) {
@@ -2223,7 +2223,7 @@ async function loadTokens() {
         window.allAdminTokens = tokens;
 
         try {
-            localStorage.setItem("carepath_cache_admin_tokens", JSON.stringify(tokens));
+            localStorage.setItem("qarovia_cache_admin_tokens", JSON.stringify(tokens));
         } catch (e) {}
 
         renderTokensTable(tokens);
@@ -2364,7 +2364,7 @@ function exportTokensCSV() {
     const uri = encodeURI(csv);
     const link = document.createElement("a");
     link.href = uri;
-    link.download = `CarePath_Tokens_Master_${Date.now()}.csv`;
+    link.download = `Q-Arovia_Tokens_Master_${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -2573,7 +2573,7 @@ async function loadPayments() {
 
     // 0ms SWR Cache Hydration
     try {
-        const cachedRaw = localStorage.getItem("carepath_cache_admin_payments");
+        const cachedRaw = localStorage.getItem("qarovia_cache_admin_payments");
         if (cachedRaw) {
             const cached = JSON.parse(cachedRaw);
             if (Array.isArray(cached) && cached.length > 0) {
@@ -2603,13 +2603,13 @@ async function loadPayments() {
 
         const tokens = Array.isArray(data) ? data : data.tokens || [];
         try {
-            localStorage.setItem("carepath_cache_admin_payments", JSON.stringify(tokens));
+            localStorage.setItem("qarovia_cache_admin_payments", JSON.stringify(tokens));
         } catch (e) {}
         renderPaymentsTable(tokens);
     } catch (error) {
         console.error("Payment loading error:", error);
         try {
-            const cachedRaw = localStorage.getItem("carepath_cache_admin_payments");
+            const cachedRaw = localStorage.getItem("qarovia_cache_admin_payments");
             if (cachedRaw) return; // Keep cached rows on error
         } catch (e) {}
         paymentTableBody.innerHTML = `
@@ -2913,7 +2913,7 @@ function setupHospitalDirectCommunication(hospital, hospitalId) {
     if (btnWhatsApp) {
         if (cleanPhone) {
             const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-            btnWhatsApp.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${hospital.name || "Hospital"}, this is CarePath Platform Admin.`)}`;
+            btnWhatsApp.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${hospital.name || "Hospital"}, this is Q-Arovia Platform Admin.`)}`;
             btnWhatsApp.style.display = "inline-flex";
         } else {
             btnWhatsApp.style.display = "none";
@@ -3178,7 +3178,7 @@ async function openDirectCommModal(hospitalId, hospitalName = "", hospitalPhone 
     if (btnWhatsApp) {
         if (cleanPhone) {
             const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-            btnWhatsApp.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${hospitalName || "Hospital"}, this is CarePath Platform Admin.`)}`;
+            btnWhatsApp.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${hospitalName || "Hospital"}, this is Q-Arovia Platform Admin.`)}`;
             btnWhatsApp.style.display = "inline-flex";
         } else {
             btnWhatsApp.style.display = "none";
@@ -3278,7 +3278,7 @@ function openGeneralDirectCommunicationModal() {
     // Hydrate allLoadedHospitals from cache if empty
     if (!Array.isArray(allLoadedHospitals) || allLoadedHospitals.length === 0) {
         try {
-            const cachedRaw = localStorage.getItem("carepath_cache_admin_hospitals");
+            const cachedRaw = localStorage.getItem("qarovia_cache_admin_hospitals");
             if (cachedRaw) {
                 const cached = JSON.parse(cachedRaw);
                 if (Array.isArray(cached) && cached.length > 0) {
@@ -3317,7 +3317,7 @@ async function loadDirectCommMessages(hospitalId) {
 
     // SWR Cache Hydration (0ms Instant Load)
     try {
-        const cachedRaw = sessionStorage.getItem(`carepath_cache_direct_msgs_${hospitalId}`);
+        const cachedRaw = sessionStorage.getItem(`qarovia_cache_direct_msgs_${hospitalId}`);
         if (cachedRaw) {
             const cachedMsgs = JSON.parse(cachedRaw);
             if (Array.isArray(cachedMsgs) && cachedMsgs.length > 0) {
@@ -3347,7 +3347,7 @@ async function loadDirectCommMessages(hospitalId) {
 
         const messages = Array.isArray(data.messages) ? data.messages : [];
         try {
-            sessionStorage.setItem(`carepath_cache_direct_msgs_${hospitalId}`, JSON.stringify(messages));
+            sessionStorage.setItem(`qarovia_cache_direct_msgs_${hospitalId}`, JSON.stringify(messages));
         } catch (e) {}
 
         renderDirectCommMessages(messages, container);
@@ -3532,7 +3532,139 @@ function switchPaymentSection(section) {
 }
 window.switchPaymentSection = switchPaymentSection;
 
+let currentCommissionRate = 10.0;
+
+async function loadCommissionSettings() {
+    const badge = document.getElementById("commissionBadge");
+    const input = document.getElementById("inputCommissionRate");
+    const lastUpdateEl = document.getElementById("commissionLastUpdated");
+    if (!badge && !input) return;
+
+    try {
+        const response = await fetchWithRetry(`${API}/admin/commission`, {
+            headers: getAdminAuthHeaders()
+        });
+        if (response.status === 401) { requireAdminLogin(); return; }
+        const data = await readResponse(response);
+        if (data.success && typeof data.commission_percentage !== "undefined") {
+            currentCommissionRate = parseFloat(data.commission_percentage);
+            if (badge) badge.textContent = `Active: ${currentCommissionRate.toFixed(2)}%`;
+            if (input && !input.matches(":focus")) input.value = currentCommissionRate.toFixed(2);
+            if (lastUpdateEl) {
+                if (data.last_update && data.last_update.updated_at) {
+                    const dt = new Date(data.last_update.updated_at);
+                    lastUpdateEl.textContent = `Last updated: ${dt.toLocaleDateString()} at ${dt.toLocaleTimeString()} by ${data.last_update.admin_email || 'Admin'}`;
+                } else if (data.updated_at) {
+                    const dt = new Date(data.updated_at);
+                    lastUpdateEl.textContent = `Last updated: ${dt.toLocaleDateString()} at ${dt.toLocaleTimeString()}`;
+                } else {
+                    lastUpdateEl.textContent = "Standard default commission active.";
+                }
+            }
+        }
+    } catch (err) {
+        console.warn("Could not load commission configuration:", err);
+    }
+}
+window.loadCommissionSettings = loadCommissionSettings;
+
+async function submitCommissionUpdate() {
+    const input = document.getElementById("inputCommissionRate");
+    const btn = document.getElementById("btnUpdateCommission");
+    if (!input || !btn) return;
+
+    const rawVal = input.value.trim();
+    if (!rawVal) {
+        showCommissionAlert("Please enter a valid commission percentage between 0% and 100%.", "error");
+        return;
+    }
+
+    const numVal = parseFloat(rawVal);
+    if (isNaN(numVal) || !isFinite(numVal)) {
+        showCommissionAlert("Invalid commission percentage. Please enter a valid number.", "error");
+        return;
+    }
+
+    if (numVal < 0) {
+        showCommissionAlert("Commission percentage cannot be negative (minimum 0%).", "error");
+        return;
+    }
+
+    if (numVal > 100) {
+        showCommissionAlert("Commission percentage cannot exceed 100%.", "error");
+        return;
+    }
+
+    // Require admin confirmation before saving (Rule 2)
+    const confirmed = window.confirm(
+        `CONFIRM COMMISSION CHANGE:\n\n` +
+        `Current Rate: ${currentCommissionRate.toFixed(2)}%\n` +
+        `New Rate: ${numVal.toFixed(2)}%\n\n` +
+        `Are you sure you want to update the Q-Arovia platform commission percentage?\n` +
+        `This rate will apply to all subsequent eligible paid OPD bookings. Historical transactions remain protected.`
+    );
+
+    if (!confirmed) return;
+
+    btn.disabled = true;
+    btn.textContent = "Updating...";
+
+    try {
+        const response = await fetchWithRetry(`${API}/admin/commission`, {
+            method: "PUT",
+            headers: {
+                ...getAdminAuthHeaders(),
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                commission_percentage: numVal,
+                confirmed: true
+            })
+        });
+
+        const data = await readResponse(response);
+        if (!response.ok) {
+            throw new Error(getErrorMessage(data, "Failed to update commission rate."));
+        }
+
+        currentCommissionRate = parseFloat(data.commission_percentage || numVal);
+        showCommissionAlert(`✓ Commission percentage successfully updated to ${currentCommissionRate.toFixed(2)}%!`, "success");
+        await loadCommissionSettings();
+        await loadHospitalLedger();
+    } catch (err) {
+        console.error("Commission update error:", err);
+        showCommissionAlert(err.message || "Failed to update commission settings.", "error");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Save Commission %";
+    }
+}
+window.submitCommissionUpdate = submitCommissionUpdate;
+
+function showCommissionAlert(msg, type) {
+    const alertEl = document.getElementById("commissionAlert");
+    if (!alertEl) {
+        alert(msg);
+        return;
+    }
+    alertEl.style.display = "block";
+    if (type === "success") {
+        alertEl.style.background = "#dcfce7";
+        alertEl.style.color = "#166534";
+        alertEl.style.border = "1px solid #86efac";
+    } else {
+        alertEl.style.background = "#fee2e2";
+        alertEl.style.color = "#991b1b";
+        alertEl.style.border = "1px solid #fca5a5";
+    }
+    alertEl.textContent = msg;
+    setTimeout(() => {
+        if (alertEl) alertEl.style.display = "none";
+    }, 6000);
+}
+
 async function loadHospitalLedger() {
+    loadCommissionSettings();
     const tableBody = document.getElementById("ledgerTableBody");
     if (!tableBody) return;
 
@@ -4096,7 +4228,7 @@ function exportAdminCollectionCSV() {
     const uri = encodeURI(csv);
     const link = document.createElement("a");
     link.href = uri;
-    link.download = `CarePath_Platform_Collection_${isDaily ? 'Daily' : 'Monthly'}_${Date.now()}.csv`;
+    link.download = `Q-Arovia_Platform_Collection_${isDaily ? 'Daily' : 'Monthly'}_${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -4362,7 +4494,7 @@ async function loadDashboardPatientsCount() {
         return;
     }
     try {
-        const cachedRaw = localStorage.getItem("carepath_cache_admin_patients");
+        const cachedRaw = localStorage.getItem("qarovia_cache_admin_patients");
         if (cachedRaw) {
             const cached = JSON.parse(cachedRaw);
             if (Array.isArray(cached) && cached.length > 0) {
@@ -4393,7 +4525,7 @@ async function loadAdminPatients() {
 
     // 0ms SWR Cache Hydration
     try {
-        const cachedRaw = localStorage.getItem("carepath_cache_admin_patients");
+        const cachedRaw = localStorage.getItem("qarovia_cache_admin_patients");
         if (cachedRaw) {
             const cached = JSON.parse(cachedRaw);
             if (Array.isArray(cached) && cached.length > 0) {
@@ -4423,7 +4555,7 @@ async function loadAdminPatients() {
         const patients = Array.isArray(data) ? data : data.patients || [];
         window.allAdminPatients = patients;
         try {
-            localStorage.setItem("carepath_cache_admin_patients", JSON.stringify(patients));
+            localStorage.setItem("qarovia_cache_admin_patients", JSON.stringify(patients));
         } catch (e) {}
 
         updatePatientMetrics(patients);
@@ -4546,7 +4678,7 @@ function exportPatientsCSV() {
     const uri = encodeURI(csv);
     const link = document.createElement("a");
     link.href = uri;
-    link.download = `CarePath_Patient_Directory_${Date.now()}.csv`;
+    link.download = `Q-Arovia_Patient_Directory_${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -4704,7 +4836,7 @@ function sendAdminHeartbeat() {
             user_id: "admin_1",
             user_role: "admin",
             user_name: "Master Admin",
-            user_email: "admin@carepath.health",
+            user_email: "admin@q-arovia.in",
             current_page: window.location.pathname.split("/").pop() || "admin_dashboard"
         };
         fetch(`${API}/api/heartbeat`, {
@@ -5113,9 +5245,9 @@ document.addEventListener("DOMContentLoaded", function () {
 function initAdminRealtime() {
     try {
         const token = getAdminToken();
-        if (!token || typeof CarePathRealtime === "undefined") return;
+        if (!token || typeof QAroviaRealtime === "undefined") return;
 
-        CarePathRealtime.connect({
+        QAroviaRealtime.connect({
             role: "admin",
             token: token,
             onMessage: (data) => {
@@ -5125,7 +5257,26 @@ function initAdminRealtime() {
                         refreshCurrentCommMessages();
                     }
                 }
+                if (data.type === "token_created" || data.type === "token_called" || data.type === "token_completed" || data.type === "token_skipped") {
+                    if (typeof loadTokens === "function" && document.getElementById("tokensTableBody")) {
+                        loadTokens();
+                    }
+                    if (typeof loadDashboard === "function" && document.getElementById("heroTodayTokens")) {
+                        loadDashboard();
+                    }
+                }
             }
+        });
+
+        window.addEventListener("qarovia:token_update", function() {
+            if (typeof loadTokens === "function" && document.getElementById("tokensTableBody")) loadTokens();
+            if (typeof loadDashboard === "function" && document.getElementById("heroTodayTokens")) loadDashboard();
+        });
+
+        window.addEventListener("qarovia:resume", function() {
+            if (typeof loadTokens === "function" && document.getElementById("tokensTableBody")) loadTokens();
+            if (typeof loadDashboard === "function" && document.getElementById("heroTodayTokens")) loadDashboard();
+            if (typeof loadHospitals === "function" && document.getElementById("hospitalsTableBody")) loadHospitals();
         });
     } catch(e) {
         console.warn("Could not init admin realtime:", e);
