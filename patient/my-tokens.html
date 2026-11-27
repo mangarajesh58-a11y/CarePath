@@ -906,18 +906,14 @@
     async function refreshAuthToken() {
       if (isRefreshing && refreshPromise) return refreshPromise;
       const rt = localStorage.getItem("refreshToken") || localStorage.getItem("refresh_token") || "";
-      const currentTok = getPatientAuthToken();
-      if (!rt && !currentTok) return false;
+      if (!rt || rt === "null" || rt === "undefined") return false;
       isRefreshing = true;
       refreshPromise = (async () => {
         try {
           const res = await fetch(`${API_URL}/auth/refresh`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              refresh_token: rt || undefined,
-              access_token: currentTok || undefined
-            })
+            body: JSON.stringify({ refresh_token: rt })
           });
           if (res.ok) {
             const data = await res.json();
@@ -1620,15 +1616,41 @@
       }
 
       try {
-        const tokenJwt = localStorage.getItem("patientToken") || localStorage.getItem("patient_token") || localStorage.getItem("token");
-        const res = await fetch(`${API_URL}/tokens/${tokenId}/email-receipt`, {
+        // Proactively refresh if token is near-expiry to avoid "Invalid or expired" alert
+        let tokenJwt = await ensureFreshToken();
+        if (!tokenJwt) {
+          alert("Your session has expired. Please log in again to send receipts.");
+          return;
+        }
+
+        let res = await fetch(`${API_URL}/tokens/${tokenId}/email-receipt`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+            "Authorization": `Bearer ${tokenJwt}`
           },
           body: JSON.stringify({ recipient_email: enteredEmail.trim() })
         });
+
+        // Retry once after token refresh if 401
+        if (res.status === 401) {
+          const refreshed = await refreshAuthToken();
+          if (refreshed) {
+            tokenJwt = getPatientAuthToken();
+            res = await fetch(`${API_URL}/tokens/${tokenId}/email-receipt`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${tokenJwt}`
+              },
+              body: JSON.stringify({ recipient_email: enteredEmail.trim() })
+            });
+          } else {
+            alert("Your session has expired. Please log in again to send receipts.");
+            return;
+          }
+        }
+
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || data.message || "Failed to dispatch receipt.");
 
@@ -1642,6 +1664,28 @@
       } catch (err) {
         alert(`Could not send receipt: ${err.message}`);
       }
+    }
+
+    // ── ensureFreshToken ────────────────────────────────────────────────────
+    // Proactively refreshes the JWT before making any protected API call.
+    // Returns the latest valid token string, or "" if the user must re-login.
+    async function ensureFreshToken() {
+      let tok = getPatientAuthToken();
+      if (!tok) return "";
+      // Decode exp claim to check whether the token expires within 90 seconds
+      try {
+        const payload = JSON.parse(atob(tok.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+        const expiresIn = (payload.exp || 0) - Math.floor(Date.now() / 1000);
+        if (expiresIn < 90) {
+          // Token is about to expire — refresh now before the request
+          const refreshed = await refreshAuthToken();
+          if (!refreshed) return "";
+          tok = getPatientAuthToken();
+        }
+      } catch (e) {
+        // Could not decode — still try with existing token; server will 401 if invalid
+      }
+      return tok;
     }
 
     // Global bindings for HTML event handlers
@@ -2000,7 +2044,12 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
       const validIds = tokensList.map(t => t.id).filter(id => id && !String(id).startsWith("tk_"));
       if (validIds.length === 0) return;
       try {
-        let tokenJwt = getPatientAuthToken();
+        // Proactively refresh if token is near-expiry
+        let tokenJwt = await ensureFreshToken();
+        if (!tokenJwt) {
+          // No valid auth — batch doc load silently skipped (not critical path)
+          return;
+        }
         let res = await fetch(`${API_URL}/patient/tokens-documents-batch?token_ids=${validIds.join(",")}${tokenJwt ? `&token=${encodeURIComponent(tokenJwt)}` : ""}`, {
           headers: {
             ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
@@ -2103,7 +2152,13 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
       listEl.innerHTML = '<div style="color: #64748b; font-size: 12px; text-align: center; padding: 12px;">⏳ Loading documents...</div>';
 
       try {
-        let tokenJwt = getPatientAuthToken();
+        // Proactively refresh if token is near-expiry before fetching docs
+        let tokenJwt = await ensureFreshToken();
+        if (!tokenJwt) {
+          listEl.innerHTML = '<div style="color: #ef4444; font-size: 12px; text-align: center; padding: 12px;">⚠️ Session expired. Please refresh the page and log in again.</div>';
+          return;
+        }
+
         let res = await fetch(`${API_URL}/patient/tokens/${tokenId}/documents${tokenJwt ? `?token=${encodeURIComponent(tokenJwt)}` : ""}`, {
           headers: {
             ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
@@ -2119,6 +2174,9 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
                 ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
               }
             });
+          } else {
+            listEl.innerHTML = '<div style="color: #ef4444; font-size: 12px; text-align: center; padding: 12px;">⚠️ Session expired. Please refresh the page and log in again.</div>';
+            return;
           }
         }
 
@@ -2164,7 +2222,10 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
           `;
         }).join("");
       } catch (err) {
-        listEl.innerHTML = '<div style="color: #ef4444; font-size: 12px; text-align: center; padding: 12px;">Failed to load documents.</div>';
+        const isAuthErr = (err.message || "").toLowerCase().includes("401") || (err.message || "").toLowerCase().includes("auth") || (err.message || "").toLowerCase().includes("expired");
+        listEl.innerHTML = isAuthErr
+          ? '<div style="color: #ef4444; font-size: 12px; text-align: center; padding: 12px;">⚠️ Session expired. Please refresh the page and log in again.</div>'
+          : '<div style="color: #ef4444; font-size: 12px; text-align: center; padding: 12px;">⚠️ Could not load documents. Please try again.</div>';
       }
     }
 
