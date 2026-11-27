@@ -906,14 +906,18 @@
     async function refreshAuthToken() {
       if (isRefreshing && refreshPromise) return refreshPromise;
       const rt = localStorage.getItem("refreshToken") || localStorage.getItem("refresh_token") || "";
-      if (!rt || rt === "null" || rt === "undefined") return false;
+      const currentTok = getPatientAuthToken();
+      if (!rt && !currentTok) return false;
       isRefreshing = true;
       refreshPromise = (async () => {
         try {
           const res = await fetch(`${API_URL}/auth/refresh`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: rt })
+            body: JSON.stringify({
+              refresh_token: rt || undefined,
+              access_token: currentTok || undefined
+            })
           });
           if (res.ok) {
             const data = await res.json();

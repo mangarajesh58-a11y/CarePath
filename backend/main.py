@@ -1125,7 +1125,7 @@ Q-Arovia Healthcare Team
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
         <tr>
           <td style="vertical-align: middle; padding-right: 10px;">
-            <img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="42" height="42" style="display: block; width: 42px; height: 42px; border-radius: 10px; object-fit: cover;" />
+            <img src="https://carepath-patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="42" height="42" style="display: block; width: 42px; height: 42px; border-radius: 10px; object-fit: cover;" />
           </td>
           <td style="vertical-align: middle; text-align: left;">
             <span style="color: #0284c7; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Q-Arovia</span>
@@ -1201,7 +1201,7 @@ Q-Arovia Healthcare Team
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; text-align: center;">
         <tr>
           <td style="vertical-align: middle; padding-right: 14px;">
-            <img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <img src="https://carepath-patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
           </td>
           <td style="vertical-align: middle; text-align: left;">
             <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; line-height: 1.1;">Q-Arovia</div>
@@ -1332,7 +1332,7 @@ Q-Arovia Healthcare Team
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; text-align: center;">
         <tr>
           <td style="vertical-align: middle; padding-right: 14px;">
-            <img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); object-fit: cover;" />
+            <img src="https://carepath-patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); object-fit: cover;" />
           </td>
           <td style="vertical-align: middle; text-align: left;">
             <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; line-height: 1.1;">Q-Arovia Invoice</div>
@@ -1462,7 +1462,7 @@ Q-Arovia Healthcare Team
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; text-align: center;">
         <tr>
           <td style="vertical-align: middle; padding-right: 14px;">
-            <img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
+            <img src="https://carepath-patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia Logo" width="50" height="50" style="display: block; width: 50px; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.4); object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" />
           </td>
           <td style="vertical-align: middle; text-align: left;">
             <div style="font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff; line-height: 1.1;">Q-Arovia</div>
@@ -3670,13 +3670,22 @@ async def refresh_session_token(
                 patient = db.query(Patient).filter(Patient.id == p_id).first()
                 if patient:
                     new_acc, new_ref, _ = create_user_session(db, p_id, "patient", request)
-                    return {
+                    response = JSONResponse(content={
                         "success": True,
                         "access_token": new_acc,
                         "refresh_token": new_ref,
                         "token_type": "bearer",
                         "expires_in": 7 * 86400,
-                    }
+                    })
+                    response.set_cookie(
+                        key="refresh_token",
+                        value=new_ref,
+                        httponly=True,
+                        secure=True,
+                        samesite="lax",
+                        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+                    )
+                    return response
         except Exception:
             pass
 
@@ -13467,7 +13476,7 @@ def schedule_hospital_closure(
                         subject=f"Q-Arovia Refund Notice: {hospital.name} is closed on {closure_dt}",
                         text=f"Dear {pat.full_name}, {hospital.name} will be closed on {closure_dt} ({reason}). Your token #{t.token_number} has been cancelled and a 100% refund of ₹{t.total_amount:.2f} has been processed to your account.",
                         html=f"""<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 20px;">
-                        <h2 style="color: #0284c7; display: flex; align-items: center; gap: 8px;"><img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia" width="28" height="28" style="vertical-align: middle; border-radius: 6px;" /> Q-Arovia Appointment Cancellation & 100% Refund</h2>
+                        <h2 style="color: #0284c7; display: flex; align-items: center; gap: 8px;"><img src="https://carepath-patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia" width="28" height="28" style="vertical-align: middle; border-radius: 6px;" /> Q-Arovia Appointment Cancellation & 100% Refund</h2>
                         <p>Dear <strong>{pat.full_name}</strong>,</p>
                         <p><strong>{hospital.name}</strong> has announced a scheduled closure on <strong>{closure_dt}</strong> ({reason}).</p>
                         <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; border-radius: 8px; margin: 15px 0;">
@@ -13622,7 +13631,7 @@ def mark_doctor_on_leave(
                         subject=f"Q-Arovia Refund Notice: Dr. {doctor.name} is on leave on {leave_dt}",
                         text=f"Dear {pat.full_name}, Dr. {doctor.name} is on leave on {leave_dt} ({reason}). Your token #{t.token_number} has been cancelled and a 100% refund of ₹{t.total_amount:.2f} has been processed to your account.",
                         html=f"""<!DOCTYPE html><html><body style="font-family: sans-serif; padding: 20px;">
-                        <h2 style="color: #0284c7; display: flex; align-items: center; gap: 8px;"><img src="https://patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia" width="28" height="28" style="vertical-align: middle; border-radius: 6px;" /> Q-Arovia Appointment Cancellation & 100% Refund</h2>
+                        <h2 style="color: #0284c7; display: flex; align-items: center; gap: 8px;"><img src="https://carepath-patient-mx5v.vercel.app/qarovia-ai-small.png" alt="Q-Arovia" width="28" height="28" style="vertical-align: middle; border-radius: 6px;" /> Q-Arovia Appointment Cancellation & 100% Refund</h2>
                         <p>Dear <strong>{pat.full_name}</strong>,</p>
                         <p><strong>Dr. {doctor.name}</strong> at {hospital.name} is on leave on <strong>{leave_dt}</strong> ({reason}).</p>
                         <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; border-radius: 8px; margin: 15px 0;">
