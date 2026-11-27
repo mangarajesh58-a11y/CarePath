@@ -1598,7 +1598,23 @@ function clearOldBookingData() {
 
         "currentToken",
 
-        "peopleAhead"
+        "peopleAhead",
+
+        "token",
+
+        "patientToken",
+
+        "patient_token",
+
+        "refreshToken",
+
+        "refresh_token",
+
+        "qarovia_cached_tokens",
+
+        "allTokens",
+
+        "patientTokens"
 
     ];
 
@@ -1737,7 +1753,23 @@ function logout() {
 
         "currentToken",
 
-        "peopleAhead"
+        "peopleAhead",
+
+        "token",
+
+        "patientToken",
+
+        "patient_token",
+
+        "refreshToken",
+
+        "refresh_token",
+
+        "qarovia_cached_tokens",
+
+        "allTokens",
+
+        "patientTokens"
 
     ];
 

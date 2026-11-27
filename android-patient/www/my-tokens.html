@@ -2340,7 +2340,8 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
         formData.append("files", f);
       });
 
-      let tokenJwt = getPatientAuthToken();
+      let tokenJwt = await ensureFreshToken();
+      if (!tokenJwt) tokenJwt = getPatientAuthToken();
 
       try {
         let res = await fetch(`${API_URL}/patient/tokens/${currentUploadTokenId}/documents`, {
