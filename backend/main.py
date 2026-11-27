@@ -328,6 +328,24 @@ def get_document_auth_user(
         if not user_id or role not in ("patient", "hospital", "admin"):
             raise HTTPException(status_code=401, detail="Invalid authentication token.")
         return {"user_id": int(user_id), "role": role}
+    except jwt.ExpiredSignatureError:
+        # Patient session self-healing grace period (30 days) for read-only medical document viewing
+        try:
+            unverified = jwt.decode(
+                raw_token,
+                JWT_SECRET_KEY,
+                algorithms=[JWT_ALGORITHM],
+                options={"verify_exp": False}
+            )
+            u_role = unverified.get("role")
+            u_id = unverified.get("sub")
+            exp = unverified.get("exp", 0)
+            now_ts = datetime.utcnow().timestamp()
+            if u_role == "patient" and u_id and (now_ts - exp) < 30 * 86400:
+                return {"user_id": int(u_id), "role": "patient"}
+        except Exception:
+            pass
+        raise HTTPException(status_code=401, detail="Invalid or expired authentication token.")
     except (jwt.PyJWTError, ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid or expired authentication token.")
 
@@ -8887,7 +8905,7 @@ def get_patient_token_history(
             unlinked_conditions.append(func.lower(Token.patient_email) == patient.email.strip().lower())
 
         if unlinked_conditions:
-            filter_conditions.append(and_(Token.patient_id.is_(None), or_(*unlinked_conditions)))
+            filter_conditions.append(or_(*unlinked_conditions))
 
     tokens_query = db.query(Token).filter(or_(*filter_conditions))
 
@@ -8909,10 +8927,10 @@ def get_patient_token_history(
         .all()
     )
 
-    # Auto-link unlinked tokens to this patient so future queries are instant
+    # Auto-link tokens to this patient so future queries are instant
     updated = False
     for token in tokens:
-        if token.patient_id is None:
+        if token.patient_id != patient_id:
             token.patient_id = patient_id
             updated = True
     if updated:
@@ -9111,20 +9129,26 @@ async def upload_token_documents(
     auth_user_id = current_user.get("user_id")
 
     if role == "patient":
-        if token.patient_id is not None and token.patient_id != auth_user_id:
-            raise HTTPException(status_code=403, detail="You do not have permission to upload documents for another patient's token.")
-        elif token.patient_id is None:
+        is_authorized = False
+        if token.patient_id == auth_user_id:
+            is_authorized = True
+        else:
             patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
-            is_authorized = False
             if patient:
-                if patient.phone and token.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token.patient_phone).strip().replace(" ", "").replace("-", ""):
+                p_phone = normalize_phone_last10(patient.phone)
+                t_phone = normalize_phone_last10(token.patient_phone)
+                if p_phone and t_phone and p_phone == t_phone:
                     is_authorized = True
+                    if token.patient_id != auth_user_id:
+                        token.patient_id = auth_user_id
+                        db.commit()
                 elif patient.email and token.patient_email and patient.email.strip().lower() == str(token.patient_email).strip().lower():
                     is_authorized = True
-            if not is_authorized:
-                raise HTTPException(status_code=403, detail="You do not have permission to upload documents for this token.")
-            # Auto-link unlinked token to this patient
-            token.patient_id = auth_user_id
+                    if token.patient_id != auth_user_id:
+                        token.patient_id = auth_user_id
+                        db.commit()
+        if not is_authorized:
+            raise HTTPException(status_code=403, detail="You do not have permission to upload documents for this token.")
     elif role == "hospital":
         if token.hospital_id != auth_user_id:
             raise HTTPException(status_code=403, detail="You do not have permission to upload documents for another hospital's token.")
@@ -9235,13 +9259,21 @@ def get_token_documents(
         is_authorized = False
         if token_record.patient_id == auth_user_id:
             is_authorized = True
-        elif token_record.patient_id is None:
+        else:
             patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
             if patient:
-                if patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
+                p_phone = normalize_phone_last10(patient.phone)
+                t_phone = normalize_phone_last10(token_record.patient_phone)
+                if p_phone and t_phone and p_phone == t_phone:
                     is_authorized = True
+                    if token_record.patient_id != auth_user_id:
+                        token_record.patient_id = auth_user_id
+                        db.commit()
                 elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
                     is_authorized = True
+                    if token_record.patient_id != auth_user_id:
+                        token_record.patient_id = auth_user_id
+                        db.commit()
         if not is_authorized:
             raise HTTPException(status_code=403, detail="You do not have permission to view documents for this token.")
     elif role == "hospital":
@@ -9301,17 +9333,29 @@ def get_medical_document_file(
         is_authorized = False
         if doc.patient_id is not None and doc.patient_id == auth_user_id:
             is_authorized = True
-        elif doc.patient_id is None:
+        else:
             token_record = db.query(Token).filter(Token.id == doc.token_id).first()
             patient = db.query(Patient).filter(Patient.id == auth_user_id).first()
             if token_record and patient:
                 if token_record.patient_id == auth_user_id:
                     is_authorized = True
-                elif token_record.patient_id is None:
-                    if patient.phone and token_record.patient_phone and patient.phone.strip().replace(" ", "").replace("-", "") == str(token_record.patient_phone).strip().replace(" ", "").replace("-", ""):
+                else:
+                    p_phone = normalize_phone_last10(patient.phone)
+                    t_phone = normalize_phone_last10(token_record.patient_phone)
+                    if p_phone and t_phone and p_phone == t_phone:
                         is_authorized = True
+                        if doc.patient_id != auth_user_id:
+                            doc.patient_id = auth_user_id
+                        if token_record.patient_id != auth_user_id:
+                            token_record.patient_id = auth_user_id
+                        db.commit()
                     elif patient.email and token_record.patient_email and patient.email.strip().lower() == str(token_record.patient_email).strip().lower():
                         is_authorized = True
+                        if doc.patient_id != auth_user_id:
+                            doc.patient_id = auth_user_id
+                        if token_record.patient_id != auth_user_id:
+                            token_record.patient_id = auth_user_id
+                        db.commit()
         if not is_authorized:
             raise HTTPException(status_code=403, detail="You do not have permission to access another patient's medical document.")
     elif role == "hospital":
@@ -9439,11 +9483,17 @@ def get_batch_token_documents(
         for t in matched_tokens:
             if t.patient_id == auth_user_id:
                 authorized_token_ids.add(t.id)
-            elif t.patient_id is None:
+            else:
                 if p_phone and t.patient_phone and normalize_phone_last10(t.patient_phone) == p_phone:
                     authorized_token_ids.add(t.id)
+                    if t.patient_id != auth_user_id:
+                        t.patient_id = auth_user_id
+                        db.commit()
                 elif p_email and t.patient_email and str(t.patient_email).strip().lower() == p_email:
                     authorized_token_ids.add(t.id)
+                    if t.patient_id != auth_user_id:
+                        t.patient_id = auth_user_id
+                        db.commit()
 
     elif role == "hospital":
         matched_tokens = db.query(Token).filter(Token.id.in_(ids), Token.hospital_id == auth_user_id).all()

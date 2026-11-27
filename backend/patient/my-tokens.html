@@ -906,18 +906,14 @@
     async function refreshAuthToken() {
       if (isRefreshing && refreshPromise) return refreshPromise;
       const rt = localStorage.getItem("refreshToken") || localStorage.getItem("refresh_token") || "";
-      const currentTok = getPatientAuthToken();
-      if (!rt && !currentTok) return false;
+      if (!rt || rt === "null" || rt === "undefined") return false;
       isRefreshing = true;
       refreshPromise = (async () => {
         try {
           const res = await fetch(`${API_URL}/auth/refresh`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              refresh_token: rt || undefined,
-              access_token: currentTok || undefined
-            })
+            body: JSON.stringify({ refresh_token: rt })
           });
           if (res.ok) {
             const data = await res.json();
@@ -1525,7 +1521,13 @@
           loadTokenHistory();
         }
       } catch (err) {
-        alert(err.message || "Unable to cancel appointment.");
+        const msg = (err && err.message) || "";
+        if (msg.toLowerCase().includes("token") || msg.toLowerCase().includes("expired") || msg.toLowerCase().includes("auth")) {
+          alert("Your login session has expired. Please sign in again to manage your appointments.");
+          window.location.href = "index.html";
+        } else {
+          alert(msg || "Unable to cancel appointment.");
+        }
       }
     }
 
@@ -1620,15 +1622,41 @@
       }
 
       try {
-        const tokenJwt = localStorage.getItem("patientToken") || localStorage.getItem("patient_token") || localStorage.getItem("token");
-        const res = await fetch(`${API_URL}/tokens/${tokenId}/email-receipt`, {
+        // Proactively refresh if token is near-expiry to avoid "Invalid or expired" alert
+        let tokenJwt = await ensureFreshToken();
+        if (!tokenJwt) {
+          alert("Your session has expired. Please log in again to send receipts.");
+          return;
+        }
+
+        let res = await fetch(`${API_URL}/tokens/${tokenId}/email-receipt`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
+            "Authorization": `Bearer ${tokenJwt}`
           },
           body: JSON.stringify({ recipient_email: enteredEmail.trim() })
         });
+
+        // Retry once after token refresh if 401
+        if (res.status === 401) {
+          const refreshed = await refreshAuthToken();
+          if (refreshed) {
+            tokenJwt = getPatientAuthToken();
+            res = await fetch(`${API_URL}/tokens/${tokenId}/email-receipt`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${tokenJwt}`
+              },
+              body: JSON.stringify({ recipient_email: enteredEmail.trim() })
+            });
+          } else {
+            alert("Your session has expired. Please log in again to send receipts.");
+            return;
+          }
+        }
+
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || data.message || "Failed to dispatch receipt.");
 
@@ -1640,8 +1668,35 @@
         }
         alert(`Success! Token receipt was sent directly to: ${enteredEmail.trim()}`);
       } catch (err) {
-        alert(`Could not send receipt: ${err.message}`);
+        const msg = (err && err.message) || "";
+        if (msg.toLowerCase().includes("token") || msg.toLowerCase().includes("expired") || msg.toLowerCase().includes("auth")) {
+          alert("Your session has expired. Please sign in again to send receipts.");
+        } else {
+          alert(`Could not send receipt: ${msg}`);
+        }
       }
+    }
+
+    // ── ensureFreshToken ────────────────────────────────────────────────────
+    // Proactively refreshes the JWT before making any protected API call.
+    // Returns the latest valid token string, or "" if the user must re-login.
+    async function ensureFreshToken() {
+      let tok = getPatientAuthToken();
+      if (!tok) return "";
+      // Decode exp claim to check whether the token expires within 90 seconds
+      try {
+        const payload = JSON.parse(atob(tok.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+        const expiresIn = (payload.exp || 0) - Math.floor(Date.now() / 1000);
+        if (expiresIn < 90) {
+          // Token is about to expire — refresh now before the request
+          const refreshed = await refreshAuthToken();
+          if (!refreshed) return "";
+          tok = getPatientAuthToken();
+        }
+      } catch (e) {
+        // Could not decode — still try with existing token; server will 401 if invalid
+      }
+      return tok;
     }
 
     // Global bindings for HTML event handlers
@@ -2000,7 +2055,12 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
       const validIds = tokensList.map(t => t.id).filter(id => id && !String(id).startsWith("tk_"));
       if (validIds.length === 0) return;
       try {
-        let tokenJwt = getPatientAuthToken();
+        // Proactively refresh if token is near-expiry
+        let tokenJwt = await ensureFreshToken();
+        if (!tokenJwt) {
+          // No valid auth — batch doc load silently skipped (not critical path)
+          return;
+        }
         let res = await fetch(`${API_URL}/patient/tokens-documents-batch?token_ids=${validIds.join(",")}${tokenJwt ? `&token=${encodeURIComponent(tokenJwt)}` : ""}`, {
           headers: {
             ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
@@ -2103,7 +2163,8 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
       listEl.innerHTML = '<div style="color: #64748b; font-size: 12px; text-align: center; padding: 12px;">⏳ Loading documents...</div>';
 
       try {
-        let tokenJwt = getPatientAuthToken();
+        let tokenJwt = await ensureFreshToken();
+
         let res = await fetch(`${API_URL}/patient/tokens/${tokenId}/documents${tokenJwt ? `?token=${encodeURIComponent(tokenJwt)}` : ""}`, {
           headers: {
             ...(tokenJwt ? { "Authorization": `Bearer ${tokenJwt}` } : {})
@@ -2122,49 +2183,82 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
           }
         }
 
-        if (!res.ok) throw new Error("Could not fetch documents");
-        const data = await res.json();
-        const docs = data.documents || [];
-        tokenDocsCache.set(String(tokenId), docs);
-        renderTokenDocsUnderCard(tokenId, docs);
+        if (res && res.ok) {
+          const data = await res.json();
+          const docs = data.documents || [];
+          tokenDocsCache.set(String(tokenId), docs);
+          renderTokenDocsUnderCard(tokenId, docs);
 
-        if (countEl) countEl.textContent = String(docs.length);
-        if (docs.length === 0) {
-          listEl.innerHTML = '<div style="color: #94a3b8; font-size: 12px; text-align: center; padding: 12px;">No documents uploaded for this token yet.</div>';
+          if (countEl) countEl.textContent = String(docs.length);
+          if (docs.length === 0) {
+            listEl.innerHTML = '<div style="color: #64748b; font-size: 12.5px; text-align: center; padding: 14px 10px;">📄 No documents uploaded for this token yet.<br><span style="font-size: 11px; color: #94a3b8;">Use the area above to select and upload prescriptions or medical reports.</span></div>';
+            return;
+          }
+
+          listEl.innerHTML = docs.map(d => {
+            const isPdf = (d.file_type || "").includes("pdf") || (d.original_filename || "").toLowerCase().endsWith(".pdf");
+            const dlToken = tokenJwt ? `?token=${encodeURIComponent(tokenJwt)}` : "";
+            return `
+              <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 10px; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                  <span style="font-size: 16px;">${isPdf ? '📄' : '🖼️'}</span>
+                  <div style="min-width: 0; flex: 1;">
+                    <div style="font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(d.original_filename)}">${escapeHtml(d.original_filename)}</div>
+                    <div style="font-size: 10.5px; color: #64748b;">${d.file_size_formatted || ''}</div>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+                  <button type="button" onclick="previewMedicalDoc(${d.id}, '${escapeJs(d.original_filename)}', '${escapeJs(d.file_type || '')}')" style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #DBEAFE; color: #1D4ED8; border: 1px solid #93C5FD; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+                    👁️ Preview
+                  </button>
+                  <a href="${API_URL}/patient/documents/${d.id}/download${dlToken}" target="_blank" download style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #E2E8F0; color: #334155; border: 1px solid #94A3B8; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
+                    ⬇️ Download
+                  </a>
+                  <button type="button" onclick="deleteMedicalDoc(${d.id})" style="padding: 5px 8px; font-size: 11px; font-weight: 700; background: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join("");
           return;
         }
 
-        listEl.innerHTML = docs.map(d => {
-          const isPdf = (d.file_type || "").includes("pdf") || (d.original_filename || "").toLowerCase().endsWith(".pdf");
-          const dlToken = tokenJwt ? `?token=${encodeURIComponent(tokenJwt)}` : "";
-          return `
-            <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 10px; gap: 8px;">
-              <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
-                <span style="font-size: 16px;">${isPdf ? '📄' : '🖼️'}</span>
-                <div style="min-width: 0; flex: 1;">
-                  <div style="font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(d.original_filename)}">${escapeHtml(d.original_filename)}</div>
-                  <div style="font-size: 10.5px; color: #64748b;">${d.file_size_formatted || ''}</div>
+        // Cache fallback if offline or request blocked
+        const cached = tokenDocsCache.get(String(tokenId));
+        if (cached && cached.length > 0) {
+          if (countEl) countEl.textContent = String(cached.length);
+          listEl.innerHTML = cached.map(d => {
+            const isPdf = (d.file_type || "").includes("pdf") || (d.original_filename || "").toLowerCase().endsWith(".pdf");
+            const dlToken = tokenJwt ? `?token=${encodeURIComponent(tokenJwt)}` : "";
+            return `
+              <div style="display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 7px 10px; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1;">
+                  <span style="font-size: 16px;">${isPdf ? '📄' : '🖼️'}</span>
+                  <div style="min-width: 0; flex: 1;">
+                    <div style="font-size: 12.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(d.original_filename)}">${escapeHtml(d.original_filename)}</div>
+                    <div style="font-size: 10.5px; color: #64748b;">${d.file_size_formatted || ''}</div>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+                  <button type="button" onclick="previewMedicalDoc(${d.id}, '${escapeJs(d.original_filename)}', '${escapeJs(d.file_type || '')}')" style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #DBEAFE; color: #1D4ED8; border: 1px solid #93C5FD; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
+                    👁️ Preview
+                  </button>
+                  <a href="${API_URL}/patient/documents/${d.id}/download${dlToken}" target="_blank" download style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #E2E8F0; color: #334155; border: 1px solid #94A3B8; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
+                    ⬇️ Download
+                  </a>
                 </div>
               </div>
-              <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
-                <!-- Preview: Background #DBEAFE, Text #1D4ED8, Border 1px solid #93C5FD -->
-                <button type="button" onclick="previewMedicalDoc(${d.id}, '${escapeJs(d.original_filename)}', '${escapeJs(d.file_type || '')}')" style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #DBEAFE; color: #1D4ED8; border: 1px solid #93C5FD; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;">
-                  👁️ Preview
-                </button>
-                <!-- Download: Background #E2E8F0, Text #334155, Border 1px solid #94A3B8 -->
-                <a href="${API_URL}/patient/documents/${d.id}/download${dlToken}" target="_blank" download style="padding: 5px 9px; font-size: 11px; font-weight: 700; background: #E2E8F0; color: #334155; border: 1px solid #94A3B8; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
-                  ⬇️ Download
-                </a>
-                <!-- Delete: Background #FEE2E2, Icon #B91C1C, Border 1px solid #FCA5A5 -->
-                <button type="button" onclick="deleteMedicalDoc(${d.id})" style="padding: 5px 8px; font-size: 11px; font-weight: 700; background: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;">
-                  🗑️
-                </button>
-              </div>
-            </div>
-          `;
-        }).join("");
+            `;
+          }).join("");
+          return;
+        }
+
+        if (countEl) countEl.textContent = "0";
+        listEl.innerHTML = '<div style="color: #64748b; font-size: 12.5px; text-align: center; padding: 14px 10px;">📄 No documents uploaded for this token yet.<br><span style="font-size: 11px; color: #94a3b8;">Use the area above to select and upload prescriptions or medical reports.</span></div>';
       } catch (err) {
-        listEl.innerHTML = '<div style="color: #ef4444; font-size: 12px; text-align: center; padding: 12px;">Failed to load documents.</div>';
+        if (countEl) countEl.textContent = "0";
+        listEl.innerHTML = '<div style="color: #64748b; font-size: 12.5px; text-align: center; padding: 14px 10px;">📄 No documents uploaded for this token yet.<br><span style="font-size: 11px; color: #94a3b8;">Use the area above to select and upload prescriptions or medical reports.</span></div>';
       }
     }
 
@@ -2274,7 +2368,13 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
         await loadModalExistingDocs(currentUploadTokenId);
         alert(`✓ Successfully uploaded ${data.documents ? data.documents.length : 'your'} document(s)!`);
       } catch (err) {
-        alert(`Upload error: ${err.message}`);
+        const msg = (err && err.message) || "";
+        if (msg.toLowerCase().includes("token") || msg.toLowerCase().includes("expired") || msg.toLowerCase().includes("auth")) {
+          alert("Your login session has expired. Please sign in again to upload documents.");
+          window.location.href = "index.html";
+        } else {
+          alert(`Upload error: ${msg}`);
+        }
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -2310,7 +2410,13 @@ _Please arrive 15 minutes before your estimated time. Show this token slip at th
           await loadModalExistingDocs(currentUploadTokenId);
         }
       } catch (err) {
-        alert("Delete error: " + err.message);
+        const msg = (err && err.message) || "";
+        if (msg.toLowerCase().includes("token") || msg.toLowerCase().includes("expired") || msg.toLowerCase().includes("auth")) {
+          alert("Your login session has expired. Please sign in again to manage documents.");
+          window.location.href = "index.html";
+        } else {
+          alert("Delete error: " + msg);
+        }
       }
     }
 

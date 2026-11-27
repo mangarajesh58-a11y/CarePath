@@ -1378,7 +1378,7 @@ async function verifyPaymentAndCreateToken(orderId) {
             throw new Error("Payment was verified, but token details could not be generated.");
         }
 
-        showMessage("Payment confirmed! Opening your official token receipt in 3 seconds...", "success");
+        showMessage("✓ Payment confirmed! Official token receipt generated.", "success");
 
         // 3-second countdown overlay per workflow requirement
         setBusy(false);
