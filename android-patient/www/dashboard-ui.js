@@ -484,14 +484,33 @@
       return;
     }
 
-    container.innerHTML =
-      '<div class="loading-card">' +
-      '<span class="spinner"></span>' +
-      '<span>Loading hospitals from Q-Arovia...</span>' +
-      "</div>";
+    // 0ms SWR Cache Hydration: load previously cached hospitals instantly
+    let hasCachedData = false;
+    try {
+      const cachedRaw = localStorage.getItem("qarovia_cached_hospitals_cards");
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        if (Array.isArray(cached) && cached.length > 0) {
+          hospitalRecords = cached;
+          hasCachedData = true;
+          renderHospitalCards();
+          renderRecentHospitals();
+        }
+      }
+    } catch (e) {
+      console.warn("Q-Arovia: Could not read cached hospital cards:", e);
+    }
 
-    if (empty) empty.hidden = true;
-    if (count) count.textContent = "Loading hospitals...";
+    // Only show loading card if no cached data exists and container has no cards
+    if (!hasCachedData && (!container.hasChildNodes() || container.innerHTML.trim() === "")) {
+      container.innerHTML =
+        '<div class="loading-card">' +
+        '<span class="spinner"></span>' +
+        '<span>Loading hospitals from Q-Arovia...</span>' +
+        "</div>";
+      if (empty) empty.hidden = true;
+      if (count) count.textContent = "Loading hospitals...";
+    }
 
     if (requestController) {
       requestController.abort();
@@ -527,6 +546,10 @@
         throw new Error("Unexpected hospital API response format.");
       }
 
+      try {
+        localStorage.setItem("qarovia_cached_hospitals_cards", JSON.stringify(hospitalRecords));
+      } catch (e) {}
+
       console.log(
         "Q-Arovia: Hospital records received:",
         hospitalRecords.length
@@ -540,6 +563,12 @@
         console.error("Q-Arovia: Hospital request timed out or was cancelled.");
       } else {
         console.error("Q-Arovia hospital loading error:", error);
+      }
+
+      // If we already have cached hospitals rendered, do NOT wipe the UI with an error box!
+      if (Array.isArray(hospitalRecords) && hospitalRecords.length > 0) {
+        console.warn("Q-Arovia: Retaining cached hospital cards after background fetch error.");
+        return;
       }
 
       container.replaceChildren();

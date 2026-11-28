@@ -1695,7 +1695,21 @@ async function verifyHospitalCertificate(id) {
             "success"
         );
 
-        await loadHospitals();
+        const numVerifyId = Number(id);
+        if (Array.isArray(window.allLoadedHospitals)) {
+            const target = window.allLoadedHospitals.find(h => Number(h.id) === numVerifyId);
+            if (target) {
+                target.certificate_verification_status = "VERIFIED";
+            }
+            try {
+                localStorage.setItem("qarovia_cache_admin_hospitals", JSON.stringify(window.allLoadedHospitals));
+            } catch (e) {}
+            if (typeof renderHospitalsTable === "function") {
+                renderHospitalsTable(window.allLoadedHospitals);
+            }
+        }
+
+        loadHospitals();
 
         return true;
 
@@ -1798,7 +1812,22 @@ async function rejectHospitalCertificate(id) {
             "success"
         );
 
-        await loadHospitals();
+        const numRejId = Number(id);
+        if (Array.isArray(window.allLoadedHospitals)) {
+            const target = window.allLoadedHospitals.find(h => Number(h.id) === numRejId);
+            if (target) {
+                target.certificate_verification_status = "REJECTED";
+                target.rejection_reason = reason;
+            }
+            try {
+                localStorage.setItem("qarovia_cache_admin_hospitals", JSON.stringify(window.allLoadedHospitals));
+            } catch (e) {}
+            if (typeof renderHospitalsTable === "function") {
+                renderHospitalsTable(window.allLoadedHospitals);
+            }
+        }
+
+        loadHospitals();
 
         return true;
 
@@ -2157,7 +2186,36 @@ async function hospitalAction(
             "success"
         );
 
-        await loadHospitals();
+        // Optimistic in-memory update for 0ms instant table responsiveness
+        const numActionId = Number(id);
+        if (Array.isArray(window.allLoadedHospitals)) {
+            if (action === "delete") {
+                window.allLoadedHospitals = window.allLoadedHospitals.filter(h => Number(h.id) !== numActionId);
+            } else {
+                const target = window.allLoadedHospitals.find(h => Number(h.id) === numActionId);
+                if (target) {
+                    if (action === "approve") {
+                        target.approval_status = "APPROVED";
+                    } else if (action === "reject") {
+                        target.approval_status = "REJECTED";
+                        target.rejection_reason = reason || "Rejected by admin";
+                    } else if (action === "publish") {
+                        target.is_published = true;
+                    } else if (action === "unpublish") {
+                        target.is_published = false;
+                    }
+                }
+            }
+            try {
+                localStorage.setItem("qarovia_cache_admin_hospitals", JSON.stringify(window.allLoadedHospitals));
+            } catch (e) {}
+            if (typeof renderHospitalsTable === "function") {
+                renderHospitalsTable(window.allLoadedHospitals);
+            }
+        }
+
+        // Silent background sync without blocking UI
+        loadHospitals();
 
     } catch (error) {
         console.error(

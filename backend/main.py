@@ -12,6 +12,7 @@ import secrets
 import uuid
 import smtplib
 import asyncio
+import threading
 import logging
 from email.message import EmailMessage
 from decimal import Decimal, ROUND_HALF_UP
@@ -4366,7 +4367,7 @@ def hospital_to_dict(hospital):
         "address": hospital.address,
         "description": hospital.description,
         "image_url": resolve_hospital_photo_url(hospital),
-        "photo_base64": bool(hospital.photo_base64),
+        "photo_base64": bool(hospital.__dict__.get("photo_base64")) if "photo_base64" in hospital.__dict__ else bool(hospital.image_url),
 
         "license_id": hospital.license_id,
 
@@ -4413,7 +4414,7 @@ def hospital_to_dict(hospital):
         "certificate_uploaded": bool(
             hospital.license_certificate
             or hospital.certificate_uploaded_at
-            or hospital.certificate_base64
+            or (hospital.__dict__.get("certificate_base64") if "certificate_base64" in hospital.__dict__ else False)
         ),
         "certificate_uploaded_at": (
             hospital.certificate_uploaded_at.isoformat()
@@ -6755,34 +6756,63 @@ def get_hospital_photo(filename: str, db: Session = Depends(get_db)):
     return Response(content=svg, media_type="image/svg+xml")
 
 
+# ============================================================
+# PUBLIC HOSPITALS DIRECTORY (HIGH-SPEED IN-MEMORY CACHED)
+# ============================================================
+_PUBLIC_HOSPITALS_CACHE = {}
+_PUBLIC_HOSPITALS_CACHE_TTL = 60.0
+
+def get_cached_public_hospitals():
+    item = _PUBLIC_HOSPITALS_CACHE.get("all")
+    if item:
+        ts, data = item
+        if (time.time() - ts) < _PUBLIC_HOSPITALS_CACHE_TTL:
+            return data
+    return None
+
+def set_cached_public_hospitals(data):
+    _PUBLIC_HOSPITALS_CACHE["all"] = (time.time(), data)
+
+def invalidate_public_hospitals_cache():
+    _PUBLIC_HOSPITALS_CACHE.clear()
+
+
 @app.get("/hospitals")
 def get_hospitals(
+    response: Response = None,
     db: Session = Depends(get_db),
 ):
+    cached = get_cached_public_hospitals()
+    if cached is not None:
+        if response:
+            response.headers["Cache-Control"] = "public, max-age=60"
+            response.headers["X-Cache"] = "HIT"
+        return cached
 
     hospitals = (
         db.query(Hospital)
-        .options(defer(Hospital.photo_base64))
+        .options(
+            defer(Hospital.certificate_base64),
+            defer(Hospital.photo_base64),
+        )
         .filter(
-            Hospital.approval_status ==
-            "APPROVED",
-
-            Hospital.is_published ==
-            True,
-
-            Hospital.is_deleted ==
-            False,
+            Hospital.approval_status == "APPROVED",
+            Hospital.is_published == True,
+            Hospital.is_deleted == False,
         )
-        .order_by(
-            Hospital.name.asc()
-        )
+        .order_by(Hospital.name.asc())
         .all()
     )
 
-    return [
-    public_hospital_to_dict(hospital)
-    for hospital in hospitals
-]
+    data = [
+        public_hospital_to_dict(hospital)
+        for hospital in hospitals
+    ]
+    set_cached_public_hospitals(data)
+    if response:
+        response.headers["Cache-Control"] = "public, max-age=60"
+        response.headers["X-Cache"] = "MISS"
+    return data
 
 # ============================================================
 # GET HOSPITAL BY ID
@@ -6810,6 +6840,7 @@ def invalidate_hospital_cache(hosp_id: Optional[int] = None):
         _HOSPITAL_CACHE.pop(hosp_id, None)
     else:
         _HOSPITAL_CACHE.clear()
+    invalidate_public_hospitals_cache()
 
 @app.get("/hospitals/me")
 @app.get("/api/hospitals/me")
@@ -11580,7 +11611,7 @@ def admin_login(
 # ============================================================
 
 _ADMIN_HOSPITALS_CACHE = {}
-_ADMIN_HOSPITALS_CACHE_TTL = 30.0
+_ADMIN_HOSPITALS_CACHE_TTL = 60.0
 
 def get_cached_admin_hospitals():
     item = _ADMIN_HOSPITALS_CACHE.get("all")
@@ -11607,11 +11638,14 @@ def admin_get_hospitals(
         cached = get_cached_admin_hospitals()
         if cached is not None:
             if response:
-                response.headers["Cache-Control"] = "private, max-age=30"
+                response.headers["Cache-Control"] = "private, max-age=60"
                 response.headers["X-Cache"] = "HIT"
             return cached
 
-    query = db.query(Hospital)
+    query = db.query(Hospital).options(
+        defer(Hospital.certificate_base64),
+        defer(Hospital.photo_base64),
+    )
     if not include_deleted:
         query = query.filter(Hospital.is_deleted == False)
 
@@ -11621,51 +11655,51 @@ def admin_get_hospitals(
         .all()
     )
 
+    if not hospitals:
+        return []
+
+    hospital_ids = [h.id for h in hospitals]
+
+    # Batch counts across all hospitals in 3 simple GROUP BY queries:
+    doctor_counts = dict(
+        db.query(Doctor.hospital_id, func.count(Doctor.id))
+        .filter(Doctor.hospital_id.in_(hospital_ids), Doctor.is_deleted == False if hasattr(Doctor, 'is_deleted') else True)
+        .group_by(Doctor.hospital_id)
+        .all()
+    )
+
+    token_counts = dict(
+        db.query(Token.hospital_id, func.count(Token.id))
+        .filter(Token.hospital_id.in_(hospital_ids))
+        .group_by(Token.hospital_id)
+        .all()
+    )
+
+    paid_counts = dict(
+        db.query(Token.hospital_id, func.count(Token.id))
+        .filter(Token.hospital_id.in_(hospital_ids), Token.payment_status == "paid")
+        .group_by(Token.hospital_id)
+        .all()
+    )
+
     result = []
-
     for hospital in hospitals:
-        doctor_count = (
-            db.query(Doctor)
-            .filter(
-                Doctor.hospital_id == hospital.id
-            )
-            .count()
-        )
-
-        token_count = (
-            db.query(Token)
-            .filter(
-                Token.hospital_id == hospital.id
-            )
-            .count()
-        )
-
-        paid_count = (
-            db.query(Token)
-            .filter(
-                Token.hospital_id == hospital.id,
-                Token.payment_status == "paid",
-            )
-            .count()
-        )
-
         hospital_data = hospital_to_dict(hospital)
-
         hospital_data.update({
-            "doctor_count": doctor_count,
-            "token_count": token_count,
-            "paid_token_count": paid_count,
+            "doctor_count": doctor_counts.get(hospital.id, 0),
+            "token_count": token_counts.get(hospital.id, 0),
+            "paid_token_count": paid_counts.get(hospital.id, 0),
             "payment_account_name": hospital.payment_account_name,
             "payment_account_number": hospital.payment_account_number,
             "payment_ifsc": hospital.payment_ifsc,
             "payment_upi": hospital.payment_upi,
         })
-
         result.append(hospital_data)
 
-    set_cached_admin_hospitals(result)
+    if not include_deleted:
+        set_cached_admin_hospitals(result)
     if response:
-        response.headers["Cache-Control"] = "private, max-age=30"
+        response.headers["Cache-Control"] = "private, max-age=60"
         response.headers["X-Cache"] = "MISS"
 
     return result
@@ -11685,6 +11719,9 @@ def admin_get_hospital(
 
     hospital = (
         db.query(Hospital)
+        .options(
+            defer(Hospital.certificate_base64),
+        )
         .filter(
             Hospital.id ==
             hospital_id
@@ -11784,6 +11821,10 @@ def verify_hospital_certificate(
     db.commit()
     db.refresh(hospital)
 
+    invalidate_admin_hospitals_cache()
+    invalidate_public_hospitals_cache()
+    invalidate_hospital_cache(hospital.id)
+
     return {
         "success": True,
         "message": "Hospital certificate verified successfully",
@@ -11835,6 +11876,10 @@ def reject_hospital_certificate(
         details=f"Certificate rejection reason: {hospital.rejection_reason}"
     )
 
+    invalidate_admin_hospitals_cache()
+    invalidate_public_hospitals_cache()
+    invalidate_hospital_cache(hospital.id)
+
     if hospital.email:
         subj = f"Q-Arovia Notice: Certificate Rejected for {hospital.name}"
         body = f"""Dear {hospital.name} Administration,
@@ -11848,7 +11893,12 @@ Regards,
 Q-Arovia Verification Team
 """
         try:
-            send_qarovia_email(hospital.email, subj, body)
+            threading.Thread(
+                target=send_qarovia_email,
+                args=(hospital.email, subj),
+                kwargs={"text": body},
+                daemon=True,
+            ).start()
         except Exception as err:
             logging.warning("Certificate rejection email error: %s", err)
 
@@ -12028,6 +12078,10 @@ def approve_hospital(
     except Exception as ws_err:
         logging.warning("Hospital approve WS broadcast skipped: %s", ws_err)
 
+    invalidate_admin_hospitals_cache()
+    invalidate_public_hospitals_cache()
+    invalidate_hospital_cache(hospital.id)
+
     if hospital.email:
         subj = f"🎉 [Q-Arovia] Congratulations! {hospital.name} Has Been Verified & Approved"
         body = f"""Dear {hospital.name} Administration,
@@ -12081,10 +12135,15 @@ Q-Arovia Healthcare Administration Team
       Q-Arovia Healthcare Technologies • Automated Official Notification
     </div>
   </div>
-</body>
+ </body>
 </html>"""
         try:
-            send_qarovia_email(hospital.email, subj, text=body, html=email_html)
+            threading.Thread(
+                target=send_qarovia_email,
+                args=(hospital.email, subj),
+                kwargs={"text": body, "html": email_html},
+                daemon=True,
+            ).start()
         except Exception as mail_err:
             logging.warning("Hospital approval email error: %s", mail_err)
 
@@ -12147,6 +12206,10 @@ def reject_hospital(
         details=f"Reason: {hospital.rejection_reason}"
     )
 
+    invalidate_admin_hospitals_cache()
+    invalidate_public_hospitals_cache()
+    invalidate_hospital_cache(hospital.id)
+
     if hospital.email:
         subj = f"Q-Arovia Action Required: Hospital Registration Status for {hospital.name}"
         body = f"""Dear {hospital.name} Administration,
@@ -12161,7 +12224,12 @@ Regards,
 Q-Arovia Healthcare Compliance Team
 """
         try:
-            send_qarovia_email(hospital.email, subj, body)
+            threading.Thread(
+                target=send_qarovia_email,
+                args=(hospital.email, subj),
+                kwargs={"text": body},
+                daemon=True,
+            ).start()
         except Exception as err:
             logging.warning("Rejection email error: %s", err)
 
@@ -12213,6 +12281,10 @@ def publish_hospital(
         ))
     except Exception as ws_err:
         logging.warning("Hospital publish WS broadcast skipped: %s", ws_err)
+
+    invalidate_admin_hospitals_cache()
+    invalidate_public_hospitals_cache()
+    invalidate_hospital_cache(hospital.id)
 
     if hospital.email:
         subj = f"🚀 [Q-Arovia] Your Hospital {hospital.name} is Now Live & Published!"
@@ -12285,7 +12357,12 @@ Q-Arovia Healthcare Administration Team
 </body>
 </html>"""
         try:
-            send_qarovia_email(hospital.email, subj, text=body, html=email_html)
+            threading.Thread(
+                target=send_qarovia_email,
+                args=(hospital.email, subj),
+                kwargs={"text": body, "html": email_html},
+                daemon=True,
+            ).start()
         except Exception as mail_err:
             logging.warning("Hospital publish notification email failed: %s", mail_err)
 
@@ -12331,6 +12408,10 @@ def unpublish_hospital(
         ))
     except Exception as ws_err:
         logging.warning("Hospital unpublish WS broadcast skipped: %s", ws_err)
+
+    invalidate_admin_hospitals_cache()
+    invalidate_public_hospitals_cache()
+    invalidate_hospital_cache(hospital.id)
 
     return {
         "success": True,

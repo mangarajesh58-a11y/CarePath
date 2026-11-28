@@ -224,15 +224,43 @@ async function loadHospitals() {
     }
 
 
-    hospitalSelect.disabled = true;
+    const populateHospitalDropdown = (hospList) => {
+        hospitalSelect.innerHTML = `<option value="">Select Hospital</option>`;
+        if (!hospList || hospList.length === 0) {
+            hospitalSelect.innerHTML = `<option value="">No hospitals available</option>`;
+            updateFeeDisplay();
+            updatePaymentButton();
+            return;
+        }
+        hospList.forEach(function (h) {
+            const opt = document.createElement("option");
+            opt.value = h.id;
+            opt.textContent = h.city ? `${h.name} - ${h.city}` : h.name;
+            hospitalSelect.appendChild(opt);
+        });
+        hospitalSelect.disabled = false;
+    };
 
+    // 0ms SWR Cache Hydration
+    try {
+        const cachedRaw = localStorage.getItem("qarovia_cached_hospitals_cards");
+        if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (Array.isArray(cached) && cached.length > 0) {
+                hospitals = cached;
+                populateHospitalDropdown(cached);
+            }
+        }
+    } catch (e) {}
 
-    hospitalSelect.innerHTML = `
-        <option value="">
-            Loading hospitals...
-        </option>
-    `;
-
+    if (!hospitals || hospitals.length === 0) {
+        hospitalSelect.disabled = true;
+        hospitalSelect.innerHTML = `
+            <option value="">
+                Loading hospitals...
+            </option>
+        `;
+    }
 
     try {
 
@@ -254,16 +282,16 @@ async function loadHospitals() {
         );
 
 
-       if (!response.ok) {
+        if (!response.ok) {
 
-    throw new Error(
-        getErrorMessage(
-            data,
-            "Unable to load hospitals."
-        )
-    );
+            throw new Error(
+                getErrorMessage(
+                    data,
+                    "Unable to load hospitals."
+                )
+            );
 
-}
+        }
 
 
         hospitals =
@@ -271,60 +299,11 @@ async function loadHospitals() {
                 ? data
                 : data.hospitals || [];
 
+        try {
+            localStorage.setItem("qarovia_cached_hospitals_cards", JSON.stringify(hospitals));
+        } catch (e) {}
 
-        hospitalSelect.innerHTML = `
-            <option value="">
-                Select Hospital
-            </option>
-        `;
-
-
-        if (hospitals.length === 0) {
-
-            hospitalSelect.innerHTML = `
-                <option value="">
-                    No hospitals available
-                </option>
-            `;
-
-            updateFeeDisplay();
-
-            updatePaymentButton();
-
-            return;
-
-        }
-
-
-        hospitals.forEach(
-            function (hospital) {
-
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-
-                option.value =
-                    hospital.id;
-
-
-                option.textContent =
-                    hospital.city
-                        ? `${hospital.name} - ${hospital.city}`
-                        : hospital.name;
-
-
-                hospitalSelect.appendChild(
-                    option
-                );
-
-            }
-        );
-
-
-        hospitalSelect.disabled = false;
-
+        populateHospitalDropdown(hospitals);
 
     } catch (error) {
 
