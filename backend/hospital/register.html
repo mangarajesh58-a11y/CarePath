@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#071329">
-    <title>Hospital Partner Onboarding - Q-Arovia</title>
+    <title>Hospital Registration & Partner Portal - Q-Arovia</title>
 
     <link rel="icon" type="image/png" href="qarovia-ai-small.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +14,7 @@
     <style>
         :root {
             --bg-page: #071329;
-            --bg-card: rgba(13, 26, 51, 0.95);
+            --bg-card: rgba(13, 26, 51, 0.9);
             --bg-card-solid: #0d1a33;
             --bg-input: #091326;
             --border-card: rgba(38, 52, 81, 0.85);
@@ -42,23 +42,20 @@
                         radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.12) 0%, transparent 45%),
                         var(--bg-page);
             color: var(--text-main);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 32px 16px;
+            padding: 32px 16px 48px;
             -webkit-font-smoothing: antialiased;
         }
 
-        .notice-container {
+        .main-wrapper {
             width: 100%;
-            max-width: 560px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-card);
-            border-radius: 20px;
-            padding: 36px 32px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+            max-width: 820px;
+            margin: 0 auto;
+        }
+
+        /* HEADER HERO */
+        .portal-header {
             text-align: center;
-            backdrop-filter: blur(12px);
+            margin-bottom: 28px;
         }
 
         .brand-badge {
@@ -69,7 +66,8 @@
             border: 1px solid rgba(56, 189, 248, 0.35);
             padding: 8px 16px;
             border-radius: 999px;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
         }
 
         .brand-badge img {
@@ -86,166 +84,1885 @@
             letter-spacing: -0.2px;
         }
 
-        .icon-circle {
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            background: rgba(56, 189, 248, 0.12);
-            border: 1.5px solid rgba(56, 189, 248, 0.35);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            color: #38bdf8;
-            font-size: 32px;
+        .brand-badge .badge-tag {
+            font-size: 10px;
+            color: #34d399;
+            font-weight: 700;
+            background: rgba(16, 185, 129, 0.2);
+            padding: 2px 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            text-transform: uppercase;
         }
 
-        h1 {
-            font-size: 24px;
+        .portal-header h1 {
+            font-size: 32px;
             font-weight: 800;
             color: #f8fafc;
-            letter-spacing: -0.4px;
-            margin-bottom: 12px;
+            letter-spacing: -0.6px;
+            margin-bottom: 8px;
         }
 
-        p.desc {
-            font-size: 14px;
+        .portal-header p {
+            font-size: 14.5px;
             color: var(--text-muted);
-            line-height: 1.6;
+            max-width: 580px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        /* ONBOARDING PROGRESS STEPPER */
+        .stepper-nav {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
             margin-bottom: 24px;
         }
 
-        .workflow-box {
-            background: rgba(9, 19, 38, 0.7);
-            border: 1px solid rgba(38, 52, 81, 0.9);
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 24px;
-            text-align: left;
+        .step-pill {
+            background: rgba(13, 26, 51, 0.7);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 10px 8px;
+            text-align: center;
+            transition: all 0.2s;
         }
 
-        .workflow-box h4 {
-            font-size: 12.5px;
+        .step-pill.active {
+            border-color: rgba(56, 189, 248, 0.5);
+            background: rgba(2, 132, 199, 0.15);
+        }
+
+        .step-num {
+            font-size: 10.5px;
+            font-weight: 800;
+            color: #38bdf8;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .step-title {
+            font-size: 11.5px;
             font-weight: 700;
             color: #e2e8f0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* CARD CONTAINER */
+        .reg-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-card);
+            border-radius: 24px;
+            padding: 38px 36px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        /* SECTION HEADERS */
+        .section-header {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+            margin: 32px 0 18px 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(38, 52, 81, 0.7);
         }
 
-        .workflow-list {
-            list-style: none;
+        .section-header:first-of-type {
+            margin-top: 0;
+        }
+
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .si-hospital { background: rgba(2, 132, 199, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; }
+        .si-photo { background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(52, 211, 153, 0.4); color: #34d399; }
+        .si-license { background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; }
+        .si-payout { background: rgba(139, 92, 246, 0.2); border: 1px solid rgba(139, 92, 246, 0.4); color: #c084fc; }
+        .si-lock { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; }
+
+        .section-header h3 {
+            font-size: 17px;
+            font-weight: 800;
+            color: #f8fafc;
+            letter-spacing: -0.3px;
+        }
+
+        .section-header p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* FORM CONTROLS */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 7px;
+            width: 100%;
+        }
+
+        label {
             font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .workflow-list li {
+            font-weight: 700;
+            color: #cbd5e1;
+            letter-spacing: -0.1px;
             display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            line-height: 1.4;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .workflow-list li span.dot {
-            color: #38bdf8;
+        label .required {
+            color: #f87171;
             font-weight: 800;
         }
 
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+        input, textarea, select {
             width: 100%;
-            background: var(--primary-gradient);
-            color: #ffffff;
-            font-family: inherit;
-            font-size: 14.5px;
-            font-weight: 700;
-            padding: 13px 20px;
+            background: var(--bg-input);
+            border: 1.5px solid var(--border-card);
             border-radius: 12px;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+            padding: 13px 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: #f8fafc;
+            outline: none;
             transition: all 0.2s ease;
         }
 
-        .action-btn:hover {
-            opacity: 0.95;
-            transform: translateY(-1px);
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--border-focus);
+            background: #0d1a33;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
         }
 
-        .footer-note {
-            margin-top: 20px;
+        input::placeholder, textarea::placeholder {
+            color: #475569;
+            font-size: 13.5px;
+        }
+
+        textarea {
+            min-height: 85px;
+            resize: vertical;
+        }
+
+        .phone-hint, .hint {
             font-size: 12px;
             color: var(--text-dim);
+            line-height: 1.4;
+            margin-top: 4px;
         }
 
-        .footer-note a {
+        /* OTP VERIFICATION SECTION */
+        #otpSection {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 95, 70, 0.15) 100%);
+            border: 1.5px solid rgba(52, 211, 153, 0.45);
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-top: 10px;
+            animation: cpFadeDown 0.25s ease;
+        }
+
+        @keyframes cpFadeDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* FILE UPLOAD DROPZONE */
+        .file-upload-box {
+            background: rgba(9, 19, 38, 0.6);
+            border: 2px dashed rgba(56, 189, 248, 0.35);
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .file-upload-box:hover {
+            border-color: #38bdf8;
+            background: rgba(14, 29, 58, 0.85);
+        }
+
+        .photo-preview-container {
+            display: none;
+            margin-top: 12px;
+            background: #0d1a33;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .photo-preview-container img {
+            max-width: 100%;
+            max-height: 220px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .photo-preview-label {
+            font-size: 12px;
             color: #38bdf8;
-            text-decoration: none;
+            font-weight: 700;
+            margin-top: 6px;
         }
 
-        .footer-note a:hover {
+        /* SUBMIT BUTTON */
+        #registerButton {
+            height: 52px;
+            width: 100%;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 15.5px;
+            font-weight: 800;
+            letter-spacing: -0.2px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 18px rgba(2, 132, 199, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 30px;
+        }
+
+        #registerButton:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(2, 132, 199, 0.5);
+        }
+
+        #registerButton:active {
+            transform: scale(0.98);
+        }
+
+        #registerButton:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* NOTIFICATION MESSAGES */
+        #message {
+            display: none;
+            padding: 14px 16px;
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 600;
+            margin-top: 18px;
+            animation: cpFadeDown 0.2s ease;
+        }
+
+        #message.error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1.5px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        #message.success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1.5px solid rgba(52, 211, 153, 0.4);
+            color: #86efac;
+        }
+
+        /* FOOTER LOGIN */
+        .login-link {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .login-link a {
+            color: #38bdf8;
+            font-weight: 800;
+            text-decoration: none;
+            margin-left: 6px;
+            transition: all 0.2s;
+        }
+
+        .login-link a:hover {
+            color: #7dd3fc;
             text-decoration: underline;
         }
+
+        @media (max-width: 700px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .stepper-nav {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .step-pill:nth-child(4), .step-pill:nth-child(5) {
+                display: none;
+            }
+            .reg-card {
+                padding: 24px 18px;
+                border-radius: 18px;
+            }
+            .portal-header h1 {
+                font-size: 25px;
+            }
+        }
     </style>
+    <script src="./qarovia-instant-nav.js"></script>
 </head>
+
 <body>
 
-    <div class="notice-container">
+<div class="main-wrapper">
+
+    <!-- HEADER -->
+    <header class="portal-header">
         <div class="brand-badge">
-            <img src="qarovia-ai-small.png" alt="Q-Arovia AI" onerror="this.style.display='none'">
-            <span>Q-Arovia Partner Portal</span>
+            <img src="qarovia-ai-small.png" alt="Q-Arovia AI Logo">
+            <span>Q-Arovia</span>
+            <span class="badge-tag">Partner Onboarding</span>
         </div>
+        <h1>Hospital & Clinic Registration</h1>
+        <p>Join 100+ verified healthcare institutions offering frictionless zero-wait OPD token bookings.</p>
+    </header>
 
-        <div class="icon-circle">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                <path d="M9 12l2 2 4-4"/>
-            </svg>
+    <!-- STEPPER HIGHLIGHT -->
+    <div class="stepper-nav">
+        <div class="step-pill active">
+            <span class="step-num">01</span>
+            <span class="step-title">Hospital Info</span>
         </div>
+        <div class="step-pill active">
+            <span class="step-num">02</span>
+            <span class="step-title">Facility Photo</span>
+        </div>
+        <div class="step-pill active">
+            <span class="step-num">03</span>
+            <span class="step-title">License & Cert</span>
+        </div>
+        <div class="step-pill active">
+            <span class="step-num">04</span>
+            <span class="step-title">Token & Payout</span>
+        </div>
+        <div class="step-pill active">
+            <span class="step-num">05</span>
+            <span class="step-title">Admin Access</span>
+        </div>
+    </div>
 
-        <h1>Hospital Partner Onboarding</h1>
-        <p class="desc">
-            Direct self-registration is closed. Hospital onboarding and portal access are strictly managed through our verified administrative compliance workflow to maintain clinical verification and safety standards.
-        </p>
+    <!-- MAIN REGISTRATION CARD -->
+    <main class="reg-card">
+        <form id="hospitalRegisterForm" enctype="multipart/form-data">
 
-        <div class="workflow-box">
-            <h4>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                Partner Onboarding Process
+            <!-- SECTION 1: HOSPITAL INFORMATION -->
+            <div class="section-header">
+                <div class="section-icon si-hospital">🏥</div>
+                <div>
+                    <h3>Hospital Information & Contact</h3>
+                    <p>Enter the legal name, contact numbers, and physical facility address</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group form-full">
+                    <label for="name">
+                        <span>Hospital Name</span>
+                        <span class="required">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="e.g. Sree Care Multi-Speciality Hospital"
+                        autocomplete="organization"
+                        required
+                    >
+                </div>
+
+                <div class="form-group form-full">
+                    <label for="email">
+                        <span>Official Hospital Email</span>
+                        <span class="required">*</span>
+                        <button
+                            type="button"
+                            id="btnSendHospitalOtp"
+                            onclick="handleSendHospitalOtp()"
+                            style="background: none; border: none; color: #38bdf8; font-weight: 700; font-size: 12px; cursor: pointer; text-decoration: underline;"
+                        >
+                            Send OTP
+                        </button>
+                    </label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="hospital@qarovia.in"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <!-- EMAIL OTP VERIFICATION BOX -->
+                <div id="otpSection" class="form-full" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 13px; font-weight: 700; color: #34d399;" id="otpStatusText">Enter 6-digit verification code sent to hospital email</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input
+                            type="text"
+                            id="regOtpInput"
+                            placeholder="••••••"
+                            maxlength="6"
+                            pattern="[0-9]{6}"
+                            inputmode="numeric"
+                            style="flex: 1; height: 44px; text-align: center; letter-spacing: 4px; font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 800; color: #34d399;"
+                        >
+                        <button
+                            type="button"
+                            id="btnVerifyHospitalOtp"
+                            onclick="handleVerifyHospitalOtp()"
+                            style="height: 44px; padding: 0 18px; background: #10b981; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; white-space: nowrap;"
+                        >
+                            Verify Code
+                        </button>
+                    </div>
+                    <div id="otpFeedback" style="font-size: 12px; margin-top: 8px; display: none;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">
+                        <span>Hospital Phone Number</span>
+                        <span class="required">*</span>
+                    </label>
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        placeholder="e.g. 9876543210"
+                        autocomplete="tel"
+                        inputmode="tel"
+                        required
+                    >
+                    <span class="phone-hint">Official contact number shown to patients for OPD inquiries.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="city">
+                        <span>City / District</span>
+                        <span class="required">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="city"
+                        name="city"
+                        placeholder="e.g. Hyderabad"
+                        required
+                    >
+                </div>
+
+                <div class="form-group form-full">
+                    <label for="address">
+                        <span>Complete Street Address</span>
+                        <span class="required">*</span>
+                    </label>
+                    <textarea
+                        id="address"
+                        name="address"
+                        placeholder="Building name, landmark, road, pin code"
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="form-group form-full">
+                    <label for="description">
+                        <span>Hospital Description & Key Departments</span>
+                    </label>
+                    <textarea
+                        id="description"
+                        name="description"
+                        placeholder="e.g. 24/7 Emergency, Cardiology, General Medicine, Pediatrics, Orthopedics..."
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- SECTION 2: HOSPITAL PHOTO -->
+            <div class="section-header">
+                <div class="section-icon si-photo">📷</div>
+                <div>
+                    <h3>Hospital Facility Photo</h3>
+                    <p>High quality photo of hospital front entrance or reception</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="hospital_photo">
+                    <span>Upload Facility Photo</span>
+                    <span class="required">*</span>
+                </label>
+                <div class="file-upload-box">
+                    <input
+                        type="file"
+                        id="hospital_photo"
+                        name="hospital_photo"
+                        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                        required
+                        style="background: transparent; border: none; padding: 0; color: #94a3bd; font-size: 13px;"
+                    >
+                </div>
+                <span class="hint">Accepted formats: JPG, JPEG, PNG, WEBP (Max 5 MB).</span>
+
+                <div id="photoPreviewContainer" class="photo-preview-container">
+                    <img id="photoPreview" src="" alt="Hospital photo preview">
+                    <div class="photo-preview-label">✓ Photo selected & ready for upload</div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: LICENSE & CERTIFICATE -->
+            <div class="section-header">
+                <div class="section-icon si-license">📄</div>
+                <div>
+                    <h3>Clinical License & Verification</h3>
+                    <p>Official registration credentials verified by health authorities</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="registration_number">
+                        <span>Registration / License #</span>
+                        <span class="required">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="registration_number"
+                        name="registration_number"
+                        placeholder="e.g. REG/TS/2024/0981"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="issuing_authority">
+                        <span>Issuing Authority</span>
+                        <span class="required">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="issuing_authority"
+                        name="issuing_authority"
+                        placeholder="e.g. DM&HO / State Health Dept"
+                        required
+                    >
+                </div>
+
+                <div class="form-group form-full">
+                    <label for="license_expiry_date">
+                        <span>License Expiry Date (Optional)</span>
+                    </label>
+                    <input
+                        type="date"
+                        id="license_expiry_date"
+                        name="license_expiry_date"
+                    >
+                </div>
+
+                <div class="form-group form-full">
+                    <label for="license_certificate">
+                        <span>Hospital Registration Certificate Document</span>
+                        <span class="required">*</span>
+                    </label>
+
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
+                        <button
+                            type="button"
+                            onclick="openCertCameraModal('license_certificate', 'regCertPreviewBox')"
+                            style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 8px 16px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;"
+                        >
+                            📸 Scan with Camera
+                        </button>
+                        <span class="hint" style="margin: 0;">or choose PDF / Image below:</span>
+                    </div>
+
+                    <input
+                        type="file"
+                        id="license_certificate"
+                        name="license_certificate"
+                        accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                        capture="environment"
+                        required
+                    >
+
+                    <div id="regCertPreviewBox" style="display:none; margin-top:8px; padding:10px 14px; background:rgba(2, 132, 199, 0.15); border:1px solid rgba(56, 189, 248, 0.35); border-radius:10px; font-size:13px; color:#38bdf8;"></div>
+
+                    <span class="hint" style="margin-top:6px; display:block;">
+                        Accepted: PDF, JPG, PNG (Max 10 MB). <strong style="color: #f87171;">🔒 Certificates are cryptographically secured and locked once verified.</strong>
+                    </span>
+                </div>
+            </div>
+
+            <!-- SECTION 4: TOKEN & PAYOUTS -->
+            <div class="section-header">
+                <div class="section-icon si-payout">💳</div>
+                <div>
+                    <h3>OPD Token Fee & Payout Settlement</h3>
+                    <p>Configure patient token pricing and automated bank settlements</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group form-full">
+                    <label for="token_fee">
+                        <span>Standard OPD Token Fee (₹)</span>
+                        <span class="required">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        id="token_fee"
+                        name="token_fee"
+                        min="0"
+                        step="1"
+                        value="50"
+                        placeholder="e.g. 50"
+                        required
+                    >
+                    <span class="hint">Patient booking charge per token (can be adjusted per doctor later).</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="account_name">Bank Account Holder Name</label>
+                    <input
+                        type="text"
+                        id="account_name"
+                        name="account_name"
+                        placeholder="Hospital Legal Account Name"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="account_number">Bank Account Number</label>
+                    <input
+                        type="password"
+                        id="account_number"
+                        name="account_number"
+                        placeholder="Bank Account Number"
+                        inputmode="numeric"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="ifsc">IFSC Code</label>
+                    <input
+                        type="text"
+                        id="ifsc"
+                        name="ifsc"
+                        placeholder="e.g. SBIN0001234"
+                        maxlength="11"
+                        autocomplete="off"
+                    >
+                    <span id="ifscFeedback" class="hint" style="display:none; font-weight:700;"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="upi">UPI ID (Optional)</label>
+                    <input
+                        type="text"
+                        id="upi"
+                        name="upi"
+                        placeholder="hospital@upi"
+                        autocomplete="off"
+                    >
+                </div>
+            </div>
+
+            <!-- SECTION 5: SECURITY -->
+            <div class="section-header">
+                <div class="section-icon si-lock">🔐</div>
+                <div>
+                    <h3>Hospital Portal Security</h3>
+                    <p>Administrative credentials to manage doctors and live queues</p>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="password">
+                        <span>Password</span>
+                        <span class="required">*</span>
+                    </label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Minimum 6 characters"
+                        minlength="6"
+                        autocomplete="new-password"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm_password">
+                        <span>Confirm Password</span>
+                        <span class="required">*</span>
+                    </label>
+                    <input
+                        type="password"
+                        id="confirm_password"
+                        name="confirm_password"
+                        placeholder="Re-enter password"
+                        minlength="6"
+                        autocomplete="new-password"
+                        required
+                    >
+                </div>
+            </div>
+
+            <button type="submit" id="registerButton">
+                <span>Register Hospital & Submit for Verification</span>
+                <span>→</span>
+            </button>
+
+            <!-- FEEDBACK MESSAGE -->
+            <div id="message" aria-live="polite" role="status"></div>
+        </form>
+
+        <div class="login-link">
+            Already registered with Q-Arovia? <a href="index.html">Hospital Portal Sign In →</a>
+        </div>
+    </main>
+</div>
+
+<!-- =========================================================
+     LIVE CERTIFICATE SCAN CAMERA MODAL
+========================================================= -->
+<div id="certCameraModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99999; flex-direction:column; align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#0d1a33; border:1px solid rgba(56, 189, 248, 0.4); border-radius:18px; max-width:540px; width:100%; overflow:hidden; box-shadow:0 25px 60px rgba(0,0,0,0.7);">
+        <div style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:white; padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
+            <strong style="font-size:15px;">📸 Scan Hospital Certificate</strong>
+            <button type="button" onclick="closeCertCamera()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer; line-height:1;">✕</button>
+        </div>
+        <div style="padding:16px; display:flex; flex-direction:column; align-items:center; gap:12px;">
+            <div style="position:relative; width:100%; max-height:360px; background:black; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+                <video id="certCameraVideo" autoplay playsinline style="width:100%; max-height:360px; object-fit:cover;"></video>
+                <img id="certCameraSnapshot" style="display:none; width:100%; max-height:360px; object-fit:contain;" alt="Snapshot preview">
+                <canvas id="certCameraCanvas" style="display:none;"></canvas>
+            </div>
+            <div style="display:flex; gap:10px; width:100%; justify-content:center;">
+                <button type="button" id="btnSnapCert" onclick="captureCertSnapshot()" style="padding:10px 22px; background:#10b981; color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer;">
+                    📸 Capture Document
+                </button>
+                <button type="button" id="btnRetakeCert" onclick="retakeCertSnapshot()" style="display:none; padding:10px 18px; background:#64748b; color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer;">
+                    🔄 Retake
+                </button>
+                <button type="button" id="btnUseCert" onclick="useCertSnapshot()" style="display:none; padding:10px 22px; background:#0284c7; color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer;">
+                    ✓ Attach Document
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+"use strict";
+
+
+/* =========================================================
+   CAREPATH API
+========================================================= */
+
+const isLocalDevDesktop =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+const API_URL = isLocalDevDesktop
+    ? "http://127.0.0.1:8000"
+    : "https://carepath-3q9q.onrender.com";
+
+/* Pre-warm Render backend immediately on page load */
+try {
+    fetch(`${API_URL}/health`).catch(() => {});
+} catch (_) {}
+
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
+const form = document.getElementById("hospitalRegisterForm");
+
+const message = document.getElementById("message");
+
+const registerButton =
+    document.getElementById("registerButton");
+
+const hospitalPhotoInput =
+    document.getElementById("hospital_photo");
+
+const photoPreviewContainer =
+    document.getElementById("photoPreviewContainer");
+
+const photoPreview =
+    document.getElementById("photoPreview");
+
+const certificateInput =
+    document.getElementById("license_certificate");
+
+const regCertInput = document.getElementById("license_certificate");
+if (regCertInput) {
+    regCertInput.addEventListener("change", function () {
+        const previewElem = document.getElementById("regCertPreviewBox");
+        if (this.files && this.files[0] && previewElem) {
+            const f = this.files[0];
+            previewElem.style.display = "block";
+            const isImg = f.type.startsWith("image/");
+            previewElem.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    ${isImg ? `<img src="${URL.createObjectURL(f)}" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid #94a3b8;">` : `<span style="font-size:24px;">📄</span>`}
+                    <div>
+                        <strong style="color:#1e40af; font-size:13px;">✓ Document Selected:</strong>
+                        <div style="font-size:12px; color:#475569;">${escapeHtml(f.name)} (${Math.round(f.size / 1024)} KB)</div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+}
+
+
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+function showMessage(text, type = "error") {
+
+    message.textContent = text;
+
+    message.className = type;
+}
+
+
+/* =========================================================
+   GET INPUT VALUE
+========================================================= */
+
+function getValue(id) {
+
+    const element = document.getElementById(id);
+
+    return element
+        ? element.value.trim()
+        : "";
+}
+
+
+/* =========================================================
+   IFSC CODE REALTIME HELPER
+========================================================= */
+const ifscInput = document.getElementById("ifsc");
+const ifscFeedback = document.getElementById("ifscFeedback");
+if (ifscInput) {
+    ifscInput.addEventListener("input", function () {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        const val = this.value;
+        if (!ifscFeedback) return;
+
+        if (val.startsWith("SBI0") || (val.startsWith("SBI") && val.length > 3 && val[3] !== "N")) {
+            ifscFeedback.style.display = "block";
+            ifscFeedback.style.color = "#ea580c";
+            ifscFeedback.textContent = "⚠️ Note: State Bank of India IFSC starts with 'SBIN' (e.g. SBIN0001124). Please check for missing 'N'.";
+        } else if (val.length === 11 && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(val)) {
+            ifscFeedback.style.display = "block";
+            ifscFeedback.style.color = "#dc2626";
+            ifscFeedback.textContent = "⚠️ IFSC must be 11 characters: 4 letters, 5th character '0', and 6 branch digits.";
+        } else if (val.length === 11 && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(val)) {
+            ifscFeedback.style.display = "block";
+            ifscFeedback.style.color = "#16a34a";
+            ifscFeedback.textContent = "✓ Valid IFSC format";
+        } else {
+            ifscFeedback.style.display = "none";
+        }
+    });
+}
+
+/* =========================================================
+   PHONE VALIDATION
+========================================================= */
+
+function validatePhone(phone) {
+
+    /*
+     * Allows:
+     * +919876543210
+     * 9876543210
+     * 0919876543210
+     * spaces / hyphens / brackets
+     */
+
+    const cleaned = phone.replace(
+        /[\s\-()]/g,
+        ""
+    );
+
+    return /^\+?[0-9]{10,15}$/.test(cleaned);
+}
+
+
+/* =========================================================
+   HOSPITAL PHOTO PREVIEW
+========================================================= */
+
+hospitalPhotoInput.addEventListener(
+    "change",
+    function () {
+
+        const file = this.files[0];
+
+        photoPreviewContainer.style.display = "none";
+
+        photoPreview.src = "";
+
+        if (!file) {
+            return;
+        }
+
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+
+            showMessage(
+                "Hospital photo must be JPG, JPEG, PNG, or WEBP.",
+                "error"
+            );
+
+            this.value = "";
+
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+
+            showMessage(
+                "Hospital photo must be 5 MB or smaller.",
+                "error"
+            );
+
+            this.value = "";
+
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+
+            photoPreview.src =
+                event.target.result;
+
+            photoPreviewContainer.style.display =
+                "block";
+        };
+
+        reader.readAsDataURL(file);
+    }
+);
+
+
+/* =========================================================
+   EMAIL OTP VERIFICATION
+========================================================= */
+
+let isHospitalEmailVerified = false;
+let verifiedHospitalEmail = "";
+
+const hospitalEmailInput = document.getElementById("email");
+if (hospitalEmailInput) {
+    hospitalEmailInput.addEventListener("input", function() {
+        if (isHospitalEmailVerified && this.value.trim().toLowerCase() !== verifiedHospitalEmail) {
+            isHospitalEmailVerified = false;
+            const btnSend = document.getElementById("btnSendHospitalOtp");
+            if (btnSend) {
+                btnSend.style.display = "inline";
+                btnSend.textContent = "Send OTP";
+                btnSend.disabled = false;
+            }
+            const btnVerify = document.getElementById("btnVerifyHospitalOtp");
+            if (btnVerify) {
+                btnVerify.textContent = "Verify Code";
+                btnVerify.disabled = false;
+                btnVerify.style.background = "#16a34a";
+            }
+            const otpSection = document.getElementById("otpSection");
+            if (otpSection) otpSection.style.display = "none";
+            const otpInput = document.getElementById("regOtpInput");
+            if (otpInput) {
+                otpInput.disabled = false;
+                otpInput.value = "";
+            }
+        }
+    });
+}
+
+async function handleSendHospitalOtp() {
+    const email = getValue("email").toLowerCase();
+    const btnSend = document.getElementById("btnSendHospitalOtp");
+    const otpSection = document.getElementById("otpSection");
+    const otpFeedback = document.getElementById("otpFeedback");
+
+    if (!email || !email.includes("@")) {
+        showMessage("Please enter a valid hospital email address first.", "error");
+        document.getElementById("email").focus();
+        return;
+    }
+
+    btnSend.disabled = true;
+    btnSend.textContent = "Sending...";
+    otpFeedback.style.display = "none";
+
+    try {
+        const response = await fetch(`${API_URL}/registration/request-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                role: "hospital",
+                email: email
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "Unable to send verification code.");
+        }
+
+        otpSection.style.display = "block";
+        btnSend.textContent = "Resend OTP";
+        btnSend.disabled = false;
+
+        document.getElementById("regOtpInput").value = "";
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#0369a1";
+        otpFeedback.textContent = `✓ Verification code sent to ${email}. Please check your email inbox and spam folder.`;
+        showMessage("Verification code sent to your hospital email! Please check your inbox.", "success");
+    } catch (err) {
+        console.error("OTP send error:", err);
+        showMessage(err.message || "Failed to send verification code.", "error");
+        btnSend.disabled = false;
+        btnSend.textContent = "Send OTP";
+    }
+}
+
+async function handleVerifyHospitalOtp() {
+    const email = getValue("email").toLowerCase();
+    const otpInput = document.getElementById("regOtpInput");
+    const otp = otpInput.value.trim();
+    const btnVerify = document.getElementById("btnVerifyHospitalOtp");
+    const otpFeedback = document.getElementById("otpFeedback");
+
+    if (!otp || otp.length !== 6) {
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#dc2626";
+        otpFeedback.textContent = "Please enter the 6-digit verification code.";
+        return;
+    }
+
+    btnVerify.disabled = true;
+    btnVerify.textContent = "Verifying...";
+
+    try {
+        const response = await fetch(`${API_URL}/registration/verify-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                role: "hospital",
+                email: email,
+                otp: otp
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "Invalid or expired verification code.");
+        }
+
+        isHospitalEmailVerified = true;
+        verifiedHospitalEmail = email;
+
+        btnVerify.textContent = "✓ Verified";
+        btnVerify.style.background = "#16a34a";
+        btnVerify.disabled = true;
+        otpInput.disabled = true;
+
+        const btnSend = document.getElementById("btnSendHospitalOtp");
+        if (btnSend) btnSend.style.display = "none";
+
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#166534";
+        otpFeedback.textContent = "✓ Hospital email verified successfully!";
+        showMessage("Hospital email verified successfully!", "success");
+    } catch (err) {
+        console.error("OTP verify error:", err);
+        otpFeedback.style.display = "block";
+        otpFeedback.style.color = "#dc2626";
+        otpFeedback.textContent = err.message || "Verification failed.";
+        btnVerify.disabled = false;
+        btnVerify.textContent = "Verify Code";
+    }
+}
+
+/* =========================================================
+   BUILD FORM DATA
+========================================================= */
+
+function buildRegistrationFormData() {
+
+    const password =
+        document.getElementById("password").value;
+
+    const confirmPassword =
+        document.getElementById("confirm_password").value;
+
+    const certificate =
+        certificateInput.files[0];
+
+    const hospitalPhoto =
+        hospitalPhotoInput.files[0];
+
+    const tokenFee =
+        Number(
+            document.getElementById("token_fee").value
+        );
+
+
+    /* -----------------------------------------------------
+       REQUIRED FIELDS
+    ----------------------------------------------------- */
+
+    if (!isHospitalEmailVerified || verifiedHospitalEmail !== getValue("email").toLowerCase()) {
+        throw new Error("Please verify your hospital email with OTP before registering.");
+    }
+
+    if (
+        !getValue("name") ||
+        !getValue("email") ||
+        !getValue("phone") ||
+        !getValue("city") ||
+        !getValue("address") ||
+        !getValue("registration_number") ||
+        !getValue("issuing_authority")
+    ) {
+
+        throw new Error(
+            "Please complete all required fields."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       PHONE
+    ----------------------------------------------------- */
+
+    if (!validatePhone(getValue("phone"))) {
+
+        throw new Error(
+            "Please enter a valid hospital phone number."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       PASSWORD
+    ----------------------------------------------------- */
+
+    if (password.length < 6) {
+
+        throw new Error(
+            "Password must contain at least 6 characters."
+        );
+    }
+
+
+    if (password !== confirmPassword) {
+
+        throw new Error(
+            "Passwords do not match."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       TOKEN FEE
+    ----------------------------------------------------- */
+
+    if (
+        !Number.isFinite(tokenFee) ||
+        tokenFee < 0
+    ) {
+
+        throw new Error(
+            "Please enter a valid token fee."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       HOSPITAL PHOTO (Optional - can be added/updated later)
+    ----------------------------------------------------- */
+    if (hospitalPhoto) {
+        const allowedPhotoTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+        if (!allowedPhotoTypes.includes(hospitalPhoto.type)) {
+            throw new Error("Hospital photo must be JPG, JPEG, PNG, or WEBP.");
+        }
+        if (hospitalPhoto.size > 5 * 1024 * 1024) {
+            throw new Error("Hospital photo must be 5 MB or smaller.");
+        }
+    }
+
+
+    const allowedPhotoTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+
+    if (
+        !allowedPhotoTypes.includes(
+            hospitalPhoto.type
+        )
+    ) {
+
+        throw new Error(
+            "Hospital photo must be JPG, JPEG, PNG, or WEBP."
+        );
+    }
+
+
+    if (
+        hospitalPhoto.size >
+        5 * 1024 * 1024
+    ) {
+
+        throw new Error(
+            "Hospital photo must be 5 MB or smaller."
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       CERTIFICATE
+    ----------------------------------------------------- */
+
+    if (!certificate) {
+
+        throw new Error(
+            "Please upload the hospital registration certificate."
+        );
+    }
+
+
+    const certificateName =
+        certificate.name.toLowerCase();
+
+
+    if (
+        !/\.(pdf|jpe?g|png)$/i.test(
+            certificateName
+        )
+    ) {
+
+        throw new Error(
+            "Certificate must be PDF, JPG, JPEG, or PNG."
+        );
+    }
+
+
+    if (
+        certificate.size >
+        10 * 1024 * 1024
+    ) {
+
+        throw new Error(
+            "Certificate must be 10 MB or smaller."
+        );
+    }
+
+
+    /* =====================================================
+       FORM DATA
+    ===================================================== */
+
+    const data = new FormData();
+
+
+    data.append(
+        "name",
+        getValue("name")
+    );
+
+
+    data.append(
+        "email",
+        getValue("email").toLowerCase()
+    );
+
+
+    /*
+     * IMPORTANT:
+     * Hospital phone number is stored in the
+     * backend using this field.
+     */
+    data.append(
+        "phone",
+        getValue("phone")
+    );
+
+
+    data.append(
+        "city",
+        getValue("city")
+    );
+
+
+    data.append(
+        "address",
+        getValue("address")
+    );
+
+
+    data.append(
+        "description",
+        getValue("description")
+    );
+
+
+    data.append(
+        "registration_number",
+        getValue("registration_number")
+    );
+
+
+    data.append(
+        "issuing_authority",
+        getValue("issuing_authority")
+    );
+
+
+    data.append(
+        "password",
+        password
+    );
+
+
+    data.append(
+        "token_fee",
+        String(tokenFee)
+    );
+
+
+    /* -----------------------------------------------------
+       LICENSE EXPIRY
+    ----------------------------------------------------- */
+
+    const expiryDate =
+        document.getElementById(
+            "license_expiry_date"
+        ).value;
+
+
+    if (expiryDate) {
+
+        data.append(
+            "license_expiry_date",
+            expiryDate
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       CERTIFICATE
+    ----------------------------------------------------- */
+
+    data.append(
+        "license_certificate",
+        certificate
+    );
+
+
+    /* -----------------------------------------------------
+       HOSPITAL PHOTO
+    ----------------------------------------------------- */
+
+    data.append(
+        "hospital_photo",
+        hospitalPhoto
+    );
+
+    /* -----------------------------------------------------
+       PAYMENT / BANK DETAILS
+    ----------------------------------------------------- */
+    const accountNumber = getValue("account_number");
+    const ifscCode = getValue("ifsc").toUpperCase();
+    const upiId = getValue("upi");
+
+    if (accountNumber) {
+        data.append("account_number", accountNumber);
+    }
+    if (ifscCode) {
+        data.append("ifsc", ifscCode);
+    }
+    if (upiId) {
+        data.append("upi", upiId);
+    }
+
+    return data;
+}
+
+
+/* =========================================================
+   READ API RESPONSE
+========================================================= */
+
+async function readResponse(response) {
+
+    const data =
+        await response
+            .json()
+            .catch(() => ({}));
+
+
+    if (!response.ok) {
+
+        let error =
+            data.detail ||
+            data.message ||
+            "Registration failed.";
+
+
+        if (Array.isArray(data.detail)) {
+
+            error =
+                data.detail
+                    .map(function (item) {
+                        return item.msg;
+                    })
+                    .join("; ");
+        }
+
+
+        throw new Error(error);
+    }
+
+
+    return data;
+}
+
+
+/* =========================================================
+   FORM SUBMIT
+========================================================= */
+
+form.addEventListener(
+    "submit",
+    async function (event) {
+
+        event.preventDefault();
+
+
+        if (registerButton.disabled) {
+
+            return;
+        }
+
+
+        registerButton.disabled = true;
+        registerButton.textContent = "Registering Hospital (connecting to server)...";
+        showMessage("");
+
+        try {
+            /* ---------------------------------------------
+               BUILD DATA
+            --------------------------------------------- */
+            const formData = buildRegistrationFormData();
+
+            /* ---------------------------------------------
+               SEND TO BACKEND (with auto-retry if waking from sleep)
+            --------------------------------------------- */
+            let response;
+            try {
+                response = await fetch(`${API_URL}/hospitals`, {
+                    method: "POST",
+                    body: formData
+                });
+            } catch (netErr) {
+                console.warn("First registration attempt failed, server may be waking up:", netErr);
+                registerButton.textContent = "Server waking up... Retrying (attempt 2 of 2)...";
+                await new Promise(r => setTimeout(r, 2500));
+                response = await fetch(`${API_URL}/hospitals`, {
+                    method: "POST",
+                    body: formData
+                });
+            }
+
+            const data = await readResponse(response);
+
+            /* ---------------------------------------------
+               SUCCESS
+            --------------------------------------------- */
+            const hospName = getValue("name") || "Hospital Partner";
+            const nameEl = document.getElementById("successHospitalName");
+            if (nameEl) nameEl.textContent = hospName;
+            const sModal = document.getElementById("regSuccessModal");
+            if (sModal) sModal.style.display = "flex";
+
+            showMessage(
+                data.message ||
+                "Hospital registration submitted successfully. Waiting for admin approval.",
+                "success"
+            );
+
+            /* Reset form */
+            form.reset();
+            photoPreview.src = "";
+            photoPreviewContainer.style.display = "none";
+            if (ifscFeedback) ifscFeedback.style.display = "none";
+
+        } catch (error) {
+            console.error("Hospital registration error:", error);
+
+            showMessage(
+                error instanceof TypeError
+                    ? "Cannot connect to the Q-Arovia server. The server is currently waking up from sleep (takes ~30-45 seconds on Render free tier). Please wait a few seconds and tap 'Register Hospital' again."
+                    : error.message,
+                "error"
+            );
+
+        } finally {
+            registerButton.disabled = false;
+            registerButton.textContent = "Register Hospital";
+        }
+    }
+);
+</script>
+
+
+<!-- =========================================================
+     CAMERA SCANNER MODAL & CONTROLLER
+========================================================= -->
+<div id="certCameraModal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:#1e293b; color:#fff; border-radius:16px; width:100%; max-width:520px; overflow:hidden; box-shadow:0 25px 50px -12px rgba(0,0,0,0.7); display:flex; flex-direction:column; position:relative;">
+        <div style="padding:14px 18px; border-bottom:1px solid #334155; display:flex; justify-content:space-between; align-items:center;">
+            <h4 style="margin:0; font-size:16px; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+                📸 Camera Scanner
             </h4>
-            <ul class="workflow-list">
-                <li><span class="dot">•</span> Clinical verification of registration & state medical license.</li>
-                <li><span class="dot">•</span> Dedicated administrative provisioning of hospital manager credentials.</li>
-                <li><span class="dot">•</span> Complete department, OPD doctor, and token queue configuration.</li>
+            <button type="button" onclick="closeCertCamera()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer; line-height:1; padding:0 4px;" aria-label="Close">&times;</button>
+        </div>
+        
+        <div style="position:relative; width:100%; background:#090d16; min-height:280px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            <video id="certCameraVideo" autoplay playsinline muted style="width:100%; max-height:360px; object-fit:cover; display:block;"></video>
+            <canvas id="certCameraCanvas" style="display:none;"></canvas>
+            <img id="certCameraSnapshot" style="display:none; width:100%; max-height:360px; object-fit:contain; background:#000;" alt="Captured Certificate">
+            
+            <div id="certCameraGuide" style="position:absolute; inset:20px; border:2px dashed rgba(255,255,255,0.75); border-radius:12px; pointer-events:none; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 9999px rgba(0,0,0,0.25);">
+                <span style="background:rgba(0,0,0,0.7); color:#fff; font-size:12px; font-weight:600; padding:6px 14px; border-radius:20px; letter-spacing:0.3px;">Position certificate within frame</span>
+            </div>
+
+            <div id="certCameraStatus" style="display:none; position:absolute; inset:16px; margin:auto; max-height:180px; padding:18px; text-align:center; color:#f87171; font-size:13px; background:rgba(15,23,42,0.95); border:1px solid #ef4444; border-radius:12px; flex-direction:column; justify-content:center; align-items:center; z-index:10;"></div>
+        </div>
+
+        <div style="padding:14px 18px; background:#1e293b; display:flex; gap:10px; justify-content:flex-end; align-items:center; border-top:1px solid #334155;">
+            <button type="button" onclick="closeCertCamera()" style="padding:9px 16px; background:#334155; color:#cbd5e1; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">Cancel</button>
+            <button type="button" id="certCamCaptureBtn" onclick="captureCertSnapshot()" style="padding:9px 20px; background:#2563eb; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">📸 Capture Photo</button>
+            <button type="button" id="certCamRetakeBtn" onclick="retakeCertSnapshot()" style="display:none; padding:9px 16px; background:#475569; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">🔄 Retake</button>
+            <button type="button" id="certCamUseBtn" onclick="useCertSnapshot()" style="display:none; padding:9px 20px; background:#16a34a; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600;">✓ Use This Photo</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ==================================
+   CAMERA SCANNER & UTILS
+================================== */
+let certCameraStream = null;
+let activeCertInputId = null;
+let activeCertPreviewId = null;
+let capturedCertBlob = null;
+
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+async function openCertCameraModal(targetInputId, previewContainerId) {
+    activeCertInputId = targetInputId;
+    activeCertPreviewId = previewContainerId;
+    capturedCertBlob = null;
+
+    const modal = document.getElementById("certCameraModal");
+    const video = document.getElementById("certCameraVideo");
+    const canvas = document.getElementById("certCameraCanvas");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const statusBox = document.getElementById("certCameraStatus");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (!modal) return;
+
+    modal.style.display = "flex";
+    if (snapshot) snapshot.style.display = "none";
+    if (canvas) canvas.style.display = "none";
+    if (video) video.style.display = "block";
+    if (guide) guide.style.display = "flex";
+    if (captureBtn) captureBtn.style.display = "inline-flex";
+    if (retakeBtn) retakeBtn.style.display = "none";
+    if (useBtn) useBtn.style.display = "none";
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (statusBox) {
+            statusBox.style.display = "flex";
+            statusBox.innerHTML = `
+                <div style="font-size:24px; margin-bottom:6px;">⚠️</div>
+                <strong style="color:#f87171; font-size:14px;">Camera Access Not Supported</strong>
+                <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">Direct camera access requires a secure connection (HTTPS) or a supported modern browser. Please choose an image or document from your device files.</p>
+            `;
+        }
+        if (captureBtn) captureBtn.style.display = "none";
+        return;
+    }
+
+    if (statusBox) {
+        statusBox.style.display = "flex";
+        statusBox.innerHTML = `
+            <div style="font-size:24px; margin-bottom:6px;">📷</div>
+            <strong style="color:#60a5fa; font-size:14px;">Requesting Camera Permission...</strong>
+            <p style="margin:6px 0 0; color:#94a3b8; font-size:12px;">Please tap "Allow" when prompted by your browser to scan your certificate.</p>
+        `;
+    }
+
+    try {
+        certCameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        });
+
+        if (video) {
+            video.srcObject = certCameraStream;
+            await video.play();
+        }
+        if (statusBox) statusBox.style.display = "none";
+    } catch (err) {
+        console.error("Camera access error:", err);
+        if (statusBox) {
+            statusBox.style.display = "flex";
+            if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">🔒</div>
+                    <strong style="color:#f87171; font-size:14px;">Camera Permission Denied</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">Camera permission was denied. Please allow camera permissions in your browser or phone site settings, or use the file picker to choose a document.</p>
+                `;
+            } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">📷</div>
+                    <strong style="color:#f87171; font-size:14px;">No Camera Found</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">No active camera was detected on this device. Please select a certificate file from your device storage.</p>
+                `;
+            } else {
+                statusBox.innerHTML = `
+                    <div style="font-size:24px; margin-bottom:6px;">⚠️</div>
+                    <strong style="color:#f87171; font-size:14px;">Camera Error</strong>
+                    <p style="margin:6px 0 0; color:#cbd5e1; font-size:12px;">${escapeHtml(err.message || err.name)}. Please select a file from your device.</p>
+                `;
+            }
+        }
+        if (captureBtn) captureBtn.style.display = "none";
+    }
+}
+
+function captureCertSnapshot() {
+    const video = document.getElementById("certCameraVideo");
+    const canvas = document.getElementById("certCameraCanvas");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (!video || !canvas || !snapshot) return;
+
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+        if (!blob) return;
+        capturedCertBlob = blob;
+        snapshot.src = URL.createObjectURL(blob);
+        snapshot.style.display = "block";
+        video.style.display = "none";
+        if (guide) guide.style.display = "none";
+        if (captureBtn) captureBtn.style.display = "none";
+        if (retakeBtn) retakeBtn.style.display = "inline-flex";
+        if (useBtn) useBtn.style.display = "inline-flex";
+    }, "image/jpeg", 0.92);
+}
+
+function retakeCertSnapshot() {
+    capturedCertBlob = null;
+    const video = document.getElementById("certCameraVideo");
+    const snapshot = document.getElementById("certCameraSnapshot");
+    const guide = document.getElementById("certCameraGuide");
+    const captureBtn = document.getElementById("certCamCaptureBtn");
+    const retakeBtn = document.getElementById("certCamRetakeBtn");
+    const useBtn = document.getElementById("certCamUseBtn");
+
+    if (snapshot) snapshot.style.display = "none";
+    if (video) video.style.display = "block";
+    if (guide) guide.style.display = "flex";
+    if (captureBtn) captureBtn.style.display = "inline-flex";
+    if (retakeBtn) retakeBtn.style.display = "none";
+    if (useBtn) useBtn.style.display = "none";
+}
+
+function useCertSnapshot() {
+    if (!capturedCertBlob || !activeCertInputId) {
+        closeCertCamera();
+        return;
+    }
+
+    const filename = `certificate_scan_${Date.now()}.jpg`;
+    const file = new File([capturedCertBlob], filename, {
+        type: "image/jpeg",
+        lastModified: Date.now()
+    });
+
+    const fileInput = document.getElementById(activeCertInputId);
+    if (fileInput) {
+        try {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+            fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+        } catch (err) {
+            console.warn("DataTransfer not fully supported:", err);
+        }
+    }
+
+    if (activeCertPreviewId) {
+        const previewElem = document.getElementById(activeCertPreviewId);
+        if (previewElem) {
+            previewElem.style.display = "block";
+            previewElem.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="${URL.createObjectURL(file)}" style="width:52px; height:52px; object-fit:cover; border-radius:6px; border:1px solid #94a3b8;">
+                    <div>
+                        <strong style="color:#0369a1; font-size:13px; display:flex; align-items:center; gap:4px;">
+                            ✓ Certificate Captured by Camera
+                        </strong>
+                        <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                            ${filename} (${Math.round(file.size / 1024)} KB)
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    closeCertCamera();
+}
+
+function closeCertCamera() {
+    if (certCameraStream) {
+        try {
+            certCameraStream.getTracks().forEach(track => track.stop());
+        } catch (e) {
+            console.error("Error stopping tracks:", e);
+        }
+        certCameraStream = null;
+    }
+    const modal = document.getElementById("certCameraModal");
+    if (modal) modal.style.display = "none";
+    const video = document.getElementById("certCameraVideo");
+    if (video) video.srcObject = null;
+}
+</script>
+
+
+<!-- REGISTRATION SUCCESS MODAL -->
+<div id="regSuccessModal" style="display:none; position:fixed; inset:0; z-index:999999; background:rgba(7,19,41,0.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#0d1a33; border:1px solid rgba(56,189,248,0.35); border-radius:24px; max-width:520px; width:100%; padding:36px 28px; text-align:center; box-shadow:0 25px 60px rgba(0,0,0,0.6);">
+        <div style="width:76px; height:76px; border-radius:50%; background:rgba(16,185,129,0.15); border:2px solid #10b981; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:38px;">
+            🎉
+        </div>
+        <h2 style="font-size:24px; font-weight:800; color:#f8fafc; margin-bottom:10px; letter-spacing:-0.4px;">
+            Registration Submitted!
+        </h2>
+        <div id="successHospitalName" style="display:inline-block; background:rgba(2,132,199,0.15); border:1px solid rgba(56,189,248,0.3); border-radius:8px; padding:6px 14px; font-size:14px; font-weight:700; color:#38bdf8; margin-bottom:18px;">
+            Hospital Partner
+        </div>
+        <p style="font-size:14px; color:#94a3bd; line-height:1.6; margin-bottom:16px;">
+            Your hospital registration has been received successfully and is currently <strong style="color:#f59e0b;">Under Administrative Verification (PENDING)</strong>.
+        </p>
+        <div style="background:rgba(9,19,38,0.8); border:1px solid rgba(38,52,81,0.9); border-radius:14px; padding:16px; margin-bottom:24px; text-align:left; font-size:12.5px; color:#cbd5e1; line-height:1.5;">
+            <div style="font-weight:700; color:#e2e8f0; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                📋 What happens next:
+            </div>
+            <ul style="margin:0; padding-left:18px; display:flex; flex-direction:column; gap:6px;">
+                <li>Our clinical compliance team will verify your medical license & registration certificate.</li>
+                <li>Once approved, the administrator will publish your hospital in the Q-Arovia network.</li>
+                <li>You will receive an activation email at your registered address, after which you can log in to manage doctors and appointments.</li>
             </ul>
         </div>
-
-        <a href="index.html" class="action-btn" id="loginBtn">
+        <a href="index.html" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:#ffffff; font-size:15px; font-weight:700; padding:14px 20px; border-radius:12px; text-decoration:none; box-shadow:0 4px 14px rgba(2,132,199,0.35); cursor:pointer;">
             <span>Proceed to Hospital Login</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
         </a>
-
-        <div class="footer-note">
-            Already an approved partner? Sign in with your registered hospital credentials.<br>
-            For support or partner onboarding inquiries, contact <a href="mailto:support@qarovia.in">support@qarovia.in</a>
-        </div>
     </div>
+</div>
 
 </body>
 </html>
