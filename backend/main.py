@@ -342,12 +342,20 @@ def get_document_auth_user(
             u_role = unverified.get("role")
             u_id = unverified.get("sub")
             if u_role == "patient" and u_id:
-                p_id = int(u_id)
                 db_session = SessionLocal()
                 try:
-                    p = db_session.query(Patient).filter(Patient.id == p_id).first()
+                    p = None
+                    u_str = str(u_id).strip()
+                    if u_str.isdigit() and len(u_str) <= 8:
+                        p = db_session.query(Patient).filter(Patient.id == int(u_str)).first()
+                    if not p:
+                        clean_ph = normalize_phone_last10(u_str)
+                        if clean_ph:
+                            p = db_session.query(Patient).filter(Patient.phone.ilike(f"%{clean_ph}%")).first()
+                    if not p and "@" in u_str:
+                        p = db_session.query(Patient).filter(Patient.email.ilike(u_str)).first()
                     if p:
-                        return {"user_id": p_id, "role": "patient"}
+                        return {"user_id": p.id, "role": "patient"}
                 finally:
                     db_session.close()
         except Exception:
@@ -364,12 +372,20 @@ def get_document_auth_user(
             u_role = unverified.get("role")
             u_id = unverified.get("sub")
             if u_role == "patient" and u_id:
-                p_id = int(u_id)
                 db_session = SessionLocal()
                 try:
-                    p = db_session.query(Patient).filter(Patient.id == p_id).first()
+                    p = None
+                    u_str = str(u_id).strip()
+                    if u_str.isdigit() and len(u_str) <= 8:
+                        p = db_session.query(Patient).filter(Patient.id == int(u_str)).first()
+                    if not p:
+                        clean_ph = normalize_phone_last10(u_str)
+                        if clean_ph:
+                            p = db_session.query(Patient).filter(Patient.phone.ilike(f"%{clean_ph}%")).first()
+                    if not p and "@" in u_str:
+                        p = db_session.query(Patient).filter(Patient.email.ilike(u_str)).first()
                     if p:
-                        return {"user_id": p_id, "role": "patient"}
+                        return {"user_id": p.id, "role": "patient"}
                 finally:
                     db_session.close()
         except Exception:
@@ -684,12 +700,20 @@ def get_current_user(
             u_role = unverified.get("role")
             u_id = unverified.get("sub")
             if u_role == "patient" and u_id:
-                p_id = int(u_id)
                 db_session = SessionLocal()
                 try:
-                    p = db_session.query(Patient).filter(Patient.id == p_id).first()
+                    p = None
+                    u_str = str(u_id).strip()
+                    if u_str.isdigit() and len(u_str) <= 8:
+                        p = db_session.query(Patient).filter(Patient.id == int(u_str)).first()
+                    if not p:
+                        clean_ph = normalize_phone_last10(u_str)
+                        if clean_ph:
+                            p = db_session.query(Patient).filter(Patient.phone.ilike(f"%{clean_ph}%")).first()
+                    if not p and "@" in u_str:
+                        p = db_session.query(Patient).filter(Patient.email.ilike(u_str)).first()
                     if p:
-                        return {"user_id": p_id, "role": "patient"}
+                        return {"user_id": p.id, "role": "patient"}
                 finally:
                     db_session.close()
         except Exception:
@@ -709,12 +733,20 @@ def get_current_user(
             u_role = unverified.get("role")
             u_id = unverified.get("sub")
             if u_role == "patient" and u_id:
-                p_id = int(u_id)
                 db_session = SessionLocal()
                 try:
-                    p = db_session.query(Patient).filter(Patient.id == p_id).first()
+                    p = None
+                    u_str = str(u_id).strip()
+                    if u_str.isdigit() and len(u_str) <= 8:
+                        p = db_session.query(Patient).filter(Patient.id == int(u_str)).first()
+                    if not p:
+                        clean_ph = normalize_phone_last10(u_str)
+                        if clean_ph:
+                            p = db_session.query(Patient).filter(Patient.phone.ilike(f"%{clean_ph}%")).first()
+                    if not p and "@" in u_str:
+                        p = db_session.query(Patient).filter(Patient.email.ilike(u_str)).first()
                     if p:
-                        return {"user_id": p_id, "role": "patient"}
+                        return {"user_id": p.id, "role": "patient"}
                 finally:
                     db_session.close()
         except Exception:
@@ -9242,11 +9274,14 @@ async def upload_token_documents(
                     if token.patient_id != auth_user_id:
                         token.patient_id = auth_user_id
                         db.commit()
-                elif patient.full_name and token.patient_name and patient.full_name.strip().lower() == str(token.patient_name).strip().lower():
-                    is_authorized = True
-                    if token.patient_id != auth_user_id:
-                        token.patient_id = auth_user_id
-                        db.commit()
+                elif patient.full_name and token.patient_name:
+                    p_name_clean = patient.full_name.strip().lower()
+                    t_name_clean = str(token.patient_name).strip().lower()
+                    if p_name_clean == t_name_clean or (len(t_name_clean) >= 3 and t_name_clean in p_name_clean) or (len(p_name_clean) >= 3 and p_name_clean in t_name_clean):
+                        is_authorized = True
+                        if token.patient_id != auth_user_id:
+                            token.patient_id = auth_user_id
+                            db.commit()
         if not is_authorized:
             raise HTTPException(status_code=403, detail="You do not have permission to upload documents for this token.")
     elif role == "hospital":
@@ -9374,11 +9409,14 @@ def get_token_documents(
                     if token_record.patient_id != auth_user_id:
                         token_record.patient_id = auth_user_id
                         db.commit()
-                elif patient.full_name and token_record.patient_name and patient.full_name.strip().lower() == str(token_record.patient_name).strip().lower():
-                    is_authorized = True
-                    if token_record.patient_id != auth_user_id:
-                        token_record.patient_id = auth_user_id
-                        db.commit()
+                elif patient.full_name and token_record.patient_name:
+                    p_name_clean = patient.full_name.strip().lower()
+                    t_name_clean = str(token_record.patient_name).strip().lower()
+                    if p_name_clean == t_name_clean or (len(t_name_clean) >= 3 and t_name_clean in p_name_clean) or (len(p_name_clean) >= 3 and p_name_clean in t_name_clean):
+                        is_authorized = True
+                        if token_record.patient_id != auth_user_id:
+                            token_record.patient_id = auth_user_id
+                            db.commit()
         if not is_authorized:
             raise HTTPException(status_code=403, detail="You do not have permission to view documents for this token.")
     elif role == "hospital":
@@ -9600,11 +9638,13 @@ def get_batch_token_documents(
                     if t.patient_id != auth_user_id:
                         t.patient_id = auth_user_id
                         db.commit()
-                elif p_name and t.patient_name and str(t.patient_name).strip().lower() == p_name:
-                    authorized_token_ids.add(t.id)
-                    if t.patient_id != auth_user_id:
-                        t.patient_id = auth_user_id
-                        db.commit()
+                elif p_name and t.patient_name:
+                    t_name_clean = str(t.patient_name).strip().lower()
+                    if p_name == t_name_clean or (len(t_name_clean) >= 3 and t_name_clean in p_name) or (len(p_name) >= 3 and p_name in t_name_clean):
+                        authorized_token_ids.add(t.id)
+                        if t.patient_id != auth_user_id:
+                            t.patient_id = auth_user_id
+                            db.commit()
 
     elif role == "hospital":
         matched_tokens = db.query(Token).filter(Token.id.in_(ids), Token.hospital_id == auth_user_id).all()
