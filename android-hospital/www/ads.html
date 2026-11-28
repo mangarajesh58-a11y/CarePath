@@ -1194,19 +1194,65 @@ const API_URL = "https://carepath-3q9q.onrender.com";
 
 try { fetch(`${API_URL}/health`).catch(() => {}); } catch (_) {}
 
-const hospitalId = localStorage.getItem("hospital_id");
-const hospitalToken = localStorage.getItem("hospitalToken");
+let hospitalId = localStorage.getItem("hospital_id");
+let hospitalToken = localStorage.getItem("hospitalToken");
 let storedHospital = null;
 
-if (!hospitalToken || !hospitalId) {
-    alert("Please log in to your hospital account first.");
-    window.location.href = "index.html";
+try {
+    const rawHosp = localStorage.getItem("hospital");
+    if (rawHosp) storedHospital = JSON.parse(rawHosp);
+    if ((!hospitalId || hospitalId === "null" || hospitalId === "undefined") && storedHospital && storedHospital.id) {
+        hospitalId = String(storedHospital.id);
+        localStorage.setItem("hospital_id", hospitalId);
+    }
+} catch (_) {}
+
+function isHospitalLoggedIn() {
+    const tid = localStorage.getItem("hospital_id") || hospitalId;
+    const tok = localStorage.getItem("hospitalToken") || hospitalToken;
+    return !!(tid && tok && tid !== "null" && tid !== "undefined" && tok !== "null" && tok !== "undefined");
 }
 
 function getAuthHeaders(includeJson = false) {
-    const headers = { "Authorization": `Bearer ${hospitalToken || ""}` };
+    const currentToken = localStorage.getItem("hospitalToken") || hospitalToken || "";
+    const headers = {};
+    if (currentToken && currentToken !== "null" && currentToken !== "undefined") {
+        headers["Authorization"] = `Bearer ${currentToken}`;
+    }
     if (includeJson) headers["Content-Type"] = "application/json";
     return headers;
+}
+
+async function attemptHospitalTokenRefresh() {
+    try {
+        const token = localStorage.getItem("hospitalToken") || hospitalToken;
+        const refresh = localStorage.getItem("hospitalRefreshToken");
+        if (!token && !refresh) return false;
+
+        const res = await fetch(`${API_URL}/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                access_token: token || "",
+                refresh_token: refresh || ""
+            })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            if (data.access_token) {
+                hospitalToken = data.access_token;
+                localStorage.setItem("hospitalToken", data.access_token);
+                if (data.refresh_token) {
+                    localStorage.setItem("hospitalRefreshToken", data.refresh_token);
+                }
+                return true;
+            }
+        }
+    } catch (e) {
+        console.warn("Session refresh attempt failed:", e);
+    }
+    return false;
 }
 
 // LOGOUT
@@ -1326,7 +1372,9 @@ function updatePricingDisplay() {
 ===================================================== */
 async function loadHospitalInfo() {
     try {
-        const res = await fetch(`${API_URL}/hospitals/${hospitalId}`, {
+        const activeHospId = localStorage.getItem("hospital_id") || hospitalId;
+        if (!activeHospId) return;
+        const res = await fetch(`${API_URL}/hospitals/${activeHospId}`, {
             headers: getAuthHeaders(false)
         });
         if (res.ok) {
@@ -1533,11 +1581,22 @@ form.addEventListener("submit", async (e) => {
             if (bannerFile) formData.append("photo", bannerFile);
         }
 
-        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/create-order`, {
+        const activeHospId = localStorage.getItem("hospital_id") || hospitalId;
+        let res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads/create-order`, {
             method: "POST",
             headers: getAuthHeaders(false),
             body: formData
         });
+        if (res.status === 401) {
+            const refreshed = await attemptHospitalTokenRefresh();
+            if (refreshed) {
+                res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads/create-order`, {
+                    method: "POST",
+                    headers: getAuthHeaders(false),
+                    body: formData
+                });
+            }
+        }
 
         const data = await res.json();
         if (!res.ok) {
@@ -1597,7 +1656,8 @@ async function verifyAdPayment(orderId, adId) {
     launchBtn.innerHTML = `🔄 Confirming payment & activating campaign...`;
 
     try {
-        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/verify-payment`, {
+        const activeHospId = localStorage.getItem("hospital_id") || hospitalId;
+        let res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads/verify-payment`, {
             method: "POST",
             headers: getAuthHeaders(true),
             body: JSON.stringify({
@@ -1605,6 +1665,19 @@ async function verifyAdPayment(orderId, adId) {
                 ad_id: parseInt(adId)
             })
         });
+        if (res.status === 401) {
+            const refreshed = await attemptHospitalTokenRefresh();
+            if (refreshed) {
+                res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads/verify-payment`, {
+                    method: "POST",
+                    headers: getAuthHeaders(true),
+                    body: JSON.stringify({
+                        cashfree_order_id: orderId,
+                        ad_id: parseInt(adId)
+                    })
+                });
+            }
+        }
 
         const data = await res.json();
         if (!res.ok) {
@@ -1636,10 +1709,54 @@ async function loadCampaigns() {
     const loading = document.getElementById("campaignsLoading");
     const container = document.getElementById("campaignsContainer");
 
+    const activeHospId = localStorage.getItem("hospital_id") || hospitalId;
+    if (!isHospitalLoggedIn() || !activeHospId) {
+        if (loading) loading.style.display = "none";
+        if (container) {
+            container.style.display = "block";
+            container.innerHTML = `
+                <div style="text-align: center; padding: 32px 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🔒</div>
+                    <div style="font-weight: 700; color: #0f172a; font-size: 16px; margin-bottom: 6px;">Hospital Session Required</div>
+                    <div style="font-size: 13.5px; color: #64748b; margin-bottom: 16px;">Please log in to your hospital account to view and manage your advertising campaigns.</div>
+                    <a href="index.html" style="display: inline-block; padding: 10px 22px; background: #0284c7; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">Go to Login</a>
+                </div>
+            `;
+        }
+        return;
+    }
+
     try {
-        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads`, {
+        let res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads`, {
             headers: getAuthHeaders(false)
         });
+
+        // Auto-heal 401 Unauthorized via transparent token refresh
+        if (res.status === 401) {
+            console.warn("Hospital ads 401: attempting token refresh...");
+            const refreshed = await attemptHospitalTokenRefresh();
+            if (refreshed) {
+                res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads`, {
+                    headers: getAuthHeaders(false)
+                });
+            }
+        }
+
+        if (res.status === 401) {
+            if (loading) loading.style.display = "none";
+            if (container) {
+                container.style.display = "block";
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 32px 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="font-size: 32px; margin-bottom: 8px;">🔒</div>
+                        <div style="font-weight: 700; color: #0f172a; font-size: 16px; margin-bottom: 6px;">Hospital Session Expired</div>
+                        <div style="font-size: 13.5px; color: #64748b; margin-bottom: 16px;">Your login session has expired or is unauthorized. Please log in again to manage your campaigns.</div>
+                        <a href="index.html" style="display: inline-block; padding: 10px 22px; background: #0284c7; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">Log In Again</a>
+                    </div>
+                `;
+            }
+            return;
+        }
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const ads = await res.json();
@@ -1746,11 +1863,21 @@ function closeVideoWatchModal() {
 async function deleteHospitalAd(adId) {
     if (!confirm("Are you sure you want to permanently delete this advertisement campaign?")) return;
     try {
-        const res = await fetch(`${API_URL}/hospitals/${hospitalId}/ads/${adId}`, {
+        const activeHospId = localStorage.getItem("hospital_id") || hospitalId;
+        let res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads/${adId}`, {
             method: "DELETE",
             headers: getAuthHeaders(true)
         });
-        const data = await res.json();
+        if (res.status === 401) {
+            const refreshed = await attemptHospitalTokenRefresh();
+            if (refreshed) {
+                res = await fetch(`${API_URL}/hospitals/${activeHospId}/ads/${adId}`, {
+                    method: "DELETE",
+                    headers: getAuthHeaders(true)
+                });
+            }
+        }
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.detail || "Failed to delete ad.");
         alert("Advertisement campaign has been deleted.");
         await loadCampaigns();

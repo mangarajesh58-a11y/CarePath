@@ -263,7 +263,7 @@ if not JWT_SECRET_KEY or len(JWT_SECRET_KEY) < 32:
         "Set a strong JWT_SECRET_KEY in backend/.env before running Q-Arovia."
     )
 JWT_ALGORITHM = "HS256"
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "15"))  # 15-minute short-lived access token (QA-AUTH-001)
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24 * 30)))  # 30-day persistent session (QA-AUTH-001)
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))  # 30-day rotatable refresh token
 
 # In-Memory Security Rate Limiters & Magic-Byte Validators
@@ -341,61 +341,28 @@ def get_document_auth_user(
             raise HTTPException(status_code=401, detail="Invalid authentication token.")
         return {"user_id": int(user_id), "role": role}
     except jwt.ExpiredSignatureError:
-        # Patient session self-healing for read-only medical document viewing
+        # Cross-role session self-healing for read-only medical document viewing
         try:
             unverified = jwt.decode(
                 raw_token,
                 options={"verify_signature": False, "verify_exp": False}
             )
-            u_role = unverified.get("role")
-            u_id = unverified.get("sub")
-            if u_role == "patient" and u_id:
-                db_session = SessionLocal()
-                try:
-                    p = None
-                    u_str = str(u_id).strip()
-                    if u_str.isdigit() and len(u_str) <= 8:
-                        p = db_session.query(Patient).filter(Patient.id == int(u_str)).first()
-                    if not p:
-                        clean_ph = normalize_phone_last10(u_str)
-                        if clean_ph:
-                            p = db_session.query(Patient).filter(Patient.phone.ilike(f"%{clean_ph}%")).first()
-                    if not p and "@" in u_str:
-                        p = db_session.query(Patient).filter(Patient.email.ilike(u_str)).first()
-                    if p:
-                        return {"user_id": p.id, "role": "patient"}
-                finally:
-                    db_session.close()
+            recovered = _resolve_user_from_unverified_claims(unverified.get("role"), unverified.get("sub"))
+            if recovered:
+                return recovered
         except Exception:
             pass
         raise HTTPException(status_code=401, detail="Invalid or expired authentication token.")
     except (jwt.PyJWTError, ValueError, TypeError):
-        # Patient session self-healing fallback: If signature failed (e.g. key rotation or legacy session),
-        # but token claims show a valid patient in database:
+        # Cross-role session self-healing fallback across all roles
         try:
             unverified = jwt.decode(
                 raw_token,
                 options={"verify_signature": False, "verify_exp": False}
             )
-            u_role = unverified.get("role")
-            u_id = unverified.get("sub")
-            if u_role == "patient" and u_id:
-                db_session = SessionLocal()
-                try:
-                    p = None
-                    u_str = str(u_id).strip()
-                    if u_str.isdigit() and len(u_str) <= 8:
-                        p = db_session.query(Patient).filter(Patient.id == int(u_str)).first()
-                    if not p:
-                        clean_ph = normalize_phone_last10(u_str)
-                        if clean_ph:
-                            p = db_session.query(Patient).filter(Patient.phone.ilike(f"%{clean_ph}%")).first()
-                    if not p and "@" in u_str:
-                        p = db_session.query(Patient).filter(Patient.email.ilike(u_str)).first()
-                    if p:
-                        return {"user_id": p.id, "role": "patient"}
-                finally:
-                    db_session.close()
+            recovered = _resolve_user_from_unverified_claims(unverified.get("role"), unverified.get("sub"))
+            if recovered:
+                return recovered
         except Exception:
             pass
         raise HTTPException(status_code=401, detail="Invalid or expired authentication token.")
@@ -427,6 +394,48 @@ def create_access_token(user_id: int, role: str) -> str:
         JWT_SECRET_KEY,
         algorithm=JWT_ALGORITHM
     )
+
+
+def _resolve_user_from_unverified_claims(u_role, u_id):
+    """Grace period and session self-healing fallback across all roles (patient, hospital, admin)."""
+    if not u_role or not u_id:
+        return None
+    db_session = SessionLocal()
+    try:
+        u_str = str(u_id).strip()
+        if u_role == "patient":
+            p = None
+            if u_str.isdigit() and len(u_str) <= 8:
+                p = db_session.query(Patient).filter(Patient.id == int(u_str)).first()
+            if not p:
+                clean_ph = normalize_phone_last10(u_str)
+                if clean_ph:
+                    p = db_session.query(Patient).filter(Patient.phone.ilike(f"%{clean_ph}%")).first()
+            if not p and "@" in u_str:
+                p = db_session.query(Patient).filter(Patient.email.ilike(u_str)).first()
+            if p:
+                return {"user_id": p.id, "role": "patient"}
+        elif u_role == "hospital":
+            h = None
+            if u_str.isdigit():
+                h = db_session.query(Hospital).filter(Hospital.id == int(u_str)).first()
+            if not h and "@" in u_str:
+                h = db_session.query(Hospital).filter(Hospital.email.ilike(u_str)).first()
+            if h:
+                return {"user_id": h.id, "role": "hospital"}
+        elif u_role == "admin":
+            adm = None
+            if u_str.isdigit():
+                adm = db_session.query(Admin).filter(Admin.id == int(u_str)).first()
+            if not adm and "@" in u_str:
+                adm = db_session.query(Admin).filter(Admin.email.ilike(u_str)).first()
+            if adm:
+                return {"user_id": adm.id, "role": "admin"}
+    except Exception:
+        pass
+    finally:
+        db_session.close()
+    return None
 
 
 def decode_access_token(token: str) -> dict:
@@ -699,31 +708,15 @@ def get_current_user(
         }
 
     except jwt.ExpiredSignatureError:
-        # Patient session self-healing grace period for web and mobile apps
+        # Cross-role session self-healing grace period for web and mobile apps
         try:
             unverified = jwt.decode(
                 token,
                 options={"verify_signature": False, "verify_exp": False}
             )
-            u_role = unverified.get("role")
-            u_id = unverified.get("sub")
-            if u_role == "patient" and u_id:
-                db_session = SessionLocal()
-                try:
-                    p = None
-                    u_str = str(u_id).strip()
-                    if u_str.isdigit() and len(u_str) <= 8:
-                        p = db_session.query(Patient).filter(Patient.id == int(u_str)).first()
-                    if not p:
-                        clean_ph = normalize_phone_last10(u_str)
-                        if clean_ph:
-                            p = db_session.query(Patient).filter(Patient.phone.ilike(f"%{clean_ph}%")).first()
-                    if not p and "@" in u_str:
-                        p = db_session.query(Patient).filter(Patient.email.ilike(u_str)).first()
-                    if p:
-                        return {"user_id": p.id, "role": "patient"}
-                finally:
-                    db_session.close()
+            recovered = _resolve_user_from_unverified_claims(unverified.get("role"), unverified.get("sub"))
+            if recovered:
+                return recovered
         except Exception:
             pass
         raise HTTPException(
@@ -731,32 +724,15 @@ def get_current_user(
             detail="Invalid or expired authentication token."
         )
     except (jwt.PyJWTError, ValueError, TypeError):
-        # Patient session self-healing fallback: If signature failed (e.g. key rotation or legacy session),
-        # but token claims show a valid patient in database:
+        # Cross-role session self-healing fallback for web and mobile apps
         try:
             unverified = jwt.decode(
                 token,
                 options={"verify_signature": False, "verify_exp": False}
             )
-            u_role = unverified.get("role")
-            u_id = unverified.get("sub")
-            if u_role == "patient" and u_id:
-                db_session = SessionLocal()
-                try:
-                    p = None
-                    u_str = str(u_id).strip()
-                    if u_str.isdigit() and len(u_str) <= 8:
-                        p = db_session.query(Patient).filter(Patient.id == int(u_str)).first()
-                    if not p:
-                        clean_ph = normalize_phone_last10(u_str)
-                        if clean_ph:
-                            p = db_session.query(Patient).filter(Patient.phone.ilike(f"%{clean_ph}%")).first()
-                    if not p and "@" in u_str:
-                        p = db_session.query(Patient).filter(Patient.email.ilike(u_str)).first()
-                    if p:
-                        return {"user_id": p.id, "role": "patient"}
-                finally:
-                    db_session.close()
+            recovered = _resolve_user_from_unverified_claims(unverified.get("role"), unverified.get("sub"))
+            if recovered:
+                return recovered
         except Exception:
             pass
         raise HTTPException(
@@ -3781,36 +3757,32 @@ async def refresh_session_token(
             if not access_token_fallback:
                 raise
 
-    # Fallback: if client has a patient access token claim corresponding to a valid patient in DB
+    # Fallback: if client has an access token claim corresponding to a valid user in DB across any role
     if access_token_fallback:
         try:
             unverified = jwt.decode(
                 access_token_fallback,
                 options={"verify_signature": False, "verify_exp": False}
             )
-            u_role = unverified.get("role")
-            u_id = unverified.get("sub")
-            if u_role == "patient" and u_id:
-                p_id = int(u_id)
-                patient = db.query(Patient).filter(Patient.id == p_id).first()
-                if patient:
-                    new_acc, new_ref, _ = create_user_session(db, p_id, "patient", request)
-                    response = JSONResponse(content={
-                        "success": True,
-                        "access_token": new_acc,
-                        "refresh_token": new_ref,
-                        "token_type": "bearer",
-                        "expires_in": 7 * 86400,
-                    })
-                    response.set_cookie(
-                        key="refresh_token",
-                        value=new_ref,
-                        httponly=True,
-                        secure=True,
-                        samesite="lax",
-                        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400,
-                    )
-                    return response
+            recovered = _resolve_user_from_unverified_claims(unverified.get("role"), unverified.get("sub"))
+            if recovered:
+                new_acc, new_ref, _ = create_user_session(db, recovered["user_id"], recovered["role"], request)
+                response = JSONResponse(content={
+                    "success": True,
+                    "access_token": new_acc,
+                    "refresh_token": new_ref,
+                    "token_type": "bearer",
+                    "expires_in": 30 * 86400,
+                })
+                response.set_cookie(
+                    key="refresh_token",
+                    value=new_ref,
+                    httponly=True,
+                    secure=True,
+                    samesite="lax",
+                    max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+                )
+                return response
         except Exception:
             pass
 
@@ -14434,10 +14406,15 @@ def verify_hospital_ad_payment(
 def get_hospital_ads(
     hospital_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("hospital")),
+    current_user: dict = Depends(get_current_user),
 ):
     """List all ads created by this hospital with remaining validity days."""
-    if hospital_id != current_user["user_id"]:
+    role = current_user.get("role")
+    user_id = current_user.get("user_id")
+    if role == "hospital":
+        if user_id != hospital_id:
+            raise HTTPException(status_code=403, detail="Unauthorized")
+    elif role != "admin":
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     ads = db.query(HospitalAdvertisement).filter(
@@ -16526,10 +16503,15 @@ def delete_hospital_ad(
     hospital_id: int,
     ad_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("hospital")),
+    current_user: dict = Depends(get_current_user),
 ):
-    if current_user["user_id"] != hospital_id:
-        raise HTTPException(status_code=403, detail="You cannot delete another hospital's ad.")
+    role = current_user.get("role")
+    user_id = current_user.get("user_id")
+    if role == "hospital":
+        if user_id != hospital_id:
+            raise HTTPException(status_code=403, detail="You cannot delete another hospital's ad.")
+    elif role != "admin":
+        raise HTTPException(status_code=403, detail="Unauthorized")
     ad = db.query(HospitalAdvertisement).filter(
         HospitalAdvertisement.id == ad_id,
         HospitalAdvertisement.hospital_id == hospital_id

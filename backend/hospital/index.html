@@ -534,12 +534,18 @@
                     }
 
 
-                    /* Save JWT */
+                    /* Save JWT and Refresh Token */
 
                     localStorage.setItem(
                         "hospitalToken",
                         data.access_token
                     );
+                    if (data.refresh_token) {
+                        localStorage.setItem(
+                            "hospitalRefreshToken",
+                            data.refresh_token
+                        );
+                    }
 
 
                     /* Save hospital information */
@@ -654,12 +660,18 @@
                 }
 
 
-                /* Save JWT */
+                /* Save JWT and Refresh Token */
 
                 localStorage.setItem(
                     "hospitalToken",
                     data.access_token
                 );
+                if (data.refresh_token) {
+                    localStorage.setItem(
+                        "hospitalRefreshToken",
+                        data.refresh_token
+                    );
+                }
 
 
                 /* Save hospital information */
