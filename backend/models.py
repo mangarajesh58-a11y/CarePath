@@ -127,6 +127,10 @@ class Hospital(Base):
 class Doctor(Base):
     __tablename__ = "doctors"
 
+    __table_args__ = (
+        Index("ix_doctors_hosp_dept", "hospital_id", "department"),
+    )
+
     id = Column(Integer, primary_key=True, index=True)
     hospital_id = Column(Integer, nullable=False, index=True)
 
@@ -226,6 +230,9 @@ class Token(Base):
         Index("idx_tokens_hosp_date_status", "hospital_id", "appointment_date", "status"),
         Index("idx_tokens_hosp_date_doctor", "hospital_id", "appointment_date", "doctor_id"),
         Index("idx_tokens_patient_status", "patient_id", "status"),
+        Index("idx_tokens_hosp_id", "hospital_id", "id"),
+        Index("idx_tokens_hosp_appt_date", "hospital_id", "appointment_date"),
+        Index("idx_tokens_hosp_booking", "hospital_id", "booking_type", "payment_status", "status"),
     )
 
     id = Column(Integer, primary_key=True, index=True)

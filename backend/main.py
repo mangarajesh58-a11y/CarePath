@@ -7401,6 +7401,7 @@ def get_hospital_doctors(
 
     query = (
         db.query(Doctor)
+        .options(defer(Doctor.photo_base64))
         .filter(
             Doctor.hospital_id ==
             hospital_id
@@ -9715,11 +9716,26 @@ def get_batch_token_documents(
 # HOSPITAL TOKEN RETENTION: 90-DAY COMPLIANCE PURGE
 # ============================================================
 
+_LAST_PURGE_TIMES = {}  # hospital_id: datetime
+_GLOBAL_LAST_PURGE = None
+
 def purge_expired_hospital_tokens(db: Session, hospital_id: Optional[int] = None) -> int:
     """
     Healthcare Compliance & Data Hygiene:
     Automatically deletes hospital tokens and old sequence records older than 90 days.
+    Throttled to run at most once every 24 hours per hospital to ensure ZERO-WAIT latency.
     """
+    global _GLOBAL_LAST_PURGE
+    now = datetime.utcnow()
+    if hospital_id is not None:
+        last = _LAST_PURGE_TIMES.get(hospital_id)
+        if last and (now - last) < timedelta(hours=24):
+            return 0
+        _LAST_PURGE_TIMES[hospital_id] = now
+    else:
+        if _GLOBAL_LAST_PURGE and (now - _GLOBAL_LAST_PURGE) < timedelta(hours=24):
+            return 0
+        _GLOBAL_LAST_PURGE = now
     try:
         ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
         cutoff_date = (ist_now - timedelta(days=90)).date()
@@ -10627,6 +10643,8 @@ def get_hospital_live_queue(
 
     # Local today's date in IST (+5:30)
     today = (datetime.utcnow() + timedelta(hours=5, minutes=30)).date()
+    today_start = datetime(today.year, today.month, today.day, 0, 0, 0)
+    today_end = datetime(today.year, today.month, today.day, 23, 59, 59)
 
     today_tokens = (
         db.query(Token)
@@ -10634,7 +10652,7 @@ def get_hospital_live_queue(
             Token.hospital_id == hospital_id,
             or_(
                 Token.appointment_date == today,
-                func.date(Token.created_at) == today,
+                and_(Token.appointment_date.is_(None), Token.created_at >= today_start, Token.created_at <= today_end),
             ),
         )
         .order_by(Token.token_number.asc())
@@ -12953,15 +12971,16 @@ def get_hospital_collection_summary(
     ist_today = ist_now.date()
     curr_month_str = ist_today.strftime("%Y-%m")
 
-    # Fetch successful collections (Online paid tokens) and walk-in registrations:
-    # Walk-in tokens are tracked for attendance volume but are strictly separated from token fee collection ($0)
-    # Online tokens count only when payment_status IN ('paid', 'succeeded', 'completed')
+    # Fetch recent successful collections (Online paid tokens) and walk-in registrations
+    # Scoped to recent 90-day retention window with limit of 200 detailed records for zero-wait JSON payload
+    cutoff_summary = ist_today - timedelta(days=90)
     valid_tokens = (
         db.query(Token)
         .filter(
             Token.hospital_id == target_hospital_id,
             Token.status != "cancelled",
             Token.payment_status != "refunded",
+            or_(Token.appointment_date >= cutoff_summary, Token.appointment_date.is_(None)),
             or_(
                 Token.booking_type == "WALK_IN",
                 and_(
@@ -12974,6 +12993,7 @@ def get_hospital_collection_summary(
             )
         )
         .order_by(Token.appointment_date.desc(), Token.id.desc())
+        .limit(250)
         .all()
     )
 

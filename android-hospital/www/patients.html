@@ -477,7 +477,13 @@ async function loadPatients(silent = false) {
     }
 
     try {
-        const response = await fetch(`${API}/hospitals/${hospitalId}/tokens`, {
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${y}-${m}-${d}`;
+
+        const response = await fetch(`${API}/hospitals/${hospitalId}/tokens?date=${todayStr}`, {
             headers: getHospitalAuthHeaders()
         });
 

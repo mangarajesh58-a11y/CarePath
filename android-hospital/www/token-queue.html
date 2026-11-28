@@ -2329,9 +2329,23 @@ async function loadTokens() {
 
 
     try {
+        const dateInput = document.getElementById("dateFilter");
+        let selectedDate = dateInput ? dateInput.value.trim() : "";
+        if (!selectedDate && dateInput) {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            selectedDate = `${y}-${m}-${d}`;
+            dateInput.value = selectedDate;
+        }
+
+        const url = selectedDate 
+            ? `${API}/hospitals/${encodeURIComponent(hospitalId)}/tokens?date=${encodeURIComponent(selectedDate)}`
+            : `${API}/hospitals/${encodeURIComponent(hospitalId)}/tokens`;
 
         const response = await fetch(
-            `${API}/hospitals/${encodeURIComponent(hospitalId)}/tokens`,
+            url,
             {
                 headers: authHeaders()
             }
@@ -2950,6 +2964,23 @@ loadWalkInDepartments();
                 updateQueueWalkInLiveTracker();
             }
         } catch(e) {}
+
+        // Instant SWR cache hydration (0ms Time-to-Interactive)
+        try {
+            const dateInput = document.getElementById("dateFilter");
+            if (dateInput && !dateInput.value) {
+                const today = new Date();
+                const y = today.getFullYear();
+                const m = String(today.getMonth() + 1).padStart(2, '0');
+                const d = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${y}-${m}-${d}`;
+            }
+            const cachedQueue = localStorage.getItem("cached_queue_tokens_" + hospitalId);
+            if (cachedQueue) {
+                allTokens = JSON.parse(cachedQueue);
+                renderTokens();
+            }
+        } catch (_) {}
 
         // Initial queue loading
         loadTokens();
