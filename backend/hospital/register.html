@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#071329">
+    <meta name="theme-color" content="#f8fafc">
     <title>Hospital Registration & Partner Portal - Q-Arovia</title>
 
     <link rel="icon" type="image/png" href="qarovia-ai-small.png">
@@ -13,18 +13,18 @@
 
     <style>
         :root {
-            --bg-page: #071329;
-            --bg-card: rgba(13, 26, 51, 0.9);
-            --bg-card-solid: #0d1a33;
-            --bg-input: #091326;
-            --border-card: rgba(38, 52, 81, 0.85);
-            --border-focus: #38bdf8;
-            --primary: #38bdf8;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-card-solid: #ffffff;
+            --bg-input: #ffffff;
+            --border-card: #e2e8f0;
+            --border-focus: #0284c7;
+            --primary: #0284c7;
             --primary-gradient: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
             --accent-green: #10b981;
             --accent-amber: #f59e0b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3bd;
+            --text-main: #0f172a;
+            --text-muted: #475569;
             --text-dim: #64748b;
         }
 
@@ -38,8 +38,8 @@
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             min-height: 100vh;
-            background: radial-gradient(circle at 15% 15%, rgba(2, 132, 199, 0.16) 0%, transparent 45%),
-                        radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.12) 0%, transparent 45%),
+            background: radial-gradient(circle at 15% 15%, rgba(2, 132, 199, 0.08) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.06) 0%, transparent 45%),
                         var(--bg-page);
             color: var(--text-main);
             padding: 32px 16px 48px;
@@ -62,12 +62,12 @@
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            background: rgba(16, 27, 51, 0.9);
-            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: #ffffff;
+            border: 1px solid rgba(2, 132, 199, 0.25);
             padding: 8px 16px;
             border-radius: 999px;
             margin-bottom: 16px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 10px rgba(2, 132, 199, 0.08);
         }
 
         .brand-badge img {
@@ -80,25 +80,25 @@
         .brand-badge span {
             font-size: 13.5px;
             font-weight: 800;
-            color: #38bdf8;
+            color: #0284c7;
             letter-spacing: -0.2px;
         }
 
         .brand-badge .badge-tag {
             font-size: 10px;
-            color: #34d399;
+            color: #047857;
             font-weight: 700;
-            background: rgba(16, 185, 129, 0.2);
+            background: #ecfdf5;
             padding: 2px 7px;
             border-radius: 999px;
-            border: 1px solid rgba(52, 211, 153, 0.3);
+            border: 1px solid #a7f3d0;
             text-transform: uppercase;
         }
 
         .portal-header h1 {
             font-size: 32px;
             font-weight: 800;
-            color: #f8fafc;
+            color: #0f172a;
             letter-spacing: -0.6px;
             margin-bottom: 8px;
         }
@@ -120,23 +120,24 @@
         }
 
         .step-pill {
-            background: rgba(13, 26, 51, 0.7);
+            background: #ffffff;
             border: 1px solid var(--border-card);
             border-radius: 12px;
             padding: 10px 8px;
             text-align: center;
             transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
 
         .step-pill.active {
-            border-color: rgba(56, 189, 248, 0.5);
-            background: rgba(2, 132, 199, 0.15);
+            border-color: #0284c7;
+            background: #f0f9ff;
         }
 
         .step-num {
             font-size: 10.5px;
             font-weight: 800;
-            color: #38bdf8;
+            color: #0284c7;
             display: block;
             margin-bottom: 2px;
         }
@@ -144,7 +145,7 @@
         .step-title {
             font-size: 11.5px;
             font-weight: 700;
-            color: #e2e8f0;
+            color: #1e293b;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -153,12 +154,10 @@
         /* CARD CONTAINER */
         .reg-card {
             background: var(--bg-card);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
             border: 1px solid var(--border-card);
             border-radius: 24px;
             padding: 38px 36px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
         }
 
         /* SECTION HEADERS */
@@ -168,7 +167,7 @@
             gap: 12px;
             margin: 32px 0 18px 0;
             padding-bottom: 12px;
-            border-bottom: 1px solid rgba(38, 52, 81, 0.7);
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .section-header:first-of-type {
@@ -186,16 +185,16 @@
             flex-shrink: 0;
         }
 
-        .si-hospital { background: rgba(2, 132, 199, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; }
-        .si-photo { background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(52, 211, 153, 0.4); color: #34d399; }
-        .si-license { background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; }
-        .si-payout { background: rgba(139, 92, 246, 0.2); border: 1px solid rgba(139, 92, 246, 0.4); color: #c084fc; }
-        .si-lock { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #f87171; }
+        .si-hospital { background: #e0f2fe; border: 1px solid #bae6fd; color: #0284c7; }
+        .si-photo { background: #ecfdf5; border: 1px solid #a7f3d0; color: #059669; }
+        .si-license { background: #fef3c7; border: 1px solid #fde68a; color: #d97706; }
+        .si-payout { background: #f3e8ff; border: 1px solid #e9d5ff; color: #9333ea; }
+        .si-lock { background: #fee2e2; border: 1px solid #fecaca; color: #dc2626; }
 
         .section-header h3 {
             font-size: 17px;
             font-weight: 800;
-            color: #f8fafc;
+            color: #0f172a;
             letter-spacing: -0.3px;
         }
 
@@ -226,7 +225,7 @@
         label {
             font-size: 13px;
             font-weight: 700;
-            color: #cbd5e1;
+            color: #334155;
             letter-spacing: -0.1px;
             display: flex;
             justify-content: space-between;
@@ -234,31 +233,31 @@
         }
 
         label .required {
-            color: #f87171;
+            color: #ef4444;
             font-weight: 800;
         }
 
         input, textarea, select {
             width: 100%;
-            background: var(--bg-input);
-            border: 1.5px solid var(--border-card);
+            background: #ffffff;
+            border: 1.5px solid #cbd5e1;
             border-radius: 12px;
             padding: 13px 14px;
             font-size: 14px;
             font-family: inherit;
-            color: #f8fafc;
+            color: #0f172a;
             outline: none;
             transition: all 0.2s ease;
         }
 
         input:focus, textarea:focus, select:focus {
             border-color: var(--border-focus);
-            background: #0d1a33;
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
         }
 
         input::placeholder, textarea::placeholder {
-            color: #475569;
+            color: #94a3b8;
             font-size: 13.5px;
         }
 
@@ -276,8 +275,8 @@
 
         /* OTP VERIFICATION SECTION */
         #otpSection {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 95, 70, 0.15) 100%);
-            border: 1.5px solid rgba(52, 211, 153, 0.45);
+            background: #ecfdf5;
+            border: 1.5px solid #a7f3d0;
             border-radius: 14px;
             padding: 14px 16px;
             margin-top: 10px;
@@ -291,8 +290,8 @@
 
         /* FILE UPLOAD DROPZONE */
         .file-upload-box {
-            background: rgba(9, 19, 38, 0.6);
-            border: 2px dashed rgba(56, 189, 248, 0.35);
+            background: #f8fafc;
+            border: 2px dashed #93c5fd;
             border-radius: 14px;
             padding: 16px;
             text-align: center;
@@ -301,15 +300,15 @@
         }
 
         .file-upload-box:hover {
-            border-color: #38bdf8;
-            background: rgba(14, 29, 58, 0.85);
+            border-color: #0284c7;
+            background: #f0f9ff;
         }
 
         .photo-preview-container {
             display: none;
             margin-top: 12px;
-            background: #0d1a33;
-            border: 1px solid rgba(56, 189, 248, 0.3);
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 12px;
             text-align: center;
@@ -324,7 +323,7 @@
 
         .photo-preview-label {
             font-size: 12px;
-            color: #38bdf8;
+            color: #0284c7;
             font-weight: 700;
             margin-top: 6px;
         }
@@ -379,15 +378,15 @@
         }
 
         #message.error {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1.5px solid rgba(239, 68, 68, 0.4);
-            color: #fca5a5;
+            background: #fef2f2;
+            border: 1.5px solid #fecaca;
+            color: #b91c1c;
         }
 
         #message.success {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1.5px solid rgba(52, 211, 153, 0.4);
-            color: #86efac;
+            background: #ecfdf5;
+            border: 1.5px solid #a7f3d0;
+            color: #047857;
         }
 
         /* FOOTER LOGIN */
@@ -399,7 +398,7 @@
         }
 
         .login-link a {
-            color: #38bdf8;
+            color: #0284c7;
             font-weight: 800;
             text-decoration: none;
             margin-left: 6px;
@@ -407,7 +406,7 @@
         }
 
         .login-link a:hover {
-            color: #7dd3fc;
+            color: #0369a1;
             text-decoration: underline;
         }
 
@@ -509,7 +508,7 @@
                             type="button"
                             id="btnSendHospitalOtp"
                             onclick="handleSendHospitalOtp()"
-                            style="background: none; border: none; color: #38bdf8; font-weight: 700; font-size: 12px; cursor: pointer; text-decoration: underline;"
+                            style="background: none; border: none; color: #0284c7; font-weight: 700; font-size: 12px; cursor: pointer; text-decoration: underline;"
                         >
                             Send OTP
                         </button>
@@ -527,7 +526,7 @@
                 <!-- EMAIL OTP VERIFICATION BOX -->
                 <div id="otpSection" class="form-full" style="display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 13px; font-weight: 700; color: #34d399;" id="otpStatusText">Enter 6-digit verification code sent to hospital email</span>
+                        <span style="font-size: 13px; font-weight: 700; color: #059669;" id="otpStatusText">Enter 6-digit verification code sent to hospital email</span>
                     </div>
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <input
@@ -537,7 +536,7 @@
                             maxlength="6"
                             pattern="[0-9]{6}"
                             inputmode="numeric"
-                            style="flex: 1; height: 44px; text-align: center; letter-spacing: 4px; font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 800; color: #34d399;"
+                            style="flex: 1; height: 44px; text-align: center; letter-spacing: 4px; font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 800; color: #059669; background: #ffffff; border: 1.5px solid #a7f3d0;"
                         >
                         <button
                             type="button"
@@ -628,7 +627,7 @@
                         name="hospital_photo"
                         accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                         required
-                        style="background: transparent; border: none; padding: 0; color: #94a3bd; font-size: 13px;"
+                        style="background: transparent; border: none; padding: 0; color: #64748b; font-size: 13px;"
                     >
                 </div>
                 <span class="hint">Accepted formats: JPG, JPEG, PNG, WEBP (Max 5 MB).</span>
@@ -698,7 +697,7 @@
                         <button
                             type="button"
                             onclick="openCertCameraModal('license_certificate', 'regCertPreviewBox')"
-                            style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 8px 16px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;"
+                            style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 8px 16px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;"
                         >
                             📸 Scan with Camera
                         </button>
@@ -714,10 +713,10 @@
                         required
                     >
 
-                    <div id="regCertPreviewBox" style="display:none; margin-top:8px; padding:10px 14px; background:rgba(2, 132, 199, 0.15); border:1px solid rgba(56, 189, 248, 0.35); border-radius:10px; font-size:13px; color:#38bdf8;"></div>
+                    <div id="regCertPreviewBox" style="display:none; margin-top:8px; padding:10px 14px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; font-size:13px; color:#0284c7;"></div>
 
                     <span class="hint" style="margin-top:6px; display:block;">
-                        Accepted: PDF, JPG, PNG (Max 10 MB). <strong style="color: #f87171;">🔒 Certificates are cryptographically secured and locked once verified.</strong>
+                        Accepted: PDF, JPG, PNG (Max 10 MB). <strong style="color: #dc2626;">🔒 Certificates are cryptographically secured and locked once verified.</strong>
                     </span>
                 </div>
             </div>
@@ -860,7 +859,7 @@
      LIVE CERTIFICATE SCAN CAMERA MODAL
 ========================================================= -->
 <div id="certCameraModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99999; flex-direction:column; align-items:center; justify-content:center; padding:16px;">
-    <div style="background:#0d1a33; border:1px solid rgba(56, 189, 248, 0.4); border-radius:18px; max-width:540px; width:100%; overflow:hidden; box-shadow:0 25px 60px rgba(0,0,0,0.7);">
+    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:18px; max-width:540px; width:100%; overflow:hidden; box-shadow:0 20px 45px rgba(0,0,0,0.25);">
         <div style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color:white; padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
             <strong style="font-size:15px;">📸 Scan Hospital Certificate</strong>
             <button type="button" onclick="closeCertCamera()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer; line-height:1;">✕</button>
