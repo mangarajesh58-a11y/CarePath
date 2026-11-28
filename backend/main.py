@@ -92,6 +92,7 @@ from models import (
     Admin,
     RegistrationOTP,
     PlatformContact,
+    PlatformFeeConfig,
     HospitalClosure,
     HospitalAdvertisement,
     SystemBroadcast,
@@ -102,6 +103,12 @@ from models import (
     MedicalDocument,
     UserSession,
     DistributedWSEvent,
+)
+from fee_service import (
+    calculate_dynamic_fees,
+    get_active_fee_config,
+    to_decimal,
+    FeeCalculationResult,
 )
 from fastapi.responses import FileResponse, Response, JSONResponse
 
@@ -4222,14 +4229,13 @@ def log_admin_action(
         logging.warning("Audit log write error: %s", err)
 
 
-def get_current_platform_fee(db: Session) -> int:
+def get_current_platform_fee(db: Session) -> float:
     try:
-        contact = db.query(PlatformContact).first()
-        if contact and getattr(contact, "platform_fee", None) is not None:
-            return int(contact.platform_fee)
+        cfg = get_active_fee_config(db)
+        return float(cfg.get("platform_fee", 10.0))
     except Exception:
         pass
-    return PLATFORM_FEE
+    return float(PLATFORM_FEE)
 
 
 DEFAULT_COMMISSION_PERCENTAGE = Decimal("10.00")
@@ -4543,9 +4549,19 @@ def token_to_dict(token):
         "token_number": token.token_number,
         "platform": token.platform or PLATFORM_NAME,
         "booking_type": token.booking_type or "ONLINE",
-        "token_fee": token.token_fee,
-        "platform_fee": token.platform_fee,
-        "total_amount": token.total_amount,
+        "token_fee": float(token.token_fee or 0),
+        "platform_fee": float(token.platform_fee or 0),
+        "total_amount": float(token.total_amount or 0),
+        # Dynamic fee breakdown snapshots
+        "hospital_token_fee": float(getattr(token, "hospital_token_fee", None) or token.token_fee or 0),
+        "gst_percentage": float(getattr(token, "gst_percentage", None) or 18.0),
+        "gst_amount": float(getattr(token, "gst_amount", None) or 0.0),
+        "gateway_fee_percentage": float(getattr(token, "gateway_fee_percentage", None) or 2.0),
+        "gateway_fee_gst": float(getattr(token, "gateway_fee_gst", None) or 18.0),
+        "gateway_fee_amount": float(getattr(token, "gateway_fee_amount", None) or 0.0),
+        "total_extra_fee": float(getattr(token, "total_extra_fee", None) or token.platform_fee or 0.0),
+        "final_amount": float(getattr(token, "final_amount", None) or token.total_amount or 0.0),
+        "fee_configuration_version": int(getattr(token, "fee_configuration_version", None) or 1),
         "payment_status": token.payment_status,
         "cashfree_order_id": token.cashfree_order_id,
         "cashfree_payment_id": token.cashfree_payment_id,
@@ -5168,7 +5184,7 @@ def health():
         "success": True,
 
         "status": "healthy",
-        "deploy_version": "2026-11-28-fastapi-0.165.0",
+        "deploy_version": "2026-11-28-v4-doc-auth-fixed",
         "fastapi_version": fastapi.__version__,
     }
 
@@ -9242,12 +9258,14 @@ async def upload_token_documents(
     token_id: int,
     files: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    token: Optional[str] = Query(None),
 ):
     """
     Securely uploads one or multiple medical documents (PDF, JPG, JPEG, PNG) for a specific token.
     Validates token ownership, file magic bytes, file extensions, and file sizes.
     """
+    current_user = get_document_auth_user(credentials, token)
     token = db.query(Token).filter(Token.id == token_id).first()
     if not token:
         raise HTTPException(status_code=404, detail="Token record not found.")

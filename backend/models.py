@@ -263,6 +263,17 @@ class Token(Base):
     total_amount = Column(Integer, default=10, nullable=False)
     payment_status = Column(String(50), default="pending")
 
+    # Dynamic Platform Fee, GST & Payment Gateway Fee Snapshots (Exact Paisa Decimal Arithmetic)
+    hospital_token_fee = Column(Numeric(10, 2), default=0.00, nullable=True)
+    gst_percentage = Column(Numeric(5, 2), default=18.00, nullable=True)
+    gst_amount = Column(Numeric(10, 2), default=0.00, nullable=True)
+    gateway_fee_percentage = Column(Numeric(5, 2), default=2.00, nullable=True)
+    gateway_fee_gst = Column(Numeric(5, 2), default=18.00, nullable=True)
+    gateway_fee_amount = Column(Numeric(10, 2), default=0.00, nullable=True)
+    total_extra_fee = Column(Numeric(10, 2), default=0.00, nullable=True)
+    final_amount = Column(Numeric(10, 2), default=0.00, nullable=True)
+    fee_configuration_version = Column(Integer, default=1, nullable=True)
+
     # Platform Commission & Hospital Payout Tracking (Exact Paisa Decimal Arithmetic)
     commission_percentage = Column(Numeric(5, 2), default=0.00, nullable=True)
     commission_amount = Column(Numeric(10, 2), default=0.00, nullable=True)
@@ -337,10 +348,33 @@ class PlatformContact(Base):
     grievance_email = Column(String(255), default="mangarajesh58@gmail.com")
     working_hours = Column(String(100), default="Mon - Sat: 9:00 AM - 7:00 PM IST")
     platform_fee = Column(Integer, default=10, nullable=False)
+    gst_percentage = Column(Numeric(5, 2), default=18.00, nullable=False)
+    gateway_fee_percentage = Column(Numeric(5, 2), default=2.00, nullable=False)
+    gateway_fee_gst = Column(Numeric(5, 2), default=18.00, nullable=False)
+    gateway_fee_basis = Column(String(50), default="hospital_fee", nullable=False)
+    pass_gateway_fee_to_patient = Column(Boolean, default=True, nullable=False)
+    fee_configuration_version = Column(Integer, default=1, nullable=False)
     commission_percentage = Column(Numeric(5, 2), default=10.00, nullable=False)
     banner_ad_fee = Column(Float, default=999.0, nullable=False)
     video_ad_fee = Column(Float, default=1999.0, nullable=False)
     ad_duration_days = Column(Integer, default=30, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class PlatformFeeConfig(Base):
+    __tablename__ = "platform_fee_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version = Column(Integer, default=1, index=True)
+    platform_fee = Column(Numeric(10, 2), default=10.00, nullable=False)
+    gst_percentage = Column(Numeric(5, 2), default=18.00, nullable=False)
+    gateway_fee_percentage = Column(Numeric(5, 2), default=2.00, nullable=False)
+    gateway_fee_gst = Column(Numeric(5, 2), default=18.00, nullable=False)
+    gateway_fee_basis = Column(String(50), default="hospital_fee", nullable=False)
+    pass_gateway_fee_to_patient = Column(Boolean, default=True, nullable=False)
+    is_active = Column(Boolean, default=True, index=True)
+    created_by = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class HospitalClosure(Base):
